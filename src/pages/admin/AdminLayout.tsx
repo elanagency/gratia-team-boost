@@ -130,7 +130,7 @@ const AdminLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="border-b border-gray-200 h-16 flex items-center px-6 bg-transparent">
+        <header className=" h-16 flex items-center px-6 bg-transparent">
           <div className="flex-1">
             <h1 className="text-xl font-medium text-gray-800">
               Hello, {userName} 👋
