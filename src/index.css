@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,19 +36,12 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -97,5 +91,23 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .grattia-gradient {
+    @apply bg-gradient-to-br from-grattia-purple-dark via-grattia-purple to-grattia-purple-dark;
+  }
+
+  .feature-card {
+    @apply bg-grattia-purple-dark/40 border border-grattia-purple-light/10 rounded-2xl p-6 backdrop-blur-sm;
+  }
+
+  .grattia-button {
+    @apply px-6 py-2 bg-grattia-pink text-white rounded-full font-medium hover:opacity-90 transition-all;
+  }
+
+  .grattia-button-outline {
+    @apply px-6 py-2 border border-grattia-pink text-white rounded-full font-medium hover:bg-grattia-pink/10 transition-all;
   }
 }
