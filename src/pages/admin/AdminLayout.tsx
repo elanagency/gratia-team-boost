@@ -97,7 +97,7 @@ const AdminLayout = () => {
   return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar */}
       <div className="w-[280px] flex-shrink-0 dark-sidebar px-0">
-        <div className="flex items-center p-4 border-b border-white/10">
+        <div className="flex items-center p-4  border-white/10">
           <Link to="/admin" className="flex items-center">
             <img src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" alt="Grattia Logo" className="h-8 w-auto mr-2" />
             
