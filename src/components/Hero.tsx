@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+    <section className="relative py-20 px-4 overflow-hidden">
       {/* Background gradient effect */}
       <div className="absolute inset-0 bg-grattia-purple-dark">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-grattia-purple-dark via-grattia-purple/20 to-grattia-purple-dark"></div>
