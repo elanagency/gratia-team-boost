@@ -156,10 +156,10 @@ const AdminLayout = () => {
         {/* Top Header */}
         <header className=" h-16 flex items-center px-6 bg-transparent">
           <div className="flex-1">
-            <h1 className="text-xl font-medium text-gray-800">
+            <h1 className="text-2xl font-semibold text-gray-800">
               Hello, {userName} 👋
             </h1>
-            <p className="text-sm text-gray-500">Here's what's going on today.</p>
+            <p className="text-lg text-gray-500">Here's what's going on today.</p>
           </div>
           
           <div className="flex items-center space-x-4">
