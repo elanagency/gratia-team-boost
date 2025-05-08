@@ -1,86 +1,64 @@
-
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Award, 
-  Gift, 
-  CreditCard, 
-  Settings, 
-  LogOut,
-  Search,
-  Bell,
-  User,
-  HelpCircle
-} from "lucide-react";
+import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 const AdminLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [companyName, setCompanyName] = useState<string>("");
   const [userName, setUserName] = useState<string>("Jane Doe");
   const navigate = useNavigate();
   const location = useLocation();
-
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session) {
         navigate("/login");
         return;
       }
       setUser(session.user);
-      
+
       // Fetch company name
-      const { data: companyMember } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', session.user.id)
-        .single();
-      
+      const {
+        data: companyMember
+      } = await supabase.from('company_members').select('company_id').eq('user_id', session.user.id).single();
       if (companyMember) {
-        const { data: company } = await supabase
-          .from('companies')
-          .select('name')
-          .eq('id', companyMember.company_id)
-          .single();
-        
+        const {
+          data: company
+        } = await supabase.from('companies').select('name').eq('id', companyMember.company_id).single();
         if (company) {
           setCompanyName(company.name);
         }
       }
 
       // Try to get user name if available
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', session.user.id)
-        .single();
-
+      const {
+        data: profile
+      } = await supabase.from('profiles').select('first_name, last_name').eq('id', session.user.id).single();
       if (profile && profile.first_name) {
         setUserName(`${profile.first_name} ${profile.last_name || ''}`);
       }
     };
-
     checkAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: authListener
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         navigate("/login");
       } else if (session) {
         setUser(session.user);
       }
     });
-
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
@@ -88,45 +66,49 @@ const AdminLayout = () => {
   };
 
   // Menu items for sidebar
-  const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, path: "/admin" },
-    { name: "Team", icon: Users, path: "/admin/team" },
-    { name: "Recognition", icon: Award, path: "/admin/recognition" },
-    { name: "Rewards", icon: Gift, path: "/admin/rewards" },
-    { name: "Billing", icon: CreditCard, path: "/admin/billing" },
-    { name: "Settings", icon: Settings, path: "/admin/settings" },
-  ];
-
+  const menuItems = [{
+    name: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/admin"
+  }, {
+    name: "Team",
+    icon: Users,
+    path: "/admin/team"
+  }, {
+    name: "Recognition",
+    icon: Award,
+    path: "/admin/recognition"
+  }, {
+    name: "Rewards",
+    icon: Gift,
+    path: "/admin/rewards"
+  }, {
+    name: "Billing",
+    icon: CreditCard,
+    path: "/admin/billing"
+  }, {
+    name: "Settings",
+    icon: Settings,
+    path: "/admin/settings"
+  }];
   const isActive = (path: string) => {
     return location.pathname === path;
   };
-
-  return (
-    <div className="flex h-screen bg-[#f7f8fa]">
+  return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar */}
       <div className="w-[225px] flex-shrink-0 dark-sidebar">
         <div className="flex items-center p-4 border-b border-white/10">
           <Link to="/admin" className="flex items-center">
-            <img 
-              src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
-              alt="Grattia Logo" 
-              className="h-8 w-auto mr-2" 
-            />
-            <span className="font-semibold text-lg text-white">Grattia</span>
+            <img src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" alt="Grattia Logo" className="h-8 w-auto mr-2" />
+            
           </Link>
         </div>
         
         <nav className="py-4">
-          {menuItems.map((item) => (
-            <Link 
-              key={item.name} 
-              to={item.path}
-              className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}
-            >
+          {menuItems.map(item => <Link key={item.name} to={item.path} className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}>
               <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
               <span>{item.name}</span>
-            </Link>
-          ))}
+            </Link>)}
         </nav>
 
         <div className="absolute bottom-0 left-0 w-[225px] border-t border-white/10 p-4">
@@ -138,10 +120,7 @@ const AdminLayout = () => {
               <p className="text-sm font-medium text-white truncate">{userName}</p>
               <p className="text-xs text-white/70 truncate">{user?.email}</p>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="ml-2 text-white/70 hover:text-white"
-            >
+            <button onClick={handleLogout} className="ml-2 text-white/70 hover:text-white">
               <LogOut size={18} />
             </button>
           </div>
@@ -177,8 +156,6 @@ const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminLayout;
