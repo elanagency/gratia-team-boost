@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -22,6 +23,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
   const form = useForm<FormValues>({
@@ -32,12 +34,27 @@ const Login = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // This would normally connect to your backend login endpoint
-    console.log("Login form submitted:", data);
-    toast.success("Login successful!");
-    // Redirect to dashboard or home page
-    setTimeout(() => navigate("/"), 2000);
+  const onSubmit = async (data: FormValues) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Login successful!");
+      // Redirect to admin dashboard
+      navigate("/admin");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sign in");
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,7 +66,7 @@ const Login = () => {
           <div className="text-center">
             <button 
               onClick={() => navigate("/")} 
-              className="inline-flex items-center text-grattia-pink mb-6 hover:underline"
+              className="inline-flex items-center text-[#F572FF] mb-6 hover:underline"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to home
@@ -117,7 +134,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
-                    className="text-sm text-grattia-pink hover:underline"
+                    className="text-sm text-[#F572FF] hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -125,9 +142,10 @@ const Login = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-grattia-pink hover:bg-grattia-pink/90 text-white"
+                  disabled={isLoading}
+                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
                 >
-                  Log In
+                  {isLoading ? "Logging in..." : "Log In"}
                 </Button>
                 
                 <div className="text-center mt-4">
@@ -136,7 +154,7 @@ const Login = () => {
                     <button
                       type="button"
                       onClick={() => navigate("/signup")}
-                      className="text-grattia-pink hover:underline"
+                      className="text-[#F572FF] hover:underline"
                     >
                       Sign up
                     </button>
