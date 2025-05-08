@@ -31,7 +31,7 @@ const formSchema = z.object({
   })
 });
 
-// Define the type directly to avoid deep instantiation
+// Define the type explicitly to avoid deep instantiation errors
 type FormValues = {
   fullName: string;
   companyName: string;
@@ -136,7 +136,7 @@ const SignUp = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header with logo */}
+      {/* Centered logo */}
       <div className="flex justify-center pt-8 pb-4">
         <img 
           src="/lovable-uploads/a81380be-c852-4afc-a6f8-7b72de94f671.png" 
