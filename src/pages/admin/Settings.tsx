@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -79,7 +80,7 @@ const Settings = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-white">Company Settings</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Company Settings</h1>
         <Button 
           onClick={handleSave} 
           disabled={loading}
@@ -89,86 +90,89 @@ const Settings = () => {
         </Button>
       </div>
       
-      <Card className="border-[#333333] bg-[#222222] text-white">
-        <CardHeader>
-          <CardTitle className="text-xl text-white">Company Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <Card className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Company Information</h2>
+        </div>
+        
+        <div className="space-y-6 mt-6">
           <div className="space-y-2">
-            <Label htmlFor="logo" className="text-gray-300">Company Logo</Label>
-            <div className="h-32 w-32 border-2 border-dashed border-[#444444] rounded-md flex items-center justify-center text-gray-400">
-              Click to upload
+            <Label htmlFor="logo">Company Logo</Label>
+            <div className="flex items-center">
+              <div className="h-24 w-24 border-2 border-dashed border-gray-200 rounded-md flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                <Upload className="h-6 w-6 mb-1" />
+                <span className="text-xs">Upload</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-700">Upload your company logo</p>
+                <p className="text-xs text-gray-500 mt-1">Recommended size: 200x200px. Max size: 2MB.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="company-name">Company Name</Label>
+              <Input 
+                id="company-name" 
+                value={company?.name || ""}
+                onChange={(e) => setCompany({ ...company, name: e.target.value })}
+                placeholder="Your Company Name"
+              />
+              <p className="text-xs text-gray-500">This name will be visible to your team members</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="legal-name">Legal Company Name</Label>
+              <Input 
+                id="legal-name" 
+                placeholder="Legal Company Name (as registered)"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="company-email">Company Email</Label>
+              <Input 
+                id="company-email" 
+                type="email"
+                placeholder="company@example.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="company-phone">Phone Number</Label>
+              <Input 
+                id="company-phone" 
+                placeholder="Phone number for contact"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="company-website">Website</Label>
+              <Input 
+                id="company-website" 
+                placeholder="https://www.yourcompany.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="company-address">Company Address</Label>
+              <Input 
+                id="company-address" 
+                placeholder="Full company address"
+              />
             </div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-name" className="text-gray-300">Company Name</Label>
-            <Input 
-              id="company-name" 
-              value={company?.name || ""}
-              onChange={(e) => setCompany({ ...company, name: e.target.value })}
-              placeholder="Your Company Name"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-            <p className="text-sm text-gray-500">This name will be visible to your team members</p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="legal-name" className="text-gray-300">Legal Company Name</Label>
-            <Input 
-              id="legal-name" 
-              placeholder="Legal Company Name (as registered)"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-email" className="text-gray-300">Company Email</Label>
-            <Input 
-              id="company-email" 
-              type="email"
-              placeholder="company@example.com"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-address" className="text-gray-300">Company Address</Label>
-            <Input 
-              id="company-address" 
-              placeholder="Full company address"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-phone" className="text-gray-300">Phone Number</Label>
-            <Input 
-              id="company-phone" 
-              placeholder="Phone number for contact"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-website" className="text-gray-300">Website</Label>
-            <Input 
-              id="company-website" 
-              placeholder="https://www.yourcompany.com"
-              className="bg-[#333333] text-white border-[#444444]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-description" className="text-gray-300">About the Company</Label>
+            <Label htmlFor="company-description">About the Company</Label>
             <Textarea 
               id="company-description" 
               placeholder="Briefly describe what your company does"
               rows={4}
-              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

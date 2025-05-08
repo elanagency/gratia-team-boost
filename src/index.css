@@ -38,14 +38,14 @@
  
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 0%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 302 100% 72%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 302 100% 72%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 17%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-background: 220 100% 98%;
+    --sidebar-foreground: 220 20% 40%;
+    --sidebar-primary: 220 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 80% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 220 80% 50%;
   }
  
   .dark {
@@ -78,7 +78,7 @@
  
     --ring: 216 34% 17%;
  
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 }
  
@@ -87,10 +87,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#f7f8fa] text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: "Roboto", sans-serif;
-    background-color: #1A1F2C; /* Dark background color */
   }
 }
 
@@ -99,24 +98,49 @@
   @apply bg-[#F572FF] hover:bg-[#E061EE] text-white font-medium py-2 px-6 rounded-md;
 }
 
-/* Boxed layout styles */
-.max-w-1440 {
-  max-width: 1440px;
+/* New sidebar styles that match the reference */
+.app-sidebar {
+  @apply bg-[#f8f9fc] border-r border-[#e9ecef];
 }
 
-/* Dark theme specific styles */
-.dark-card {
-  @apply bg-[#222222] border-[#333333] text-white;
+.sidebar-nav-item {
+  @apply flex items-center px-4 py-2 my-1 text-[#4a5568] hover:bg-[#edf2f7] rounded-md transition-colors;
 }
 
-.dark-header {
-  @apply bg-[#222222] border-[#333333] text-white;
+.sidebar-nav-item.active {
+  @apply bg-[#edf2f7] text-[#2d3748];
 }
 
-.dark-sidebar {
-  @apply bg-[#222222] border-[#333333] text-white;
+.sidebar-nav-item-icon {
+  @apply mr-3 h-5 w-5 text-[#4299e1];
 }
 
-.dark-content {
-  @apply bg-[#222222] border-[#333333] text-white;
+.sidebar-category {
+  @apply text-xs uppercase font-semibold text-[#718096] px-4 mt-6 mb-2;
+}
+
+/* Dashboard card styles */
+.dashboard-card {
+  @apply bg-white rounded-lg shadow-sm border border-[#e9ecef] p-4;
+}
+
+.task-item {
+  @apply flex items-center p-4 border-b border-[#e9ecef] last:border-b-0 hover:bg-[#f8f9fc];
+}
+
+.task-icon {
+  @apply h-8 w-8 rounded-full mr-4 flex items-center justify-center;
+}
+
+.view-all {
+  @apply text-[#4299e1] hover:text-[#2b6cb0] text-sm font-medium flex items-center;
+}
+
+/* Modern card headers */
+.card-header {
+  @apply flex items-center justify-between mb-4;
+}
+
+.card-title {
+  @apply text-lg font-medium text-gray-800;
 }

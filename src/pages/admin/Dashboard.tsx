@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Users, Award, Gift, TrendingUp } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Users, Award, Gift, TrendingUp, ChevronRight, Calendar, FileCheck, CreditCard, Building2 } from "lucide-react";
 
 const Dashboard = () => {
   // Sample stats for the dashboard
@@ -12,50 +12,157 @@ const Dashboard = () => {
     { title: "Engagement", value: "92%", icon: TrendingUp, description: "Team activity" }
   ];
 
+  // Sample tasks for the dashboard
+  const tasks = [
+    { 
+      id: 1,
+      title: "Review recognition requests",
+      description: "3 requests need your attention",
+      icon: Award,
+      iconBg: "#ffedd5",
+      iconColor: "#f59e0b",
+      date: "Today"
+    },
+    { 
+      id: 2,
+      title: "Process reward claims",
+      description: "You have 2 pending reward claims to review",
+      icon: Gift,
+      iconBg: "#e0e7ff",
+      iconColor: "#6366f1",
+      date: "Today"
+    },
+    { 
+      id: 3,
+      title: "Upload team photos",
+      description: "Add photos from the recent team event",
+      icon: FileCheck,
+      iconBg: "#dcfce7",
+      iconColor: "#10b981",
+      date: "Today"
+    },
+    { 
+      id: 4,
+      title: "Set up payment method",
+      description: "Complete your billing information",
+      icon: CreditCard,
+      iconBg: "#fae8ff",
+      iconColor: "#F572FF",
+      date: "Yesterday"
+    }
+  ];
+
+  // Sample team members
+  const teamMembers = [
+    { id: 1, name: "Mike Johnson", role: "Developer", country: "United States" },
+    { id: 2, name: "Sarah Chen", role: "Designer", country: "Singapore" },
+    { id: 3, name: "Alex Patel", role: "Marketing", country: "India" }
+  ];
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="border-[#333333] bg-[#222222] text-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">{stat.title}</CardTitle>
-              <stat.icon className="h-5 w-5 text-[#F572FF]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-gray-400 mt-1">{stat.description}</p>
-            </CardContent>
+          <Card key={index} className="dashboard-card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">{stat.title}</p>
+                <h3 className="text-2xl font-semibold mt-1">{stat.value}</h3>
+                <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center bg-[#F572FF]/10`}>
+                <stat.icon className="h-6 w-6 text-[#F572FF]" />
+              </div>
+            </div>
           </Card>
         ))}
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-[#333333] bg-[#222222] text-white">
-          <CardHeader>
-            <CardTitle className="text-[#F572FF]">Recent Recognitions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-400">
-              <p>No recognitions yet</p>
-              <p className="text-sm mt-2">Recognition activity will appear here</p>
+
+      {/* Tasks and Team Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Things to do */}
+        <div className="lg:col-span-2">
+          <Card className="dashboard-card h-full">
+            <div className="card-header">
+              <h2 className="card-title">Things to do</h2>
             </div>
-          </CardContent>
-        </Card>
+            <div className="divide-y divide-gray-100">
+              {tasks.map((task) => (
+                <div key={task.id} className="task-item">
+                  <div 
+                    className="task-icon" 
+                    style={{ backgroundColor: task.iconBg }}
+                  >
+                    <task.icon style={{ color: task.iconColor }} size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-800">{task.title}</h4>
+                    <p className="text-sm text-gray-500">{task.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm text-gray-400">{task.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
         
-        <Card className="border-[#333333] bg-[#222222] text-white">
-          <CardHeader>
-            <CardTitle className="text-[#F572FF]">Top Performers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-400">
-              <p>No team members yet</p>
-              <p className="text-sm mt-2">Add team members to see performers</p>
+        {/* Team section */}
+        <div>
+          <Card className="dashboard-card h-full">
+            <div className="card-header">
+              <h2 className="card-title">Your team</h2>
+              <a href="#" className="view-all">
+                View All <ChevronRight size={16} />
+              </a>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-4">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                    {member.name.charAt(0)}
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-800">{member.name}</p>
+                    <p className="text-xs text-gray-500">{member.role}</p>
+                  </div>
+                  <div className="ml-auto">
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">{member.country}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
+
+      {/* Calendar / Upcoming Events */}
+      <Card className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Upcoming events</h2>
+          <a href="#" className="view-all">
+            View Calendar <ChevronRight size={16} />
+          </a>
+        </div>
+        <div className="py-4">
+          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-col items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-gray-100">
+              <span className="text-sm text-gray-500">Nov</span>
+              <span className="text-xl font-bold text-gray-800">15</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="font-medium text-gray-800">Team Recognition Event</h3>
+              <p className="text-sm text-gray-500">Monthly recognition ceremony</p>
+              <div className="mt-1 flex items-center">
+                <Calendar size={14} className="text-gray-400 mr-1" />
+                <span className="text-xs text-gray-500">10:00 AM - 11:00 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };
