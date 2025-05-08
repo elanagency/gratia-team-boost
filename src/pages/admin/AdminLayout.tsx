@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle, UserRound } from "lucide-react";
@@ -115,23 +116,26 @@ const AdminLayout = () => {
           </Link>
         </div>
         
-        <nav className="py-4">
-          {menuItems.map(item => <Link key={item.name} to={item.path} className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}>
-              <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
-              <span>{item.name}</span>
-            </Link>)}
-
-          {/* Add divider */}
-          <div className="mx-6 my-4 border-t border-white/10"></div>
+        <nav className="py-4 flex flex-col h-[calc(100%-8rem)]">
+          {/* Main menu items */}
+          <div className="flex-1">
+            {menuItems.map(item => <Link key={item.name} to={item.path} className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}>
+                <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
+                <span>{item.name}</span>
+              </Link>)}
+          </div>
           
-          {/* Profile Settings Menu Item */}
-          <Link to={profileSettingsItem.path} className={`dark-sidebar-nav-item ${isActive(profileSettingsItem.path) ? 'active' : ''}`}>
-            <profileSettingsItem.icon className={`dark-sidebar-nav-item-icon ${isActive(profileSettingsItem.path) ? 'text-[#F572FF]' : 'text-white'}`} />
-            <span>{profileSettingsItem.name}</span>
-          </Link>
+          {/* Profile Settings Menu Item at the bottom */}
+          <div className="mt-auto mb-4">
+            <div className="mx-6 my-4 border-t border-white/10"></div>
+            <Link to={profileSettingsItem.path} className={`dark-sidebar-nav-item ${isActive(profileSettingsItem.path) ? 'active' : ''}`}>
+              <profileSettingsItem.icon className={`dark-sidebar-nav-item-icon ${isActive(profileSettingsItem.path) ? 'text-[#F572FF]' : 'text-white'}`} />
+              <span>{profileSettingsItem.name}</span>
+            </Link>
+          </div>
         </nav>
 
-        <div className="absolute bottom-0 left-0 w-[225px] border-t border-white/10 p-4">
+        <div className="absolute bottom-0 left-0 w-[280px] border-t border-white/10 p-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
               {userName.charAt(0)}
