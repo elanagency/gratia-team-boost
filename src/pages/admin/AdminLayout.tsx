@@ -148,7 +148,7 @@ const AdminLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 flex items-center px-6 bg-transparent my-[20px]">
+        <header className="h-16 flex items-center px-6 bg-transparent my-[24px]">
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-gray-800">
               Hello, {userName} 👋
