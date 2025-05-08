@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -25,6 +25,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
   const form = useForm<FormValues>({
@@ -38,12 +39,34 @@ const SignUp = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // This would normally connect to your backend registration endpoint
-    console.log("Form submitted:", data);
-    toast.success("Account created successfully!");
-    // Redirect to login or dashboard
-    setTimeout(() => navigate("/"), 2000);
+  const onSubmit = async (data: FormValues) => {
+    setIsLoading(true);
+    try {
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            companyName: data.companyName
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Account created successfully!");
+      
+      // Redirect to admin dashboard after successful signup
+      navigate("/admin");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during signup");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,7 +78,7 @@ const SignUp = () => {
           <div className="text-center">
             <button 
               onClick={() => navigate("/")} 
-              className="inline-flex items-center text-grattia-pink mb-6 hover:underline"
+              className="inline-flex items-center text-[#F572FF] mb-6 hover:underline"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to home
@@ -177,9 +200,10 @@ const SignUp = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-grattia-pink hover:bg-grattia-pink/90 text-white"
+                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+                  disabled={isLoading}
                 >
-                  Create Account
+                  {isLoading ? "Creating Account..." : "Create Account"}
                 </Button>
                 
                 <div className="text-center mt-4">
@@ -188,7 +212,7 @@ const SignUp = () => {
                     <button
                       type="button"
                       onClick={() => navigate("/login")}
-                      className="text-grattia-pink hover:underline"
+                      className="text-[#F572FF] hover:underline"
                     >
                       Log in
                     </button>

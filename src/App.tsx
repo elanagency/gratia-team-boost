@@ -8,6 +8,13 @@ import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import TeamManagement from "./pages/admin/TeamManagement";
+import RecognitionHistory from "./pages/admin/RecognitionHistory";
+import RewardsCatalog from "./pages/admin/RewardsCatalog";
+import Billing from "./pages/admin/Billing";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +28,17 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="team" element={<TeamManagement />} />
+            <Route path="recognition" element={<RecognitionHistory />} />
+            <Route path="rewards" element={<RewardsCatalog />} />
+            <Route path="billing" element={<Billing />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
