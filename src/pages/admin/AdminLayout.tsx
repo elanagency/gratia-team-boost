@@ -102,8 +102,8 @@ const AdminLayout = () => {
     return location.pathname === path;
   };
   return <div className="flex h-screen bg-[#f7f8fa]">
-      {/* Left Sidebar */}
-      <div className="w-[280px] flex-shrink-0 dark-sidebar px-0">
+      {/* Left Sidebar - Updated width from 280px to 320px */}
+      <div className="w-[320px] flex-shrink-0 dark-sidebar px-0">
         <div className="flex items-center p-4 border-white/10 my-[20px]">
           <Link to="/admin" className="flex items-center">
             <img src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" alt="Grattia Logo" className="h-8 w-auto mr-2" />
@@ -129,7 +129,7 @@ const AdminLayout = () => {
           </div>
         </nav>
 
-        <div className="absolute bottom-0 left-0 w-[280px] border-t border-white/10 p-4">
+        <div className="absolute bottom-0 left-0 w-[320px] border-t border-white/10 p-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
               {userName.charAt(0)}
@@ -145,7 +145,7 @@ const AdminLayout = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Updated to accommodate wider sidebar */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header className="h-16 flex items-center px-6 bg-transparent my-[24px]">
