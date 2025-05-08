@@ -104,15 +104,15 @@ const AdminLayout = () => {
   return (
     <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar */}
-      <div className="w-[225px] flex-shrink-0 bg-white border-r border-gray-200">
-        <div className="flex items-center p-4 border-b border-gray-100">
+      <div className="w-[225px] flex-shrink-0 dark-sidebar">
+        <div className="flex items-center p-4 border-b border-white/10">
           <Link to="/admin" className="flex items-center">
             <img 
               src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
               alt="Grattia Logo" 
               className="h-8 w-auto mr-2" 
             />
-            <span className="font-semibold text-lg">Grattia</span>
+            <span className="font-semibold text-lg text-white">Grattia</span>
           </Link>
         </div>
         
@@ -121,26 +121,26 @@ const AdminLayout = () => {
             <Link 
               key={item.name} 
               to={item.path}
-              className={`sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}
+              className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}
             >
-              <item.icon className={`sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : ''}`} />
+              <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
               <span>{item.name}</span>
             </Link>
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 w-[225px] border-t border-gray-200 p-4">
+        <div className="absolute bottom-0 left-0 w-[225px] border-t border-white/10 p-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
               {userName.charAt(0)}
             </div>
             <div className="ml-2 flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{userName}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-white truncate">{userName}</p>
+              <p className="text-xs text-white/70 truncate">{user?.email}</p>
             </div>
             <button 
               onClick={handleLogout}
-              className="ml-2 text-gray-400 hover:text-gray-600"
+              className="ml-2 text-white/70 hover:text-white"
             >
               <LogOut size={18} />
             </button>

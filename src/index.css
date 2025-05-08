@@ -38,14 +38,14 @@
  
     --radius: 0.5rem;
 
-    --sidebar-background: 220 100% 98%;
-    --sidebar-foreground: 220 20% 40%;
-    --sidebar-primary: 220 80% 50%;
+    --sidebar-background: 252 74% 11%;  /* Updated for #0F0533 */
+    --sidebar-foreground: 0 0% 100%;    /* Updated for white text */
+    --sidebar-primary: 302 100% 72%;    /* Using #F572FF as primary */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 80% 50%;
+    --sidebar-accent: 302 100% 72%;     /* Using #F572FF as accent */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 220 80% 50%;
+    --sidebar-border: 252 30% 20%;      /* Slightly lighter border color */
+    --sidebar-ring: 302 100% 72%;       /* Using #F572FF as ring */
   }
  
   .dark {
@@ -143,4 +143,25 @@
 
 .card-title {
   @apply text-lg font-medium text-gray-800;
+}
+
+/* Dark sidebar styles */
+.dark-sidebar {
+  @apply bg-[#0F0533] text-white;
+}
+
+.dark-sidebar-nav-item {
+  @apply flex items-center px-4 py-2 my-1 text-white hover:bg-white/10 rounded-md transition-colors;
+}
+
+.dark-sidebar-nav-item.active {
+  @apply bg-white/10 text-white;
+}
+
+.dark-sidebar-nav-item-icon {
+  @apply mr-3 h-5 w-5 text-white;
+}
+
+.dark-sidebar-category {
+  @apply text-xs uppercase font-semibold text-white/60 px-4 mt-6 mb-2;
 }
