@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 const AdminLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [companyName, setCompanyName] = useState<string>("");
   const [userName, setUserName] = useState<string>("Jane Doe");
   const navigate = useNavigate();
   const location = useLocation();
+
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
@@ -59,6 +61,7 @@ const AdminLayout = () => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
@@ -91,16 +94,24 @@ const AdminLayout = () => {
     icon: Settings,
     path: "/admin/settings"
   }];
+
+  // Profile Settings menu item
+  const profileSettingsItem = {
+    name: "Profile Settings",
+    icon: UserRound,
+    path: "/admin/profile"
+  };
+
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
   return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar */}
       <div className="w-[280px] flex-shrink-0 dark-sidebar px-0">
-        <div className="flex items-center p-4  border-white/10">
+        <div className="flex items-center p-4 border-white/10">
           <Link to="/admin" className="flex items-center">
             <img src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" alt="Grattia Logo" className="h-8 w-auto mr-2" />
-            
           </Link>
         </div>
         
@@ -109,6 +120,15 @@ const AdminLayout = () => {
               <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
               <span>{item.name}</span>
             </Link>)}
+
+          {/* Add divider */}
+          <div className="mx-6 my-4 border-t border-white/10"></div>
+          
+          {/* Profile Settings Menu Item */}
+          <Link to={profileSettingsItem.path} className={`dark-sidebar-nav-item ${isActive(profileSettingsItem.path) ? 'active' : ''}`}>
+            <profileSettingsItem.icon className={`dark-sidebar-nav-item-icon ${isActive(profileSettingsItem.path) ? 'text-[#F572FF]' : 'text-white'}`} />
+            <span>{profileSettingsItem.name}</span>
+          </Link>
         </nav>
 
         <div className="absolute bottom-0 left-0 w-[225px] border-t border-white/10 p-4">
@@ -158,4 +178,5 @@ const AdminLayout = () => {
       </div>
     </div>;
 };
+
 export default AdminLayout;

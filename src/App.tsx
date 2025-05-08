@@ -15,6 +15,7 @@ import RecognitionHistory from "./pages/admin/RecognitionHistory";
 import RewardsCatalog from "./pages/admin/RewardsCatalog";
 import Billing from "./pages/admin/Billing";
 import Settings from "./pages/admin/Settings";
+import ProfileSettings from "./pages/admin/ProfileSettings";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="rewards" element={<RewardsCatalog />} />
             <Route path="billing" element={<Billing />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<ProfileSettings />} />
           </Route>
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
