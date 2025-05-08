@@ -107,10 +107,10 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Top Header/Navbar */}
-      <header className="border-b border-gray-200">
-        <div className="max-w-1440 mx-auto px-5 flex justify-between items-center h-16">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="max-w-[1440px] mx-auto px-5 flex justify-between items-center h-16">
           <div className="flex items-center">
             <img 
               src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
@@ -136,38 +136,40 @@ const AdminLayout = () => {
         </div>
       </header>
       
-      <div className="flex flex-1 max-w-1440 w-full mx-auto">
-        {/* Sidebar */}
-        <aside className="w-80 border-r border-gray-200 min-h-[calc(100vh-64px)]">
-          <div className="p-4">
-            <div className="font-medium text-lg mb-2">{companyName || "Your Company"}</div>
-          </div>
+      <div className="flex flex-1 justify-center">
+        <div className="max-w-[1440px] w-full flex px-5 py-6 gap-6">
+          {/* Sidebar - Fixed width */}
+          <aside className="w-64 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="p-4">
+              <div className="font-medium text-lg mb-2">{companyName || "Your Company"}</div>
+            </div>
+            
+            <nav className="px-2">
+              <ul className="space-y-1">
+                {mainMenuItems.map((item) => (
+                  <li key={item.name}>
+                    <Link 
+                      to={item.path} 
+                      className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                        isActive(item.path) 
+                          ? "bg-[#F572FF] text-white" 
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <item.icon className={`mr-2 h-5 w-5 ${isActive(item.path) ? "text-white" : "text-gray-500"}`} />
+                      <span>{item.name}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </aside>
           
-          <nav className="px-2">
-            <ul className="space-y-1">
-              {mainMenuItems.map((item) => (
-                <li key={item.name}>
-                  <Link 
-                    to={item.path} 
-                    className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                      isActive(item.path) 
-                        ? "bg-[#F572FF] text-white" 
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <item.icon className={`mr-2 h-5 w-5 ${isActive(item.path) ? "text-white" : "text-gray-500"}`} />
-                    <span>{item.name}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
-        
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 bg-gray-50">
-          <Outlet />
-        </main>
+          {/* Main Content Area - Flexible width but with padding */}
+          <main className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );
