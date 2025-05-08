@@ -4,17 +4,16 @@ import { Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 const Footer = () => {
   return (
     <footer className="py-12 px-4 border-t border-grattia-purple-light/20">
-      <div className="container mx-auto max-w-6xl">
+      <div className="container mx-auto max-w-[1440px]">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and description */}
           <div className="md:col-span-2">
             <div className="flex items-center mb-4">
               <img 
-                src="/lovable-uploads/edb23eb6-0d0b-4be4-ab4e-0ed9be845bed.png" 
+                src="/lovable-uploads/a81380be-c852-4afc-a6f8-7b72de94f671.png" 
                 alt="Grattia Logo" 
                 className="h-10 w-auto" 
               />
-              <span className="text-2xl font-bold ml-2 text-white">grattia</span>
             </div>
             <p className="text-gray-300 mb-4">
               Build a culture of appreciation with instant peer recognition and meaningful rewards.
