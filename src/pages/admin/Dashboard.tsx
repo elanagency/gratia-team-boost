@@ -18,7 +18,7 @@ const Dashboard = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <Card key={index} className="border-gray-800 bg-gray-900 text-white">
+          <Card key={index} className="border-[#333333] bg-[#222222] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">{stat.title}</CardTitle>
               <stat.icon className="h-5 w-5 text-[#F572FF]" />
@@ -32,7 +32,7 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-gray-800 bg-gray-900 text-white">
+        <Card className="border-[#333333] bg-[#222222] text-white">
           <CardHeader>
             <CardTitle className="text-[#F572FF]">Recent Recognitions</CardTitle>
           </CardHeader>
@@ -44,7 +44,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-gray-800 bg-gray-900 text-white">
+        <Card className="border-[#333333] bg-[#222222] text-white">
           <CardHeader>
             <CardTitle className="text-[#F572FF]">Top Performers</CardTitle>
           </CardHeader>

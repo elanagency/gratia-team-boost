@@ -79,7 +79,7 @@ const Settings = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">Company Settings</h1>
+        <h1 className="text-2xl font-semibold text-white">Company Settings</h1>
         <Button 
           onClick={handleSave} 
           disabled={loading}
@@ -89,76 +89,83 @@ const Settings = () => {
         </Button>
       </div>
       
-      <Card className="border-gray-200">
+      <Card className="border-[#333333] bg-[#222222] text-white">
         <CardHeader>
-          <CardTitle className="text-xl text-gray-800">Company Information</CardTitle>
+          <CardTitle className="text-xl text-white">Company Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="logo">Company Logo</Label>
-            <div className="h-32 w-32 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400">
+            <Label htmlFor="logo" className="text-gray-300">Company Logo</Label>
+            <div className="h-32 w-32 border-2 border-dashed border-[#444444] rounded-md flex items-center justify-center text-gray-400">
               Click to upload
             </div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-name">Company Name</Label>
+            <Label htmlFor="company-name" className="text-gray-300">Company Name</Label>
             <Input 
               id="company-name" 
               value={company?.name || ""}
               onChange={(e) => setCompany({ ...company, name: e.target.value })}
               placeholder="Your Company Name"
+              className="bg-[#333333] text-white border-[#444444]"
             />
             <p className="text-sm text-gray-500">This name will be visible to your team members</p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="legal-name">Legal Company Name</Label>
+            <Label htmlFor="legal-name" className="text-gray-300">Legal Company Name</Label>
             <Input 
               id="legal-name" 
               placeholder="Legal Company Name (as registered)"
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-email">Company Email</Label>
+            <Label htmlFor="company-email" className="text-gray-300">Company Email</Label>
             <Input 
               id="company-email" 
               type="email"
               placeholder="company@example.com"
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-address">Company Address</Label>
+            <Label htmlFor="company-address" className="text-gray-300">Company Address</Label>
             <Input 
               id="company-address" 
               placeholder="Full company address"
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-phone">Phone Number</Label>
+            <Label htmlFor="company-phone" className="text-gray-300">Phone Number</Label>
             <Input 
               id="company-phone" 
               placeholder="Phone number for contact"
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-website">Website</Label>
+            <Label htmlFor="company-website" className="text-gray-300">Website</Label>
             <Input 
               id="company-website" 
               placeholder="https://www.yourcompany.com"
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="company-description">About the Company</Label>
+            <Label htmlFor="company-description" className="text-gray-300">About the Company</Label>
             <Textarea 
               id="company-description" 
               placeholder="Briefly describe what your company does"
               rows={4}
+              className="bg-[#333333] text-white border-[#444444]"
             />
           </div>
         </CardContent>

@@ -107,9 +107,9 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-[#1A1F2C]">
       {/* Top Header/Navbar */}
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b border-[#333333] dark-header">
         <div className="max-w-[1440px] mx-auto px-5 flex justify-between items-center h-16">
           <div className="flex items-center">
             <img 
@@ -120,14 +120,14 @@ const AdminLayout = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <span className="text-gray-600">
+            <span className="text-gray-300">
               {user?.email}
             </span>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
-              className="text-gray-700 border-gray-300"
+              className="text-gray-300 border-gray-600 hover:bg-gray-800"
             >
               Log Out
               <LogOut className="ml-2 h-4 w-4" />
@@ -139,9 +139,9 @@ const AdminLayout = () => {
       <div className="flex flex-1 justify-center">
         <div className="max-w-[1440px] w-full flex px-5 py-6 gap-6">
           {/* Sidebar - Fixed width */}
-          <aside className="w-64 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <aside className="w-64 dark-sidebar border border-[#333333] rounded-lg shadow-md">
             <div className="p-4">
-              <div className="font-medium text-lg mb-2">{companyName || "Your Company"}</div>
+              <div className="font-medium text-lg mb-2 text-gray-200">{companyName || "Your Company"}</div>
             </div>
             
             <nav className="px-2">
@@ -153,10 +153,10 @@ const AdminLayout = () => {
                       className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                         isActive(item.path) 
                           ? "bg-[#F572FF] text-white" 
-                          : "text-gray-700 hover:bg-gray-100"
+                          : "text-gray-300 hover:bg-gray-800"
                       }`}
                     >
-                      <item.icon className={`mr-2 h-5 w-5 ${isActive(item.path) ? "text-white" : "text-gray-500"}`} />
+                      <item.icon className={`mr-2 h-5 w-5 ${isActive(item.path) ? "text-white" : "text-gray-400"}`} />
                       <span>{item.name}</span>
                     </Link>
                   </li>
@@ -166,7 +166,7 @@ const AdminLayout = () => {
           </aside>
           
           {/* Main Content Area - Flexible width but with padding */}
-          <main className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <main className="flex-1 dark-content rounded-lg border border-[#333333] shadow-md p-6">
             <Outlet />
           </main>
         </div>
