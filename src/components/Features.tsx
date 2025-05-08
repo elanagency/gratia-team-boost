@@ -33,7 +33,7 @@ const Features = () => {
           {features.map((feature, index) => (
             <div 
               key={index} 
-              className="feature-card animate-fade-in"
+              className="border border-grattia-purple-light/20 rounded-2xl p-8 relative overflow-hidden animate-scale-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="text-center">
