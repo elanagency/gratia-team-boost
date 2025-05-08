@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,7 +30,14 @@ const formSchema = z.object({
   })
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Define the type directly to avoid deep instantiation
+type FormValues = {
+  fullName: string;
+  companyName: string;
+  companyHandle: string;
+  email: string;
+  password: string;
+};
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
