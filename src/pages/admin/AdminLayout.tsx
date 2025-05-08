@@ -1,18 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 const AdminLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [companyName, setCompanyName] = useState<string>("");
   const [userName, setUserName] = useState<string>("Jane Doe");
   const navigate = useNavigate();
   const location = useLocation();
-
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
@@ -62,7 +59,6 @@ const AdminLayout = () => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
@@ -102,11 +98,9 @@ const AdminLayout = () => {
     icon: UserRound,
     path: "/admin/profile"
   };
-
   const isActive = (path: string) => {
     return location.pathname === path;
   };
-
   return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar */}
       <div className="w-[280px] flex-shrink-0 dark-sidebar px-0">
@@ -154,7 +148,7 @@ const AdminLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className=" h-16 flex items-center px-6 bg-transparent">
+        <header className="h-16 flex items-center px-6 bg-transparent my-[20px]">
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-gray-800">
               Hello, {userName} 👋
@@ -182,5 +176,4 @@ const AdminLayout = () => {
       </div>
     </div>;
 };
-
 export default AdminLayout;
