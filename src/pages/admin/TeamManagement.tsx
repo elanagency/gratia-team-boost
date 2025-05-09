@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,12 +42,11 @@ interface Profile {
   avatar_url?: string | null;
 }
 
-interface Member {
+interface CompanyMember {
   id: string;
   role: string;
   is_admin: boolean;
   user_id: string;
-  profiles?: Profile;
 }
 
 interface TeamMember {
@@ -88,41 +88,44 @@ const TeamManagement = () => {
         .single();
       
       if (companyMember) {
-        // Fetch company members with their profiles
+        // Fetch company members
         const { data: members, error } = await supabase
           .from('company_members')
           .select(`
             id,
             role,
             is_admin,
-            user_id,
-            profiles:user_id (
-              first_name,
-              last_name,
-              avatar_url
-            )
+            user_id
           `)
           .eq('company_id', companyMember.company_id);
 
         if (error) throw error;
         
-        // Format the data with proper typing
-        const formattedMembers = members.map((member: Member) => {
-          // Access profiles safely with proper typing
-          const profileData: Profile = member.profiles || {};
+        // Get profiles separately for each member
+        const formattedMembers: TeamMember[] = [];
+        
+        for (const member of members as CompanyMember[]) {
+          // Fetch profile data for each member
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', member.user_id)
+            .single();
           
-          return {
+          const profile = profileData as Profile || {};
+          
+          formattedMembers.push({
             id: member.id,
-            name: (profileData.first_name && profileData.last_name) ? 
-              `${profileData.first_name} ${profileData.last_name}`.trim() : 
+            name: (profile.first_name && profile.last_name) ? 
+              `${profile.first_name} ${profile.last_name}`.trim() : 
               'No Name',
             email: '', // We don't have email in the profiles table
             role: member.is_admin ? 'Admin' : member.role || 'Member',
             user_id: member.user_id,
             recognitionsReceived: 0, // Placeholder for now
             recognitionsGiven: 0 // Placeholder for now
-          };
-        });
+          });
+        }
         
         setTeamMembers(formattedMembers);
 
