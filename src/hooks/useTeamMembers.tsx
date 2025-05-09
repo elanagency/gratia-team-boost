@@ -3,19 +3,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Profile {
-  first_name?: string;
-  last_name?: string;
-  avatar_url?: string | null;
-}
-
-interface CompanyMember {
-  id: string;
-  role: string;
-  is_admin: boolean;
-  user_id: string;
-}
-
 export interface TeamMember {
   id: string;
   name: string;
@@ -37,7 +24,7 @@ export const useTeamMembers = (userId: string | undefined) => {
     
     setIsLoading(true);
     try {
-      // Get the company_id of the current user
+      // Get the user's company_id first
       const { data: companyMember, error: memberError } = await supabase
         .from('company_members')
         .select('company_id')
@@ -45,67 +32,66 @@ export const useTeamMembers = (userId: string | undefined) => {
         .maybeSingle();
       
       if (memberError) {
-        console.error("Error fetching company member:", memberError);
+        console.error("Error fetching user's company:", memberError);
         throw memberError;
       }
       
-      if (companyMember) {
-        setCompanyId(companyMember.company_id);
-        
-        // Fetch company members
-        const { data: members, error } = await supabase
-          .from('company_members')
-          .select(`
-            id,
-            role,
-            is_admin,
-            user_id
-          `)
-          .eq('company_id', companyMember.company_id);
-
-        if (error) {
-          console.error("Error fetching team members:", error);
-          throw error;
-        }
-        
-        // Get profiles separately for each member
-        const formattedMembers: TeamMember[] = [];
-        
-        for (const member of members as CompanyMember[]) {
-          // Fetch profile data for each member
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, avatar_url')
-            .eq('id', member.user_id)
-            .maybeSingle();
-          
-          if (profileError) {
-            console.error(`Error fetching profile for user ${member.user_id}:`, profileError);
-          }
-          
-          // Fetch user email from auth.users (requires admin rights)
-          // We'll display empty email since we can't access it from the client
-          const profile = profileData as Profile || {};
-          
-          formattedMembers.push({
-            id: member.id,
-            name: (profile.first_name && profile.last_name) ? 
-              `${profile.first_name} ${profile.last_name}`.trim() : 
-              'No Name',
-            email: '', // We don't have email in the profiles table
-            role: member.is_admin ? 'Admin' : member.role || 'Member',
-            user_id: member.user_id,
-            recognitionsReceived: 0, // Placeholder for now
-            recognitionsGiven: 0 // Placeholder for now
-          });
-        }
-        
-        // Now that we're directly creating users, we don't need to fetch pending invitations
-        setTeamMembers(formattedMembers);
-      } else {
+      if (!companyMember?.company_id) {
         console.log("User is not a member of any company");
         setTeamMembers([]);
+        return;
       }
+      
+      const currentCompanyId = companyMember.company_id;
+      setCompanyId(currentCompanyId);
+      
+      // With our new RLS policies, we can directly fetch all members of this company
+      const { data: members, error: membersError } = await supabase
+        .from('company_members')
+        .select(`
+          id,
+          role,
+          is_admin,
+          user_id
+        `)
+        .eq('company_id', currentCompanyId);
+      
+      if (membersError) {
+        console.error("Error fetching team members:", membersError);
+        throw membersError;
+      }
+      
+      // Format team members with profile data
+      const formattedMembers: TeamMember[] = [];
+      
+      for (const member of members || []) {
+        // Fetch profile data for each member
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('id', member.user_id)
+          .maybeSingle();
+        
+        if (profileError) {
+          console.error(`Error fetching profile for user ${member.user_id}:`, profileError);
+        }
+        
+        const memberName = profile ? 
+          `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
+          'No Name';
+        
+        formattedMembers.push({
+          id: member.id,
+          name: memberName || 'No Name',
+          email: '', // We don't have email in the profiles table
+          role: member.is_admin ? 'Admin' : member.role || 'Member',
+          user_id: member.user_id,
+          recognitionsReceived: 0, // Placeholder values
+          recognitionsGiven: 0 // Placeholder values
+        });
+      }
+      
+      setTeamMembers(formattedMembers);
     } catch (error) {
       console.error("Error in fetchTeamMembers:", error);
       toast.error("Failed to fetch team members");
@@ -116,7 +102,6 @@ export const useTeamMembers = (userId: string | undefined) => {
 
   const removeMember = async (member: TeamMember) => {
     try {
-      // If it's an actual team member, remove from company_members
       const { error } = await supabase
         .from('company_members')
         .delete()
