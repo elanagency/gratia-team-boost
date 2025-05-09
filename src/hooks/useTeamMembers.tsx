@@ -10,6 +10,7 @@ export interface TeamMember {
   email: string;
   role: string;
   user_id: string;
+  points: number; // Add the points property
   recognitionsReceived: number;
   recognitionsGiven: number;
   isPending?: boolean;
@@ -37,7 +38,8 @@ export const useTeamMembers = () => {
           id,
           role,
           is_admin,
-          user_id
+          user_id,
+          points
         `)
         .eq('company_id', companyId);
       
@@ -84,6 +86,7 @@ export const useTeamMembers = () => {
           email: '', // We don't have email in the profiles table
           role: member.is_admin ? 'Admin' : member.role || 'Member',
           user_id: member.user_id,
+          points: member.points || 0, // Use the points from the members data
           recognitionsReceived: 0, // Placeholder values
           recognitionsGiven: 0 // Placeholder values
         };
