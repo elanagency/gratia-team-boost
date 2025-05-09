@@ -30,6 +30,11 @@ export const useAuth = () => {
   useEffect(() => {
     if (companyError && !isCompanyLoading && user) {
       toast.error(`Company error: ${companyError}`);
+      
+      // If the user doesn't have a company, they should sign up again or contact support
+      if (companyError.includes("not a member of any company")) {
+        toast.error("Please contact support to associate your account with a company");
+      }
     }
   }, [companyError, isCompanyLoading, user]);
 
