@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, UserRound } from "lucide-react";
+import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut } from "lucide-react";
 
 type SidebarProps = {
   user: any;
@@ -39,13 +39,6 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
     icon: Settings,
     path: "/dashboard/settings"
   }];
-
-  // Profile Settings menu item with updated path
-  const profileSettingsItem = {
-    name: "Profile Settings",
-    icon: UserRound,
-    path: "/dashboard/profile"
-  };
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -76,30 +69,21 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
             </Link>
           ))}
         </div>
-        
-        {/* Profile Settings Menu Item at the bottom */}
-        <div className="mt-auto mb-4">
-          <div className="mx-6 my-4 border-t border-white/10"></div>
-          <Link to={profileSettingsItem.path} className={`dark-sidebar-nav-item ${isActive(profileSettingsItem.path) ? 'active' : ''}`}>
-            <profileSettingsItem.icon className={`dark-sidebar-nav-item-icon ${isActive(profileSettingsItem.path) ? 'text-[#F572FF]' : 'text-white'}`} />
-            <span>{profileSettingsItem.name}</span>
-          </Link>
-        </div>
       </nav>
 
       <div className="absolute bottom-0 left-0 w-[320px] border-t border-white/10 p-4">
-        <div className="flex items-center">
+        <Link to="/dashboard/profile" className="flex items-center group hover:bg-white/5 p-2 rounded-md transition-colors">
           <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
             {firstName ? firstName.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
           </div>
           <div className="ml-2 flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{displayName}</p>
-            <p className="text-xs text-white/70 truncate">{user?.email}</p>
+            <p className="text-xs text-white/70 truncate group-hover:text-white/90 transition-colors">{user?.email}</p>
           </div>
           <button onClick={handleLogout} className="ml-2 text-white/70 hover:text-white">
             <LogOut size={18} />
           </button>
-        </div>
+        </Link>
       </div>
     </div>
   );
