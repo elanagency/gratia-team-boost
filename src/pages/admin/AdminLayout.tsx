@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/dashboard/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 
 const AdminLayout = () => {
   const { 
@@ -13,14 +14,13 @@ const AdminLayout = () => {
     firstName, 
     lastName, 
     isLoading, 
-    handleLogout, 
-    LoadingComponent 
+    signOut
   } = useAuth();
   const location = useLocation();
   
   // If loading, show the loading spinner
-  if (isLoading || LoadingComponent) {
-    return LoadingComponent || <div>Loading...</div>;
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
   
   return (
@@ -30,7 +30,7 @@ const AdminLayout = () => {
         user={user} 
         firstName={firstName} 
         lastName={lastName} 
-        handleLogout={handleLogout}
+        handleLogout={signOut}
       />
 
       {/* Main Content */}
