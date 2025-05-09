@@ -11,7 +11,7 @@ import {
   DialogTrigger,
   DialogFooter 
 } from "@/components/ui/dialog";
-import { Mail, UserPlus, AlertCircle } from "lucide-react";
+import { Mail, UserPlus, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,34 +62,32 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
     }
     
     // We already have a valid company ID from useAuth
-    await sendInvitation(companyId);
+    await createTeamMember(companyId);
   };
   
-  const sendInvitation = async (companyId: string) => {
+  const createTeamMember = async (companyId: string) => {
     setIsSending(true);
     
     try {
-      console.log("Creating invitation for:", { email, name, companyId, invitedBy: user?.id });
+      console.log("Creating team member:", { email, name, companyId, invitedBy: user?.id });
       
-      // Create team invitation record
-      const { data: invitation, error: invitationError } = await supabase
-        .from('team_invitations')
-        .insert({
-          company_id: companyId,
-          invited_by: user?.id,
+      // Call the edge function to create the team member
+      const { data, error } = await supabase.functions.invoke('create-team-member', {
+        body: {
           email,
           name,
-          role: 'member'
-        })
-        .select()
-        .single();
+          companyId,
+          role: 'member',
+          invitedBy: user?.id
+        }
+      });
       
-      if (invitationError) {
-        console.error("Error creating invitation:", invitationError);
-        throw invitationError;
+      if (error) {
+        console.error("Error creating team member:", error);
+        throw new Error(error.message || "Failed to invite team member");
       }
 
-      console.log("Invitation created:", invitation);
+      console.log("Team member creation response:", data);
 
       // Reset form and close dialog
       setName("");
@@ -98,7 +96,12 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       
       // Call the onSuccess callback to refresh the team members list
       onSuccess();
-      toast.success(`Invitation sent to ${name}`);
+      
+      if (data.alreadyMember) {
+        toast.info(`${name} is already a member of your team`);
+      } else {
+        toast.success(`${name} has been added to your team`);
+      }
       
     } catch (error) {
       console.error("Error inviting team member:", error);
@@ -171,10 +174,15 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
             onClick={handleInvite}
             disabled={isSending || !companyId}
           >
-            {isSending ? "Inviting..." : (
+            {isSending ? (
               <>
-                <Mail className="mr-2 h-4 w-4" />
-                Invite
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              <>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Team Member
               </>
             )}
           </Button>

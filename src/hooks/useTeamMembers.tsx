@@ -83,6 +83,8 @@ export const useTeamMembers = (userId: string | undefined) => {
             console.error(`Error fetching profile for user ${member.user_id}:`, profileError);
           }
           
+          // Fetch user email from auth.users (requires admin rights)
+          // We'll display empty email since we can't access it from the client
           const profile = profileData as Profile || {};
           
           formattedMembers.push({
@@ -98,33 +100,8 @@ export const useTeamMembers = (userId: string | undefined) => {
           });
         }
         
-        // Now fetch pending invitations
-        const { data: invitations, error: invitationError } = await supabase
-          .from('team_invitations')
-          .select('*')
-          .eq('company_id', companyMember.company_id)
-          .is('accepted_at', null);
-        
-        if (invitationError) {
-          console.error("Error fetching team invitations:", invitationError);
-        }
-        
-        if (invitations?.length > 0) {
-          const pendingInvitations = invitations.map(invite => ({
-            id: invite.id,
-            name: invite.name,
-            email: invite.email,
-            role: invite.role || 'Member',
-            isPending: true,
-            user_id: invite.user_id || '',
-            recognitionsReceived: 0,
-            recognitionsGiven: 0
-          }));
-          
-          setTeamMembers([...formattedMembers, ...pendingInvitations]);
-        } else {
-          setTeamMembers(formattedMembers);
-        }
+        // Now that we're directly creating users, we don't need to fetch pending invitations
+        setTeamMembers(formattedMembers);
       } else {
         console.log("User is not a member of any company");
         setTeamMembers([]);
@@ -139,28 +116,15 @@ export const useTeamMembers = (userId: string | undefined) => {
 
   const removeMember = async (member: TeamMember) => {
     try {
-      // If it's a pending invitation
-      if (member.isPending) {
-        const { error } = await supabase
-          .from('team_invitations')
-          .delete()
-          .eq('id', member.id);
-          
-        if (error) {
-          console.error("Error removing invitation:", error);
-          throw error;
-        }
-      } else {
-        // If it's an actual team member
-        const { error } = await supabase
-          .from('company_members')
-          .delete()
-          .eq('id', member.id);
-          
-        if (error) {
-          console.error("Error removing team member:", error);
-          throw error;
-        }
+      // If it's an actual team member, remove from company_members
+      const { error } = await supabase
+        .from('company_members')
+        .delete()
+        .eq('id', member.id);
+        
+      if (error) {
+        console.error("Error removing team member:", error);
+        throw error;
       }
       
       toast.success("Team member removed successfully");
