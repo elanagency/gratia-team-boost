@@ -8,41 +8,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [company, setCompany] = useState<any>(null);
+  const { companyId } = useAuth();
   
   useEffect(() => {
-    fetchCompanyData();
-  }, []);
+    if (companyId) {
+      fetchCompanyData();
+    }
+  }, [companyId]);
   
   const fetchCompanyData = async () => {
+    if (!companyId) return;
+    
     setLoading(true);
     
     try {
-      // Get current user
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) return;
-      
-      // Get company through company_members
-      const { data: companyMember } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', session.user.id)
+      const { data: companyData, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
         .single();
       
-      if (companyMember) {
-        const { data: companyData } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', companyMember.company_id)
-          .single();
-        
-        if (companyData) {
-          setCompany(companyData);
-        }
+      if (error) throw error;
+      
+      if (companyData) {
+        setCompany(companyData);
       }
     } catch (error) {
       console.error("Error fetching company data:", error);
@@ -53,6 +47,8 @@ const Settings = () => {
   };
   
   const handleSave = async () => {
+    if (!company || !companyId) return;
+    
     setLoading(true);
     
     try {

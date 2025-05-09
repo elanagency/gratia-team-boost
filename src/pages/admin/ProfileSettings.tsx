@@ -1,60 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const ProfileSettings = () => {
-  const [loading, setLoading] = useState(true);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, firstName, lastName, isLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    firstName: firstName,
+    lastName: lastName
+  });
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast.error("You must be logged in to view this page");
-          return;
-        }
-        
-        setUserId(session.user.id);
-        setEmail(session.user.email || '');
-        
-        // Fetch profile data if available
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profile) {
-          setFirstName(profile.first_name || '');
-          setLastName(profile.last_name || '');
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error("Failed to load profile data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
-  }, []);
+  // Update form when auth context data changes
+  React.useEffect(() => {
+    setForm({
+      firstName: firstName,
+      lastName: lastName
+    });
+  }, [firstName, lastName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userId) {
+    if (!user?.id) {
       toast.error("User ID not found");
       return;
     }
@@ -66,9 +39,9 @@ const ProfileSettings = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: userId,
-          first_name: firstName,
-          last_name: lastName,
+          id: user.id,
+          first_name: form.firstName,
+          last_name: form.lastName,
           updated_at: new Date().toISOString(),
         });
       
@@ -82,6 +55,10 @@ const ProfileSettings = () => {
       setLoading(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading profile data...</div>;
+  }
 
   return (
     <div className="container mx-auto max-w-3xl">
@@ -101,8 +78,8 @@ const ProfileSettings = () => {
                 <Label htmlFor="first-name">First Name</Label>
                 <Input
                   id="first-name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  value={form.firstName}
+                  onChange={(e) => setForm({...form, firstName: e.target.value})}
                   placeholder="Your first name"
                 />
               </div>
@@ -110,8 +87,8 @@ const ProfileSettings = () => {
                 <Label htmlFor="last-name">Last Name</Label>
                 <Input
                   id="last-name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  value={form.lastName}
+                  onChange={(e) => setForm({...form, lastName: e.target.value})}
                   placeholder="Your last name"
                 />
               </div>
@@ -122,7 +99,7 @@ const ProfileSettings = () => {
               <Input
                 id="email"
                 type="email"
-                value={email}
+                value={user?.email || ''}
                 disabled
                 className="bg-gray-100"
               />

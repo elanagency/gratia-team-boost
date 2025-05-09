@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
@@ -13,22 +12,20 @@ const TeamManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
 
-  const { user } = useAuth();
   const { 
     teamMembers, 
     fetchTeamMembers, 
     removeMember, 
     isLoading 
-  } = useTeamMembers(user?.id);
+  } = useTeamMembers();
 
   // Add debug logging to help troubleshoot
   useEffect(() => {
     console.log("TeamManagement render:", { 
-      userId: user?.id,
       isLoading,
       teamMembersCount: teamMembers?.length 
     });
-  }, [user?.id, isLoading, teamMembers]);
+  }, [isLoading, teamMembers]);
 
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
