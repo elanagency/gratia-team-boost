@@ -13,7 +13,7 @@ type SidebarProps = {
 export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProps) => {
   const location = useLocation();
   
-  // Menu items for sidebar
+  // Menu items for sidebar with updated paths
   const menuItems = [{
     name: "Dashboard",
     icon: LayoutDashboard,
@@ -40,7 +40,7 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
     path: "/dashboard/settings"
   }];
 
-  // Profile Settings menu item
+  // Profile Settings menu item with updated path
   const profileSettingsItem = {
     name: "Profile Settings",
     icon: UserRound,
@@ -65,10 +65,16 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
       <nav className="py-4 flex flex-col h-[calc(100%-8rem)]">
         {/* Main menu items */}
         <div className="flex-1">
-          {menuItems.map(item => <Link key={item.name} to={item.path} className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}>
+          {menuItems.map(item => (
+            <Link 
+              key={item.name} 
+              to={item.path} 
+              className={`dark-sidebar-nav-item ${isActive(item.path) ? 'active' : ''}`}
+            >
               <item.icon className={`dark-sidebar-nav-item-icon ${isActive(item.path) ? 'text-[#F572FF]' : 'text-white'}`} />
               <span>{item.name}</span>
-            </Link>)}
+            </Link>
+          ))}
         </div>
         
         {/* Profile Settings Menu Item at the bottom */}

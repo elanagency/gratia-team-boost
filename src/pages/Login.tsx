@@ -47,8 +47,8 @@ const Login = () => {
       }
       
       toast.success("Login successful!");
-      // Redirect to admin dashboard
-      navigate("/admin");
+      // Redirect to dashboard instead of admin
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
       console.error("Login error:", error);
