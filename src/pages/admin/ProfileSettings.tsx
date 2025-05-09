@@ -61,10 +61,10 @@ const ProfileSettings = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl">
+    <div className="w-full">
       <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
       
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Personal Information</CardTitle>
           <CardDescription>
@@ -73,7 +73,7 @@ const ProfileSettings = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="first-name">First Name</Label>
                 <Input
