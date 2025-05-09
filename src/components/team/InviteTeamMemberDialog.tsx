@@ -32,12 +32,17 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [validCompanyId, setValidCompanyId] = useState(false);
   
+  // Allow the button to be enabled if the user is logged in
+  // This removes the companyId validation which was causing the button to stay disabled
+  const buttonDisabled = isLoading || !userId;
+  
+  // Debug logging for troubleshooting
   useEffect(() => {
-    // Validate the company ID whenever it changes
-    setValidCompanyId(typeof companyId === 'string' && companyId.length > 0);
-  }, [companyId]);
+    if (open) {
+      console.log("Invite Dialog State:", { companyId, userId, isLoading });
+    }
+  }, [open, companyId, userId, isLoading]);
 
   const handleInvite = async () => {
     if (!email || !name) {
@@ -45,13 +50,15 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       return;
     }
     
-    if (!validCompanyId) {
-      toast.error("Company information not available. Please refresh the page and try again.");
-      return;
-    }
-
     if (!userId) {
       toast.error("User session expired. Please login again.");
+      return;
+    }
+    
+    // Check company ID only when trying to send the invite
+    if (!companyId) {
+      toast.error("Company information not available. Please refresh and try again.");
+      console.error("Missing companyId when attempting to invite:", { companyId, userId });
       return;
     }
     
@@ -97,15 +104,13 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
     }
   };
 
-  const buttonDisabled = isLoading || !validCompanyId;
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
           className="bg-[#F572FF] hover:bg-[#E061EE]"
           disabled={buttonDisabled}
-          title={buttonDisabled ? "Company information loading..." : "Invite a team member"}
+          title={buttonDisabled ? "Please wait..." : "Invite a team member"}
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Invite Team Member
@@ -143,7 +148,7 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
           <Button 
             className="bg-[#F572FF] hover:bg-[#E061EE]" 
             onClick={handleInvite}
-            disabled={isSending || !validCompanyId}
+            disabled={isSending}
           >
             {isSending ? "Inviting..." : (
               <>

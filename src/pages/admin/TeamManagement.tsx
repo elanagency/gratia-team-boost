@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
@@ -22,6 +22,16 @@ const TeamManagement = () => {
     companyId 
   } = useTeamMembers(user?.id);
 
+  // Add debug logging to help troubleshoot
+  useEffect(() => {
+    console.log("TeamManagement render:", { 
+      userId: user?.id,
+      companyId, 
+      isLoading,
+      teamMembersCount: teamMembers?.length 
+    });
+  }, [user?.id, companyId, isLoading, teamMembers]);
+
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
     await removeMember(memberToDelete);
@@ -39,6 +49,9 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
+  // Allow invitations if user is logged in and not in initial loading state
+  const allowInvite = !!user?.id && !isLoading;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -54,7 +67,7 @@ const TeamManagement = () => {
             companyId={companyId} 
             userId={user?.id} 
             onSuccess={fetchTeamMembers}
-            isLoading={isLoading}
+            isLoading={!allowInvite}
           />
         </div>
       </div>

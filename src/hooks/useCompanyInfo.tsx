@@ -14,6 +14,8 @@ export const useCompanyInfo = (userId: string | undefined) => {
       if (!userId) {
         setIsLoading(false);
         setError("User ID is not available");
+        setCompanyId(null);
+        setCompanyName("");
         return;
       }
       
@@ -35,6 +37,7 @@ export const useCompanyInfo = (userId: string | undefined) => {
         if (memberError) {
           console.error("Error fetching company member:", memberError);
           setError("Failed to fetch company membership");
+          setCompanyId(null);
           throw memberError;
         }
         
@@ -67,10 +70,14 @@ export const useCompanyInfo = (userId: string | undefined) => {
         } else {
           console.log("User is not a member of any company");
           setError("User is not a member of any company");
+          setCompanyId(null);
         }
       } catch (error) {
         console.error("Error fetching company info:", error);
-        toast.error("Failed to load company information");
+        // Don't show toast for every error as it can be noisy when components mount
+        // but do set the error state
+        setCompanyId(null);
+        setCompanyName("");
       } finally {
         setIsLoading(false);
       }
@@ -79,6 +86,7 @@ export const useCompanyInfo = (userId: string | undefined) => {
     fetchCompanyInfo();
   }, [userId]);
 
+  // Return both the raw data and loading state for components to make decisions
   return {
     companyName,
     companyId,
