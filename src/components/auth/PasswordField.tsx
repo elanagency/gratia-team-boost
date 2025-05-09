@@ -4,6 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
 import { Control } from "react-hook-form";
+import PasswordRequirements from "./PasswordRequirements";
 
 interface PasswordFieldProps {
   control: Control<any>;
@@ -11,6 +12,7 @@ interface PasswordFieldProps {
 
 const PasswordField = ({ control }: PasswordFieldProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
   
   return (
     <FormField
@@ -25,7 +27,12 @@ const PasswordField = ({ control }: PasswordFieldProps) => {
                 type={showPassword ? "text" : "password"} 
                 placeholder="••••••••••••" 
                 className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10 h-12" 
-                {...field} 
+                {...field}
+                onFocus={() => setShowRequirements(true)}
+                onChange={(e) => {
+                  field.onChange(e);
+                  setShowRequirements(true);
+                }}
               />
               <button 
                 type="button" 
@@ -37,6 +44,7 @@ const PasswordField = ({ control }: PasswordFieldProps) => {
             </div>
           </FormControl>
           <FormMessage />
+          <PasswordRequirements password={field.value || ''} isVisible={showRequirements} />
         </FormItem>
       )}
     />

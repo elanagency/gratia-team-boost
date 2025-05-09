@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import AuthHeader from "./AuthHeader";
 import CompanyHandleField from "./CompanyHandleField";
 import PasswordField from "./PasswordField";
-import PasswordRequirements from "./PasswordRequirements";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -204,8 +202,6 @@ const SignUpForm = () => {
           />
           
           <PasswordField control={form.control} />
-          
-          <PasswordRequirements />
           
           <Button 
             type="submit" 
