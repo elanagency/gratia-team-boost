@@ -14,25 +14,44 @@ export const useCompanyInfo = (userId: string | undefined) => {
       
       setIsLoading(true);
       try {
-        // Fetch company name using the security definer function
+        // Fetch company member info first
         const {
           data: companyMember, error: memberError
-        } = await supabase.from('company_members').select('company_id').eq('user_id', userId).single();
+        } = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', userId)
+          .maybeSingle();
         
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error("Error fetching company member:", memberError);
+          throw memberError;
+        }
         
         if (companyMember) {
           setCompanyId(companyMember.company_id);
           
+          // Now fetch company details
           const {
             data: company, error: companyError
-          } = await supabase.from('companies').select('name').eq('id', companyMember.company_id).single();
+          } = await supabase
+            .from('companies')
+            .select('name')
+            .eq('id', companyMember.company_id)
+            .maybeSingle();
           
-          if (companyError) throw companyError;
+          if (companyError) {
+            console.error("Error fetching company:", companyError);
+            throw companyError;
+          }
           
           if (company) {
             setCompanyName(company.name);
+          } else {
+            console.log("Company not found for ID:", companyMember.company_id);
           }
+        } else {
+          console.log("User is not a member of any company");
         }
       } catch (error) {
         console.error("Error fetching company info:", error);

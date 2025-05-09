@@ -38,11 +38,16 @@ export const useTeamMembers = (userId: string | undefined) => {
     setIsLoading(true);
     try {
       // Get the company_id of the current user
-      const { data: companyMember } = await supabase
+      const { data: companyMember, error: memberError } = await supabase
         .from('company_members')
         .select('company_id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
+      
+      if (memberError) {
+        console.error("Error fetching company member:", memberError);
+        throw memberError;
+      }
       
       if (companyMember) {
         setCompanyId(companyMember.company_id);
@@ -58,18 +63,25 @@ export const useTeamMembers = (userId: string | undefined) => {
           `)
           .eq('company_id', companyMember.company_id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching team members:", error);
+          throw error;
+        }
         
         // Get profiles separately for each member
         const formattedMembers: TeamMember[] = [];
         
         for (const member of members as CompanyMember[]) {
           // Fetch profile data for each member
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('first_name, last_name, avatar_url')
             .eq('id', member.user_id)
-            .single();
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error(`Error fetching profile for user ${member.user_id}:`, profileError);
+          }
           
           const profile = profileData as Profile || {};
           
@@ -87,11 +99,15 @@ export const useTeamMembers = (userId: string | undefined) => {
         }
         
         // Now fetch pending invitations
-        const { data: invitations } = await supabase
+        const { data: invitations, error: invitationError } = await supabase
           .from('team_invitations')
           .select('*')
           .eq('company_id', companyMember.company_id)
           .is('accepted_at', null);
+        
+        if (invitationError) {
+          console.error("Error fetching team invitations:", invitationError);
+        }
         
         if (invitations?.length > 0) {
           const pendingInvitations = invitations.map(invite => ({
@@ -109,9 +125,12 @@ export const useTeamMembers = (userId: string | undefined) => {
         } else {
           setTeamMembers(formattedMembers);
         }
+      } else {
+        console.log("User is not a member of any company");
+        setTeamMembers([]);
       }
     } catch (error) {
-      console.error("Error fetching team members:", error);
+      console.error("Error in fetchTeamMembers:", error);
       toast.error("Failed to fetch team members");
     } finally {
       setIsLoading(false);
@@ -122,22 +141,32 @@ export const useTeamMembers = (userId: string | undefined) => {
     try {
       // If it's a pending invitation
       if (member.isPending) {
-        await supabase
+        const { error } = await supabase
           .from('team_invitations')
           .delete()
           .eq('id', member.id);
+          
+        if (error) {
+          console.error("Error removing invitation:", error);
+          throw error;
+        }
       } else {
         // If it's an actual team member
-        await supabase
+        const { error } = await supabase
           .from('company_members')
           .delete()
           .eq('id', member.id);
+          
+        if (error) {
+          console.error("Error removing team member:", error);
+          throw error;
+        }
       }
       
       toast.success("Team member removed successfully");
       fetchTeamMembers();
     } catch (error) {
-      console.error("Error removing team member:", error);
+      console.error("Error in removeMember:", error);
       toast.error("Failed to remove team member");
     }
   };

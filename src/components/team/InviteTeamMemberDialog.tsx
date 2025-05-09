@@ -45,6 +45,8 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
     setIsLoading(true);
     
     try {
+      console.log("Creating invitation for:", { email, name, companyId, invitedBy: userId });
+      
       // Create team invitation record
       const { data: invitation, error: invitationError } = await supabase
         .from('team_invitations')
@@ -58,53 +60,13 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
         .select()
         .single();
       
-      if (invitationError) throw invitationError;
-
-      // Generate a random password for the new user
-      const tempPassword = Math.random().toString(36).slice(-12);
-      
-      // Create the user account in Supabase Auth
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          firstName: name.split(' ')[0],
-          lastName: name.split(' ').slice(1).join(' ')
-        }
-      });
-      
-      if (authError) {
-        // If user already exists, we don't need to create them
-        if (!authError.message.includes('already registered')) {
-          throw authError;
-        }
-        
-        toast.info(`User ${email} already exists and will receive an invitation`);
-      } else {
-        // Update the invitation with the user_id
-        await supabase
-          .from('team_invitations')
-          .update({ user_id: authUser.user.id })
-          .eq('id', invitation.id);
-          
-        // Create profile if it doesn't exist
-        const firstName = name.split(' ')[0];
-        const lastName = name.split(' ').slice(1).join(' ');
-        
-        // Add user to the company_members table
-        await supabase
-          .from('company_members')
-          .insert({
-            company_id: companyId,
-            user_id: authUser.user.id,
-            role: 'member',
-            is_admin: false
-          });
-          
-        toast.success(`User account created for ${name} (${email})`);
+      if (invitationError) {
+        console.error("Error creating invitation:", invitationError);
+        throw invitationError;
       }
-      
+
+      console.log("Invitation created:", invitation);
+
       // Reset form and close dialog
       setName("");
       setEmail("");
@@ -112,6 +74,7 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       
       // Call the onSuccess callback to refresh the team members list
       onSuccess();
+      toast.success(`Invitation sent to ${name}`);
       
     } catch (error) {
       console.error("Error inviting team member:", error);
@@ -162,10 +125,10 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
             onClick={handleInvite}
             disabled={isLoading}
           >
-            {isLoading ? "Creating..." : (
+            {isLoading ? "Inviting..." : (
               <>
                 <Mail className="mr-2 h-4 w-4" />
-                Create & Invite
+                Invite
               </>
             )}
           </Button>
