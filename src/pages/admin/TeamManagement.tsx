@@ -63,7 +63,7 @@ const TeamManagement = () => {
         .single();
       
       if (companyMember) {
-        // Fetch company members
+        // Fetch company members with their profiles
         const { data: members, error } = await supabase
           .from('company_members')
           .select(`
@@ -80,17 +80,24 @@ const TeamManagement = () => {
           .eq('company_id', companyMember.company_id);
 
         if (error) throw error;
-
-        // Format the data
-        const formattedMembers = members.map(member => ({
-          id: member.id,
-          name: `${member.profiles.first_name || ''} ${member.profiles.last_name || ''}`.trim() || 'No Name',
-          email: '', // We don't have email in the profiles table
-          role: member.is_admin ? 'Admin' : member.role || 'Member',
-          user_id: member.user_id,
-          recognitionsReceived: 0, // Placeholder for now
-          recognitionsGiven: 0 // Placeholder for now
-        }));
+        
+        // Explicitly type the profiles data to handle the relationship properly
+        const formattedMembers = members.map(member => {
+          // Access profiles safely with optional chaining
+          const profileData = member.profiles || {};
+          
+          return {
+            id: member.id,
+            name: profileData.first_name && profileData.last_name ? 
+              `${profileData.first_name} ${profileData.last_name}`.trim() : 
+              'No Name',
+            email: '', // We don't have email in the profiles table
+            role: member.is_admin ? 'Admin' : member.role || 'Member',
+            user_id: member.user_id,
+            recognitionsReceived: 0, // Placeholder for now
+            recognitionsGiven: 0 // Placeholder for now
+          };
+        });
         
         setTeamMembers(formattedMembers);
 
