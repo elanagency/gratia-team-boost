@@ -140,6 +140,9 @@ const AdminLayout = () => {
     );
   }
   
+  // Display name to show in header salutation and user profile
+  const displayName = firstName ? `${firstName} ${lastName || ''}` : (user?.email || "User");
+  
   return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar - Updated width from 280px to 320px */}
       <div className="w-[320px] flex-shrink-0 dark-sidebar px-0">
@@ -174,7 +177,7 @@ const AdminLayout = () => {
               {firstName ? firstName.charAt(0) : ""}
             </div>
             <div className="ml-2 flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{userName}</p>
+              <p className="text-sm font-medium text-white truncate">{displayName}</p>
               <p className="text-xs text-white/70 truncate">{user?.email}</p>
             </div>
             <button onClick={handleLogout} className="ml-2 text-white/70 hover:text-white">
@@ -190,7 +193,7 @@ const AdminLayout = () => {
         <header className="h-16 flex items-center px-6 bg-transparent my-[24px]">
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-gray-800">
-              Hello, {firstName} {lastName ? lastName : ''} 👋
+              Hello, {displayName} 👋
             </h1>
             <p className="text-lg text-gray-500">Here's what's going on today.</p>
           </div>
@@ -216,3 +219,4 @@ const AdminLayout = () => {
     </div>;
 };
 export default AdminLayout;
+
