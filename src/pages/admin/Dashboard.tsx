@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, Award, Gift, TrendingUp, ChevronRight, Calendar, FileCheck, CreditCard, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GivePointsDialog } from "@/components/points/GivePointsDialog";
 import { PointsHistory } from "@/components/points/PointsHistory";
+import { LeaderboardCard } from "@/components/points/LeaderboardCard";
 
 const Dashboard = () => {
   const [teamCount, setTeamCount] = useState<number>(0);
@@ -146,8 +146,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Points History */}
-      <PointsHistory />
+      {/* Replace PointsHistory with Leaderboard */}
+      <LeaderboardCard />
 
       {/* Tasks and Team Info */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -207,6 +207,9 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      {/* Points History - Move it below the leaderboard */}
+      <PointsHistory />
 
       {/* Calendar / Upcoming Events */}
       <Card className="dashboard-card">
