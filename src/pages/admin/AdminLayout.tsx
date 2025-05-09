@@ -47,17 +47,26 @@ const AdminLayout = () => {
           }
         }
 
-        // Get user name from profiles table
-        const {
-          data: profile
-        } = await supabase.from('profiles').select('first_name, last_name').eq('id', session.user.id).single();
+        console.log("Fetching user profile data...");
         
-        if (profile && profile.first_name) {
-          setFirstName(profile.first_name);
+        // Get user name from profiles table with proper debugging
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', session.user.id)
+          .single();
+        
+        console.log("Profile data:", profile);
+        console.log("Profile error:", error);
+        
+        if (profile) {
+          setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
-          setUserName(`${profile.first_name} ${profile.last_name || ''}`);
+          setUserName(`${profile.first_name || ''} ${profile.last_name || ''}`);
+          console.log("Found profile:", profile.first_name, profile.last_name);
         } else {
           // Fallback to email if no profile name
+          console.log("No profile found, using email");
           setUserName(session.user.email || "User");
         }
       } catch (error) {
@@ -174,7 +183,7 @@ const AdminLayout = () => {
         <div className="absolute bottom-0 left-0 w-[320px] border-t border-white/10 p-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
-              {firstName ? firstName.charAt(0) : ""}
+              {firstName ? firstName.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
             </div>
             <div className="ml-2 flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{displayName}</p>
@@ -219,4 +228,3 @@ const AdminLayout = () => {
     </div>;
 };
 export default AdminLayout;
-
