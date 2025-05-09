@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,14 +34,40 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+// Define interfaces for better type safety
+interface Profile {
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string | null;
+}
+
+interface Member {
+  id: string;
+  role: string;
+  is_admin: boolean;
+  user_id: string;
+  profiles?: Profile;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  user_id: string;
+  recognitionsReceived: number;
+  recognitionsGiven: number;
+  isPending?: boolean;
+}
+
 const TeamManagement = () => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
 
   const { user, companyName } = useAuth();
 
@@ -81,14 +106,14 @@ const TeamManagement = () => {
 
         if (error) throw error;
         
-        // Explicitly type the profiles data to handle the relationship properly
-        const formattedMembers = members.map(member => {
-          // Access profiles safely with optional chaining
-          const profileData = member.profiles || {};
+        // Format the data with proper typing
+        const formattedMembers = members.map((member: Member) => {
+          // Access profiles safely with proper typing
+          const profileData: Profile = member.profiles || {};
           
           return {
             id: member.id,
-            name: profileData.first_name && profileData.last_name ? 
+            name: (profileData.first_name && profileData.last_name) ? 
               `${profileData.first_name} ${profileData.last_name}`.trim() : 
               'No Name',
             email: '', // We don't have email in the profiles table
@@ -115,6 +140,7 @@ const TeamManagement = () => {
             email: invite.email,
             role: invite.role || 'Member',
             isPending: true,
+            user_id: invite.user_id || '',
             recognitionsReceived: 0,
             recognitionsGiven: 0
           }));
