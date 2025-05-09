@@ -11,7 +11,7 @@ import {
   DialogTrigger,
   DialogFooter 
 } from "@/components/ui/dialog";
-import { Mail, UserPlus } from "lucide-react";
+import { Mail, UserPlus, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,7 +30,7 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
   const { user, companyId, isLoading } = useAuth();
   
   // Enable the button if the user is logged in and not in loading state
-  const buttonDisabled = isLoading || !user?.id;
+  const buttonDisabled = isLoading || !user?.id || !companyId;
 
   // Debug logging
   useEffect(() => {
@@ -57,29 +57,12 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
     // Verify company ID before sending invitation
     if (!companyId) {
       console.error("Missing companyId when attempting to invite:", { companyId, userId: user.id });
-      
-      // Try to fetch company ID directly if it's not available through useAuth
-      const { data: memberData, error: memberError } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (memberError || !memberData?.company_id) {
-        toast.error("You don't belong to any company. Please refresh and try again.");
-        console.error("Failed to fetch company ID:", memberError || "No company found");
-        return;
-      }
-      
-      // If we got here, we have a valid company ID from the direct query
-      const directCompanyId = memberData.company_id;
-      console.log("Retrieved company ID directly:", directCompanyId);
-      
-      await sendInvitation(directCompanyId);
-    } else {
-      // We already have a company ID from useAuth
-      await sendInvitation(companyId);
+      toast.error("You need to be part of a company to invite members. Please refresh the page.");
+      return;
     }
+    
+    // We already have a valid company ID from useAuth
+    await sendInvitation(companyId);
   };
   
   const sendInvitation = async (companyId: string) => {
@@ -131,7 +114,12 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
         <Button 
           className="bg-[#F572FF] hover:bg-[#E061EE]"
           disabled={buttonDisabled}
-          title={buttonDisabled ? "Please wait..." : "Invite a team member"}
+          title={
+            !user?.id ? "Please login first" : 
+            !companyId ? "You don't belong to any company" : 
+            isLoading ? "Please wait..." : 
+            "Invite a team member"
+          }
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Invite Team Member
@@ -141,6 +129,18 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Invite Team Member</DialogTitle>
         </DialogHeader>
+        {!companyId && (
+          <div className="bg-yellow-50 p-4 border border-yellow-200 rounded-md flex items-start">
+            <AlertCircle className="text-yellow-500 mr-2 h-5 w-5 mt-0.5" />
+            <div>
+              <p className="text-yellow-800 font-medium">No company detected</p>
+              <p className="text-yellow-700 text-sm">
+                You need to be part of a company to invite members. 
+                Please refresh the page to create or join a company.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
@@ -169,7 +169,7 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
           <Button 
             className="bg-[#F572FF] hover:bg-[#E061EE]" 
             onClick={handleInvite}
-            disabled={isSending}
+            disabled={isSending || !companyId}
           >
             {isSending ? "Inviting..." : (
               <>

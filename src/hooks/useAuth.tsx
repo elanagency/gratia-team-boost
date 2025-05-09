@@ -4,11 +4,12 @@ import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuthSession } from "./useAuthSession";
 import { useUserProfile } from "./useUserProfile";
 import { useCompanyInfo } from "./useCompanyInfo";
+import { toast } from "sonner";
 
 export const useAuth = () => {
   const { user, isLoading: isSessionLoading, handleLogout } = useAuthSession();
   const { firstName, lastName, userName, isLoading: isProfileLoading } = useUserProfile(user?.id);
-  const { companyName, companyId, isLoading: isCompanyLoading } = useCompanyInfo(user?.id);
+  const { companyName, companyId, isLoading: isCompanyLoading, error: companyError } = useCompanyInfo(user?.id);
   
   const isLoading = isSessionLoading || isProfileLoading || isCompanyLoading;
 
@@ -19,10 +20,18 @@ export const useAuth = () => {
         userId: user?.id,
         companyId,
         isLoading,
-        companyLoading: isCompanyLoading
+        companyLoading: isCompanyLoading,
+        companyError
       });
     }
-  }, [user?.id, companyId, isLoading, isCompanyLoading]);
+  }, [user?.id, companyId, isLoading, isCompanyLoading, companyError]);
+
+  // Display toast message if there's a company error
+  useEffect(() => {
+    if (companyError && !isCompanyLoading && user) {
+      toast.error(`Company error: ${companyError}`);
+    }
+  }, [companyError, isCompanyLoading, user]);
 
   if (isLoading) {
     return { 

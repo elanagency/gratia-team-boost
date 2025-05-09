@@ -151,6 +151,10 @@ export type Database = {
         Args: { user_id: string; company_id: string }
         Returns: boolean
       }
+      check_user_company_membership: {
+        Args: { user_id: string; company_id: string }
+        Returns: boolean
+      }
       is_company_admin: {
         Args: { company_id: string }
         Returns: boolean

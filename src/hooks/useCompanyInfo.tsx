@@ -75,6 +75,9 @@ export const useCompanyInfo = (userId: string | undefined) => {
           console.log("User is not a member of any company");
           setError("User is not a member of any company");
           setCompanyId(null);
+          
+          // Create a new company for the user if they don't belong to any
+          await createDefaultCompanyForUser(userId);
         }
       } catch (error) {
         console.error("Error fetching company info:", error);
@@ -87,6 +90,63 @@ export const useCompanyInfo = (userId: string | undefined) => {
 
     fetchCompanyInfo();
   }, [userId]);
+  
+  // New function to create a default company for users who don't have one
+  const createDefaultCompanyForUser = async (userId: string) => {
+    try {
+      console.log("Creating default company for user:", userId);
+      
+      // Create a new company
+      const { data: newCompany, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          name: 'My Company',
+          handle: `company-${Date.now()}`  // Using timestamp to ensure uniqueness
+        })
+        .select()
+        .single();
+        
+      if (companyError) {
+        console.error("Error creating company:", companyError);
+        toast.error("Failed to create default company");
+        return;
+      }
+      
+      console.log("Created new company:", newCompany);
+      
+      // Add user as admin of the new company
+      const { error: memberError } = await supabase
+        .from('company_members')
+        .insert({
+          company_id: newCompany.id,
+          user_id: userId,
+          is_admin: true,
+          role: 'admin'
+        });
+        
+      if (memberError) {
+        console.error("Error adding user as company admin:", memberError);
+        toast.error("Failed to add you as company admin");
+        return;
+      }
+      
+      // Update state with new company info
+      setCompanyId(newCompany.id);
+      setCompanyName(newCompany.name);
+      setError(null);
+      
+      toast.success("Default company created for you");
+      
+      // Refresh the page to apply changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
+    } catch (error) {
+      console.error("Error creating default company:", error);
+      toast.error("Failed to create default company");
+    }
+  };
 
   return {
     companyName,
