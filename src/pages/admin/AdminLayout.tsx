@@ -10,6 +10,8 @@ const AdminLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [companyName, setCompanyName] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +53,8 @@ const AdminLayout = () => {
         } = await supabase.from('profiles').select('first_name, last_name').eq('id', session.user.id).single();
         
         if (profile && profile.first_name) {
+          setFirstName(profile.first_name);
+          setLastName(profile.last_name || '');
           setUserName(`${profile.first_name} ${profile.last_name || ''}`);
         } else {
           // Fallback to email if no profile name
@@ -167,7 +171,7 @@ const AdminLayout = () => {
         <div className="absolute bottom-0 left-0 w-[320px] border-t border-white/10 p-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
-              {userName.charAt(0)}
+              {firstName ? firstName.charAt(0) : ""}
             </div>
             <div className="ml-2 flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{userName}</p>
@@ -186,7 +190,7 @@ const AdminLayout = () => {
         <header className="h-16 flex items-center px-6 bg-transparent my-[24px]">
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-gray-800">
-              Hello, {userName} 👋
+              Hello, {firstName} {lastName ? lastName : ''} 👋
             </h1>
             <p className="text-lg text-gray-500">Here's what's going on today.</p>
           </div>
