@@ -18,19 +18,17 @@ const TeamManagement = () => {
     teamMembers, 
     fetchTeamMembers, 
     removeMember, 
-    isLoading, 
-    companyId 
+    isLoading 
   } = useTeamMembers(user?.id);
 
   // Add debug logging to help troubleshoot
   useEffect(() => {
     console.log("TeamManagement render:", { 
       userId: user?.id,
-      companyId, 
       isLoading,
       teamMembersCount: teamMembers?.length 
     });
-  }, [user?.id, companyId, isLoading, teamMembers]);
+  }, [user?.id, isLoading, teamMembers]);
 
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
@@ -49,9 +47,6 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
-  // Allow invitations if user is logged in and not in initial loading state
-  const allowInvite = !!user?.id && !isLoading;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -63,12 +58,7 @@ const TeamManagement = () => {
             Filter
           </Button>
           
-          <InviteTeamMemberDialog 
-            companyId={companyId} 
-            userId={user?.id} 
-            onSuccess={fetchTeamMembers}
-            isLoading={!allowInvite}
-          />
+          <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
         </div>
       </div>
       

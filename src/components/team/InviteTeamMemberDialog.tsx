@@ -14,35 +14,34 @@ import {
 import { Mail, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface InviteTeamMemberDialogProps {
-  companyId: string | null;
-  userId: string;
   onSuccess: () => void;
-  isLoading?: boolean;
 }
 
 const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({ 
-  companyId, 
-  userId,
-  onSuccess,
-  isLoading = false
+  onSuccess
 }) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const { user, companyId, isLoading } = useAuth();
   
-  // Allow the button to be enabled if the user is logged in
-  // This removes the companyId validation which was causing the button to stay disabled
-  const buttonDisabled = isLoading || !userId;
-  
-  // Debug logging for troubleshooting
+  // Enable the button if the user is logged in and not in loading state
+  const buttonDisabled = isLoading || !user?.id;
+
+  // Debug logging
   useEffect(() => {
     if (open) {
-      console.log("Invite Dialog State:", { companyId, userId, isLoading });
+      console.log("Invite Dialog State:", { 
+        userId: user?.id,
+        companyId, 
+        isLoading
+      });
     }
-  }, [open, companyId, userId, isLoading]);
+  }, [open, user?.id, companyId, isLoading]);
 
   const handleInvite = async () => {
     if (!email || !name) {
@@ -50,29 +49,51 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       return;
     }
     
-    if (!userId) {
+    if (!user?.id) {
       toast.error("User session expired. Please login again.");
       return;
     }
     
-    // Check company ID only when trying to send the invite
+    // Verify company ID before sending invitation
     if (!companyId) {
-      toast.error("Company information not available. Please refresh and try again.");
-      console.error("Missing companyId when attempting to invite:", { companyId, userId });
-      return;
+      console.error("Missing companyId when attempting to invite:", { companyId, userId: user.id });
+      
+      // Try to fetch company ID directly if it's not available through useAuth
+      const { data: memberData, error: memberError } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (memberError || !memberData?.company_id) {
+        toast.error("You don't belong to any company. Please refresh and try again.");
+        console.error("Failed to fetch company ID:", memberError || "No company found");
+        return;
+      }
+      
+      // If we got here, we have a valid company ID from the direct query
+      const directCompanyId = memberData.company_id;
+      console.log("Retrieved company ID directly:", directCompanyId);
+      
+      await sendInvitation(directCompanyId);
+    } else {
+      // We already have a company ID from useAuth
+      await sendInvitation(companyId);
     }
-    
+  };
+  
+  const sendInvitation = async (companyId: string) => {
     setIsSending(true);
     
     try {
-      console.log("Creating invitation for:", { email, name, companyId, invitedBy: userId });
+      console.log("Creating invitation for:", { email, name, companyId, invitedBy: user?.id });
       
       // Create team invitation record
       const { data: invitation, error: invitationError } = await supabase
         .from('team_invitations')
         .insert({
           company_id: companyId,
-          invited_by: userId,
+          invited_by: user?.id,
           email,
           name,
           role: 'member'

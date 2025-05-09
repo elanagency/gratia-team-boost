@@ -12,6 +12,18 @@ export const useAuth = () => {
   
   const isLoading = isSessionLoading || isProfileLoading || isCompanyLoading;
 
+  // Add debug logging to trace auth state
+  useEffect(() => {
+    if (user?.id) {
+      console.log("Auth state:", { 
+        userId: user?.id,
+        companyId,
+        isLoading,
+        companyLoading: isCompanyLoading
+      });
+    }
+  }, [user?.id, companyId, isLoading, isCompanyLoading]);
+
   if (isLoading) {
     return { 
       user: null, 

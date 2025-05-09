@@ -41,8 +41,10 @@ export const useCompanyInfo = (userId: string | undefined) => {
           throw memberError;
         }
         
+        console.log("Company member query result:", companyMember);
+        
         if (companyMember?.company_id) {
-          console.log("Found company membership:", companyMember);
+          console.log("Found company membership, ID:", companyMember.company_id);
           setCompanyId(companyMember.company_id);
           
           // Now fetch company details
@@ -60,8 +62,10 @@ export const useCompanyInfo = (userId: string | undefined) => {
             throw companyError;
           }
           
+          console.log("Company query result:", company);
+          
           if (company?.name) {
-            console.log("Found company:", company.name);
+            console.log("Found company name:", company.name);
             setCompanyName(company.name);
           } else {
             console.log("Company not found for ID:", companyMember.company_id);
@@ -74,8 +78,6 @@ export const useCompanyInfo = (userId: string | undefined) => {
         }
       } catch (error) {
         console.error("Error fetching company info:", error);
-        // Don't show toast for every error as it can be noisy when components mount
-        // but do set the error state
         setCompanyId(null);
         setCompanyName("");
       } finally {
@@ -86,7 +88,6 @@ export const useCompanyInfo = (userId: string | undefined) => {
     fetchCompanyInfo();
   }, [userId]);
 
-  // Return both the raw data and loading state for components to make decisions
   return {
     companyName,
     companyId,
