@@ -39,6 +39,7 @@ export type Database = {
           created_at: string
           id: string
           is_admin: boolean
+          points: number
           role: string
           updated_at: string
           user_id: string
@@ -48,6 +49,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_admin?: boolean
+          points?: number
           role?: string
           updated_at?: string
           user_id: string
@@ -57,6 +59,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_admin?: boolean
+          points?: number
           role?: string
           updated_at?: string
           user_id?: string
@@ -64,6 +67,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_transactions: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+          points: number
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description: string
+          id?: string
+          points: number
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          points?: number
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

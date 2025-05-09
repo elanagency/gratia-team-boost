@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, Award, Gift, TrendingUp, ChevronRight, Calendar, FileCheck, CreditCard, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { GivePointsDialog } from "@/components/points/GivePointsDialog";
+import { PointsHistory } from "@/components/points/PointsHistory";
 
 const Dashboard = () => {
   const [teamCount, setTeamCount] = useState<number>(0);
@@ -120,6 +122,12 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Give Points button */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <GivePointsDialog />
+      </div>
+      
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
@@ -137,6 +145,9 @@ const Dashboard = () => {
           </Card>
         ))}
       </div>
+
+      {/* Points History */}
+      <PointsHistory />
 
       {/* Tasks and Team Info */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
