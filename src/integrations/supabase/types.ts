@@ -103,6 +103,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_company_membership: {
+        Args: { user_id: string; company_id: string }
+        Returns: boolean
+      }
       is_member_of_company: {
         Args: { company_id: string }
         Returns: boolean

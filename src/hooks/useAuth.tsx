@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 
 export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
@@ -30,7 +31,7 @@ export const useAuth = () => {
         }
         setUser(session.user);
 
-        // Fetch company name
+        // Fetch company name using the security definer function
         const {
           data: companyMember
         } = await supabase.from('company_members').select('company_id').eq('user_id', session.user.id).single();
@@ -43,27 +44,20 @@ export const useAuth = () => {
             setCompanyName(company.name);
           }
         }
-
-        console.log("Fetching user profile data...");
         
-        // Get user name from profiles table with proper debugging
+        // Get user profile data 
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('first_name, last_name')
           .eq('id', session.user.id)
           .single();
         
-        console.log("Profile data:", profile);
-        console.log("Profile error:", error);
-        
         if (profile) {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
-          setUserName(`${profile.first_name || ''} ${profile.last_name || ''}`);
-          console.log("Found profile:", profile.first_name, profile.last_name);
+          setUserName(`${profile.first_name || ''} ${profile.last_name || ''}`.trim());
         } else {
           // Fallback to email if no profile name
-          console.log("No profile found, using email");
           setUserName(session.user.email || "User");
         }
       } catch (error) {
@@ -97,6 +91,10 @@ export const useAuth = () => {
     navigate("/login");
   };
 
+  if (isLoading) {
+    return { user: null, companyName: "", userName: "", firstName: "", lastName: "", isLoading: true, handleLogout, LoadingComponent: <LoadingSpinner /> };
+  }
+
   return {
     user,
     companyName,
@@ -104,6 +102,7 @@ export const useAuth = () => {
     firstName,
     lastName,
     isLoading,
-    handleLogout
+    handleLogout,
+    LoadingComponent: null
   };
 };
