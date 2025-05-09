@@ -1,51 +1,71 @@
+
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut, Search, Bell, User, HelpCircle, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 const AdminLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [companyName, setCompanyName] = useState<string>("");
-  const [userName, setUserName] = useState<string>("Jane Doe");
+  const [userName, setUserName] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
-
-      // Fetch company name
-      const {
-        data: companyMember
-      } = await supabase.from('company_members').select('company_id').eq('user_id', session.user.id).single();
-      if (companyMember) {
+      setIsLoading(true);
+      try {
         const {
-          data: company
-        } = await supabase.from('companies').select('name').eq('id', companyMember.company_id).single();
-        if (company) {
-          setCompanyName(company.name);
+          data: {
+            session
+          }
+        } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/login");
+          return;
         }
-      }
+        setUser(session.user);
 
-      // Try to get user name if available
-      const {
-        data: profile
-      } = await supabase.from('profiles').select('first_name, last_name').eq('id', session.user.id).single();
-      if (profile && profile.first_name) {
-        setUserName(`${profile.first_name} ${profile.last_name || ''}`);
+        // Fetch company name
+        const {
+          data: companyMember
+        } = await supabase.from('company_members').select('company_id').eq('user_id', session.user.id).single();
+        
+        if (companyMember) {
+          const {
+            data: company
+          } = await supabase.from('companies').select('name').eq('id', companyMember.company_id).single();
+          if (company) {
+            setCompanyName(company.name);
+          }
+        }
+
+        // Get user name from profiles table
+        const {
+          data: profile
+        } = await supabase.from('profiles').select('first_name, last_name').eq('id', session.user.id).single();
+        
+        if (profile && profile.first_name) {
+          setUserName(`${profile.first_name} ${profile.last_name || ''}`);
+        } else {
+          // Fallback to email if no profile name
+          setUserName(session.user.email || "User");
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        toast.error("Error loading user data");
+      } finally {
+        setIsLoading(false);
       }
     };
+    
     checkAuth();
+    
     const {
       data: authListener
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -55,10 +75,12 @@ const AdminLayout = () => {
         setUser(session.user);
       }
     });
+    
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
@@ -98,9 +120,22 @@ const AdminLayout = () => {
     icon: UserRound,
     path: "/admin/profile"
   };
+  
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f7f8fa]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#F572FF] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return <div className="flex h-screen bg-[#f7f8fa]">
       {/* Left Sidebar - Updated width from 280px to 320px */}
       <div className="w-[320px] flex-shrink-0 dark-sidebar px-0">

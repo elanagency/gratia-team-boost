@@ -1,15 +1,74 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, Award, Gift, TrendingUp, ChevronRight, Calendar, FileCheck, CreditCard, Building2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const [teamCount, setTeamCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  // Load team member count from database
+  useEffect(() => {
+    const loadTeamData = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) return;
+        
+        // Get user's company
+        const { data: companyMember } = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', userData.user.id)
+          .single();
+        
+        if (companyMember) {
+          // Count team members in the same company
+          const { count } = await supabase
+            .from('company_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('company_id', companyMember.company_id);
+          
+          if (count !== null) {
+            setTeamCount(count);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading team data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadTeamData();
+  }, []);
+
   // Sample stats for the dashboard
   const stats = [
-    { title: "Team Members", value: "12", icon: Users, description: "Active members" },
-    { title: "Recognitions", value: "48", icon: Award, description: "This month" },
-    { title: "Rewards Claimed", value: "7", icon: Gift, description: "This month" },
-    { title: "Engagement", value: "92%", icon: TrendingUp, description: "Team activity" }
+    { 
+      title: "Team Members", 
+      value: isLoading ? "..." : teamCount.toString(), 
+      icon: Users, 
+      description: "Active members" 
+    },
+    { 
+      title: "Recognitions", 
+      value: "48", 
+      icon: Award, 
+      description: "This month" 
+    },
+    { 
+      title: "Rewards Claimed", 
+      value: "7", 
+      icon: Gift, 
+      description: "This month" 
+    },
+    { 
+      title: "Engagement", 
+      value: "92%", 
+      icon: TrendingUp, 
+      description: "Team activity" 
+    }
   ];
 
   // Sample tasks for the dashboard
@@ -52,7 +111,7 @@ const Dashboard = () => {
     }
   ];
 
-  // Sample team members
+  // Sample team members - will fetch actual data in the future
   const teamMembers = [
     { id: 1, name: "Mike Johnson", role: "Developer", country: "United States" },
     { id: 2, name: "Sarah Chen", role: "Designer", country: "Singapore" },
@@ -64,7 +123,7 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="dashboard-card">
+          <Card key={index} className="dashboard-card p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">{stat.title}</p>
@@ -84,14 +143,14 @@ const Dashboard = () => {
         {/* Things to do */}
         <div className="lg:col-span-2">
           <Card className="dashboard-card h-full">
-            <div className="card-header">
-              <h2 className="card-title">Things to do</h2>
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800">Things to do</h2>
             </div>
             <div className="divide-y divide-gray-100">
               {tasks.map((task) => (
-                <div key={task.id} className="task-item">
+                <div key={task.id} className="p-4 flex items-center gap-4">
                   <div 
-                    className="task-icon" 
+                    className="h-10 w-10 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: task.iconBg }}
                   >
                     <task.icon style={{ color: task.iconColor }} size={18} />
@@ -112,13 +171,13 @@ const Dashboard = () => {
         {/* Team section */}
         <div>
           <Card className="dashboard-card h-full">
-            <div className="card-header">
-              <h2 className="card-title">Your team</h2>
-              <a href="#" className="view-all">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-800">Your team</h2>
+              <a href="#" className="text-sm text-[#F572FF] flex items-center">
                 View All <ChevronRight size={16} />
               </a>
             </div>
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               {teamMembers.map((member) => (
                 <div key={member.id} className="flex items-center">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
@@ -140,13 +199,13 @@ const Dashboard = () => {
 
       {/* Calendar / Upcoming Events */}
       <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Upcoming events</h2>
-          <a href="#" className="view-all">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-800">Upcoming events</h2>
+          <a href="#" className="text-sm text-[#F572FF] flex items-center">
             View Calendar <ChevronRight size={16} />
           </a>
         </div>
-        <div className="py-4">
+        <div className="py-4 px-6">
           <div className="flex items-center p-4 bg-gray-50 rounded-lg">
             <div className="flex flex-col items-center justify-center w-16 h-16 bg-white rounded-lg shadow-sm border border-gray-100">
               <span className="text-sm text-gray-500">Nov</span>
