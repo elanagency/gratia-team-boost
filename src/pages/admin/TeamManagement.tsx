@@ -53,16 +53,21 @@ const TeamManagement = () => {
           <InviteTeamMemberDialog 
             companyId={companyId} 
             userId={user?.id} 
-            onSuccess={fetchTeamMembers} 
+            onSuccess={fetchTeamMembers}
+            isLoading={isLoading}
           />
         </div>
       </div>
       
       <Card className="dashboard-card">
-        <TeamMemberTable 
-          teamMembers={teamMembers} 
-          onRemoveMember={handleDeleteClick} 
-        />
+        {isLoading ? (
+          <div className="p-8 text-center">Loading team members...</div>
+        ) : (
+          <TeamMemberTable 
+            teamMembers={teamMembers} 
+            onRemoveMember={handleDeleteClick} 
+          />
+        )}
       </Card>
       
       <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">

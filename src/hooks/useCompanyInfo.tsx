@@ -7,13 +7,22 @@ export const useCompanyInfo = (userId: string | undefined) => {
   const [companyName, setCompanyName] = useState<string>("");
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
-      if (!userId) return;
+      if (!userId) {
+        setIsLoading(false);
+        setError("User ID is not available");
+        return;
+      }
       
       setIsLoading(true);
+      setError(null);
+      
       try {
+        console.log("Fetching company info for user:", userId);
+        
         // Fetch company member info first
         const {
           data: companyMember, error: memberError
@@ -25,10 +34,12 @@ export const useCompanyInfo = (userId: string | undefined) => {
         
         if (memberError) {
           console.error("Error fetching company member:", memberError);
+          setError("Failed to fetch company membership");
           throw memberError;
         }
         
-        if (companyMember) {
+        if (companyMember?.company_id) {
+          console.log("Found company membership:", companyMember);
           setCompanyId(companyMember.company_id);
           
           // Now fetch company details
@@ -42,16 +53,20 @@ export const useCompanyInfo = (userId: string | undefined) => {
           
           if (companyError) {
             console.error("Error fetching company:", companyError);
+            setError("Failed to fetch company details");
             throw companyError;
           }
           
-          if (company) {
+          if (company?.name) {
+            console.log("Found company:", company.name);
             setCompanyName(company.name);
           } else {
             console.log("Company not found for ID:", companyMember.company_id);
+            setError(`Company not found for ID: ${companyMember.company_id}`);
           }
         } else {
           console.log("User is not a member of any company");
+          setError("User is not a member of any company");
         }
       } catch (error) {
         console.error("Error fetching company info:", error);
@@ -67,6 +82,7 @@ export const useCompanyInfo = (userId: string | undefined) => {
   return {
     companyName,
     companyId,
-    isLoading
+    isLoading,
+    error
   };
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,17 +19,25 @@ interface InviteTeamMemberDialogProps {
   companyId: string | null;
   userId: string;
   onSuccess: () => void;
+  isLoading?: boolean;
 }
 
 const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({ 
   companyId, 
   userId,
-  onSuccess 
+  onSuccess,
+  isLoading = false
 }) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [validCompanyId, setValidCompanyId] = useState(false);
+  
+  useEffect(() => {
+    // Validate the company ID whenever it changes
+    setValidCompanyId(typeof companyId === 'string' && companyId.length > 0);
+  }, [companyId]);
 
   const handleInvite = async () => {
     if (!email || !name) {
@@ -37,12 +45,17 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       return;
     }
     
-    if (!companyId) {
-      toast.error("Company information not available");
+    if (!validCompanyId) {
+      toast.error("Company information not available. Please refresh the page and try again.");
+      return;
+    }
+
+    if (!userId) {
+      toast.error("User session expired. Please login again.");
       return;
     }
     
-    setIsLoading(true);
+    setIsSending(true);
     
     try {
       console.log("Creating invitation for:", { email, name, companyId, invitedBy: userId });
@@ -80,14 +93,20 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       console.error("Error inviting team member:", error);
       toast.error(error.message || "Failed to invite team member");
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   };
+
+  const buttonDisabled = isLoading || !validCompanyId;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#F572FF] hover:bg-[#E061EE]">
+        <Button 
+          className="bg-[#F572FF] hover:bg-[#E061EE]"
+          disabled={buttonDisabled}
+          title={buttonDisabled ? "Company information loading..." : "Invite a team member"}
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Invite Team Member
         </Button>
@@ -111,21 +130,22 @@ const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
             <Input
               id="email"
               placeholder="colleague@example.com"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSending}>
             Cancel
           </Button>
           <Button 
             className="bg-[#F572FF] hover:bg-[#E061EE]" 
             onClick={handleInvite}
-            disabled={isLoading}
+            disabled={isSending || !validCompanyId}
           >
-            {isLoading ? "Inviting..." : (
+            {isSending ? "Inviting..." : (
               <>
                 <Mail className="mr-2 h-4 w-4" />
                 Invite
