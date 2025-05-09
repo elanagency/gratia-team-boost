@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Session } from "@supabase/supabase-js";
 
 export interface TeamMember {
   id: string;
@@ -14,16 +15,21 @@ export interface TeamMember {
   isPending?: boolean;
 }
 
-export const useTeamMembers = (userId: string | undefined) => {
+export const useTeamMembers = (userId: string | undefined, session?: Session | null) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchTeamMembers = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("No user ID provided to useTeamMembers");
+      return;
+    }
     
     setIsLoading(true);
     try {
+      console.log("Fetching team members for user:", userId);
+      
       // Get the user's company_id first
       const { data: companyMember, error: memberError } = await supabase
         .from('company_members')
@@ -39,13 +45,16 @@ export const useTeamMembers = (userId: string | undefined) => {
       if (!companyMember?.company_id) {
         console.log("User is not a member of any company");
         setTeamMembers([]);
+        setIsLoading(false);
         return;
       }
       
       const currentCompanyId = companyMember.company_id;
       setCompanyId(currentCompanyId);
       
-      // With our new RLS policies, we can directly fetch all members of this company
+      console.log("Found company ID:", currentCompanyId);
+      
+      // Fetch members with the updated RLS policies
       const { data: members, error: membersError } = await supabase
         .from('company_members')
         .select(`
@@ -60,6 +69,8 @@ export const useTeamMembers = (userId: string | undefined) => {
         console.error("Error fetching team members:", membersError);
         throw membersError;
       }
+      
+      console.log("Found team members:", members?.length);
       
       // Format team members with profile data
       const formattedMembers: TeamMember[] = [];
@@ -122,6 +133,7 @@ export const useTeamMembers = (userId: string | undefined) => {
 
   useEffect(() => {
     if (userId) {
+      // Ensure we have a valid session before fetching
       fetchTeamMembers();
     }
   }, [userId]);

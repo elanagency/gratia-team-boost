@@ -7,7 +7,7 @@ import { useCompanyInfo } from "./useCompanyInfo";
 import { toast } from "sonner";
 
 export const useAuth = () => {
-  const { user, isLoading: isSessionLoading, handleLogout } = useAuthSession();
+  const { user, session, isLoading: isSessionLoading, handleLogout } = useAuthSession();
   const { firstName, lastName, userName, isLoading: isProfileLoading } = useUserProfile(user?.id);
   const { companyName, companyId, isLoading: isCompanyLoading, error: companyError } = useCompanyInfo(user?.id);
   
@@ -18,13 +18,14 @@ export const useAuth = () => {
     if (user?.id) {
       console.log("Auth state:", { 
         userId: user?.id,
+        isAuthenticated: !!session,
         companyId,
         isLoading,
         companyLoading: isCompanyLoading,
         companyError
       });
     }
-  }, [user?.id, companyId, isLoading, isCompanyLoading, companyError]);
+  }, [user?.id, session, companyId, isLoading, isCompanyLoading, companyError]);
 
   // Display toast message if there's a company error
   useEffect(() => {
@@ -41,6 +42,7 @@ export const useAuth = () => {
   if (isLoading) {
     return { 
       user: null, 
+      session: null,
       companyName: "", 
       companyId: null,
       userName: "", 
@@ -54,6 +56,7 @@ export const useAuth = () => {
 
   return {
     user,
+    session,
     companyName,
     companyId,
     userName,

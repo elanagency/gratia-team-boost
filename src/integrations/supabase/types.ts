@@ -98,50 +98,6 @@ export type Database = {
         }
         Relationships: []
       }
-      team_invitations: {
-        Row: {
-          accepted_at: string | null
-          company_id: string
-          created_at: string
-          email: string
-          id: string
-          invited_by: string
-          name: string
-          role: string
-          user_id: string | null
-        }
-        Insert: {
-          accepted_at?: string | null
-          company_id: string
-          created_at?: string
-          email: string
-          id?: string
-          invited_by: string
-          name: string
-          role?: string
-          user_id?: string | null
-        }
-        Update: {
-          accepted_at?: string | null
-          company_id?: string
-          created_at?: string
-          email?: string
-          id?: string
-          invited_by?: string
-          name?: string
-          role?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_invitations_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never

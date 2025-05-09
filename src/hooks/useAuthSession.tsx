@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export interface AuthSessionUser {
@@ -11,25 +12,38 @@ export interface AuthSessionUser {
 
 export const useAuthSession = () => {
   const [user, setUser] = useState<AuthSessionUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
+    // 1. Set up listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Only update state synchronously inside the listener
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      if (event === "SIGNED_OUT") {
+        navigate("/login");
+      }
+    });
+    
+    // 2. Then check for existing session
+    const getInitialSession = async () => {
       try {
-        const {
-          data: {
-            session
-          }
-        } = await supabase.auth.getSession();
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (!session) {
-          navigate("/login");
+        if (!initialSession) {
+          // No session found, user should sign in
+          setIsLoading(false);
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+            navigate("/login");
+          }
           return;
         }
         
-        setUser(session.user);
+        setSession(initialSession);
+        setUser(initialSession.user);
       } catch (error) {
         console.error("Error checking auth session:", error);
         toast.error("Error loading session data");
@@ -38,20 +52,10 @@ export const useAuthSession = () => {
       }
     };
     
-    checkAuth();
-    
-    const {
-      data: authListener
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        navigate("/login");
-      } else if (session) {
-        setUser(session.user);
-      }
-    });
+    getInitialSession();
     
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
@@ -63,6 +67,7 @@ export const useAuthSession = () => {
 
   return {
     user,
+    session,
     isLoading,
     handleLogout
   };
