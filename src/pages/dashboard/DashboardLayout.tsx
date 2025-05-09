@@ -1,22 +1,22 @@
 
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const DashboardLayout = () => {
-  const { 
-    user, 
-    firstName, 
-    lastName, 
-    isLoading, 
-    handleLogout 
-  } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
+  const { firstName, lastName, isLoading: isProfileLoading } = useUserProfile(user?.id);
   
-  if (isLoading) {
+  if (isLoading || isProfileLoading) {
     return <LoadingSpinner />;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
   
   // Display name to show in header salutation
@@ -29,7 +29,7 @@ const DashboardLayout = () => {
         user={user}
         firstName={firstName}
         lastName={lastName}
-        handleLogout={handleLogout}
+        handleLogout={signOut}
       />
 
       {/* Main Content */}

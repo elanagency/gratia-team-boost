@@ -19,7 +19,10 @@ export const useUserProfile = (userId: string | undefined) => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!userId) return;
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
@@ -28,7 +31,7 @@ export const useUserProfile = (userId: string | undefined) => {
           .from('profiles')
           .select('first_name, last_name')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         

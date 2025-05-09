@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
@@ -25,29 +26,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Add redirect from old admin routes to new dashboard routes */}
-          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
-          
-          {/* Dashboard routes */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="team" element={<TeamManagement />} />
-            <Route path="recognition" element={<RecognitionHistory />} />
-            <Route path="rewards" element={<RewardsCatalog />} />
-            <Route path="billing" element={<Billing />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="profile" element={<ProfileSettings />} />
-          </Route>
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Add redirect from old admin routes to new dashboard routes */}
+            <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Dashboard routes */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="team" element={<TeamManagement />} />
+              <Route path="recognition" element={<RecognitionHistory />} />
+              <Route path="rewards" element={<RewardsCatalog />} />
+              <Route path="billing" element={<Billing />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<ProfileSettings />} />
+            </Route>
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

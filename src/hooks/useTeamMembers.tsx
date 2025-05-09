@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Session } from "@supabase/supabase-js";
 
 export interface TeamMember {
   id: string;
@@ -15,7 +13,7 @@ export interface TeamMember {
   isPending?: boolean;
 }
 
-export const useTeamMembers = (userId: string | undefined, session?: Session | null) => {
+export const useTeamMembers = (userId: string | undefined) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,7 +131,6 @@ export const useTeamMembers = (userId: string | undefined, session?: Session | n
 
   useEffect(() => {
     if (userId) {
-      // Ensure we have a valid session before fetching
       fetchTeamMembers();
     }
   }, [userId]);
