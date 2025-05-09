@@ -21,10 +21,13 @@ import {
 } from "@/components/ui/table";
 import { UserPlus, Mail, Trash2, Trophy, MoreHorizontal, Filter } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const TeamManagement = () => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
 
   // Sample team data
   const teamMembers = [
@@ -34,8 +37,17 @@ const TeamManagement = () => {
   ];
 
   const handleInvite = () => {
-    // Handle invite logic here
-    console.log("Inviting:", email);
+    // Handle invite logic here - ensuring role is 'member'
+    console.log("Inviting:", { name, email, role: 'member' });
+    
+    // You would implement the actual invitation logic here, such as:
+    // - Sending an email invitation
+    // - Adding a record to the database with role='member'
+    
+    toast.success(`Invitation sent to ${name} (${email})`);
+    
+    // Reset form fields and close dialog
+    setName("");
     setEmail("");
     setOpen(false);
   };
@@ -63,6 +75,15 @@ const TeamManagement = () => {
                 <DialogTitle>Invite Team Member</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <Input
