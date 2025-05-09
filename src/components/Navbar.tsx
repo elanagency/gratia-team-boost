@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, userName } = useAuth();
 
   return (
     <nav className="w-full py-4 px-4 md:px-8 lg:px-16 absolute top-0 left-0 z-50">
@@ -22,10 +24,24 @@ const Navbar = () => {
           <a href="#how-it-works" className="text-gray-200 hover:text-white">How It Works</a>
           <a href="#pricing" className="text-gray-200 hover:text-white">Pricing</a>
           <div className="flex items-center space-x-4 ml-6">
-            <Link to="/login" className="text-white hover:text-grattia-pink">Log In</Link>
-            <Link to="/signup">
-              <Button className="grattia-button">Sign Up</Button>
-            </Link>
+            {user ? (
+              <div className="flex items-center">
+                <Link to="/dashboard" className="flex items-center bg-black/30 hover:bg-black/40 p-2 px-4 rounded-full transition-colors">
+                  <UserCircle size={20} className="mr-2 text-[#F572FF]" />
+                  <div>
+                    <div className="text-white font-medium">{userName}</div>
+                    <div className="text-xs text-gray-300">{user.email}</div>
+                  </div>
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="text-white hover:text-grattia-pink">Log In</Link>
+                <Link to="/signup">
+                  <Button className="grattia-button">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -45,10 +61,24 @@ const Navbar = () => {
             <a href="#how-it-works" className="text-gray-200 hover:text-white py-2">How It Works</a>
             <a href="#pricing" className="text-gray-200 hover:text-white py-2">Pricing</a>
             <hr className="border-grattia-purple-light/20" />
-            <Link to="/login" className="text-white hover:text-grattia-pink py-2">Log In</Link>
-            <Link to="/signup" className="w-full">
-              <Button className="grattia-button w-full">Sign Up</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard" className="flex items-center py-2">
+                  <UserCircle size={20} className="mr-2 text-[#F572FF]" />
+                  <div>
+                    <div className="text-white font-medium">{userName}</div>
+                    <div className="text-xs text-gray-300">{user.email}</div>
+                  </div>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="text-white hover:text-grattia-pink py-2">Log In</Link>
+                <Link to="/signup" className="w-full">
+                  <Button className="grattia-button w-full">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
