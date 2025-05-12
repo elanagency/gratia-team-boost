@@ -1,7 +1,9 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, Award, Gift, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 type StatItem = {
   title: string;
@@ -16,6 +18,52 @@ type DashboardStatsProps = {
 };
 
 export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) => {
+  const [recognitionCount, setRecognitionCount] = useState<number>(0);
+  const [rewardsCount, setRewardsCount] = useState<number>(0);
+  const [isLoadingRecognitions, setIsLoadingRecognitions] = useState<boolean>(true);
+  const { companyId } = useAuth();
+  
+  useEffect(() => {
+    const fetchRecognitionStats = async () => {
+      if (!companyId) return;
+      
+      try {
+        setIsLoadingRecognitions(true);
+        
+        // Get current month boundaries
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // Count recognitions for this month
+        const { count: recognitionsThisMonth, error: recognitionsError } = await supabase
+          .from('point_transactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .gte('created_at', startOfMonth.toISOString());
+        
+        if (recognitionsError) throw recognitionsError;
+        
+        // Count rewards claimed this month
+        const { count: rewardsThisMonth, error: rewardsError } = await supabase
+          .from('reward_redemptions')
+          .select('*', { count: 'exact', head: true })
+          .gte('redemption_date', startOfMonth.toISOString());
+        
+        if (rewardsError) throw rewardsError;
+        
+        setRecognitionCount(recognitionsThisMonth || 0);
+        setRewardsCount(rewardsThisMonth || 0);
+        
+      } catch (error) {
+        console.error("Error fetching recognition stats:", error);
+      } finally {
+        setIsLoadingRecognitions(false);
+      }
+    };
+    
+    fetchRecognitionStats();
+  }, [companyId]);
+
   // Sample stats for the dashboard
   const stats: StatItem[] = [
     { 
@@ -26,13 +74,13 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
     },
     { 
       title: "Recognitions", 
-      value: "48", 
+      value: isLoadingRecognitions ? "..." : recognitionCount.toString(), 
       icon: Award, 
       description: "This month" 
     },
     { 
       title: "Rewards Claimed", 
-      value: "7", 
+      value: isLoadingRecognitions ? "..." : rewardsCount.toString(), 
       icon: Gift, 
       description: "This month" 
     },
