@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/select";
 
 export const RewardShop = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   
-  const { rewards, categories, isLoading } = useRewards(selectedCategory || undefined);
+  const { rewards, categories, isLoading } = useRewards(
+    selectedCategory === "all" ? undefined : selectedCategory
+  );
   
   // Filter rewards based on search term
   const filteredRewards = rewards.filter(reward => 
@@ -64,7 +66,7 @@ export const RewardShop = () => {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
