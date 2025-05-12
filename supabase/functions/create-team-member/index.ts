@@ -103,6 +103,8 @@ serve(async (req: Request) => {
     );
     
     let userId: string;
+    let isNewUser = false;
+    let password: string | undefined;
     
     if (userExists) {
       // Find the existing user's ID
@@ -124,8 +126,9 @@ serve(async (req: Request) => {
       console.log("User already exists with ID:", userId);
     } else {
       // Generate password for new user
-      const password = generateSecurePassword();
+      password = generateSecurePassword();
       console.log("Generated secure password");
+      isNewUser = true;
       
       // Parse name into first and last name components
       const { firstName, lastName } = parseFullName(name);
@@ -221,12 +224,14 @@ serve(async (req: Request) => {
       // Non-critical error, continue
     }
     
-    // Return success response
+    // Return success response - include password for new users
     return new Response(
       JSON.stringify({
         message: "Team member added successfully",
         userId,
         membership,
+        isNewUser,
+        ...(isNewUser && password ? { password } : {}),
       }),
       {
         status: 200,
