@@ -7,7 +7,10 @@ import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, userName } = useAuth();
+  const { user, userName, isAdmin } = useAuth();
+
+  // Determine correct dashboard route based on admin status
+  const dashboardRoute = isAdmin ? "/dashboard" : "/dashboard-team";
 
   return (
     <nav className="w-full py-4 px-4 md:px-8 lg:px-16 absolute top-0 left-0 z-50">
@@ -26,7 +29,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4 ml-6">
             {user ? (
               <div className="flex items-center">
-                <Link to="/dashboard" className="flex items-center bg-black/30 hover:bg-black/40 p-2 px-4 rounded-full transition-colors">
+                <Link to={dashboardRoute} className="flex items-center bg-black/30 hover:bg-black/40 p-2 px-4 rounded-full transition-colors">
                   <UserCircle size={20} className="mr-2 text-[#F572FF]" />
                   <div>
                     <div className="text-white font-medium">{userName}</div>
@@ -63,7 +66,7 @@ const Navbar = () => {
             <hr className="border-grattia-purple-light/20" />
             {user ? (
               <>
-                <Link to="/dashboard" className="flex items-center py-2">
+                <Link to={dashboardRoute} className="flex items-center py-2">
                   <UserCircle size={20} className="mr-2 text-[#F572FF]" />
                   <div>
                     <div className="text-white font-medium">{userName}</div>

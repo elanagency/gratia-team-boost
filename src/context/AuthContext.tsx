@@ -15,6 +15,7 @@ type AuthContextType = {
   userName: string;
   companyId: string | null;
   companyName: string;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState("");
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -61,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Fetch company data through company_members
         const { data: companyMember, error: memberError } = await supabase
           .from('company_members')
-          .select('company_id')
+          .select('company_id, is_admin')
           .eq('user_id', user.id)
           .maybeSingle();
         
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (companyMember?.company_id) {
           setCompanyId(companyMember.company_id);
+          setIsAdmin(companyMember.is_admin || false);
           
           // Fetch company name
           const { data: company, error: companyError } = await supabase
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setError("User is not a member of any company");
           setCompanyId(null);
           setCompanyName('');
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -100,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserName('');
       setCompanyId(null);
       setCompanyName('');
+      setIsAdmin(false);
       setError(null);
     }
   }, [user]);
@@ -173,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userName,
     companyId,
     companyName,
+    isAdmin,
     signOut,
   };
 

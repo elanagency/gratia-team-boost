@@ -28,9 +28,34 @@ const Login = () => {
   const { user } = useAuth();
   
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
+    // If user is already logged in, check their role and redirect accordingly
+    const checkUserRoleAndRedirect = async () => {
+      if (user) {
+        try {
+          // Check if user is an admin by querying the company_members table
+          const { data, error } = await supabase
+            .from("company_members")
+            .select("is_admin")
+            .eq("user_id", user.id)
+            .single();
+
+          if (error) throw error;
+          
+          // Redirect based on admin status
+          if (data && data.is_admin) {
+            navigate("/dashboard");
+          } else {
+            navigate("/dashboard-team");
+          }
+        } catch (error) {
+          console.error("Error checking user role:", error);
+          // Default to team dashboard if role check fails
+          navigate("/dashboard-team");
+        }
+      }
+    };
+    
+    checkUserRoleAndRedirect();
   }, [user, navigate]);
   
   const form = useForm<FormValues>({
@@ -54,7 +79,7 @@ const Login = () => {
       }
       
       toast.success("Login successful!");
-      // Auth state change will handle redirection
+      // Auth state change will handle redirection based on user role
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
       console.error("Login error:", error);
