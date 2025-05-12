@@ -33,32 +33,34 @@ export const useRewards = (categoryId?: string) => {
     queryFn: async () => {
       if (!companyId) return [];
 
-      let query = supabase
-        .from('rewards')
-        .select('*')
-        .eq('company_id', companyId);
-
       if (categoryId) {
         // If categoryId is provided, join with category mappings
-        query = supabase
+        const { data, error } = await supabase
           .from('reward_category_mappings')
-          .select('rewards:reward_id(*)')
+          .select('reward:reward_id(*)')
           .eq('category_id', categoryId);
+
+        if (error) {
+          console.error('Error fetching rewards by category:', error);
+          throw error;
+        }
+
+        // Extract the rewards from the result
+        return data ? data.map((item: any) => item.reward) : [];
+      } else {
+        // If no categoryId, fetch all rewards for the company
+        const { data, error } = await supabase
+          .from('rewards')
+          .select('*')
+          .eq('company_id', companyId);
+
+        if (error) {
+          console.error('Error fetching rewards:', error);
+          throw error;
+        }
+
+        return data || [];
       }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching rewards:', error);
-        throw error;
-      }
-
-      // If we used the category query, we need to extract the rewards from the result
-      if (categoryId && data) {
-        return data.map((item: any) => item.rewards);
-      }
-
-      return data || [];
     },
     enabled: !!companyId
   });
