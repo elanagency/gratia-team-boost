@@ -18,6 +18,10 @@ import Billing from "./pages/admin/Billing";
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 
+// Import Team Dashboard components
+import TeamDashboardLayout from "./pages/team/TeamDashboardLayout";
+import TeamDashboard from "./pages/team/TeamDashboard";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -36,7 +40,7 @@ const App = () => (
             <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
             <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
             
-            {/* Dashboard routes */}
+            {/* Dashboard routes for administrators */}
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="team" element={<TeamManagement />} />
@@ -44,6 +48,14 @@ const App = () => (
               <Route path="rewards" element={<RewardsCatalog />} />
               <Route path="billing" element={<Billing />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<ProfileSettings />} />
+            </Route>
+            
+            {/* Team Dashboard routes for regular team members */}
+            <Route path="/dashboard-team" element={<TeamDashboardLayout />}>
+              <Route index element={<TeamDashboard />} />
+              <Route path="recognition" element={<RecognitionHistory />} />
+              <Route path="rewards" element={<TeamDashboard />} />
               <Route path="profile" element={<ProfileSettings />} />
             </Route>
             

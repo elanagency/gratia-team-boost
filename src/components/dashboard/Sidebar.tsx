@@ -8,13 +8,14 @@ type SidebarProps = {
   firstName: string;
   lastName: string;
   handleLogout: () => Promise<void>;
+  isTeamView?: boolean;
 }
 
-export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProps) => {
+export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }: SidebarProps) => {
   const location = useLocation();
   
-  // Menu items for sidebar with updated paths
-  const menuItems = [{
+  // Menu items for admin sidebar
+  const adminMenuItems = [{
     name: "Dashboard",
     icon: LayoutDashboard,
     path: "/dashboard"
@@ -39,6 +40,24 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
     icon: Settings,
     path: "/dashboard/settings"
   }];
+
+  // Menu items for team member sidebar
+  const teamMenuItems = [{
+    name: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/dashboard-team"
+  }, {
+    name: "Recognition",
+    icon: Award,
+    path: "/dashboard-team/recognition"
+  }, {
+    name: "Rewards Shop",
+    icon: Gift,
+    path: "/dashboard-team/rewards"
+  }];
+  
+  // Select which menu items to display based on isTeamView
+  const menuItems = isTeamView ? teamMenuItems : adminMenuItems;
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -50,7 +69,7 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
   return (
     <div className="w-[320px] flex-shrink-0 dark-sidebar px-0">
       <div className="flex items-center p-4 border-white/10 my-[20px]">
-        <Link to="/dashboard" className="flex items-center">
+        <Link to={isTeamView ? "/dashboard-team" : "/dashboard"} className="flex items-center">
           <img src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" alt="Grattia Logo" className="h-8 w-auto mr-2" />
         </Link>
       </div>
@@ -72,7 +91,7 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout }: SidebarProp
       </nav>
 
       <div className="absolute bottom-0 left-0 w-[320px] border-t border-white/10 p-4">
-        <Link to="/dashboard/profile" className="flex items-center group hover:bg-white/5 p-2 rounded-md transition-colors">
+        <Link to={isTeamView ? "/dashboard-team/profile" : "/dashboard/profile"} className="flex items-center group hover:bg-white/5 p-2 rounded-md transition-colors">
           <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium">
             {firstName ? firstName.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
           </div>
