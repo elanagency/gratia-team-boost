@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload } from "lucide-react";
+import { Upload, Copy, CopyCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [company, setCompany] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
   const { companyId } = useAuth();
   
   useEffect(() => {
@@ -73,9 +74,25 @@ const Settings = () => {
     }
   };
 
+  const copyPublicUrl = () => {
+    if (!company?.handle) return;
+    
+    const url = `${window.location.origin}/c/${company.handle}`;
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        setCopied(true);
+        toast.success("Public URL copied to clipboard!");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((error) => {
+        console.error("Failed to copy URL: ", error);
+        toast.error("Failed to copy URL");
+      });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-semibold text-gray-800">Company Settings</h1>
         <Button 
           onClick={handleSave} 
@@ -85,6 +102,32 @@ const Settings = () => {
           Save Changes
         </Button>
       </div>
+      
+      {/* Public URL Card */}
+      <Card className="dashboard-card p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-medium mb-1">Public Company URL</h2>
+            <p className="text-sm text-gray-600">Share this URL with your team members</p>
+          </div>
+          <div className="flex gap-2 items-center w-full sm:w-auto">
+            <Input 
+              readOnly 
+              value={company?.handle ? `${window.location.origin}/c/${company.handle}` : 'Loading...'}
+              className="bg-gray-50 font-mono text-sm"
+            />
+            <Button
+              onClick={copyPublicUrl}
+              variant="outline"
+              size="icon"
+              className="flex-shrink-0"
+              disabled={!company?.handle}
+            >
+              {copied ? <CopyCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      </Card>
       
       <Card className="dashboard-card">
         <div className="card-header">
