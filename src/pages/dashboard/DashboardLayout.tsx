@@ -25,7 +25,7 @@ const DashboardLayout = () => {
   }
   
   return (
-    <div className="flex h-screen bg-[#f7f8fa]">
+    <div className="flex h-screen w-full bg-[#f7f8fa]">
       {/* Left Sidebar */}
       <Sidebar 
         user={user}
@@ -40,7 +40,7 @@ const DashboardLayout = () => {
         <Header displayName={userName} />
         
         {/* Content Area with Scrolling */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 w-full">
           <Outlet />
         </main>
       </div>

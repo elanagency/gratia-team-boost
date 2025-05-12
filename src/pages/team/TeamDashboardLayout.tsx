@@ -25,7 +25,7 @@ const TeamDashboardLayout = () => {
   }
   
   return (
-    <div className="flex h-screen bg-[#f7f8fa]">
+    <div className="flex h-screen w-full bg-[#f7f8fa]">
       {/* Left Sidebar - Modified for team members */}
       <Sidebar 
         user={user}
@@ -41,7 +41,7 @@ const TeamDashboardLayout = () => {
         <Header displayName={userName} isTeamView={true} />
         
         {/* Content Area with Scrolling */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 w-full">
           <Outlet />
         </main>
       </div>
