@@ -66,20 +66,24 @@ const RewardsCatalog = () => {
           throw new Error(response.error.message || 'Failed to fetch product');
         }
 
-        const product = response.data.product as Product;
-        if (!product) {
-          throw new Error('No product found');
+        // Handle the product data from the response
+        if (!response.data || !response.data.product) {
+          throw new Error('No product data returned from API');
         }
 
+        const product = response.data.product as Product;
+
         // Calculate points based on price and multiplier
-        const pointsCost = Math.round(product.price * pointsMultiplier);
+        // The price comes directly from the Rye API and may need formatting
+        const priceInDollars = product.price; // The API now returns price in dollars
+        const pointsCost = Math.round(priceInDollars * pointsMultiplier);
 
         // Store in the database
         const { data, error } = await supabase
           .from('rewards')
           .insert({
             name: product.title,
-            description: product.description,
+            description: product.description || 'No description available',
             image_url: product.imageUrl,
             points_cost: pointsCost,
             external_id: product.id,
@@ -107,7 +111,7 @@ const RewardsCatalog = () => {
         description: "The product has been added to your rewards catalog",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Error adding product:", error);
       toast({
         title: "Failed to add product",
@@ -140,6 +144,14 @@ const RewardsCatalog = () => {
     }
 
     addProductMutation.mutate({ url: productUrl, pointsMultiplier });
+  };
+
+  const formatPrice = (points: number, multiplier: number) => {
+    const price = points / multiplier;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price);
   };
 
   return (
@@ -189,6 +201,9 @@ const RewardsCatalog = () => {
                 )}
                 <div className="mt-2 text-sm text-gray-500">
                   Stock: {reward.stock || 0}
+                </div>
+                <div className="mt-1 text-sm text-gray-500">
+                  Price equivalent: {formatPrice(reward.points_cost, 1)}
                 </div>
               </CardContent>
             </Card>
