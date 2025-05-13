@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -146,12 +145,9 @@ const RewardsCatalog = () => {
     addProductMutation.mutate({ url: productUrl, pointsMultiplier });
   };
 
-  const formatPrice = (points: number, multiplier: number) => {
-    const price = points / multiplier;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
+  // Updated price formatting function to handle cents to dollars conversion
+  const formatPrice = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
   };
 
   return (
@@ -199,11 +195,8 @@ const RewardsCatalog = () => {
                     {reward.description}
                   </p>
                 )}
-                <div className="mt-2 text-sm text-gray-500">
-                  Stock: {reward.stock || 0}
-                </div>
                 <div className="mt-1 text-sm text-gray-500">
-                  Price equivalent: {formatPrice(reward.points_cost, 1)}
+                  Price equivalent: {formatPrice(reward.points_cost)}
                 </div>
               </CardContent>
             </Card>
