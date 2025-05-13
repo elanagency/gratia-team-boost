@@ -105,23 +105,107 @@ serve(async (req) => {
           }
         );
         
-      case 'requestShopifyProductByURL':
       case 'requestAmazonProductByURL':
+        try {
+          const { url } = reqData;
+          console.log(`Request to fetch Amazon product from URL: ${url}`);
+          
+          // Get Rye API key from environment variable
+          const RYE_API_KEY = Deno.env.get('RYE_API_KEY');
+          if (!RYE_API_KEY) {
+            throw new Error('Rye API key not configured');
+          }
+          
+          // Get shopper IP (for better pricing accuracy)
+          const SHOPPER_IP = req.headers.get('x-forwarded-for') || '8.8.8.8';
+          
+          // Call the Rye GraphQL API
+          const ryeResponse = await fetch('https://graphql.api.rye.com/v1/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': RYE_API_KEY, // Already includes "Basic ..."
+              'Rye-Shopper-IP': SHOPPER_IP
+            },
+            body: JSON.stringify({
+              query: `
+                mutation {
+                  requestAmazonProductByURL(url: "${url}") {
+                    product {
+                      id
+                      title
+                      description
+                      price {
+                        amount
+                        currency
+                      }
+                      images {
+                        url
+                      }
+                      url
+                    }
+                  }
+                }
+              `
+            }),
+          });
+          
+          // Parse the Rye API response
+          const ryeResult = await ryeResponse.json();
+          console.log('Rye API response:', JSON.stringify(ryeResult));
+          
+          // Check for errors in the response
+          if (ryeResult.errors && ryeResult.errors.length > 0) {
+            throw new Error(`Rye API error: ${ryeResult.errors[0].message}`);
+          }
+          
+          if (!ryeResult.data || !ryeResult.data.requestAmazonProductByURL || !ryeResult.data.requestAmazonProductByURL.product) {
+            throw new Error('Invalid product data received from Rye API');
+          }
+          
+          // Transform the Rye product format to our application format
+          const ryeProduct = ryeResult.data.requestAmazonProductByURL.product;
+          
+          const product: RyeProduct = {
+            id: ryeProduct.id,
+            title: ryeProduct.title,
+            description: ryeProduct.description || '',
+            price: ryeProduct.price.amount || 0,
+            imageUrl: ryeProduct.images && ryeProduct.images.length > 0 ? ryeProduct.images[0].url : '',
+            url: ryeProduct.url
+          };
+          
+          return new Response(
+            JSON.stringify({ product }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        } catch (error) {
+          console.error('Error fetching Amazon product:', error);
+          return new Response(
+            JSON.stringify({ error: error.message || 'Failed to fetch Amazon product' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+      case 'requestShopifyProductByURL':
         // In a real implementation, this would call the Rye GraphQL API
         // For now, we'll simulate this with mock data based on the URL
         const { url } = reqData;
-        console.log(`Request to fetch product from URL: ${url}`);
+        console.log(`Request to fetch Shopify product from URL: ${url}`);
         
         // Generate mock product data
-        const isAmazon = url.includes('amazon') || url.includes('amzn');
         const mockProduct: RyeProduct = {
           id: `product_${Math.random().toString(36).substr(2, 9)}`,
-          title: isAmazon ? 'Amazon Product' : 'Shopify Product',
-          description: `This is a mock ${isAmazon ? 'Amazon' : 'Shopify'} product for ${url}`,
+          title: 'Shopify Product',
+          description: `This is a mock Shopify product for ${url}`,
           price: Math.floor(Math.random() * 200) + 20, // Random price between $20 and $220
-          imageUrl: isAmazon 
-            ? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30' 
-            : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+          imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
           url: url
         };
         
