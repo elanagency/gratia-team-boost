@@ -10,7 +10,7 @@ export interface TeamMember {
   email: string;
   role: string;
   user_id: string;
-  points: number; // Add the points property
+  points: number;
   recognitionsReceived: number;
   recognitionsGiven: number;
   isPending?: boolean;
@@ -73,6 +73,18 @@ export const useTeamMembers = () => {
         profileMap.set(profile.id, profile);
       });
       
+      // Fetch emails from our edge function
+      const { data: emailsResponse, error: emailsError } = await supabase.functions.invoke("get-user-emails", {
+        body: { userIds },
+      });
+      
+      if (emailsError) {
+        console.error("Error fetching emails:", emailsError);
+        // Continue without emails, we'll still show other user data
+      }
+      
+      const emailsMap = emailsResponse?.emails || {};
+      
       // Format team members with profile data
       const formattedMembers: TeamMember[] = members.map(member => {
         const profile = profileMap.get(member.user_id);
@@ -83,10 +95,10 @@ export const useTeamMembers = () => {
         return {
           id: member.id,
           name: memberName || 'No Name',
-          email: '', // We don't have email in the profiles table
+          email: emailsMap[member.user_id] || '', // Get email from our emails map
           role: member.is_admin ? 'Admin' : member.role || 'Member',
           user_id: member.user_id,
-          points: member.points || 0, // Use the points from the members data
+          points: member.points || 0,
           recognitionsReceived: 0, // Placeholder values
           recognitionsGiven: 0 // Placeholder values
         };
