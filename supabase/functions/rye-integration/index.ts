@@ -41,9 +41,8 @@ serve(async (req) => {
       supabaseServiceKey
     );
     
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split('/').filter(Boolean);
-    const action = pathParts[pathParts.length - 1];
+    const reqData = await req.json();
+    const action = reqData.action;
 
     // Create a client to honor RLS policies
     const authHeader = req.headers.get('Authorization');
@@ -57,7 +56,7 @@ serve(async (req) => {
       }
     );
 
-    // Verify auth token
+    // Verify auth token for most operations
     const { data: { user }, error: authError } = await clientSuapbase.auth.getUser();
     if (authError || !user) {
       return new Response(
@@ -105,11 +104,61 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
+        
+      case 'requestShopifyProductByURL':
+      case 'requestAmazonProductByURL':
+        // In a real implementation, this would call the Rye GraphQL API
+        // For now, we'll simulate this with mock data based on the URL
+        const { url } = reqData;
+        console.log(`Request to fetch product from URL: ${url}`);
+        
+        // Generate mock product data
+        const isAmazon = url.includes('amazon') || url.includes('amzn');
+        const mockProduct: RyeProduct = {
+          id: `product_${Math.random().toString(36).substr(2, 9)}`,
+          title: isAmazon ? 'Amazon Product' : 'Shopify Product',
+          description: `This is a mock ${isAmazon ? 'Amazon' : 'Shopify'} product for ${url}`,
+          price: Math.floor(Math.random() * 200) + 20, // Random price between $20 and $220
+          imageUrl: isAmazon 
+            ? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30' 
+            : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+          url: url
+        };
+        
+        return new Response(
+          JSON.stringify({ product: mockProduct }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+        
+      case 'productById':
+        // In a real implementation, this would call the Rye GraphQL API to get product details
+        const { productId } = reqData;
+        
+        // Generate mock product details
+        const mockProductDetails: RyeProduct = {
+          id: productId,
+          title: `Product ${productId.substring(0, 6)}`,
+          description: 'This is a detailed product description with specifications and features.',
+          price: Math.floor(Math.random() * 200) + 20,
+          imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
+          url: `https://example.com/product/${productId}`
+        };
+        
+        return new Response(
+          JSON.stringify({ product: mockProductDetails }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
 
       case 'redeem':
         // Parse the request body
-        const requestData: RedemptionRequest = await req.json();
-        const { rewardId, shippingAddress } = requestData;
+        const redemptionData: RedemptionRequest = reqData;
+        const { rewardId, shippingAddress } = redemptionData;
         
         // In a real implementation, this would:
         // 1. Fetch the reward details from the database
