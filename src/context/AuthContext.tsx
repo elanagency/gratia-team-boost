@@ -135,9 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.session?.user ?? null);
         
         // Redirect to login if no session on protected routes
+        const path = window.location.pathname;
         if (!data.session) {
-          const path = window.location.pathname;
-          if (path !== '/login' && path !== '/signup' && path !== '/') {
+          if (path.startsWith('/dashboard')) {
             navigate("/login");
           }
         }

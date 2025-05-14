@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
@@ -13,15 +13,32 @@ const DashboardLayout = () => {
     lastName, 
     userName, 
     isLoading, 
-    signOut
+    signOut,
+    isAdmin
   } = useAuth();
+  
+  useEffect(() => {
+    // Debug logging
+    if (user) {
+      console.log("DashboardLayout - User authenticated:", user.email);
+      console.log("User is admin:", isAdmin);
+    }
+  }, [user, isAdmin]);
   
   if (isLoading) {
     return <LoadingSpinner />;
   }
   
+  // If no user, redirect to login
   if (!user) {
+    console.log("No user found, redirecting to login");
     return <Navigate to="/login" replace />;
+  }
+  
+  // If user is not an admin, redirect to team dashboard
+  if (!isAdmin) {
+    console.log("User is not an admin, redirecting to team dashboard");
+    return <Navigate to="/dashboard-team" replace />;
   }
   
   return (
