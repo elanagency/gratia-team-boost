@@ -18,19 +18,19 @@ export const TeamStats = () => {
   const stats: StatItem[] = [
     { 
       title: "Your Points", 
-      value: "320", // In a real app, this would come from your user data
+      value: user?.points || 0, // Use actual user points 
       icon: Star, 
       description: "Available to spend" 
     },
     { 
       title: "Recognitions", 
-      value: "12", 
+      value: user?.recognitionsReceived || 0, // Use actual recognitions count
       icon: Award, 
       description: "Received this month" 
     },
     { 
       title: "Rewards", 
-      value: "3", 
+      value: user?.rewardsRedeemed || 0, // Use actual rewards redeemed
       icon: Gift, 
       description: "Redeemed this year" 
     },

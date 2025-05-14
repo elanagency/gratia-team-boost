@@ -14,9 +14,7 @@ const TeamDashboard = () => {
       <RewardShop />
       
       {/* Redemption History */}
-      <div className="mt-8">
-        <RedemptionHistory />
-      </div>
+      <RedemptionHistory />
     </div>
   );
 };
