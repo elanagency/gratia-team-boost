@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Award, Gift, Star } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type StatItem = {
   title: string;
@@ -11,26 +12,83 @@ type StatItem = {
   description: string;
 };
 
+type MemberData = {
+  points: number;
+  recognitionsReceived?: number;
+  rewardsRedeemed?: number;
+}
+
 export const TeamStats = () => {
-  const { user, userName } = useAuth();
+  const { user, userName, companyId } = useAuth();
+  const [memberData, setMemberData] = useState<MemberData>({
+    points: 0,
+    recognitionsReceived: 0,
+    rewardsRedeemed: 0
+  });
   
+  // Fetch the team member data when component mounts
+  useEffect(() => {
+    const fetchMemberData = async () => {
+      if (!user || !companyId) return;
+      
+      try {
+        // Get member points from company_members table
+        const { data: memberData, error: memberError } = await supabase
+          .from('company_members')
+          .select('points')
+          .eq('user_id', user.id)
+          .eq('company_id', companyId)
+          .maybeSingle();
+        
+        if (memberError) throw memberError;
+        
+        // Count recognitions received
+        const { data: recognitionsData, error: recognitionsError } = await supabase
+          .from('point_transactions')
+          .select('id')
+          .eq('recipient_id', user.id)
+          .eq('company_id', companyId);
+        
+        if (recognitionsError) throw recognitionsError;
+        
+        // Count rewards redeemed
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from('reward_redemptions')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (rewardsError) throw rewardsError;
+        
+        setMemberData({
+          points: memberData?.points || 0,
+          recognitionsReceived: recognitionsData?.length || 0,
+          rewardsRedeemed: rewardsData?.length || 0
+        });
+      } catch (error) {
+        console.error("Error fetching team member data:", error);
+      }
+    };
+    
+    fetchMemberData();
+  }, [user, companyId]);
+
   // Sample stats for the team member dashboard
   const stats: StatItem[] = [
     { 
       title: "Your Points", 
-      value: user?.points || 0, // Use actual user points 
+      value: memberData.points, 
       icon: Star, 
       description: "Available to spend" 
     },
     { 
       title: "Recognitions", 
-      value: user?.recognitionsReceived || 0, // Use actual recognitions count
+      value: memberData.recognitionsReceived || 0,
       icon: Award, 
       description: "Received this month" 
     },
     { 
       title: "Rewards", 
-      value: user?.rewardsRedeemed || 0, // Use actual rewards redeemed
+      value: memberData.rewardsRedeemed || 0,
       icon: Gift, 
       description: "Redeemed this year" 
     },
