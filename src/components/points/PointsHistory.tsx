@@ -17,16 +17,20 @@ type PointTransaction = {
   created_at: string;
 };
 
-export function PointsHistory() {
+type PointsHistoryProps = {
+  personalView?: boolean;
+};
+
+export function PointsHistory({ personalView = false }: PointsHistoryProps) {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { companyId } = useAuth();
+  const { companyId, user } = useAuth();
 
   useEffect(() => {
     if (companyId) {
       fetchPointsHistory();
     }
-  }, [companyId]);
+  }, [companyId, personalView, user?.id]);
 
   const fetchPointsHistory = async () => {
     if (!companyId) return;
@@ -34,11 +38,19 @@ export function PointsHistory() {
     try {
       setIsLoading(true);
       
-      // Get recent transactions for this company
-      const { data: transactionsData, error: transactionsError } = await supabase
+      // Build the base query
+      let query = supabase
         .from('point_transactions')
         .select('id, sender_id, recipient_id, points, description, created_at')
-        .eq('company_id', companyId)
+        .eq('company_id', companyId);
+      
+      // If personal view is enabled, only show transactions where the current user is involved
+      if (personalView && user?.id) {
+        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+      }
+        
+      // Execute the query
+      const { data: transactionsData, error: transactionsError } = await query
         .order('created_at', { ascending: false })
         .limit(10);
       
@@ -102,8 +114,12 @@ export function PointsHistory() {
   return (
     <Card className="dashboard-card">
       <CardHeader>
-        <CardTitle>Recent Point Transactions</CardTitle>
-        <CardDescription>Recent recognitions across your team</CardDescription>
+        <CardTitle>
+          {personalView ? "My Point Transactions" : "Recent Point Transactions"}
+        </CardTitle>
+        <CardDescription>
+          {personalView ? "Points you've sent and received" : "Recent recognitions across your team"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -132,8 +148,10 @@ export function PointsHistory() {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <p>No point transactions yet</p>
-            <p className="text-sm mt-2">Start giving points to recognize team members</p>
+            <p>{personalView ? "No personal point transactions yet" : "No point transactions yet"}</p>
+            <p className="text-sm mt-2">
+              {personalView ? "When you send or receive points, they will appear here" : "Start giving points to recognize team members"}
+            </p>
           </div>
         )}
       </CardContent>
