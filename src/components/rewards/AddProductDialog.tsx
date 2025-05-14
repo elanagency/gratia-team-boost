@@ -24,9 +24,7 @@ export const AddProductDialog = ({
 
   const handleAddProduct = () => {
     if (!productUrl) {
-      toast("Please enter a valid product URL", {
-        description: "URL is required to add a product"
-      });
+      toast.error("Please enter a valid product URL");
       return;
     }
 
@@ -34,9 +32,7 @@ export const AddProductDialog = ({
     try {
       new URL(productUrl);
     } catch (e) {
-      toast("Invalid URL format", {
-        description: "Please enter a valid URL"
-      });
+      toast.error("Invalid URL format");
       return;
     }
 

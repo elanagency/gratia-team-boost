@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -123,7 +122,7 @@ export const useTeamMembers = () => {
         // 1. Update the company points balance
         const { error: updateCompanyError } = await supabase
           .from('companies')
-          .update({ points_balance: supabase.rpc('increment', { x: member.points }) })
+          .update({ points_balance: supabase.from('companies').select('points_balance').eq('id', companyId).single().then(res => (res.data?.points_balance || 0) + member.points) })
           .eq('id', companyId);
           
         if (updateCompanyError) throw updateCompanyError;
@@ -150,23 +149,17 @@ export const useTeamMembers = () => {
         
       if (error) throw error;
       
-      toast({
-        title: "Team member removed successfully",
-        description: member.points > 0 ? 
-          `${member.points} points have been returned to the company.` : 
-          undefined,
-        variant: "default"
-      });
+      toast.success(
+        member.points > 0 
+          ? `Team member removed successfully. ${member.points} points have been returned to the company.`
+          : "Team member removed successfully."
+      );
       
       // Refresh the team members list
       fetchTeamMembers();
     } catch (error) {
       console.error("Error in removeMember:", error);
-      toast({
-        title: "Failed to remove team member",
-        description: "An error occurred while removing the team member.",
-        variant: "destructive"
-      });
+      toast.error("Failed to remove team member");
     }
   }, [fetchTeamMembers, user, companyId]);
 

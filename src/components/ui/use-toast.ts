@@ -1,21 +1,15 @@
 
-import { useToast as useHookToast, toast as hookToast } from "@/hooks/use-toast";
+import { useToast as useHookToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
+// Export a correctly typed toast object
 export const toast = {
-  ...hookToast,
+  ...sonnerToast,
   success: (message: string) => {
-    hookToast({
-      title: "Success",
-      description: message,
-      variant: "default"
-    });
+    sonnerToast.success(message);
   },
   error: (message: string) => {
-    hookToast({
-      title: "Error",
-      description: message,
-      variant: "destructive"
-    });
+    sonnerToast.error(message);
   }
 };
 
