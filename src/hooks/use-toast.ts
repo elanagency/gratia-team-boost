@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -139,7 +140,14 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+type ToastOptions = {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
+  action?: ToastActionElement;
+}
+
+function toast(props: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -166,6 +174,52 @@ function toast({ ...props }: Toast) {
     dismiss,
     update,
   }
+}
+
+// Add convenience methods for common toast types
+toast.success = (options: string | ToastOptions) => {
+  const props: ToastOptions = typeof options === 'string' 
+    ? { title: 'Success', description: options }
+    : { title: 'Success', ...options }
+  
+  return toast({
+    ...props,
+    variant: 'default',
+    className: 'bg-green-500 text-white border-green-600',
+  })
+}
+
+toast.error = (options: string | ToastOptions) => {
+  const props: ToastOptions = typeof options === 'string'
+    ? { title: 'Error', description: options }
+    : { title: 'Error', ...options }
+  
+  return toast({
+    ...props,
+    variant: 'destructive',
+  })
+}
+
+toast.warning = (options: string | ToastOptions) => {
+  const props: ToastOptions = typeof options === 'string'
+    ? { title: 'Warning', description: options }
+    : { title: 'Warning', ...options }
+  
+  return toast({
+    ...props,
+    className: 'bg-yellow-500 text-black border-yellow-600',
+  })
+}
+
+toast.info = (options: string | ToastOptions) => {
+  const props: ToastOptions = typeof options === 'string'
+    ? { title: 'Info', description: options }
+    : { title: 'Info', ...options }
+  
+  return toast({
+    ...props,
+    className: 'bg-[#F572FF] text-white border-[#E061EE]',
+  })
 }
 
 function useToast() {
