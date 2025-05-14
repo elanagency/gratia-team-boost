@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import AuthHeader from "@/components/auth/AuthHeader";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -92,26 +93,13 @@ const Login = () => {
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Navbar />
       
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <button 
-              onClick={() => navigate("/")} 
-              className="inline-flex items-center text-[#F572FF] mb-6 hover:underline"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to home
-            </button>
-            
-            <h2 className="text-3xl font-extrabold text-white">
-              Log in to your account
-            </h2>
-            <p className="mt-2 text-sm text-gray-400">
-              Welcome back to Gratia Team Boost
-            </p>
+            <AuthHeader />
           </div>
           
-          <div className="mt-8">
+          <div className="mt-10">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
