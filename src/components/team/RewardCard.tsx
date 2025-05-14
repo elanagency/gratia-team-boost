@@ -27,11 +27,9 @@ export const RewardCard = ({ reward, onSelect }: RewardCardProps) => {
       )}
       
       <div className="p-4 flex-grow">
-        <div className="flex justify-between items-start">
-          <h3 className="font-semibold text-lg">{reward.name}</h3>
-          <div className="bg-[#F572FF]/10 text-[#F572FF] px-2 py-1 rounded font-medium">
-            {reward.points_cost} points
-          </div>
+        <h3 className="font-semibold text-lg">{reward.name}</h3>
+        <div className="bg-[#F572FF]/10 text-[#F572FF] px-2 py-1 rounded font-medium mt-1 inline-block">
+          {reward.points_cost} points
         </div>
         
         {reward.description && (

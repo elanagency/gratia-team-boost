@@ -40,12 +40,11 @@ export const RewardCard = ({ reward, onDelete }: RewardCardProps) => {
         )}
       </div>
       <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-lg">{reward.name}</h3>
-          <div className="bg-[#F572FF]/10 text-[#F572FF] px-2 py-1 rounded font-medium">
-            {reward.points_cost} points
-          </div>
+        <h3 className="font-semibold text-lg">{reward.name}</h3>
+        <div className="bg-[#F572FF]/10 text-[#F572FF] px-2 py-1 rounded font-medium mt-1 inline-block">
+          {reward.points_cost} points
         </div>
+        
         {reward.description && (
           <p className="text-gray-500 text-sm mt-2 line-clamp-2">
             {reward.description}
