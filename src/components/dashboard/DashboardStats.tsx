@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Award, Gift, TrendingUp } from "lucide-react";
+import { Users, Award, Gift, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
@@ -15,9 +15,10 @@ type StatItem = {
 type DashboardStatsProps = {
   teamCount: number;
   isLoading: boolean;
+  companyPoints: number;
 };
 
-export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) => {
+export const DashboardStats = ({ teamCount, isLoading, companyPoints }: DashboardStatsProps) => {
   const [recognitionCount, setRecognitionCount] = useState<number>(0);
   const [rewardsCount, setRewardsCount] = useState<number>(0);
   const [isLoadingRecognitions, setIsLoadingRecognitions] = useState<boolean>(true);
@@ -64,8 +65,14 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
     fetchRecognitionStats();
   }, [companyId]);
 
-  // Sample stats for the dashboard
+  // Updated stats for the dashboard with company points as the first item
   const stats: StatItem[] = [
+    { 
+      title: "Company Balance", 
+      value: isLoading ? "..." : `${companyPoints} points`, 
+      icon: CreditCard, 
+      description: "Available points" 
+    },
     { 
       title: "Team Members", 
       value: isLoading ? "..." : teamCount.toString(), 
@@ -83,12 +90,6 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
       value: isLoadingRecognitions ? "..." : rewardsCount.toString(), 
       icon: Gift, 
       description: "This month" 
-    },
-    { 
-      title: "Engagement", 
-      value: "92%", 
-      icon: TrendingUp, 
-      description: "Team activity" 
     }
   ];
 

@@ -63,17 +63,17 @@ const Dashboard = () => {
       {/* Header with Give Points button */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <div className="bg-gray-100 px-3 py-1.5 rounded-md flex items-center">
-            <span className="text-sm font-medium text-gray-700 mr-1">Company Balance:</span>
-            <span className="text-sm font-semibold">{isLoading ? "..." : companyPoints} points</span>
-          </div>
+        <div>
           <GivePointsDialog />
         </div>
       </div>
       
       {/* Stats Grid */}
-      <DashboardStats teamCount={teamCount} isLoading={isLoading} />
+      <DashboardStats 
+        teamCount={teamCount} 
+        isLoading={isLoading} 
+        companyPoints={companyPoints}
+      />
 
       {/* Leaderboard */}
       <LeaderboardCard />
