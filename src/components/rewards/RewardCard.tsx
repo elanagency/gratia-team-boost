@@ -1,6 +1,8 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface Reward {
   id: string;
@@ -13,12 +15,13 @@ interface Reward {
 
 interface RewardCardProps {
   reward: Reward;
+  onDelete?: (reward: Reward) => void;
 }
 
-export const RewardCard = ({ reward }: RewardCardProps) => {
+export const RewardCard = ({ reward, onDelete }: RewardCardProps) => {
   // Format price from cents to dollars
-  const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
+  const formatPrice = (points: number) => {
+    return `$${(points / 100).toFixed(2)}`;
   };
 
   return (
@@ -51,6 +54,20 @@ export const RewardCard = ({ reward }: RewardCardProps) => {
         <div className="mt-1 text-sm text-gray-500">
           Price equivalent: {formatPrice(reward.points_cost)}
         </div>
+        
+        {onDelete && (
+          <div className="mt-3 flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-red-500 border-red-300 hover:bg-red-50 hover:text-red-600"
+              onClick={() => onDelete(reward)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

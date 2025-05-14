@@ -2,6 +2,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import RewardCard from "@/components/rewards/RewardCard";
 import AddProductDialog from "@/components/rewards/AddProductDialog";
 import { useRewardCatalog } from "@/hooks/useRewardCatalog";
@@ -13,7 +23,13 @@ const RewardsCatalog = () => {
     isAddProductOpen, 
     setIsAddProductOpen, 
     handleAddProduct, 
-    isLoading 
+    isLoading,
+    handleDeleteProduct,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    rewardToDelete,
+    confirmDeleteProduct,
+    isDeleting
   } = useRewardCatalog();
 
   return (
@@ -35,7 +51,11 @@ const RewardsCatalog = () => {
       ) : rewards.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rewards.map((reward) => (
-            <RewardCard key={reward.id} reward={reward} />
+            <RewardCard 
+              key={reward.id} 
+              reward={reward} 
+              onDelete={handleDeleteProduct}
+            />
           ))}
         </div>
       ) : (
@@ -53,6 +73,28 @@ const RewardsCatalog = () => {
         onAddProduct={handleAddProduct}
         isLoading={isLoading}
       />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the product "{rewardToDelete?.name}" from your rewards catalog.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProduct}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

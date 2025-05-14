@@ -31,6 +31,8 @@ export const useRewardCatalog = () => {
   const queryClient = useQueryClient();
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
 
   // Fetch existing rewards
   const { data: rewards = [], isLoading: isLoadingRewards } = useQuery({
@@ -110,23 +112,52 @@ export const useRewardCatalog = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       setIsAddProductOpen(false);
-      toast({
-        title: "Product added",
-        description: "The product has been added to your rewards catalog",
-      });
+      toast.success("Product added to your rewards catalog");
     },
     onError: (error: Error) => {
       console.error("Error adding product:", error);
-      toast({
-        title: "Failed to add product",
-        description: error.message || "An error occurred while adding the product",
-        variant: "destructive",
-      });
+      toast.error(error.message || "An error occurred while adding the product");
+    }
+  });
+
+  // Mutation to delete a product
+  const deleteProductMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const { error } = await supabase
+        .from('rewards')
+        .delete()
+        .eq('id', rewardId);
+      
+      if (error) {
+        throw error;
+      }
+      return rewardId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rewards'] });
+      toast.success("Product removed from your rewards catalog");
+      setDeleteConfirmOpen(false);
+      setRewardToDelete(null);
+    },
+    onError: (error: any) => {
+      console.error("Error deleting product:", error);
+      toast.error(error.message || "An error occurred while deleting the product");
     }
   });
 
   const handleAddProduct = (url: string, pointsMultiplier: number) => {
     addProductMutation.mutate({ url, pointsMultiplier });
+  };
+
+  const handleDeleteProduct = (reward: Reward) => {
+    setRewardToDelete(reward);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteProduct = () => {
+    if (rewardToDelete) {
+      deleteProductMutation.mutate(rewardToDelete.id);
+    }
   };
 
   return {
@@ -135,6 +166,12 @@ export const useRewardCatalog = () => {
     isAddProductOpen,
     setIsAddProductOpen,
     handleAddProduct,
-    isLoading
+    isLoading,
+    handleDeleteProduct,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    rewardToDelete,
+    confirmDeleteProduct,
+    isDeleting: deleteProductMutation.isPending
   };
 };
