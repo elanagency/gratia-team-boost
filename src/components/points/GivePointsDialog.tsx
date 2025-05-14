@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Loader2, Trophy } from "lucide-react";
+import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { TeamMember } from "@/hooks/useTeamMembers";
@@ -25,6 +25,8 @@ export function GivePointsDialog() {
   const [points, setPoints] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [companyPoints, setCompanyPoints] = useState(0);
+  const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
   
   const { user, companyId } = useAuth();
 
@@ -32,12 +34,14 @@ export function GivePointsDialog() {
   useEffect(() => {
     if (open && companyId) {
       fetchTeamMembers();
+      fetchCompanyPoints();
     } else {
       // Reset state when dialog closes
       setSearchQuery("");
       setSelectedMember(null);
       setDescription("");
       setPoints(1);
+      setShowInsufficientPoints(false);
     }
   }, [open, companyId]);
 
@@ -56,6 +60,28 @@ export function GivePointsDialog() {
       );
     }
   }, [searchQuery, teamMembers]);
+
+  // Fetch company points balance
+  const fetchCompanyPoints = async () => {
+    if (!companyId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('points_balance')
+        .eq('id', companyId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setCompanyPoints(data.points_balance || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching company points:", error);
+      toast.error("Failed to fetch company points balance");
+    }
+  };
 
   const fetchTeamMembers = async () => {
     if (!companyId || !user) return;
@@ -136,6 +162,12 @@ export function GivePointsDialog() {
       return;
     }
 
+    // Check if company has enough points
+    if (points > companyPoints) {
+      setShowInsufficientPoints(true);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -153,6 +185,7 @@ export function GivePointsDialog() {
       if (error) throw error;
 
       toast.success(`Successfully gave ${points} points to ${selectedMember.name}`);
+      await fetchCompanyPoints(); // Refresh company points balance
       setOpen(false);
     } catch (error) {
       console.error("Error giving points:", error);
@@ -177,6 +210,26 @@ export function GivePointsDialog() {
             Recognize a team member's contribution by giving them points.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Company points balance info */}
+        <div className="bg-gray-50 p-3 rounded-md mb-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Company Points Balance:</span>
+            <span className="font-semibold">{companyPoints} points</span>
+          </div>
+        </div>
+        
+        {showInsufficientPoints && (
+          <div className="bg-red-50 border border-red-200 p-3 rounded-md mb-4 flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-600">Insufficient points balance</p>
+              <p className="text-xs text-red-500">
+                Your company doesn't have enough points. Please top up your points balance in the Settings page.
+              </p>
+            </div>
+          </div>
+        )}
         
         {!selectedMember ? (
           <div className="space-y-4">
@@ -250,9 +303,17 @@ export function GivePointsDialog() {
                 id="points" 
                 type="number" 
                 min="1" 
+                max={companyPoints}
                 value={points}
-                onChange={(e) => setPoints(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  setPoints(value);
+                  setShowInsufficientPoints(value > companyPoints);
+                }}
               />
+              {companyPoints > 0 && (
+                <p className="text-xs text-gray-500">Maximum: {companyPoints} points</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -272,7 +333,7 @@ export function GivePointsDialog() {
           {selectedMember && (
             <Button 
               onClick={handleSubmit} 
-              disabled={!selectedMember || !description || points < 1 || isSubmitting}
+              disabled={!selectedMember || !description || points < 1 || isSubmitting || points > companyPoints}
               className="bg-[#F572FF] hover:bg-[#E061EE]"
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

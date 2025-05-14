@@ -15,6 +15,7 @@ export type Database = {
           handle: string
           id: string
           name: string
+          points_balance: number
           updated_at: string
         }
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           handle: string
           id?: string
           name: string
+          points_balance?: number
           updated_at?: string
         }
         Update: {
@@ -29,6 +31,7 @@ export type Database = {
           handle?: string
           id?: string
           name?: string
+          points_balance?: number
           updated_at?: string
         }
         Relationships: []
@@ -67,6 +70,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_point_transactions: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_point_transactions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

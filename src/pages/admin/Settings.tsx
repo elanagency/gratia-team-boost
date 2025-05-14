@@ -9,6 +9,7 @@ import { Upload, Copy, CopyCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { CompanyPointsCard } from "@/components/settings/CompanyPointsCard";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -102,6 +103,14 @@ const Settings = () => {
           Save Changes
         </Button>
       </div>
+      
+      {/* Points Balance Card */}
+      {company && (
+        <CompanyPointsCard 
+          companyPoints={company.points_balance || 0} 
+          onPointsUpdated={fetchCompanyData} 
+        />
+      )}
       
       {/* Public URL Card */}
       <Card className="dashboard-card p-4">
