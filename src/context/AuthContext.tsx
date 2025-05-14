@@ -10,6 +10,7 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  isAdminLoading: boolean; // New state to track admin status loading
   firstName: string;
   lastName: string;
   userName: string;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdminLoading, setIsAdminLoading] = useState(true); // New state for admin status loading
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         console.log("Loading profile data for user:", user.id);
+        setIsAdminLoading(true); // Set admin loading state to true when starting to load
         
         // Fetch profile data
         const { data: profile, error: profileError } = await supabase
@@ -71,7 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (companyMember?.company_id) {
           setCompanyId(companyMember.company_id);
-          setIsAdmin(companyMember.is_admin || false);
+          const adminStatus = companyMember.is_admin || false;
+          console.log(`User admin status determined: ${adminStatus}`);
+          setIsAdmin(adminStatus);
           
           // Fetch company name
           const { data: company, error: companyError } = await supabase
@@ -89,9 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCompanyName('');
           setIsAdmin(false);
         }
+
+        // Only set isAdminLoading to false after we've determined the admin status
+        setIsAdminLoading(false);
+        console.log("Admin loading completed, isAdmin:", companyMember?.is_admin || false);
       } catch (error) {
         console.error("Error loading user data:", error);
         setError(error instanceof Error ? error.message : "Unknown error");
+        setIsAdminLoading(false); // Make sure we set this to false even if there's an error
       }
     };
     
@@ -106,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCompanyName('');
       setIsAdmin(false);
       setError(null);
+      setIsAdminLoading(false); // No admin to load if there's no user
     }
   }, [user]);
 
@@ -173,6 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     isLoading,
+    isAdminLoading, // Add the new state to the context value
     firstName,
     lastName, 
     userName,

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
@@ -12,28 +12,28 @@ const TeamDashboardLayout = () => {
     firstName, 
     lastName, 
     userName, 
-    isLoading, 
+    isLoading,
+    isAdminLoading,
     signOut,
     isAdmin
   } = useAuth();
-  
-  // Add state to track if we've already attempted a redirect
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   useEffect(() => {
     // Debug logging
     if (user) {
       console.log("TeamDashboardLayout - User authenticated:", user.email);
       console.log("User is admin:", isAdmin);
+      console.log("Admin loading status:", isAdminLoading);
     }
     
-    // Set redirect attempted to true once we have the user and admin status
-    if (user !== null && !redirectAttempted) {
-      setRedirectAttempted(true);
-    }
-  }, [user, isAdmin, redirectAttempted]);
+    // Clear the redirect flag when we navigate to team dashboard
+    return () => {
+      sessionStorage.removeItem('redirected_from_team');
+    };
+  }, [user, isAdmin, isAdminLoading]);
   
-  if (isLoading) {
+  // Show loading spinner if either main loading or admin status is loading
+  if (isLoading || isAdminLoading) {
     return <LoadingSpinner />;
   }
   
@@ -43,10 +43,17 @@ const TeamDashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
   
+  // Check if we've already redirected from admin dashboard to prevent loops
+  const redirectedFromAdmin = sessionStorage.getItem('redirected_from_admin');
+  
   // Only redirect to admin dashboard if we have confirmed the user is an admin
-  // and we've already attempted to determine their status
-  if (isAdmin && redirectAttempted) {
+  // and we're no longer loading the admin status, and we haven't already redirected
+  if (isAdmin && !isAdminLoading && !redirectedFromAdmin) {
     console.log("User is an admin, redirecting to admin dashboard");
+    // Store in sessionStorage that we've redirected from the team dashboard
+    sessionStorage.setItem('redirected_from_team', 'true');
+    // Clear the admin redirect flag since we're leaving the page
+    sessionStorage.removeItem('redirected_from_admin');
     return <Navigate to="/dashboard" replace />;
   }
   
