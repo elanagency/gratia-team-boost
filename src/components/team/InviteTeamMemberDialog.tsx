@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -45,6 +44,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setIsSubmitting(true);
     
     try {
+      console.log("Inviting team member:", { email, name, role });
       const { data, error } = await supabase.functions.invoke('create-team-member', {
         body: { 
           email, 
@@ -57,8 +57,11 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       if (error) throw error;
       
+      console.log("Team member creation response:", data);
+      
       // Check if this is a new user with a password
       if (data.isNewUser && data.password) {
+        console.log("New user created, showing password dialog");
         setPasswordInfo({
           isNewUser: true,
           password: data.password,
@@ -66,25 +69,29 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           name: name
         });
         
+        // Reset form fields but keep the main dialog open until password dialog is closed
+        setEmail('');
+        setName('');
+        setRole('member');
+        
+        // Important: Show password dialog AFTER updating state
         setShowPasswordDialog(true);
+        console.log("Password dialog state set to:", true);
+      } else {
+        console.log("Existing user invited");
+        setOpen(false);
         
         // Reset form
         setEmail('');
         setName('');
         setRole('member');
-      } else {
-        setOpen(false);
+        
         toast.success(`${name} has been invited to join the team!`);
         
-        // Reset form
-        setEmail('');
-        setName('');
-        setRole('member');
-      }
-      
-      // Refresh team members list
-      if (onSuccess) {
-        onSuccess();
+        // Call onSuccess for existing user
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       console.error("Error inviting team member:", error);
@@ -105,14 +112,32 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   };
   
   const closePasswordDialog = () => {
+    console.log("Closing password dialog");
     setShowPasswordDialog(false);
-    setOpen(false);
+    setOpen(false); // Close the main dialog as well
+    
+    // Now call onSuccess callback after user has seen the password
+    if (onSuccess) {
+      console.log("Calling onSuccess callback");
+      onSuccess();
+    }
+    
     toast.success(`${passwordInfo.name} has been added to the team!`);
+  };
+  
+  // Make sure we don't close the main dialog while password dialog is showing
+  const handleOpenChange = (newOpen: boolean) => {
+    if (showPasswordDialog) {
+      // If password dialog is open, don't allow closing the main dialog
+      // This ensures the password dialog stays visible
+      return;
+    }
+    setOpen(newOpen);
   };
   
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <Button variant="default" className="bg-[#F572FF] hover:bg-[#E061EE] text-white">
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -173,7 +198,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Password Display Dialog */}
+      {/* Password Display Dialog - Using separate Dialog component */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
