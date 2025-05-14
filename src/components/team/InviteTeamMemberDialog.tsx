@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle } from "lucide-react";
+import { Copy, PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -23,6 +24,15 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [role, setRole] = useState('member');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
+  
+  // Add state for password info and dialog
+  const [passwordInfo, setPasswordInfo] = useState({ 
+    isNewUser: false, 
+    password: "", 
+    email: "",
+    name: ""
+  });
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +57,30 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       if (error) throw error;
       
-      setOpen(false);
-      toast.success(`${name} has been invited to join the team!`);
-      
-      // Clear form
-      setEmail('');
-      setName('');
-      setRole('member');
+      // Check if this is a new user with a password
+      if (data.isNewUser && data.password) {
+        setPasswordInfo({
+          isNewUser: true,
+          password: data.password,
+          email: email,
+          name: name
+        });
+        
+        setShowPasswordDialog(true);
+        
+        // Reset form
+        setEmail('');
+        setName('');
+        setRole('member');
+      } else {
+        setOpen(false);
+        toast.success(`${name} has been invited to join the team!`);
+        
+        // Reset form
+        setEmail('');
+        setName('');
+        setRole('member');
+      }
       
       // Refresh team members list
       if (onSuccess) {
@@ -67,67 +94,128 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   };
   
+  const copyPasswordToClipboard = () => {
+    navigator.clipboard.writeText(passwordInfo.password)
+      .then(() => {
+        toast.success("Password copied to clipboard");
+      })
+      .catch(() => {
+        toast.error("Failed to copy password");
+      });
+  };
+  
+  const closePasswordDialog = () => {
+    setShowPasswordDialog(false);
+    setOpen(false);
+    toast.success(`${passwordInfo.name} has been added to the team!`);
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="default" className="bg-[#F572FF] hover:bg-[#E061EE] text-white">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Invite Team Member
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Invite a team member</DialogTitle>
-          <DialogDescription>
-            Add a new team member to your company.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input 
-              id="name" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="col-span-3" 
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="col-span-3"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Role
-            </Label>
-            <Select onValueChange={setRole} defaultValue={role}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="submit" disabled={isSubmitting} className="ml-auto bg-[#F572FF] hover:bg-[#E061EE] text-white">
-            {isSubmitting ? "Submitting..." : "Invite"}
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="default" className="bg-[#F572FF] hover:bg-[#E061EE] text-white">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Invite Team Member
           </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Invite a team member</DialogTitle>
+            <DialogDescription>
+              Add a new team member to your company.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input 
+                id="name" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3" 
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select onValueChange={setRole} defaultValue={role}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" disabled={isSubmitting} className="ml-auto bg-[#F572FF] hover:bg-[#E061EE] text-white">
+              {isSubmitting ? "Submitting..." : "Invite"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Display Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>New Team Member Created</DialogTitle>
+            <DialogDescription>
+              A new account has been created for {passwordInfo.name}. Share these temporary credentials with them.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Email</Label>
+              <div className="col-span-3 bg-gray-100 p-2 rounded text-sm">
+                {passwordInfo.email}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Password</Label>
+              <div className="col-span-3 bg-gray-100 p-2 rounded text-sm font-mono flex items-center justify-between">
+                {passwordInfo.password}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyPasswordToClipboard} 
+                  className="ml-2"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-sm text-amber-600 mt-2">
+              <strong>Important:</strong> This password will only be shown once. Make sure to copy it before closing this dialog.
+            </div>
+          </div>
+          <Button 
+            onClick={closePasswordDialog} 
+            className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
+          >
+            Done
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
