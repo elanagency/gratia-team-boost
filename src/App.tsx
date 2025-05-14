@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ import ProfileSettings from "./pages/admin/ProfileSettings";
 // Import Team Dashboard components
 import TeamDashboardLayout from "./pages/team/TeamDashboardLayout";
 import TeamDashboard from "./pages/team/TeamDashboard";
+import RewardShop from "./pages/team/RewardShop";
 
 const queryClient = new QueryClient();
 
@@ -73,7 +73,7 @@ const App = () => (
               <Route path="/dashboard-team" element={<TeamDashboardLayout />}>
                 <Route index element={<TeamDashboard />} />
                 <Route path="recognition" element={<RecognitionHistory />} />
-                <Route path="rewards" element={<TeamDashboard />} />
+                <Route path="rewards" element={<RewardShop />} />
                 <Route path="profile" element={<ProfileSettings />} />
               </Route>
               
