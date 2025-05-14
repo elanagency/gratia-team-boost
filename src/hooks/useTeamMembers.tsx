@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -119,15 +120,27 @@ export const useTeamMembers = () => {
       
       // Only process points if the member has some
       if (member.points > 0) {
-        // 1. Update the company points balance
+        // 1. First get the current company points balance
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('points_balance')
+          .eq('id', companyId)
+          .single();
+          
+        if (companyError) throw companyError;
+        
+        const currentBalance = companyData?.points_balance || 0;
+        const newBalance = currentBalance + member.points;
+        
+        // 2. Update the company points balance
         const { error: updateCompanyError } = await supabase
           .from('companies')
-          .update({ points_balance: supabase.from('companies').select('points_balance').eq('id', companyId).single().then(res => (res.data?.points_balance || 0) + member.points) })
+          .update({ points_balance: newBalance })
           .eq('id', companyId);
           
         if (updateCompanyError) throw updateCompanyError;
         
-        // 2. Create a transaction record in point_transactions for audit trail
+        // 3. Create a transaction record in point_transactions for audit trail
         const { error: transactionError } = await supabase
           .from('point_transactions')
           .insert({
@@ -141,7 +154,7 @@ export const useTeamMembers = () => {
         if (transactionError) throw transactionError;
       }
       
-      // 3. Delete the company member
+      // 4. Delete the company member
       const { error } = await supabase
         .from('company_members')
         .delete()
