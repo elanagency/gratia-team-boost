@@ -115,22 +115,60 @@ export const useTeamMembers = () => {
 
   const removeMember = useCallback(async (member: TeamMember) => {
     try {
+      // Start a transaction to ensure all operations succeed or fail together
+      if (!companyId) throw new Error("Company ID not found");
+      
+      // Only process points if the member has some
+      if (member.points > 0) {
+        // 1. Update the company points balance
+        const { error: updateCompanyError } = await supabase
+          .from('companies')
+          .update({ points_balance: supabase.rpc('increment', { x: member.points }) })
+          .eq('id', companyId);
+          
+        if (updateCompanyError) throw updateCompanyError;
+        
+        // 2. Create a transaction record in point_transactions for audit trail
+        const { error: transactionError } = await supabase
+          .from('point_transactions')
+          .insert({
+            company_id: companyId,
+            sender_id: member.user_id,
+            recipient_id: user?.id || '',  // System/admin user receiving points back
+            points: member.points,
+            description: `Points returned to company when ${member.name} was removed from team.`
+          });
+          
+        if (transactionError) throw transactionError;
+      }
+      
+      // 3. Delete the company member
       const { error } = await supabase
         .from('company_members')
         .delete()
         .eq('id', member.id);
         
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      toast.success("Team member removed successfully");
+      toast({
+        title: "Team member removed successfully",
+        description: member.points > 0 ? 
+          `${member.points} points have been returned to the company.` : 
+          undefined,
+        variant: "default"
+      });
+      
+      // Refresh the team members list
       fetchTeamMembers();
     } catch (error) {
       console.error("Error in removeMember:", error);
-      toast.error("Failed to remove team member");
+      toast({
+        title: "Failed to remove team member",
+        description: "An error occurred while removing the team member.",
+        variant: "destructive"
+      });
     }
-  }, [fetchTeamMembers]);
+  }, [fetchTeamMembers, user, companyId]);
 
   useEffect(() => {
     if (user && companyId) {

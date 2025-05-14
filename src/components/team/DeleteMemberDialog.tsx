@@ -14,6 +14,7 @@ import {
 interface TeamMember {
   id: string;
   name: string;
+  points: number;
   isPending?: boolean;
 }
 
@@ -39,6 +40,11 @@ const DeleteMemberDialog: React.FC<DeleteMemberDialogProps> = ({
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This will remove {member?.name} from your team. This action cannot be undone.
+            {member && member.points > 0 && (
+              <p className="mt-2 text-sm font-semibold text-[#F572FF]">
+                {member.points} points will be returned to your company.
+              </p>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
