@@ -119,58 +119,85 @@ serve(async (req) => {
           // Get shopper IP (for better pricing accuracy)
           const SHOPPER_IP = req.headers.get('x-forwarded-for') || '8.8.8.8';
           
-          // Call the Rye GraphQL API
-          const ryeResponse = await fetch('https://graphql.api.rye.com/v1/query', {
+          // Step 1: Call the Rye GraphQL API to request the product by URL
+          // This returns a productId we can use to fetch details
+          const requestMutation = `
+            mutation {
+              requestAmazonProductByURL(input: { url: "${url}" }) {
+                productId
+              }
+            }
+          `;
+          
+          const requestResponse = await fetch('https://graphql.api.rye.com/v1/query', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': RYE_API_KEY, // Already includes "Basic ..."
+              'Authorization': RYE_API_KEY, 
               'Rye-Shopper-IP': SHOPPER_IP
             },
-            body: JSON.stringify({
-              query: `
-                mutation {
-                  requestAmazonProductByURL(url: "${url}") {
-                    product {
-                      id
-                      title
-                      description
-                      price {
-                        amount
-                        currency
-                      }
-                      images {
-                        url
-                      }
-                      url
-                    }
-                  }
-                }
-              `
-            }),
+            body: JSON.stringify({ query: requestMutation }),
           });
           
-          // Parse the Rye API response
-          const ryeResult = await ryeResponse.json();
-          console.log('Rye API response:', JSON.stringify(ryeResult));
+          const requestResult = await requestResponse.json();
+          console.log('Rye API request response:', JSON.stringify(requestResult));
           
           // Check for errors in the response
-          if (ryeResult.errors && ryeResult.errors.length > 0) {
-            throw new Error(`Rye API error: ${ryeResult.errors[0].message}`);
+          if (requestResult.errors && requestResult.errors.length > 0) {
+            throw new Error(`Rye API error: ${requestResult.errors[0].message}`);
           }
           
-          if (!ryeResult.data || !ryeResult.data.requestAmazonProductByURL || !ryeResult.data.requestAmazonProductByURL.product) {
-            throw new Error('Invalid product data received from Rye API');
+          if (!requestResult.data || !requestResult.data.requestAmazonProductByURL || !requestResult.data.requestAmazonProductByURL.productId) {
+            throw new Error('Invalid product request data received from Rye API');
+          }
+          
+          // Extract the product ID from the first request
+          const productId = requestResult.data.requestAmazonProductByURL.productId;
+          
+          // Step 2: Fetch detailed product information using the product ID
+          const detailQuery = `
+            query {
+              productByID(input: { id: "${productId}", marketplace: AMAZON }) {
+                id
+                title
+                description
+                images { url }
+                price { value currency }
+                url
+              }
+            }
+          `;
+          
+          const detailResponse = await fetch('https://graphql.api.rye.com/v1/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': RYE_API_KEY,
+              'Rye-Shopper-IP': SHOPPER_IP
+            },
+            body: JSON.stringify({ query: detailQuery }),
+          });
+          
+          const detailResult = await detailResponse.json();
+          console.log('Rye API detail response:', JSON.stringify(detailResult));
+          
+          // Check for errors in the detail response
+          if (detailResult.errors && detailResult.errors.length > 0) {
+            throw new Error(`Rye API error: ${detailResult.errors[0].message}`);
+          }
+          
+          if (!detailResult.data || !detailResult.data.productByID) {
+            throw new Error('Invalid product detail data received from Rye API');
           }
           
           // Transform the Rye product format to our application format
-          const ryeProduct = ryeResult.data.requestAmazonProductByURL.product;
+          const ryeProduct = detailResult.data.productByID;
           
           const product: RyeProduct = {
             id: ryeProduct.id,
             title: ryeProduct.title,
             description: ryeProduct.description || '',
-            price: ryeProduct.price.amount || 0,
+            price: ryeProduct.price.value || 0,
             imageUrl: ryeProduct.images && ryeProduct.images.length > 0 ? ryeProduct.images[0].url : '',
             url: ryeProduct.url
           };
