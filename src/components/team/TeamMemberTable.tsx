@@ -1,7 +1,10 @@
+
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trophy, Trash2, MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
+
 interface TeamMember {
   id: string;
   name: string;

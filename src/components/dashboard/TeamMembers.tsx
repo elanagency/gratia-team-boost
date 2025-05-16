@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { Link } from "react-router-dom";
 
 export const TeamMembers = () => {
   const { teamMembers, isLoading } = useTeamMembers();
@@ -15,9 +16,9 @@ export const TeamMembers = () => {
     <Card className="dashboard-card h-full">
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-800">Your team</h2>
-        <a href="/dashboard/team" className="text-sm text-[#F572FF] flex items-center">
+        <Link to="/dashboard/team" className="text-sm text-[#F572FF] flex items-center">
           View All <ChevronRight size={16} />
-        </a>
+        </Link>
       </div>
       <div className="p-6 space-y-4">
         {isLoading ? (

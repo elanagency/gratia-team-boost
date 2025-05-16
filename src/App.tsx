@@ -24,7 +24,18 @@ import TeamDashboard from "./pages/team/TeamDashboard";
 import TeamRecognition from "./pages/team/TeamRecognition";
 import RewardShop from "./pages/team/RewardShop";
 
-const queryClient = new QueryClient();
+// Create a client with better caching defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // Data remains fresh for 5 minutes
+      cacheTime: 1000 * 60 * 30, // Unused data is garbage collected after 30 minutes
+      refetchOnWindowFocus: true, // Refetch when window regains focus
+      refetchOnMount: true, // Refetch when component mounts if data is stale
+      retry: 1, // Retry failed queries once
+    },
+  },
+});
 
 // Wrapper component to add appropriate classes based on the route
 const RouteClassWrapper = ({ children }: { children: React.ReactNode }) => {
