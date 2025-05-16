@@ -29,7 +29,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // Data remains fresh for 5 minutes
-      cacheTime: 1000 * 60 * 30, // Unused data is garbage collected after 30 minutes
+      gcTime: 1000 * 60 * 30, // Unused data is garbage collected after 30 minutes (renamed from cacheTime)
       refetchOnWindowFocus: true, // Refetch when window regains focus
       refetchOnMount: true, // Refetch when component mounts if data is stale
       retry: 1, // Retry failed queries once
