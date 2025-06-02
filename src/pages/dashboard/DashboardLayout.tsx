@@ -1,8 +1,8 @@
 
 import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Header } from "@/components/dashboard/Header";
+import { MemoizedSidebar } from "@/components/dashboard/MemoizedSidebar";
+import { MemoizedHeader } from "@/components/dashboard/MemoizedHeader";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
 
@@ -49,8 +49,8 @@ const DashboardLayout = () => {
   
   return (
     <div className="flex h-screen w-full bg-[#f7f8fa]">
-      {/* Left Sidebar */}
-      <Sidebar 
+      {/* Left Sidebar - Memoized */}
+      <MemoizedSidebar 
         user={user}
         firstName={firstName}
         lastName={lastName}
@@ -59,12 +59,14 @@ const DashboardLayout = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <Header displayName={userName} />
+        {/* Top Header - Memoized */}
+        <MemoizedHeader displayName={userName} />
         
-        {/* Content Area with Scrolling */}
-        <main className="flex-1 overflow-auto p-6 w-full">
-          <Outlet />
+        {/* Content Area with Scrolling and Transition */}
+        <main className="flex-1 overflow-auto p-6 w-full transition-all duration-200 ease-in-out">
+          <div className="animate-in fade-in-50 duration-200">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
