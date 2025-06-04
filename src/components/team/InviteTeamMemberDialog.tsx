@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -44,11 +43,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     e.preventDefault();
     
     if (!email || !name) {
-      toast({
-        title: "Error",
-        description: "Please fill out all required fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill out all required fields");
       return;
     }
     
@@ -97,10 +92,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           // Store checkout URL for later redirect
           sessionStorage.setItem('pendingCheckoutUrl', data.checkoutUrl);
           
-          toast({
-            title: "Success",
-            description: `${name} has been added! After viewing the password, you'll be redirected to complete billing setup.`,
-          });
+          toast.success(`${name} has been added! After viewing the password, you'll be redirected to complete billing setup.`);
         } else {
           // Existing user, redirect immediately
           setOpen(false);
@@ -108,10 +100,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           setName('');
           setRole('member');
           
-          toast({
-            title: "Success", 
-            description: `${name} has been added! Redirecting to billing setup...`,
-          });
+          toast.success(`${name} has been added! Redirecting to billing setup...`);
           
           // Redirect to Stripe checkout
           setTimeout(() => {
@@ -154,10 +143,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setName('');
         setRole('member');
         
-        toast({
-          title: "Success",
-          description: `${name} has been invited to join the team!`,
-        });
+        toast.success(`${name} has been invited to join the team!`);
         
         // Call onSuccess for existing user
         if (onSuccess) {
@@ -166,11 +152,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       }
     } catch (error) {
       console.error("Error inviting team member:", error);
-      toast({
-        title: "Error",
-        description: "Failed to invite team member. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to invite team member. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -187,10 +169,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       sessionStorage.removeItem('pendingCheckoutUrl');
       console.log("Redirecting to pending checkout URL:", pendingCheckoutUrl);
       
-      toast({
-        title: "Info",
-        description: "Redirecting to billing setup...",
-      });
+      toast.info("Redirecting to billing setup...");
       setTimeout(() => {
         window.location.href = pendingCheckoutUrl;
       }, 1500);
@@ -201,10 +180,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         onSuccess();
       }
       
-      toast({
-        title: "Success",
-        description: `${passwordInfo.name} has been added to the team!`,
-      });
+      toast.success(`${passwordInfo.name} has been added to the team!`);
     }
   };
   
