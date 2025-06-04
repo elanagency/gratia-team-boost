@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -27,9 +26,9 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const { companyId, user } = useAuth();
   const { teamMembers } = useTeamMembers();
   
-  // Check if this will be the first non-admin member
-  const nonAdminMemberCount = teamMembers?.filter(member => !member.is_admin).length || 0;
-  const isFirstMember = nonAdminMemberCount === 0;
+  // Check if this will be the first member (since teamMembers already excludes admins)
+  const currentMemberCount = teamMembers?.length || 0;
+  const isFirstMember = currentMemberCount === 0;
   
   // Add state for password info and dialog
   const [passwordInfo, setPasswordInfo] = useState({ 
