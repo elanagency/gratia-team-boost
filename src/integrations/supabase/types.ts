@@ -85,6 +85,11 @@ export type Database = {
           created_by: string
           description: string
           id: string
+          payment_status: string | null
+          stripe_fee: number | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_amount: number | null
           transaction_type: string
         }
         Insert: {
@@ -94,6 +99,11 @@ export type Database = {
           created_by: string
           description: string
           id?: string
+          payment_status?: string | null
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number | null
           transaction_type: string
         }
         Update: {
@@ -103,6 +113,11 @@ export type Database = {
           created_by?: string
           description?: string
           id?: string
+          payment_status?: string | null
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number | null
           transaction_type?: string
         }
         Relationships: [
