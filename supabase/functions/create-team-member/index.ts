@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -71,6 +72,8 @@ serve(async (req: Request) => {
       );
     }
 
+    console.log("[CREATE-TEAM-MEMBER] Starting with data:", { name, email, companyId, role });
+
     // Get the original authorization header to pass it along
     const authHeader = req.headers.get("Authorization");
     
@@ -94,17 +97,17 @@ serve(async (req: Request) => {
       .eq('is_admin', false);
 
     if (countError) {
-      console.error("Error getting current member count:", countError);
+      console.error("[CREATE-TEAM-MEMBER] Error getting current member count:", countError);
     }
 
     const memberCountBeforeAdd = currentMembers?.length || 0;
-    console.log("Current NON-ADMIN member count before adding:", memberCountBeforeAdd);
+    console.log("[CREATE-TEAM-MEMBER] Current NON-ADMIN member count before adding:", memberCountBeforeAdd);
     
     // Check if user already exists
     const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (userCheckError) {
-      console.error("Error checking existing users:", userCheckError);
+      console.error("[CREATE-TEAM-MEMBER] Error checking existing users:", userCheckError);
       return new Response(
         JSON.stringify({ error: "Failed to check if user already exists" }),
         {
@@ -139,11 +142,11 @@ serve(async (req: Request) => {
       }
       
       userId = existingUser.id;
-      console.log("User already exists with ID:", userId);
+      console.log("[CREATE-TEAM-MEMBER] User already exists with ID:", userId);
     } else {
       // Generate password for new user
       password = generateSecurePassword();
-      console.log("Generated secure password");
+      console.log("[CREATE-TEAM-MEMBER] Generated secure password for new user");
       isNewUser = true;
       
       // Parse name into first and last name components
@@ -161,7 +164,7 @@ serve(async (req: Request) => {
       });
       
       if (createUserError || !newUser?.user) {
-        console.error("Error creating user:", createUserError);
+        console.error("[CREATE-TEAM-MEMBER] Error creating user:", createUserError);
         return new Response(
           JSON.stringify({ error: "Failed to create user account" }),
           {
@@ -172,7 +175,7 @@ serve(async (req: Request) => {
       }
       
       userId = newUser.user.id;
-      console.log("Created new user with ID:", userId);
+      console.log("[CREATE-TEAM-MEMBER] Created new user with ID:", userId);
     }
     
     // Check if user is already a member of this company
@@ -184,12 +187,12 @@ serve(async (req: Request) => {
       .maybeSingle();
     
     if (membershipCheckError) {
-      console.error("Error checking existing membership:", membershipCheckError);
+      console.error("[CREATE-TEAM-MEMBER] Error checking existing membership:", membershipCheckError);
       // Continue anyway, as this might just be the first membership
     }
     
     if (existingMembership) {
-      console.log("User is already a member of this company");
+      console.log("[CREATE-TEAM-MEMBER] User is already a member of this company");
       return new Response(
         JSON.stringify({
           message: "User is already a member of this company",
@@ -216,7 +219,7 @@ serve(async (req: Request) => {
       .single();
     
     if (membershipError) {
-      console.error("Error adding user to company:", membershipError);
+      console.error("[CREATE-TEAM-MEMBER] Error adding user to company:", membershipError);
       return new Response(
         JSON.stringify({ error: "Failed to add user to company" }),
         {
@@ -226,7 +229,7 @@ serve(async (req: Request) => {
       );
     }
     
-    console.log("Added user to company successfully");
+    console.log("[CREATE-TEAM-MEMBER] Added user to company successfully");
     
     // Get updated NON-ADMIN member count
     const { data: newMembers, error: newCountError } = await supabaseAdmin
@@ -236,11 +239,11 @@ serve(async (req: Request) => {
       .eq('is_admin', false);
 
     if (newCountError) {
-      console.error("Error getting new member count:", newCountError);
+      console.error("[CREATE-TEAM-MEMBER] Error getting new member count:", newCountError);
     }
 
     const memberCountAfterAdd = newMembers?.length || 1; // Default to 1 if we can't count
-    console.log("NON-ADMIN member count after adding:", memberCountAfterAdd);
+    console.log("[CREATE-TEAM-MEMBER] NON-ADMIN member count after adding:", memberCountAfterAdd);
 
     // Check if company has active subscription
     const { data: company, error: companyError } = await supabaseAdmin
@@ -252,7 +255,7 @@ serve(async (req: Request) => {
     const hasActiveSubscription = company?.stripe_subscription_id && 
                                  company?.subscription_status === 'active';
 
-    console.log("Company subscription status:", { 
+    console.log("[CREATE-TEAM-MEMBER] Company subscription status:", { 
       hasSubscription: !!company?.stripe_subscription_id,
       status: company?.subscription_status,
       hasActiveSubscription 
@@ -262,8 +265,14 @@ serve(async (req: Request) => {
     const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
     let checkoutUrl = null;
     
+    console.log("[CREATE-TEAM-MEMBER] Billing setup decision:", {
+      memberCountBeforeAdd,
+      hasActiveSubscription,
+      needsBillingSetup
+    });
+    
     if (needsBillingSetup && authHeader) {
-      console.log("Creating checkout session for billing setup");
+      console.log("[CREATE-TEAM-MEMBER] Creating checkout session for billing setup");
       try {
         // Make a direct HTTP request to the checkout function with proper auth headers
         const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
@@ -282,28 +291,39 @@ serve(async (req: Request) => {
         if (checkoutResponse.ok) {
           const checkoutData = await checkoutResponse.json();
           checkoutUrl = checkoutData?.url;
-          console.log("Checkout URL created:", checkoutUrl);
+          console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutUrl);
         } else {
           const errorText = await checkoutResponse.text();
-          console.error("Error creating checkout session:", errorText);
+          console.error("[CREATE-TEAM-MEMBER] Error creating checkout session:", errorText);
         }
       } catch (checkoutErr) {
-        console.error("Failed to create checkout session:", checkoutErr);
+        console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
       }
+    } else {
+      console.log("[CREATE-TEAM-MEMBER] Billing setup not needed:", {
+        reason: needsBillingSetup ? "missing auth header" : "not first member or has subscription"
+      });
     }
     
     // Return success response
+    const response = {
+      message: "Team member added successfully",
+      userId,
+      membership,
+      isNewUser,
+      memberCount: memberCountAfterAdd,
+      needsBillingSetup,
+      checkoutUrl,
+      ...(isNewUser && password ? { password } : {}),
+    };
+
+    console.log("[CREATE-TEAM-MEMBER] Final response:", {
+      ...response,
+      password: password ? "[REDACTED]" : undefined
+    });
+    
     return new Response(
-      JSON.stringify({
-        message: "Team member added successfully",
-        userId,
-        membership,
-        isNewUser,
-        memberCount: memberCountAfterAdd,
-        needsBillingSetup,
-        checkoutUrl,
-        ...(isNewUser && password ? { password } : {}),
-      }),
+      JSON.stringify(response),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -311,7 +331,7 @@ serve(async (req: Request) => {
     );
     
   } catch (error) {
-    console.error("Error in create-team-member function:", error);
+    console.error("[CREATE-TEAM-MEMBER] Error in create-team-member function:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {

@@ -35,10 +35,17 @@ const PasswordDisplayDialog = ({
   const copyPasswordToClipboard = () => {
     navigator.clipboard.writeText(passwordInfo.password)
       .then(() => {
-        toast.success("Password copied to clipboard");
+        toast({
+          title: "Success",
+          description: "Password copied to clipboard",
+        });
       })
       .catch(() => {
-        toast.error("Failed to copy password");
+        toast({
+          title: "Error",
+          description: "Failed to copy password",
+          variant: "destructive",
+        });
       });
   };
 

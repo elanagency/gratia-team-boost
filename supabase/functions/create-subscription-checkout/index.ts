@@ -16,6 +16,23 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-SUBSCRIPTION-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Helper function to construct proper URLs
+const constructUrl = (origin: string | null, path: string): string => {
+  if (!origin) {
+    logStep("No origin header, using fallback URL");
+    return `https://kbjcjtycmfdjfnduxiud.supabase.co${path}`;
+  }
+  
+  // If origin already has a scheme, use it directly
+  if (origin.startsWith('http://') || origin.startsWith('https://')) {
+    return `${origin}${path}`;
+  }
+  
+  // If no scheme, assume https for production-like domains, http for localhost
+  const scheme = origin.includes('localhost') || origin.includes('127.0.0.1') ? 'http://' : 'https://';
+  return `${scheme}${origin}${path}`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -132,7 +149,18 @@ serve(async (req) => {
     // Calculate monthly cost
     const monthlyAmount = MONTHLY_PRICE_PER_EMPLOYEE * employeeCount;
 
-    logStep("Creating Stripe checkout session", { monthlyAmount, employeeCount });
+    // Construct proper URLs with schemes
+    const origin = req.headers.get("origin");
+    const successUrl = constructUrl(origin, "/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}");
+    const cancelUrl = constructUrl(origin, "/dashboard/team?setup=cancelled");
+
+    logStep("Creating Stripe checkout session", { 
+      monthlyAmount, 
+      employeeCount, 
+      successUrl, 
+      cancelUrl,
+      origin 
+    });
 
     // Create Stripe checkout session for subscription
     const session = await stripe.checkout.sessions.create({
@@ -155,15 +183,18 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/dashboard/team?setup=cancelled`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         company_id: companyId,
         employee_count: employeeCount.toString(),
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created successfully", { 
+      sessionId: session.id, 
+      url: session.url 
+    });
 
     return new Response(
       JSON.stringify({ 
