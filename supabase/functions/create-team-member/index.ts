@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -84,16 +83,19 @@ serve(async (req: Request) => {
       }
     );
     
-    // Get current member count before adding new member
-    const { data: currentMemberCount, error: countError } = await supabaseAdmin
-      .rpc('get_company_member_count', { company_id: companyId });
+    // Get current NON-ADMIN member count before adding new member
+    const { data: currentMembers, error: countError } = await supabaseAdmin
+      .from('company_members')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('is_admin', false);
 
     if (countError) {
       console.error("Error getting current member count:", countError);
     }
 
-    const memberCountBeforeAdd = currentMemberCount || 0;
-    console.log("Current member count before adding:", memberCountBeforeAdd);
+    const memberCountBeforeAdd = currentMembers?.length || 0;
+    console.log("Current NON-ADMIN member count before adding:", memberCountBeforeAdd);
     
     // Check if user already exists
     const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
@@ -198,13 +200,13 @@ serve(async (req: Request) => {
       );
     }
     
-    // Add user as a member of the company
+    // Add user as a NON-ADMIN member of the company
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from("company_members")
       .insert({
         company_id: companyId,
         user_id: userId,
-        is_admin: role.toLowerCase() === "admin",
+        is_admin: false, // Explicitly set as non-admin
         role: role.toLowerCase(),
       })
       .select()
@@ -223,16 +225,19 @@ serve(async (req: Request) => {
     
     console.log("Added user to company successfully");
     
-    // Get updated member count
-    const { data: newMemberCount, error: newCountError } = await supabaseAdmin
-      .rpc('get_company_member_count', { company_id: companyId });
+    // Get updated NON-ADMIN member count
+    const { data: newMembers, error: newCountError } = await supabaseAdmin
+      .from('company_members')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('is_admin', false);
 
     if (newCountError) {
       console.error("Error getting new member count:", newCountError);
     }
 
-    const memberCountAfterAdd = newMemberCount || 0;
-    console.log("Member count after adding:", memberCountAfterAdd);
+    const memberCountAfterAdd = newMembers?.length || 0;
+    console.log("NON-ADMIN member count after adding:", memberCountAfterAdd);
 
     // Handle subscription logic
     try {
@@ -274,17 +279,8 @@ serve(async (req: Request) => {
       // Continue with member creation even if subscription fails
     }
     
-    // Delete any pending invitations for this email to this company
-    const { error: deleteInviteError } = await supabaseAdmin
-      .from("team_invitations")
-      .delete()
-      .eq("email", email)
-      .eq("company_id", companyId);
-    
-    if (deleteInviteError) {
-      console.error("Error deleting pending invitations:", deleteInviteError);
-      // Non-critical error, continue
-    }
+    // Note: Removed the team_invitations deletion since that table doesn't exist
+    // If you need invitation tracking, you'll need to create that table first
     
     // Return success response - include password for new users
     return new Response(

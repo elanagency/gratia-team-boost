@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -31,7 +30,7 @@ export const useTeamMembers = () => {
     try {
       console.log("Fetching team members for company:", companyId);
       
-      // Get all members in one query
+      // Get all members but exclude admins from the team view
       const { data: members, error: membersError } = await supabase
         .from('company_members')
         .select(`
@@ -41,13 +40,14 @@ export const useTeamMembers = () => {
           user_id,
           points
         `)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('is_admin', false); // Only get non-admin members
       
       if (membersError) {
         throw membersError;
       }
       
-      console.log(`Found ${members?.length || 0} team members`);
+      console.log(`Found ${members?.length || 0} team members (excluding admins)`);
       
       if (!members?.length) {
         setTeamMembers([]);
@@ -138,7 +138,7 @@ export const useTeamMembers = () => {
           id: member.id,
           name: memberName || 'No Name',
           email: emailsMap[member.user_id] || '', // Get email from our emails map
-          role: member.is_admin ? 'Admin' : member.role || 'Member',
+          role: member.role || 'Member',
           user_id: member.user_id,
           points: member.points || 0,
           recognitionsReceived: stats.received,
@@ -157,10 +157,8 @@ export const useTeamMembers = () => {
 
   const removeMember = useCallback(async (member: TeamMember) => {
     try {
-      // Start a transaction to ensure all operations succeed or fail together
       if (!companyId) throw new Error("Company ID not found");
       
-      // Get current member count before removal
       const { data: currentMemberCount, error: countError } = await supabase
         .rpc('get_company_member_count', { company_id: companyId });
 
@@ -171,9 +169,7 @@ export const useTeamMembers = () => {
       const memberCountBeforeRemoval = currentMemberCount || 0;
       console.log("Member count before removal:", memberCountBeforeRemoval);
       
-      // Only process points if the member has some
       if (member.points > 0) {
-        // 1. First get the current company points balance
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('points_balance')
@@ -185,7 +181,6 @@ export const useTeamMembers = () => {
         const currentBalance = companyData?.points_balance || 0;
         const newBalance = currentBalance + member.points;
         
-        // 2. Update the company points balance
         const { error: updateCompanyError } = await supabase
           .from('companies')
           .update({ points_balance: newBalance })
@@ -193,13 +188,12 @@ export const useTeamMembers = () => {
           
         if (updateCompanyError) throw updateCompanyError;
         
-        // 3. Create a transaction record in point_transactions for audit trail
         const { error: transactionError } = await supabase
           .from('point_transactions')
           .insert({
             company_id: companyId,
             sender_id: member.user_id,
-            recipient_id: user?.id || '',  // System/admin user receiving points back
+            recipient_id: user?.id || '',
             points: member.points,
             description: `Points returned to company when ${member.name} was removed from team.`
           });
@@ -207,7 +201,6 @@ export const useTeamMembers = () => {
         if (transactionError) throw transactionError;
       }
       
-      // 4. Delete the company member
       const { error } = await supabase
         .from('company_members')
         .delete()
@@ -215,13 +208,11 @@ export const useTeamMembers = () => {
         
       if (error) throw error;
 
-      // 5. Handle subscription update after member removal
       const newMemberCount = memberCountBeforeRemoval - 1;
       console.log("New member count after removal:", newMemberCount);
 
       try {
         if (newMemberCount === 0) {
-          // No employees left - cancel subscription
           console.log("No employees left, updating subscription to 0");
           const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
             body: { 
@@ -236,7 +227,6 @@ export const useTeamMembers = () => {
             console.log("Subscription cancelled successfully:", updateResult);
           }
         } else if (newMemberCount > 0) {
-          // Reduce subscription quantity
           console.log("Updating subscription quantity to:", newMemberCount);
           const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
             body: { 
@@ -253,7 +243,6 @@ export const useTeamMembers = () => {
         }
       } catch (subscriptionError) {
         console.error("Subscription update failed:", subscriptionError);
-        // Continue with success message even if subscription update fails
       }
       
       toast.success(
@@ -262,7 +251,6 @@ export const useTeamMembers = () => {
           : "Team member removed successfully."
       );
       
-      // Refresh the team members list
       fetchTeamMembers();
     } catch (error) {
       console.error("Error in removeMember:", error);
