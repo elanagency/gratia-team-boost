@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, PlusCircle } from "lucide-react";
+import { Copy, PlusCircle, CreditCard, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTeamMembers } from "@/hooks/useTeamMembers";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [open, setOpen] = useState(false);
@@ -23,6 +25,11 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [role, setRole] = useState('member');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
+  const { teamMembers } = useTeamMembers();
+  
+  // Check if this will be the first non-admin member
+  const nonAdminMemberCount = teamMembers?.filter(member => !member.is_admin).length || 0;
+  const isFirstMember = nonAdminMemberCount === 0;
   
   // Add state for password info and dialog
   const [passwordInfo, setPasswordInfo] = useState({ 
@@ -204,13 +211,31 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
             Invite Team Member
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Invite a team member</DialogTitle>
             <DialogDescription>
               Add a new team member to your company.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Info box for first member billing setup */}
+          {isFirstMember && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <CreditCard className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                    Billing Setup Required
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    This is your first team member. You'll be redirected to Stripe to start your subscription after adding them.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
@@ -252,7 +277,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
               </Select>
             </div>
             <Button type="submit" disabled={isSubmitting} className="ml-auto bg-[#F572FF] hover:bg-[#E061EE] text-white">
-              {isSubmitting ? "Submitting..." : "Invite"}
+              {isSubmitting ? "Adding..." : isFirstMember ? "Add Member & Setup Billing" : "Invite"}
             </Button>
           </form>
         </DialogContent>

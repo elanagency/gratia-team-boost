@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -71,6 +70,9 @@ serve(async (req: Request) => {
         }
       );
     }
+
+    // Get the original authorization header to pass it along
+    const authHeader = req.headers.get("Authorization");
     
     // Initialize Supabase admin client with service role
     const supabaseAdmin = createClient(
@@ -260,21 +262,30 @@ serve(async (req: Request) => {
     const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
     let checkoutUrl = null;
     
-    if (needsBillingSetup) {
+    if (needsBillingSetup && authHeader) {
       console.log("Creating checkout session for billing setup");
       try {
-        const { data: checkoutData, error: checkoutError } = await supabaseAdmin.functions.invoke('create-subscription-checkout', {
-          body: { 
+        // Make a direct HTTP request to the checkout function with proper auth headers
+        const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
+          },
+          body: JSON.stringify({ 
             companyId,
             employeeCount: memberCountAfterAdd
-          }
+          })
         });
         
-        if (checkoutError) {
-          console.error("Error creating checkout session:", checkoutError);
-        } else {
+        if (checkoutResponse.ok) {
+          const checkoutData = await checkoutResponse.json();
           checkoutUrl = checkoutData?.url;
           console.log("Checkout URL created:", checkoutUrl);
+        } else {
+          const errorText = await checkoutResponse.text();
+          console.error("Error creating checkout session:", errorText);
         }
       } catch (checkoutErr) {
         console.error("Failed to create checkout session:", checkoutErr);
