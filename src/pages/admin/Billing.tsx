@@ -11,74 +11,56 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatusCard";
 
 const Billing = () => {
   // Demo data
   const plans = [
     {
-      name: "Free",
+      name: "Free Trial",
       price: "$0",
       interval: "forever",
       features: [
-        "3 team members", 
+        "Up to 3 team members", 
         "10 recognitions per month", 
         "Basic rewards", 
         "Email support"
       ],
-      isCurrent: true
-    },
-    {
-      name: "Growth",
-      price: "$49",
-      interval: "per month",
-      features: [
-        "15 team members", 
-        "Unlimited recognitions", 
-        "Custom rewards", 
-        "Priority support", 
-        "Analytics"
-      ],
       isCurrent: false
     },
     {
-      name: "Enterprise",
-      price: "$99",
-      interval: "per month",
+      name: "Team Plan",
+      price: "$2.99",
+      interval: "per member/month",
       features: [
         "Unlimited team members", 
         "Unlimited recognitions", 
         "Custom rewards", 
         "Priority support", 
-        "Advanced analytics", 
-        "API access", 
-        "Custom integrations"
+        "Analytics",
+        "Prorated billing"
       ],
-      isCurrent: false
+      isCurrent: true
     }
   ];
 
   // Sample invoices
   const invoices = [
-    { id: "INV-001", date: "Nov 1, 2023", amount: "$0.00", status: "Free Plan" },
-    { id: "INV-002", date: "Oct 1, 2023", amount: "$0.00", status: "Free Plan" },
-    { id: "INV-003", date: "Sep 1, 2023", amount: "$0.00", status: "Free Plan" },
+    { id: "INV-001", date: "Nov 1, 2023", amount: "$29.90", status: "Paid" },
+    { id: "INV-002", date: "Oct 1, 2023", amount: "$26.91", status: "Paid" },
+    { id: "INV-003", date: "Sep 15, 2023", amount: "$14.95", status: "Paid" },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-800">Billing & Plan</h1>
+      <h1 className="text-2xl font-semibold text-gray-800">Billing & Subscription</h1>
       
-      <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 flex items-start">
-        <AlertTriangle className="text-yellow-500 mt-1 mr-3 shrink-0" />
-        <div>
-          <h3 className="font-medium text-yellow-800">Free Trial</h3>
-          <p className="text-yellow-700 text-sm mt-1">You are currently on the free plan. Upgrade to unlock all features.</p>
-        </div>
-      </div>
+      {/* Subscription Status Card */}
+      <SubscriptionStatusCard />
       
       <h2 className="text-xl font-medium text-gray-800 mt-8 mb-4">Available Plans</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {plans.map((plan) => (
           <Card key={plan.name} className={`dashboard-card border-2 ${plan.isCurrent ? 'border-[#F572FF]' : 'border-gray-100'}`}>
             <div className={`p-4 ${plan.isCurrent ? 'bg-[#F572FF]/5' : ''}`}>
@@ -114,7 +96,7 @@ const Billing = () => {
                 }`}
                 disabled={plan.isCurrent}
               >
-                {plan.isCurrent ? 'Current Plan' : 'Upgrade'}
+                {plan.isCurrent ? 'Current Plan' : 'Switch Plan'}
               </Button>
             </div>
           </Card>
@@ -147,7 +129,7 @@ const Billing = () => {
                 <TableCell className="text-gray-600">{invoice.date}</TableCell>
                 <TableCell className="text-gray-600">{invoice.amount}</TableCell>
                 <TableCell>
-                  <span className="py-1 px-2 bg-gray-100 text-gray-700 rounded-full text-xs">
+                  <span className="py-1 px-2 bg-green-100 text-green-700 rounded-full text-xs">
                     {invoice.status}
                   </span>
                 </TableCell>
