@@ -18,19 +18,26 @@ const logStep = (step: string, details?: any) => {
 
 // Helper function to construct proper URLs
 const constructUrl = (origin: string | null, path: string): string => {
-  if (!origin) {
-    logStep("No origin header, using fallback URL");
-    return `https://kbjcjtycmfdjfnduxiud.supabase.co${path}`;
-  }
-  
-  // If origin already has a scheme, use it directly
-  if (origin.startsWith('http://') || origin.startsWith('https://')) {
+  // Try to get the origin from the request
+  if (origin && (origin.startsWith('http://') || origin.startsWith('https://'))) {
     return `${origin}${path}`;
   }
   
-  // If no scheme, assume https for production-like domains, http for localhost
-  const scheme = origin.includes('localhost') || origin.includes('127.0.0.1') ? 'http://' : 'https://';
-  return `${scheme}${origin}${path}`;
+  // Check referer header as backup
+  const referer = origin; // In case origin is actually referer
+  if (referer && (referer.startsWith('http://') || referer.startsWith('https://'))) {
+    // Extract the base URL from referer
+    try {
+      const url = new URL(referer);
+      return `${url.protocol}//${url.host}${path}`;
+    } catch (e) {
+      logStep("Error parsing referer URL", { referer, error: e.message });
+    }
+  }
+  
+  // Last fallback - but this should not happen in production
+  logStep("Using fallback URL - this should not happen in production");
+  return `https://your-app-domain.com${path}`;
 };
 
 serve(async (req) => {
@@ -149,8 +156,10 @@ serve(async (req) => {
     // Calculate monthly cost
     const monthlyAmount = MONTHLY_PRICE_PER_EMPLOYEE * employeeCount;
 
-    // Construct proper URLs with schemes
-    const origin = req.headers.get("origin");
+    // Get the origin from headers - try multiple sources
+    const origin = req.headers.get("origin") || req.headers.get("referer");
+    
+    // Construct proper URLs - these should redirect to your actual app
     const successUrl = constructUrl(origin, "/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}");
     const cancelUrl = constructUrl(origin, "/dashboard/team?setup=cancelled");
 
@@ -159,7 +168,8 @@ serve(async (req) => {
       employeeCount, 
       successUrl, 
       cancelUrl,
-      origin 
+      origin,
+      allHeaders: Object.fromEntries(req.headers.entries())
     });
 
     // Prepare metadata for checkout session
