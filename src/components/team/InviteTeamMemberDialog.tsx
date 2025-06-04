@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -86,7 +87,16 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setName('');
         setRole('member');
         
-        toast.success(`${name} has been invited to join the team!`);
+        // Check if billing setup is needed
+        if (data.needsBillingSetup) {
+          toast.info(`${name} has been added to the team! Redirecting to billing setup...`);
+          // Redirect to billing page for setup
+          setTimeout(() => {
+            window.location.href = '/dashboard/billing';
+          }, 2000);
+        } else {
+          toast.success(`${name} has been invited to join the team!`);
+        }
         
         // Call onSuccess for existing user
         if (onSuccess) {

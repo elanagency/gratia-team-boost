@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { SetupBillingButton } from "@/components/billing/SetupBillingButton";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -50,6 +51,24 @@ export const SubscriptionStatusCard = () => {
   useEffect(() => {
     fetchSubscriptionStatus();
   }, [user]);
+
+  // Check for setup success in URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const setup = urlParams.get('setup');
+    
+    if (setup === 'success') {
+      toast.success("Billing setup completed successfully!");
+      // Remove the query param and refresh subscription status
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => {
+        fetchSubscriptionStatus();
+      }, 2000); // Give time for Stripe to process
+    } else if (setup === 'cancelled') {
+      toast.error("Billing setup was cancelled");
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -150,6 +169,18 @@ export const SubscriptionStatusCard = () => {
               </ul>
             </div>
           </>
+        ) : subscriptionStatus.member_count > 0 ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 className="font-medium text-amber-800 mb-2">Billing Setup Required</h4>
+            <p className="text-sm text-amber-700 mb-4">
+              You have {subscriptionStatus.member_count} team member{subscriptionStatus.member_count > 1 ? 's' : ''} but no active subscription. 
+              Please setup billing to continue using the service.
+            </p>
+            <SetupBillingButton 
+              employeeCount={subscriptionStatus.member_count} 
+              onSuccess={fetchSubscriptionStatus}
+            />
+          </div>
         ) : (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-gray-800 mb-2">No Active Subscription</h4>

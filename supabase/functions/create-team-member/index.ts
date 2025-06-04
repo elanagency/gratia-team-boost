@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -239,50 +240,26 @@ serve(async (req: Request) => {
     const memberCountAfterAdd = newMembers?.length || 0;
     console.log("NON-ADMIN member count after adding:", memberCountAfterAdd);
 
-    // Handle subscription logic
-    try {
-      if (memberCountBeforeAdd === 0 && memberCountAfterAdd === 1) {
-        // First employee added - create subscription
-        console.log("Creating subscription for first employee");
-        const { data: subscriptionResult, error: subscriptionError } = await supabaseAdmin.functions.invoke('create-subscription', {
-          body: { 
-            companyId: companyId,
-            employeeCount: 1
-          }
-        });
-        
-        if (subscriptionError) {
-          console.error("Error creating subscription:", subscriptionError);
-          // Don't fail the member creation, just log the error
-        } else {
-          console.log("Subscription created successfully:", subscriptionResult);
-        }
-      } else if (memberCountBeforeAdd > 0 && memberCountAfterAdd > memberCountBeforeAdd) {
-        // Additional employee added - update subscription quantity
-        console.log("Updating subscription quantity from", memberCountBeforeAdd, "to", memberCountAfterAdd);
-        const { data: updateResult, error: updateError } = await supabaseAdmin.functions.invoke('update-subscription', {
-          body: { 
-            companyId: companyId,
-            newQuantity: memberCountAfterAdd
-          }
-        });
-        
-        if (updateError) {
-          console.error("Error updating subscription:", updateError);
-          // Don't fail the member creation, just log the error
-        } else {
-          console.log("Subscription updated successfully:", updateResult);
-        }
-      }
-    } catch (subscriptionError) {
-      console.error("Subscription operation failed:", subscriptionError);
-      // Continue with member creation even if subscription fails
-    }
+    // Check if company has active subscription
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('companies')
+      .select('stripe_subscription_id, subscription_status')
+      .eq('id', companyId)
+      .single();
+
+    const hasActiveSubscription = company?.stripe_subscription_id && 
+                                 company?.subscription_status === 'active';
+
+    console.log("Company subscription status:", { 
+      hasSubscription: !!company?.stripe_subscription_id,
+      status: company?.subscription_status,
+      hasActiveSubscription 
+    });
+
+    // If this is the first member and no active subscription, we need billing setup
+    const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
     
-    // Note: Removed the team_invitations deletion since that table doesn't exist
-    // If you need invitation tracking, you'll need to create that table first
-    
-    // Return success response - include password for new users
+    // Return success response
     return new Response(
       JSON.stringify({
         message: "Team member added successfully",
@@ -290,8 +267,7 @@ serve(async (req: Request) => {
         membership,
         isNewUser,
         memberCount: memberCountAfterAdd,
-        subscriptionCreated: memberCountBeforeAdd === 0 && memberCountAfterAdd === 1,
-        subscriptionUpdated: memberCountBeforeAdd > 0 && memberCountAfterAdd > memberCountBeforeAdd,
+        needsBillingSetup,
         ...(isNewUser && password ? { password } : {}),
       }),
       {
