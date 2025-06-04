@@ -2,7 +2,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, AlertTriangle, CreditCard, Download } from "lucide-react";
+import { CreditCard, Download } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -14,42 +14,40 @@ import {
 import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatusCard";
 
 const Billing = () => {
-  // Demo data
-  const plans = [
-    {
-      name: "Free Trial",
-      price: "$0",
-      interval: "forever",
-      features: [
-        "Up to 3 team members", 
-        "10 recognitions per month", 
-        "Basic rewards", 
-        "Email support"
-      ],
-      isCurrent: false
-    },
-    {
-      name: "Team Plan",
-      price: "$2.99",
-      interval: "per member/month",
-      features: [
-        "Unlimited team members", 
-        "Unlimited recognitions", 
-        "Custom rewards", 
-        "Priority support", 
-        "Analytics",
-        "Prorated billing"
-      ],
-      isCurrent: true
-    }
+  // Sample billing history including both subscription and points purchases
+  const billingHistory = [
+    { id: "INV-001", date: "Nov 1, 2023", amount: "$29.90", status: "Paid", type: "Subscription", description: "Monthly subscription - 10 members" },
+    { id: "PTS-002", date: "Oct 25, 2023", amount: "$50.00", status: "Paid", type: "Points Purchase", description: "5,000 company points" },
+    { id: "INV-003", date: "Oct 1, 2023", amount: "$26.91", status: "Paid", type: "Subscription", description: "Monthly subscription - 9 members" },
+    { id: "PTS-004", date: "Sep 20, 2023", amount: "$25.00", status: "Paid", type: "Points Purchase", description: "2,500 company points" },
+    { id: "INV-005", date: "Sep 15, 2023", amount: "$14.95", status: "Paid", type: "Subscription", description: "Prorated subscription - 5 members" },
   ];
 
-  // Sample invoices
-  const invoices = [
-    { id: "INV-001", date: "Nov 1, 2023", amount: "$29.90", status: "Paid" },
-    { id: "INV-002", date: "Oct 1, 2023", amount: "$26.91", status: "Paid" },
-    { id: "INV-003", date: "Sep 15, 2023", amount: "$14.95", status: "Paid" },
-  ];
+  const getStatusBadge = (status: string) => {
+    const baseClasses = "py-1 px-2 rounded-full text-xs";
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return `${baseClasses} bg-green-100 text-green-700`;
+      case 'pending':
+        return `${baseClasses} bg-yellow-100 text-yellow-700`;
+      case 'failed':
+        return `${baseClasses} bg-red-100 text-red-700`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-700`;
+    }
+  };
+
+  const getTypeBadge = (type: string) => {
+    const baseClasses = "py-1 px-2 rounded-full text-xs";
+    switch (type) {
+      case 'Subscription':
+        return `${baseClasses} bg-blue-100 text-blue-700`;
+      case 'Points Purchase':
+        return `${baseClasses} bg-purple-100 text-purple-700`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-700`;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -58,52 +56,7 @@ const Billing = () => {
       {/* Subscription Status Card */}
       <SubscriptionStatusCard />
       
-      <h2 className="text-xl font-medium text-gray-800 mt-8 mb-4">Available Plans</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.name} className={`dashboard-card border-2 ${plan.isCurrent ? 'border-[#F572FF]' : 'border-gray-100'}`}>
-            <div className={`p-4 ${plan.isCurrent ? 'bg-[#F572FF]/5' : ''}`}>
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-lg">{plan.name}</h3>
-                {plan.isCurrent && (
-                  <span className="text-xs py-1 px-3 bg-[#F572FF] text-white rounded-full">
-                    Current
-                  </span>
-                )}
-              </div>
-              <div className="mt-2">
-                <span className="text-2xl font-bold">{plan.price}</span>
-                <span className="text-gray-500 ml-1">{plan.interval}</span>
-              </div>
-            </div>
-            
-            <div className="p-4 pt-6 border-t border-gray-100">
-              <ul className="space-y-3">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 shrink-0" />
-                    <span className="text-gray-600 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                className={`w-full mt-6 ${
-                  plan.isCurrent 
-                    ? 'bg-gray-200 text-gray-500 hover:bg-gray-200 cursor-not-allowed' 
-                    : 'bg-[#F572FF] hover:bg-[#E061EE]'
-                }`}
-                disabled={plan.isCurrent}
-              >
-                {plan.isCurrent ? 'Current Plan' : 'Switch Plan'}
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-      
-      <Card className="dashboard-card mt-8">
+      <Card className="dashboard-card">
         <div className="card-header">
           <h2 className="card-title">Billing History</h2>
           <Button variant="outline" className="text-gray-600 border-gray-300 hover:bg-gray-50">
@@ -117,20 +70,28 @@ const Billing = () => {
             <TableRow className="border-gray-100">
               <TableHead className="text-gray-500">Invoice</TableHead>
               <TableHead className="text-gray-500">Date</TableHead>
+              <TableHead className="text-gray-500">Type</TableHead>
+              <TableHead className="text-gray-500">Description</TableHead>
               <TableHead className="text-gray-500">Amount</TableHead>
               <TableHead className="text-gray-500">Status</TableHead>
               <TableHead className="text-gray-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id} className="border-gray-100">
-                <TableCell className="font-medium">{invoice.id}</TableCell>
-                <TableCell className="text-gray-600">{invoice.date}</TableCell>
-                <TableCell className="text-gray-600">{invoice.amount}</TableCell>
+            {billingHistory.map((item) => (
+              <TableRow key={item.id} className="border-gray-100">
+                <TableCell className="font-medium">{item.id}</TableCell>
+                <TableCell className="text-gray-600">{item.date}</TableCell>
                 <TableCell>
-                  <span className="py-1 px-2 bg-green-100 text-green-700 rounded-full text-xs">
-                    {invoice.status}
+                  <span className={getTypeBadge(item.type)}>
+                    {item.type}
+                  </span>
+                </TableCell>
+                <TableCell className="text-gray-600">{item.description}</TableCell>
+                <TableCell className="text-gray-600">{item.amount}</TableCell>
+                <TableCell>
+                  <span className={getStatusBadge(item.status)}>
+                    {item.status}
                   </span>
                 </TableCell>
                 <TableCell>
