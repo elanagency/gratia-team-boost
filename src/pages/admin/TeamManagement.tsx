@@ -9,11 +9,13 @@ import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import { toast } from "@/components/ui/use-toast";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const TeamManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [searchParams] = useSearchParams();
+  const [isVerifying, setIsVerifying] = useState(false);
   const {
     teamMembers,
     fetchTeamMembers,
@@ -26,28 +28,51 @@ const TeamManagement = () => {
     const setupStatus = searchParams.get('setup');
     const sessionId = searchParams.get('session_id');
     
-    if (setupStatus === 'success' && sessionId) {
-      toast.success("Billing setup completed successfully! Your team member has been added.");
-      // Refresh team members to show the newly added member
-      fetchTeamMembers();
+    if (setupStatus === 'success' && sessionId && !isVerifying) {
+      console.log("Processing successful payment with session ID:", sessionId);
+      setIsVerifying(true);
       
-      // Clean up URL params
-      window.history.replaceState({}, '', '/dashboard/team');
+      // Verify the Stripe session and create the team member
+      supabase.functions.invoke('verify-stripe-session', {
+        body: { sessionId }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error("Error verifying payment:", error);
+          toast.error("Failed to process payment and create team member. Please contact support.");
+        } else {
+          console.log("Payment verification successful:", data);
+          if (data.isNewUser && data.password) {
+            toast.success(`Payment successful! Team member ${data.membership?.email || 'member'} has been created with a temporary password.`);
+          } else {
+            toast.success(`Payment successful! Team member has been added to your team.`);
+          }
+          // Refresh team members to show the newly added member
+          fetchTeamMembers();
+        }
+      }).catch((err) => {
+        console.error("Verification request failed:", err);
+        toast.error("Failed to verify payment. Please contact support.");
+      }).finally(() => {
+        setIsVerifying(false);
+        // Clean up URL params
+        window.history.replaceState({}, '', '/dashboard/team');
+      });
     } else if (setupStatus === 'cancelled') {
       toast.error("Billing setup was cancelled. Team member was not added.");
       
       // Clean up URL params
       window.history.replaceState({}, '', '/dashboard/team');
     }
-  }, [searchParams, fetchTeamMembers]);
+  }, [searchParams, fetchTeamMembers, isVerifying]);
 
   // Add debug logging to help troubleshoot
   useEffect(() => {
     console.log("TeamManagement render:", {
       isLoading,
-      teamMembersCount: teamMembers?.length
+      teamMembersCount: teamMembers?.length,
+      isVerifying
     });
-  }, [isLoading, teamMembers]);
+  }, [isLoading, teamMembers, isVerifying]);
 
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
@@ -82,8 +107,10 @@ const TeamManagement = () => {
       </div>
       
       <Card className="dashboard-card">
-        {isLoading ? (
-          <div className="p-8 text-center">Loading team members...</div>
+        {isLoading || isVerifying ? (
+          <div className="p-8 text-center">
+            {isVerifying ? "Processing payment and creating team member..." : "Loading team members..."}
+          </div>
         ) : (
           <TeamMemberTable teamMembers={teamMembers} onRemoveMember={handleDeleteClick} />
         )}
