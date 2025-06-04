@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,15 +7,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, PlusCircle, CreditCard, Info } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import BillingSetupInfo from "./BillingSetupInfo";
+import PasswordDisplayDialog from "./PasswordDisplayDialog";
+import InviteForm from "./InviteForm";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [open, setOpen] = useState(false);
@@ -155,16 +155,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   };
   
-  const copyPasswordToClipboard = () => {
-    navigator.clipboard.writeText(passwordInfo.password)
-      .then(() => {
-        toast.success("Password copied to clipboard");
-      })
-      .catch(() => {
-        toast.error("Failed to copy password");
-      });
-  };
-  
   const closePasswordDialog = () => {
     console.log("Closing password dialog");
     setShowPasswordDialog(false);
@@ -218,112 +208,28 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
             </DialogDescription>
           </DialogHeader>
           
-          {/* Info box for first member billing setup */}
-          {isFirstMember && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-start gap-3">
-                <CreditCard className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                    Billing Setup Required
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    This is your first team member. You'll be redirected to Stripe to start your subscription after adding them.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          <BillingSetupInfo isFirstMember={isFirstMember} />
           
-          <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input 
-                id="name" 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="col-span-3" 
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
-                Role
-              </Label>
-              <Select onValueChange={setRole} defaultValue={role}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" disabled={isSubmitting} className="ml-auto bg-[#F572FF] hover:bg-[#E061EE] text-white">
-              {isSubmitting ? "Adding..." : isFirstMember ? "Add Member & Setup Billing" : "Invite"}
-            </Button>
-          </form>
+          <InviteForm
+            email={email}
+            setEmail={setEmail}
+            name={name}
+            setName={setName}
+            role={role}
+            setRole={setRole}
+            isSubmitting={isSubmitting}
+            isFirstMember={isFirstMember}
+            onSubmit={handleSubmit}
+          />
         </DialogContent>
       </Dialog>
 
-      {/* Password Display Dialog - Using separate Dialog component */}
-      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>New Team Member Created</DialogTitle>
-            <DialogDescription>
-              A new account has been created for {passwordInfo.name}. Share these temporary credentials with them.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Email</Label>
-              <div className="col-span-3 bg-gray-100 p-2 rounded text-sm">
-                {passwordInfo.email}
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Password</Label>
-              <div className="col-span-3 bg-gray-100 p-2 rounded text-sm font-mono flex items-center justify-between">
-                {passwordInfo.password}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={copyPasswordToClipboard} 
-                  className="ml-2"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="text-sm text-amber-600 mt-2">
-              <strong>Important:</strong> This password will only be shown once. Make sure to copy it before closing this dialog.
-            </div>
-          </div>
-          <Button 
-            onClick={closePasswordDialog} 
-            className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
-          >
-            Done
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <PasswordDisplayDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        passwordInfo={passwordInfo}
+        onClose={closePasswordDialog}
+      />
     </>
   );
 };
