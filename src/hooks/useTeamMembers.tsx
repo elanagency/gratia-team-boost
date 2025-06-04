@@ -160,6 +160,17 @@ export const useTeamMembers = () => {
       // Start a transaction to ensure all operations succeed or fail together
       if (!companyId) throw new Error("Company ID not found");
       
+      // Get current member count before removal
+      const { data: currentMemberCount, error: countError } = await supabase
+        .rpc('get_company_member_count', { company_id: companyId });
+
+      if (countError) {
+        console.error("Error getting current member count:", countError);
+      }
+
+      const memberCountBeforeRemoval = currentMemberCount || 0;
+      console.log("Member count before removal:", memberCountBeforeRemoval);
+      
       // Only process points if the member has some
       if (member.points > 0) {
         // 1. First get the current company points balance
@@ -203,6 +214,47 @@ export const useTeamMembers = () => {
         .eq('id', member.id);
         
       if (error) throw error;
+
+      // 5. Handle subscription update after member removal
+      const newMemberCount = memberCountBeforeRemoval - 1;
+      console.log("New member count after removal:", newMemberCount);
+
+      try {
+        if (newMemberCount === 0) {
+          // No employees left - cancel subscription
+          console.log("No employees left, updating subscription to 0");
+          const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
+            body: { 
+              companyId: companyId,
+              newQuantity: 0
+            }
+          });
+          
+          if (updateError) {
+            console.error("Error cancelling subscription:", updateError);
+          } else {
+            console.log("Subscription cancelled successfully:", updateResult);
+          }
+        } else if (newMemberCount > 0) {
+          // Reduce subscription quantity
+          console.log("Updating subscription quantity to:", newMemberCount);
+          const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
+            body: { 
+              companyId: companyId,
+              newQuantity: newMemberCount
+            }
+          });
+          
+          if (updateError) {
+            console.error("Error updating subscription:", updateError);
+          } else {
+            console.log("Subscription updated successfully:", updateResult);
+          }
+        }
+      } catch (subscriptionError) {
+        console.error("Subscription update failed:", subscriptionError);
+        // Continue with success message even if subscription update fails
+      }
       
       toast.success(
         member.points > 0 

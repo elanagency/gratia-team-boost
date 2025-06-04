@@ -84,6 +84,17 @@ serve(async (req: Request) => {
       }
     );
     
+    // Get current member count before adding new member
+    const { data: currentMemberCount, error: countError } = await supabaseAdmin
+      .rpc('get_company_member_count', { company_id: companyId });
+
+    if (countError) {
+      console.error("Error getting current member count:", countError);
+    }
+
+    const memberCountBeforeAdd = currentMemberCount || 0;
+    console.log("Current member count before adding:", memberCountBeforeAdd);
+    
     // Check if user already exists
     const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -212,6 +223,57 @@ serve(async (req: Request) => {
     
     console.log("Added user to company successfully");
     
+    // Get updated member count
+    const { data: newMemberCount, error: newCountError } = await supabaseAdmin
+      .rpc('get_company_member_count', { company_id: companyId });
+
+    if (newCountError) {
+      console.error("Error getting new member count:", newCountError);
+    }
+
+    const memberCountAfterAdd = newMemberCount || 0;
+    console.log("Member count after adding:", memberCountAfterAdd);
+
+    // Handle subscription logic
+    try {
+      if (memberCountBeforeAdd === 0 && memberCountAfterAdd === 1) {
+        // First employee added - create subscription
+        console.log("Creating subscription for first employee");
+        const { data: subscriptionResult, error: subscriptionError } = await supabaseAdmin.functions.invoke('create-subscription', {
+          body: { 
+            companyId: companyId,
+            employeeCount: 1
+          }
+        });
+        
+        if (subscriptionError) {
+          console.error("Error creating subscription:", subscriptionError);
+          // Don't fail the member creation, just log the error
+        } else {
+          console.log("Subscription created successfully:", subscriptionResult);
+        }
+      } else if (memberCountBeforeAdd > 0 && memberCountAfterAdd > memberCountBeforeAdd) {
+        // Additional employee added - update subscription quantity
+        console.log("Updating subscription quantity from", memberCountBeforeAdd, "to", memberCountAfterAdd);
+        const { data: updateResult, error: updateError } = await supabaseAdmin.functions.invoke('update-subscription', {
+          body: { 
+            companyId: companyId,
+            newQuantity: memberCountAfterAdd
+          }
+        });
+        
+        if (updateError) {
+          console.error("Error updating subscription:", updateError);
+          // Don't fail the member creation, just log the error
+        } else {
+          console.log("Subscription updated successfully:", updateResult);
+        }
+      }
+    } catch (subscriptionError) {
+      console.error("Subscription operation failed:", subscriptionError);
+      // Continue with member creation even if subscription fails
+    }
+    
     // Delete any pending invitations for this email to this company
     const { error: deleteInviteError } = await supabaseAdmin
       .from("team_invitations")
@@ -231,6 +293,9 @@ serve(async (req: Request) => {
         userId,
         membership,
         isNewUser,
+        memberCount: memberCountAfterAdd,
+        subscriptionCreated: memberCountBeforeAdd === 0 && memberCountAfterAdd === 1,
+        subscriptionUpdated: memberCountBeforeAdd > 0 && memberCountAfterAdd > memberCountBeforeAdd,
         ...(isNewUser && password ? { password } : {}),
       }),
       {

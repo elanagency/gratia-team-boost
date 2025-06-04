@@ -11,27 +11,39 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          billing_cycle_anchor: number | null
           created_at: string
           handle: string
           id: string
           name: string
           points_balance: number
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
           updated_at: string
         }
         Insert: {
+          billing_cycle_anchor?: number | null
           created_at?: string
           handle: string
           id?: string
           name: string
           points_balance?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Update: {
+          billing_cycle_anchor?: number | null
           created_at?: string
           handle?: string
           id?: string
           name?: string
           points_balance?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -351,11 +363,64 @@ export type Database = {
           },
         ]
       }
+      subscription_events: {
+        Row: {
+          amount_charged: number | null
+          company_id: string
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          new_quantity: number | null
+          previous_quantity: number | null
+          stripe_invoice_id: string | null
+        }
+        Insert: {
+          amount_charged?: number | null
+          company_id: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          new_quantity?: number | null
+          previous_quantity?: number | null
+          stripe_invoice_id?: string | null
+        }
+        Update: {
+          amount_charged?: number | null
+          company_id?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          new_quantity?: number | null
+          previous_quantity?: number | null
+          stripe_invoice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      calculate_prorated_amount: {
+        Args: {
+          base_amount: number
+          employee_count: number
+          days_remaining: number
+          total_days_in_month: number
+        }
+        Returns: number
+      }
       check_company_membership: {
         Args: { user_id: string; company_id: string }
         Returns: boolean
@@ -363,6 +428,10 @@ export type Database = {
       check_user_company_membership: {
         Args: { user_id: string; company_id: string }
         Returns: boolean
+      }
+      get_company_member_count: {
+        Args: { company_id: string }
+        Returns: number
       }
       is_company_admin: {
         Args: { company_id: string }
