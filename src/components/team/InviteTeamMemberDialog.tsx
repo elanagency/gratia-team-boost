@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -60,7 +59,55 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       console.log("Team member creation response:", data);
       
-      // Check if this is a new user with a password
+      // Check if we need to redirect to checkout for billing setup
+      if (data.needsBillingSetup && data.checkoutUrl) {
+        console.log("Billing setup needed, redirecting to checkout");
+        
+        // If this is a new user, show password first, then redirect
+        if (data.isNewUser && data.password) {
+          setPasswordInfo({
+            isNewUser: true,
+            password: data.password,
+            email: email,
+            name: name
+          });
+          
+          // Reset form fields
+          setEmail('');
+          setName('');
+          setRole('member');
+          
+          // Show password dialog first
+          setShowPasswordDialog(true);
+          
+          // Store checkout URL for later redirect
+          sessionStorage.setItem('pendingCheckoutUrl', data.checkoutUrl);
+          
+          toast.info(`${name} has been added! After viewing the password, you'll be redirected to complete billing setup.`);
+        } else {
+          // Existing user, redirect immediately
+          setOpen(false);
+          setEmail('');
+          setName('');
+          setRole('member');
+          
+          toast.info(`${name} has been added! Redirecting to billing setup...`);
+          
+          // Redirect to Stripe checkout
+          setTimeout(() => {
+            window.location.href = data.checkoutUrl;
+          }, 2000);
+        }
+        
+        // Call onSuccess for UI refresh
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        return;
+      }
+      
+      // Check if this is a new user with a password (no billing setup needed)
       if (data.isNewUser && data.password) {
         console.log("New user created, showing password dialog");
         setPasswordInfo({
@@ -87,16 +134,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setName('');
         setRole('member');
         
-        // Check if billing setup is needed
-        if (data.needsBillingSetup) {
-          toast.info(`${name} has been added to the team! Redirecting to billing setup...`);
-          // Redirect to billing page for setup
-          setTimeout(() => {
-            window.location.href = '/dashboard/billing';
-          }, 2000);
-        } else {
-          toast.success(`${name} has been invited to join the team!`);
-        }
+        toast.success(`${name} has been invited to join the team!`);
         
         // Call onSuccess for existing user
         if (onSuccess) {
@@ -126,13 +164,25 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setShowPasswordDialog(false);
     setOpen(false); // Close the main dialog as well
     
-    // Now call onSuccess callback after user has seen the password
-    if (onSuccess) {
-      console.log("Calling onSuccess callback");
-      onSuccess();
+    // Check if we need to redirect to checkout after showing password
+    const pendingCheckoutUrl = sessionStorage.getItem('pendingCheckoutUrl');
+    if (pendingCheckoutUrl) {
+      sessionStorage.removeItem('pendingCheckoutUrl');
+      console.log("Redirecting to pending checkout URL:", pendingCheckoutUrl);
+      
+      toast.info("Redirecting to billing setup...");
+      setTimeout(() => {
+        window.location.href = pendingCheckoutUrl;
+      }, 1500);
+    } else {
+      // Now call onSuccess callback after user has seen the password
+      if (onSuccess) {
+        console.log("Calling onSuccess callback");
+        onSuccess();
+      }
+      
+      toast.success(`${passwordInfo.name} has been added to the team!`);
     }
-    
-    toast.success(`${passwordInfo.name} has been added to the team!`);
   };
   
   // Make sure we don't close the main dialog while password dialog is showing

@@ -155,8 +155,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard/billing?setup=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/dashboard/billing?setup=cancelled`,
+      success_url: `${req.headers.get("origin")}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get("origin")}/dashboard/team?setup=cancelled`,
       metadata: {
         company_id: companyId,
         employee_count: employeeCount.toString(),

@@ -237,7 +237,7 @@ serve(async (req: Request) => {
       console.error("Error getting new member count:", newCountError);
     }
 
-    const memberCountAfterAdd = newMembers?.length || 0;
+    const memberCountAfterAdd = newMembers?.length || 1; // Default to 1 if we can't count
     console.log("NON-ADMIN member count after adding:", memberCountAfterAdd);
 
     // Check if company has active subscription
@@ -256,8 +256,30 @@ serve(async (req: Request) => {
       hasActiveSubscription 
     });
 
-    // If this is the first member and no active subscription, we need billing setup
+    // If this is the first member and no active subscription, create checkout URL
     const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
+    let checkoutUrl = null;
+    
+    if (needsBillingSetup) {
+      console.log("Creating checkout session for billing setup");
+      try {
+        const { data: checkoutData, error: checkoutError } = await supabaseAdmin.functions.invoke('create-subscription-checkout', {
+          body: { 
+            companyId,
+            employeeCount: memberCountAfterAdd
+          }
+        });
+        
+        if (checkoutError) {
+          console.error("Error creating checkout session:", checkoutError);
+        } else {
+          checkoutUrl = checkoutData?.url;
+          console.log("Checkout URL created:", checkoutUrl);
+        }
+      } catch (checkoutErr) {
+        console.error("Failed to create checkout session:", checkoutErr);
+      }
+    }
     
     // Return success response
     return new Response(
@@ -268,6 +290,7 @@ serve(async (req: Request) => {
         isNewUser,
         memberCount: memberCountAfterAdd,
         needsBillingSetup,
+        checkoutUrl,
         ...(isNewUser && password ? { password } : {}),
       }),
       {
@@ -281,7 +304,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {
-        status: 500,
+      status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
