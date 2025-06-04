@@ -41,13 +41,13 @@ serve(async (req) => {
   try {
     logStep("Function started");
     
-    const { companyId, employeeCount = 1 } = await req.json();
+    const { companyId, employeeCount = 1, memberData } = await req.json();
     
     if (!companyId || employeeCount <= 0) {
       throw new Error("Company ID and valid employee count required");
     }
 
-    logStep("Request validated", { companyId, employeeCount });
+    logStep("Request validated", { companyId, employeeCount, hasMemberData: !!memberData });
 
     // Create Supabase client for user authentication
     const supabaseClient = createClient(
@@ -162,6 +162,18 @@ serve(async (req) => {
       origin 
     });
 
+    // Prepare metadata for checkout session
+    const sessionMetadata: any = {
+      company_id: companyId,
+      employee_count: employeeCount.toString(),
+    };
+
+    // If member data is provided (first member scenario), include it in metadata
+    if (memberData) {
+      sessionMetadata.pending_member_data = JSON.stringify(memberData);
+      logStep("Added pending member data to session metadata");
+    }
+
     // Create Stripe checkout session for subscription
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -185,10 +197,7 @@ serve(async (req) => {
       mode: "subscription",
       success_url: successUrl,
       cancel_url: cancelUrl,
-      metadata: {
-        company_id: companyId,
-        employee_count: employeeCount.toString(),
-      },
+      metadata: sessionMetadata,
     });
 
     logStep("Checkout session created successfully", { 

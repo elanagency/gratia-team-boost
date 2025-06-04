@@ -103,6 +103,86 @@ serve(async (req: Request) => {
     const memberCountBeforeAdd = currentMembers?.length || 0;
     console.log("[CREATE-TEAM-MEMBER] Current NON-ADMIN member count before adding:", memberCountBeforeAdd);
     
+    // Check if company has active subscription
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('companies')
+      .select('stripe_subscription_id, subscription_status')
+      .eq('id', companyId)
+      .single();
+
+    const hasActiveSubscription = company?.stripe_subscription_id && 
+                                 company?.subscription_status === 'active';
+
+    console.log("[CREATE-TEAM-MEMBER] Company subscription status:", { 
+      hasSubscription: !!company?.stripe_subscription_id,
+      status: company?.subscription_status,
+      hasActiveSubscription 
+    });
+
+    // If this is the first member and no active subscription, return checkout URL without creating member
+    const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
+    
+    console.log("[CREATE-TEAM-MEMBER] Billing setup decision:", {
+      memberCountBeforeAdd,
+      hasActiveSubscription,
+      needsBillingSetup
+    });
+    
+    if (needsBillingSetup && authHeader) {
+      console.log("[CREATE-TEAM-MEMBER] First member requires billing setup - creating checkout session");
+      try {
+        // Store member data temporarily in session storage via metadata
+        const memberData = {
+          name,
+          email,
+          companyId,
+          role,
+          invitedBy
+        };
+        
+        // Make a direct HTTP request to the checkout function with proper auth headers
+        const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
+          },
+          body: JSON.stringify({ 
+            companyId,
+            employeeCount: 1,
+            memberData // Pass member data to be stored in checkout metadata
+          })
+        });
+        
+        if (checkoutResponse.ok) {
+          const checkoutData = await checkoutResponse.json();
+          console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutData?.url);
+          
+          return new Response(
+            JSON.stringify({
+              needsBillingSetup: true,
+              checkoutUrl: checkoutData?.url,
+              message: "Billing setup required before adding team member"
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        } else {
+          const errorText = await checkoutResponse.text();
+          console.error("[CREATE-TEAM-MEMBER] Error creating checkout session:", errorText);
+          throw new Error("Failed to create billing setup");
+        }
+      } catch (checkoutErr) {
+        console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
+        throw new Error("Failed to create billing setup");
+      }
+    }
+    
+    // Continue with normal member creation (either not first member or has active subscription)
+    
     // Check if user already exists
     const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -244,66 +324,6 @@ serve(async (req: Request) => {
 
     const memberCountAfterAdd = newMembers?.length || 1; // Default to 1 if we can't count
     console.log("[CREATE-TEAM-MEMBER] NON-ADMIN member count after adding:", memberCountAfterAdd);
-
-    // Check if company has active subscription
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('companies')
-      .select('stripe_subscription_id, subscription_status')
-      .eq('id', companyId)
-      .single();
-
-    const hasActiveSubscription = company?.stripe_subscription_id && 
-                                 company?.subscription_status === 'active';
-
-    console.log("[CREATE-TEAM-MEMBER] Company subscription status:", { 
-      hasSubscription: !!company?.stripe_subscription_id,
-      status: company?.subscription_status,
-      hasActiveSubscription 
-    });
-
-    // If this is the first member and no active subscription, create checkout URL
-    const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
-    let checkoutUrl = null;
-    
-    console.log("[CREATE-TEAM-MEMBER] Billing setup decision:", {
-      memberCountBeforeAdd,
-      hasActiveSubscription,
-      needsBillingSetup
-    });
-    
-    if (needsBillingSetup && authHeader) {
-      console.log("[CREATE-TEAM-MEMBER] Creating checkout session for billing setup");
-      try {
-        // Make a direct HTTP request to the checkout function with proper auth headers
-        const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': authHeader,
-            'Content-Type': 'application/json',
-            'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
-          },
-          body: JSON.stringify({ 
-            companyId,
-            employeeCount: memberCountAfterAdd
-          })
-        });
-        
-        if (checkoutResponse.ok) {
-          const checkoutData = await checkoutResponse.json();
-          checkoutUrl = checkoutData?.url;
-          console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutUrl);
-        } else {
-          const errorText = await checkoutResponse.text();
-          console.error("[CREATE-TEAM-MEMBER] Error creating checkout session:", errorText);
-        }
-      } catch (checkoutErr) {
-        console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
-      }
-    } else {
-      console.log("[CREATE-TEAM-MEMBER] Billing setup not needed:", {
-        reason: needsBillingSetup ? "missing auth header" : "not first member or has subscription"
-      });
-    }
     
     // Return success response
     const response = {
@@ -312,8 +332,7 @@ serve(async (req: Request) => {
       membership,
       isNewUser,
       memberCount: memberCountAfterAdd,
-      needsBillingSetup,
-      checkoutUrl,
+      needsBillingSetup: false,
       ...(isNewUser && password ? { password } : {}),
     };
 
