@@ -10,22 +10,39 @@ const corsHeaders = {
 
 const MONTHLY_PRICE_PER_EMPLOYEE = 299; // $2.99 in cents
 
+// Helper logging function
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logStep("Function started");
+    
     const { companyId, employeeCount = 1 } = await req.json();
     
     if (!companyId || employeeCount <= 0) {
       throw new Error("Company ID and valid employee count required");
     }
 
+    logStep("Request validated", { companyId, employeeCount });
+
     // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
+    
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
+
+    logStep("Stripe initialized");
 
     // Use service role to access company data
     const supabaseService = createClient(
@@ -42,11 +59,15 @@ serve(async (req) => {
       .single();
 
     if (companyError || !company) {
+      logStep("Company not found", { companyError });
       throw new Error("Company not found");
     }
 
+    logStep("Company found", { companyName: company.name });
+
     // Check if subscription already exists
     if (company.stripe_subscription_id) {
+      logStep("Subscription already exists", { subscriptionId: company.stripe_subscription_id });
       return new Response(
         JSON.stringify({ error: "Subscription already exists" }),
         {
@@ -65,8 +86,11 @@ serve(async (req) => {
       .single();
 
     if (adminError || !adminMember) {
+      logStep("Admin not found", { adminError });
       throw new Error("Company admin not found");
     }
+
+    logStep("Admin found", { adminUserId: adminMember.user_id });
 
     // Get admin email using get-user-emails function
     const { data: emailsResponse, error: emailsError } = await supabaseService.functions.invoke("get-user-emails", {
@@ -74,14 +98,17 @@ serve(async (req) => {
     });
 
     if (emailsError || !emailsResponse?.emails?.[adminMember.user_id]) {
+      logStep("Admin email not found", { emailsError });
       throw new Error("Admin email not found");
     }
 
     const adminEmail = emailsResponse.emails[adminMember.user_id];
+    logStep("Admin email retrieved", { adminEmail });
 
     // Create or get Stripe customer
     let customerId = company.stripe_customer_id;
     if (!customerId) {
+      logStep("Creating new Stripe customer");
       const customer = await stripe.customers.create({
         email: adminEmail,
         name: company.name,
@@ -90,12 +117,17 @@ serve(async (req) => {
         },
       });
       customerId = customer.id;
+      logStep("Customer created", { customerId });
 
       // Update company with customer ID
       await supabaseService
         .from('companies')
         .update({ stripe_customer_id: customerId })
         .eq('id', companyId);
+        
+      logStep("Company updated with customer ID");
+    } else {
+      logStep("Using existing customer", { customerId });
     }
 
     // Calculate prorated amount for first billing
@@ -108,22 +140,39 @@ serve(async (req) => {
       (MONTHLY_PRICE_PER_EMPLOYEE * employeeCount * daysRemaining) / daysInMonth
     );
 
-    // Create subscription with prorated billing
+    logStep("Prorated billing calculated", { 
+      daysRemaining, 
+      daysInMonth, 
+      proratedAmount,
+      nextBillingDate: nextBillingDate.toISOString()
+    });
+
+    // First create a product and price
+    logStep("Creating Stripe product");
+    const product = await stripe.products.create({
+      name: "Team Member Subscription",
+      description: "Monthly subscription per team member",
+    });
+
+    logStep("Creating Stripe price");
+    const price = await stripe.prices.create({
+      currency: "usd",
+      unit_amount: MONTHLY_PRICE_PER_EMPLOYEE,
+      recurring: {
+        interval: "month",
+      },
+      product: product.id,
+    });
+
+    logStep("Product and price created", { productId: product.id, priceId: price.id });
+
+    // Create subscription with the created price
+    logStep("Creating subscription");
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Team Member Subscription",
-              description: "Monthly subscription per team member",
-            },
-            unit_amount: MONTHLY_PRICE_PER_EMPLOYEE,
-            recurring: {
-              interval: "month",
-            },
-          },
+          price: price.id,
           quantity: employeeCount,
         },
       ],
@@ -133,6 +182,11 @@ serve(async (req) => {
         company_id: companyId,
         initial_employee_count: employeeCount.toString(),
       },
+    });
+
+    logStep("Subscription created successfully", { 
+      subscriptionId: subscription.id,
+      status: subscription.status
     });
 
     // Update company with subscription details
@@ -145,6 +199,8 @@ serve(async (req) => {
       })
       .eq('id', companyId);
 
+    logStep("Company updated with subscription details");
+
     // Create subscription event record
     await supabaseService
       .from('subscription_events')
@@ -156,10 +212,14 @@ serve(async (req) => {
         amount_charged: proratedAmount,
         metadata: {
           subscription_id: subscription.id,
+          product_id: product.id,
+          price_id: price.id,
           prorated_days: daysRemaining,
           total_days: daysInMonth,
         },
       });
+
+    logStep("Subscription event recorded");
 
     return new Response(
       JSON.stringify({
@@ -175,9 +235,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR in create-subscription", { error: errorMessage });
     console.error("Subscription creation error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
