@@ -7,6 +7,7 @@ import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatus
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 interface BillingHistoryItem {
   id: string;
   date: string;
@@ -17,6 +18,7 @@ interface BillingHistoryItem {
   stripe_session_id?: string;
   stripe_payment_intent_id?: string;
 }
+
 const Billing = () => {
   const {
     companyId
@@ -127,10 +129,6 @@ const Billing = () => {
       <Card className="dashboard-card">
         <div className="card-header">
           <h2 className="card-title">Billing History</h2>
-          <div className="flex gap-2">
-            
-            
-          </div>
         </div>
         
         {isLoading ? <div className="p-6">
