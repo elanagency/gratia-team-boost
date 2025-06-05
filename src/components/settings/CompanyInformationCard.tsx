@@ -52,11 +52,17 @@ export const CompanyInformationCard = () => {
       
       if (error) throw error;
       
-      setCompanyData(data);
-      form.reset({
-        name: data.name,
-        handle: data.handle,
-      });
+      if (data && data.name && data.handle) {
+        const companyInfo: CompanyData = {
+          name: data.name,
+          handle: data.handle,
+        };
+        setCompanyData(companyInfo);
+        form.reset({
+          name: data.name,
+          handle: data.handle,
+        });
+      }
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Failed to load company information");
