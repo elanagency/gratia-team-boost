@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ export const SubscriptionStatusCard = () => {
   const [hasError, setHasError] = useState(false);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
-  const [showStripeDataWarning, setShowStripeDataWarning] = useState(false);
   const { user, companyId } = useAuth();
 
   const fetchCompanyData = async () => {
@@ -78,7 +76,6 @@ export const SubscriptionStatusCard = () => {
     
     setIsLoading(true);
     setHasError(false);
-    setShowStripeDataWarning(false);
     
     try {
       // First get company data to check if subscription exists
@@ -112,13 +109,6 @@ export const SubscriptionStatusCard = () => {
             slot_utilization: teamSlots > 0 ? Math.round((usedSlots / teamSlots) * 100) : 0,
           });
           
-          // Only show Stripe warning if authentication specifically failed (401)
-          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-            console.log("Authentication error detected, not showing Stripe warning");
-            setShowStripeDataWarning(false);
-          } else {
-            setShowStripeDataWarning(true);
-          }
           return;
         }
         
@@ -127,7 +117,6 @@ export const SubscriptionStatusCard = () => {
       
       console.log("Subscription status data:", data);
       setSubscriptionStatus(data);
-      setShowStripeDataWarning(false);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
       
@@ -252,15 +241,6 @@ export const SubscriptionStatusCard = () => {
       </div>
       
       <div className="p-6 space-y-4">
-        {/* Only show Stripe data warning when we specifically couldn't get latest Stripe data but have cached data */}
-        {showStripeDataWarning && subscriptionStatus?.has_subscription && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-amber-800">
-              ⚠️ Unable to load latest subscription data from Stripe, showing cached information. You can still manage team slots below.
-            </p>
-          </div>
-        )}
-
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-600">Status</span>
           {getStatusBadge(subscriptionStatus.status)}
