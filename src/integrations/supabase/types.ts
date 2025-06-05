@@ -11,10 +11,12 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          address: string | null
           billing_cycle_anchor: number | null
           created_at: string
           handle: string
           id: string
+          logo_url: string | null
           name: string
           points_balance: number
           stripe_customer_id: string | null
@@ -22,12 +24,15 @@ export type Database = {
           subscription_status: string | null
           team_slots: number | null
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
           handle: string
           id?: string
+          logo_url?: string | null
           name: string
           points_balance?: number
           stripe_customer_id?: string | null
@@ -35,12 +40,15 @@ export type Database = {
           subscription_status?: string | null
           team_slots?: number | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
           handle?: string
           id?: string
+          logo_url?: string | null
           name?: string
           points_balance?: number
           stripe_customer_id?: string | null
@@ -48,6 +56,7 @@ export type Database = {
           subscription_status?: string | null
           team_slots?: number | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

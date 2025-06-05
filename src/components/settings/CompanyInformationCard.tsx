@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Building, Edit, Save, X, Check } from "lucide-react";
@@ -17,10 +16,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 const companyFormSchema = z.object({
   name: z.string().min(2, "Company name must be at least 2 characters"),
   handle: z.string().min(2, "Company handle must be at least 2 characters").regex(/^[a-zA-Z0-9-_]+$/, "Handle can only contain letters, numbers, hyphens, and underscores"),
-  description: z.string().optional(),
+  address: z.string().optional(),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  industry: z.string().optional(),
-  size: z.string().optional(),
+  logo_url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
 });
 
 type CompanyFormData = z.infer<typeof companyFormSchema>;
@@ -28,10 +26,9 @@ type CompanyFormData = z.infer<typeof companyFormSchema>;
 interface CompanyData {
   name: string;
   handle: string;
-  description?: string | null;
+  address?: string | null;
   website?: string | null;
-  industry?: string | null;
-  size?: string | null;
+  logo_url?: string | null;
 }
 
 export const CompanyInformationCard = () => {
@@ -49,10 +46,9 @@ export const CompanyInformationCard = () => {
     defaultValues: {
       name: "",
       handle: "",
-      description: "",
+      address: "",
       website: "",
-      industry: "",
-      size: "",
+      logo_url: "",
     },
   });
 
@@ -92,7 +88,7 @@ export const CompanyInformationCard = () => {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('name, handle, description, website, industry, size')
+        .select('name, handle, address, website, logo_url')
         .eq('id', companyId)
         .single();
       
@@ -102,20 +98,18 @@ export const CompanyInformationCard = () => {
         const companyInfo: CompanyData = {
           name: data.name,
           handle: data.handle,
-          description: data.description,
+          address: data.address,
           website: data.website,
-          industry: data.industry,
-          size: data.size,
+          logo_url: data.logo_url,
         };
         setCompanyData(companyInfo);
         setOriginalHandle(data.handle);
         form.reset({
           name: data.name,
           handle: data.handle,
-          description: data.description || "",
+          address: data.address || "",
           website: data.website || "",
-          industry: data.industry || "",
-          size: data.size || "",
+          logo_url: data.logo_url || "",
         });
       }
     } catch (error) {
@@ -146,10 +140,9 @@ export const CompanyInformationCard = () => {
         .update({
           name: data.name,
           handle: data.handle,
-          description: data.description || null,
+          address: data.address || null,
           website: data.website || null,
-          industry: data.industry || null,
-          size: data.size || null,
+          logo_url: data.logo_url || null,
         })
         .eq('id', companyId);
       
@@ -158,10 +151,9 @@ export const CompanyInformationCard = () => {
       const updatedCompanyData: CompanyData = {
         name: data.name,
         handle: data.handle,
-        description: data.description,
+        address: data.address,
         website: data.website,
-        industry: data.industry,
-        size: data.size,
+        logo_url: data.logo_url,
       };
       setCompanyData(updatedCompanyData);
       setOriginalHandle(data.handle);
@@ -180,10 +172,9 @@ export const CompanyInformationCard = () => {
       form.reset({
         name: companyData.name,
         handle: companyData.handle,
-        description: companyData.description || "",
+        address: companyData.address || "",
         website: companyData.website || "",
-        industry: companyData.industry || "",
-        size: companyData.size || "",
+        logo_url: companyData.logo_url || "",
       });
     }
     setIsEditing(false);
@@ -291,12 +282,12 @@ export const CompanyInformationCard = () => {
               
               <FormField
                 control={form.control}
-                name="description"
+                name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company Description</FormLabel>
+                    <FormLabel>Company Address</FormLabel>
                     <FormControl>
-                      <Textarea {...field} placeholder="Tell us about your company" />
+                      <Input {...field} placeholder="Enter company address" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -319,26 +310,12 @@ export const CompanyInformationCard = () => {
               
               <FormField
                 control={form.control}
-                name="industry"
+                name="logo_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Industry</FormLabel>
+                    <FormLabel>Company Logo URL</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="e.g., Technology, Healthcare, Finance" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="size"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Size</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., 1-10, 11-50, 51-200, 200+" />
+                      <Input {...field} placeholder="https://www.example.com/logo.png" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -378,10 +355,10 @@ export const CompanyInformationCard = () => {
               <p className="text-lg font-medium text-gray-900">@{companyData.handle}</p>
             </div>
             
-            {companyData.description && (
+            {companyData.address && (
               <div>
-                <Label className="text-sm font-medium text-gray-600">Description</Label>
-                <p className="text-gray-900">{companyData.description}</p>
+                <Label className="text-sm font-medium text-gray-600">Address</Label>
+                <p className="text-gray-900">{companyData.address}</p>
               </div>
             )}
             
@@ -396,17 +373,19 @@ export const CompanyInformationCard = () => {
               </div>
             )}
             
-            {companyData.industry && (
+            {companyData.logo_url && (
               <div>
-                <Label className="text-sm font-medium text-gray-600">Industry</Label>
-                <p className="text-gray-900">{companyData.industry}</p>
-              </div>
-            )}
-            
-            {companyData.size && (
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Company Size</Label>
-                <p className="text-gray-900">{companyData.size}</p>
+                <Label className="text-sm font-medium text-gray-600">Company Logo</Label>
+                <div className="mt-2">
+                  <img 
+                    src={companyData.logo_url} 
+                    alt="Company Logo" 
+                    className="h-16 w-auto object-contain rounded border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
             )}
             
