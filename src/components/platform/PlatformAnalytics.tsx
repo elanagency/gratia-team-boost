@@ -5,6 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
+interface MonthlyData {
+  month: string;
+  companies: number;
+  transactions: number;
+  revenue: number;
+}
+
 export const PlatformAnalytics = () => {
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['platform-analytics'],
@@ -27,7 +34,7 @@ export const PlatformAnalytics = () => {
         .order('created_at');
 
       // Group by month
-      const monthlyData = {};
+      const monthlyData: Record<string, MonthlyData> = {};
       
       // Process companies
       companies?.forEach(company => {
@@ -54,7 +61,7 @@ export const PlatformAnalytics = () => {
         monthlyData[month].revenue += transaction.amount * 0.01; // Assuming $0.01 per point
       });
 
-      return Object.values(monthlyData).sort((a, b) => 
+      return Object.values(monthlyData).sort((a: MonthlyData, b: MonthlyData) => 
         new Date(a.month + ' 1, 2024').getTime() - new Date(b.month + ' 1, 2024').getTime()
       );
     },

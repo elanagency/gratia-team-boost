@@ -6,6 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, CreditCard, Users } from "lucide-react";
 
+interface Activity {
+  type: string;
+  title: string;
+  subtitle?: string;
+  time: string;
+  icon: any;
+  color: string;
+}
+
 export const RecentActivity = () => {
   const { data: activities, isLoading } = useQuery({
     queryKey: ['recent-activities'],
@@ -17,30 +26,42 @@ export const RecentActivity = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Get recent transactions
+      // Get recent transactions with company info
       const { data: transactions } = await supabase
         .from('company_point_transactions')
-        .select(`
-          amount,
-          created_at,
-          transaction_type,
-          companies(name)
-        `)
+        .select('amount, created_at, transaction_type, company_id')
         .order('created_at', { ascending: false })
         .limit(5);
+
+      // Get company names for transactions
+      const companyIds = transactions?.map(t => t.company_id) || [];
+      const { data: companyNames } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
 
       // Get recent team members
       const { data: members } = await supabase
         .from('company_members')
-        .select(`
-          created_at,
-          companies(name),
-          profiles(first_name, last_name)
-        `)
+        .select('created_at, company_id, user_id')
         .order('created_at', { ascending: false })
         .limit(5);
 
-      const activities = [];
+      // Get company names for members
+      const memberCompanyIds = members?.map(m => m.company_id) || [];
+      const { data: memberCompanyNames } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', memberCompanyIds);
+
+      // Get user profiles for members
+      const userIds = members?.map(m => m.user_id) || [];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      const activities: Activity[] = [];
 
       // Add company activities
       companies?.forEach(company => {
@@ -55,9 +76,10 @@ export const RecentActivity = () => {
 
       // Add transaction activities
       transactions?.forEach(transaction => {
+        const company = companyNames?.find(c => c.id === transaction.company_id);
         activities.push({
           type: 'transaction',
-          title: `${transaction.companies?.name} - ${transaction.transaction_type}`,
+          title: `${company?.name || 'Unknown Company'} - ${transaction.transaction_type}`,
           subtitle: `${transaction.amount} points`,
           time: transaction.created_at,
           icon: CreditCard,
@@ -67,12 +89,14 @@ export const RecentActivity = () => {
 
       // Add member activities
       members?.forEach(member => {
-        const name = member.profiles ? 
-          `${member.profiles.first_name} ${member.profiles.last_name}` : 
+        const company = memberCompanyNames?.find(c => c.id === member.company_id);
+        const profile = profiles?.find(p => p.id === member.user_id);
+        const name = profile ? 
+          `${profile.first_name} ${profile.last_name}` : 
           'New Member';
         activities.push({
           type: 'member',
-          title: `${name} joined ${member.companies?.name}`,
+          title: `${name} joined ${company?.name || 'Unknown Company'}`,
           time: member.created_at,
           icon: Users,
           color: 'bg-purple-50 text-purple-600',

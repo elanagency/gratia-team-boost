@@ -17,6 +17,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+interface Transaction {
+  id: string;
+  type: 'purchase' | 'distribution' | 'redemption';
+  amount: number;
+  description: string;
+  company: string;
+  date: string;
+  status: string;
+}
+
 const TransactionsOverview = () => {
   const [transactionType, setTransactionType] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,35 +34,39 @@ const TransactionsOverview = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['platform-transactions', transactionType],
     queryFn: async () => {
+      // Get all companies first
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name');
+
+      const companyMap = new Map(companies?.map(c => [c.id, c.name]) || []);
+
       // Get company point transactions
       const { data: companyTransactions } = await supabase
         .from('company_point_transactions')
-        .select(`
-          *,
-          companies(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // Get point transactions between users
       const { data: pointTransactions } = await supabase
         .from('point_transactions')
-        .select(`
-          *,
-          companies(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      // Get reward redemptions
+      // Get reward redemptions with reward info
       const { data: redemptions } = await supabase
         .from('reward_redemptions')
-        .select(`
-          *,
-          rewards(name, company_id),
-          companies(name)
-        `)
+        .select('*, reward_id')
         .order('redemption_date', { ascending: false });
 
-      const allTransactions = [];
+      // Get reward info for redemptions
+      const rewardIds = redemptions?.map(r => r.reward_id) || [];
+      const { data: rewards } = await supabase
+        .from('rewards')
+        .select('id, name, company_id')
+        .in('id', rewardIds);
+
+      const allTransactions: Transaction[] = [];
 
       // Format company transactions
       companyTransactions?.forEach(transaction => {
@@ -61,9 +75,9 @@ const TransactionsOverview = () => {
           type: 'purchase',
           amount: transaction.amount,
           description: transaction.description,
-          company: transaction.companies?.name || 'Unknown',
+          company: companyMap.get(transaction.company_id) || 'Unknown',
           date: transaction.created_at,
-          status: transaction.payment_status,
+          status: transaction.payment_status || 'completed',
         });
       });
 
@@ -74,7 +88,7 @@ const TransactionsOverview = () => {
           type: 'distribution',
           amount: transaction.points,
           description: transaction.description,
-          company: transaction.companies?.name || 'Unknown',
+          company: companyMap.get(transaction.company_id) || 'Unknown',
           date: transaction.created_at,
           status: 'completed',
         });
@@ -82,12 +96,13 @@ const TransactionsOverview = () => {
 
       // Format redemptions
       redemptions?.forEach(redemption => {
+        const reward = rewards?.find(r => r.id === redemption.reward_id);
         allTransactions.push({
           id: redemption.id,
           type: 'redemption',
           amount: redemption.points_spent,
-          description: `Reward: ${redemption.rewards?.name || 'Unknown'}`,
-          company: redemption.companies?.name || 'Unknown',
+          description: `Reward: ${reward?.name || 'Unknown'}`,
+          company: reward ? (companyMap.get(reward.company_id) || 'Unknown') : 'Unknown',
           date: redemption.redemption_date,
           status: redemption.status,
         });
@@ -114,7 +129,7 @@ const TransactionsOverview = () => {
     };
     
     return (
-      <Badge variant="outline" className={variants[type]}>
+      <Badge variant="outline" className={variants[type as keyof typeof variants]}>
         {type}
       </Badge>
     );
@@ -128,7 +143,7 @@ const TransactionsOverview = () => {
     };
     
     return (
-      <Badge variant="outline" className={variants[status] || variants.pending}>
+      <Badge variant="outline" className={variants[status as keyof typeof variants] || variants.pending}>
         {status}
       </Badge>
     );
