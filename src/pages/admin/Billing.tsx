@@ -1,21 +1,12 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Download, RefreshCw } from "lucide-react";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatusCard";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 interface BillingHistoryItem {
   id: string;
   date: string;
@@ -26,33 +17,32 @@ interface BillingHistoryItem {
   stripe_session_id?: string;
   stripe_payment_intent_id?: string;
 }
-
 const Billing = () => {
-  const { companyId } = useAuth();
+  const {
+    companyId
+  } = useAuth();
   const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   const fetchBillingHistory = async () => {
     if (!companyId) return;
-    
     setIsLoading(true);
     try {
       // Fetch company point transactions
-      const { data: pointTransactions, error: pointError } = await supabase
-        .from('company_point_transactions')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
+      const {
+        data: pointTransactions,
+        error: pointError
+      } = await supabase.from('company_point_transactions').select('*').eq('company_id', companyId).order('created_at', {
+        ascending: false
+      });
       if (pointError) throw pointError;
 
       // Fetch subscription events
-      const { data: subscriptionEvents, error: subError } = await supabase
-        .from('subscription_events')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
+      const {
+        data: subscriptionEvents,
+        error: subError
+      } = await supabase.from('subscription_events').select('*').eq('company_id', companyId).order('created_at', {
+        ascending: false
+      });
       if (subError) throw subError;
 
       // Combine and format the data
@@ -64,12 +54,11 @@ const Billing = () => {
           id: transaction.id,
           date: new Date(transaction.created_at).toLocaleDateString(),
           amount: `$${(transaction.total_amount || transaction.amount * 1) / 100}`,
-          status: transaction.payment_status === 'completed' ? 'Paid' : 
-                  transaction.payment_status === 'pending' ? 'Pending' : 'Failed',
+          status: transaction.payment_status === 'completed' ? 'Paid' : transaction.payment_status === 'pending' ? 'Pending' : 'Failed',
           type: 'Points Purchase',
           description: transaction.description,
           stripe_session_id: transaction.stripe_session_id,
-          stripe_payment_intent_id: transaction.stripe_payment_intent_id,
+          stripe_payment_intent_id: transaction.stripe_payment_intent_id
         });
       });
 
@@ -82,19 +71,14 @@ const Billing = () => {
             amount: `$${event.amount_charged / 100}`,
             status: 'Paid',
             type: 'Subscription',
-            description: event.event_type === 'created' 
-              ? `Subscription created - ${event.new_quantity} members`
-              : event.event_type === 'quantity_updated'
-              ? `Subscription updated - ${event.previous_quantity} to ${event.new_quantity} members`
-              : `Subscription ${event.event_type}`,
-            stripe_session_id: event.stripe_invoice_id,
+            description: event.event_type === 'created' ? `Subscription created - ${event.new_quantity} members` : event.event_type === 'quantity_updated' ? `Subscription updated - ${event.previous_quantity} to ${event.new_quantity} members` : `Subscription ${event.event_type}`,
+            stripe_session_id: event.stripe_invoice_id
           });
         }
       });
 
       // Sort by date (most recent first)
       combinedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
       setBillingHistory(combinedHistory);
     } catch (error) {
       console.error("Error fetching billing history:", error);
@@ -103,11 +87,9 @@ const Billing = () => {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     fetchBillingHistory();
   }, [companyId]);
-
   const getStatusBadge = (status: string) => {
     const baseClasses = "py-1 px-2 rounded-full text-xs";
     switch (status.toLowerCase()) {
@@ -121,7 +103,6 @@ const Billing = () => {
         return `${baseClasses} bg-gray-100 text-gray-700`;
     }
   };
-
   const getTypeBadge = (type: string) => {
     const baseClasses = "py-1 px-2 rounded-full text-xs";
     switch (type) {
@@ -133,14 +114,11 @@ const Billing = () => {
         return `${baseClasses} bg-gray-100 text-gray-700`;
     }
   };
-
   const handleDownload = (item: BillingHistoryItem) => {
     // For now, just show a toast. In a real implementation, you'd download the invoice
     toast.info("Invoice download feature coming soon");
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-800">Billing & Subscription</h1>
       
       {/* Subscription Status Card */}
@@ -150,16 +128,7 @@ const Billing = () => {
         <div className="card-header">
           <h2 className="card-title">Billing History</h2>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={fetchBillingHistory}
-              disabled={isLoading}
-              className="text-gray-600 border-gray-300 hover:bg-gray-50"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            
             <Button variant="outline" className="text-gray-600 border-gray-300 hover:bg-gray-50">
               <CreditCard className="mr-2 h-4 w-4" />
               Manage Payment Methods
@@ -167,12 +136,9 @@ const Billing = () => {
           </div>
         </div>
         
-        {isLoading ? (
-          <div className="p-6">
+        {isLoading ? <div className="p-6">
             <div className="animate-pulse">Loading billing history...</div>
-          </div>
-        ) : (
-          <Table>
+          </div> : <Table>
             <TableHeader>
               <TableRow className="border-gray-100">
                 <TableHead className="text-gray-500">Invoice</TableHead>
@@ -185,15 +151,11 @@ const Billing = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {billingHistory.length === 0 ? (
-                <TableRow>
+              {billingHistory.length === 0 ? <TableRow>
                   <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                     No billing history found
                   </TableCell>
-                </TableRow>
-              ) : (
-                billingHistory.map((item) => (
-                  <TableRow key={item.id} className="border-gray-100">
+                </TableRow> : billingHistory.map(item => <TableRow key={item.id} className="border-gray-100">
                     <TableCell className="font-medium">{item.id.substring(0, 8)}</TableCell>
                     <TableCell className="text-gray-600">{item.date}</TableCell>
                     <TableCell>
@@ -209,24 +171,14 @@ const Billing = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-gray-500"
-                        onClick={() => handleDownload(item)}
-                      >
+                      <Button variant="ghost" size="sm" className="text-gray-500" onClick={() => handleDownload(item)}>
                         <Download className="h-4 w-4" />
                       </Button>
                     </TableCell>
-                  </TableRow>
-                ))
-              )}
+                  </TableRow>)}
             </TableBody>
-          </Table>
-        )}
+          </Table>}
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default Billing;
