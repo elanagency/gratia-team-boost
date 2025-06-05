@@ -20,11 +20,10 @@ interface BillingHistoryItem {
 }
 
 const Billing = () => {
-  const {
-    companyId
-  } = useAuth();
+  const { companyId } = useAuth();
   const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const fetchBillingHistory = async () => {
     if (!companyId) return;
     setIsLoading(true);
@@ -89,9 +88,11 @@ const Billing = () => {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     fetchBillingHistory();
   }, [companyId]);
+
   const getStatusBadge = (status: string) => {
     const baseClasses = "py-1 px-2 rounded-full text-xs";
     switch (status.toLowerCase()) {
@@ -105,6 +106,7 @@ const Billing = () => {
         return `${baseClasses} bg-gray-100 text-gray-700`;
     }
   };
+
   const getTypeBadge = (type: string) => {
     const baseClasses = "py-1 px-2 rounded-full text-xs";
     switch (type) {
@@ -116,24 +118,39 @@ const Billing = () => {
         return `${baseClasses} bg-gray-100 text-gray-700`;
     }
   };
+
   const handleDownload = (item: BillingHistoryItem) => {
-    // For now, just show a toast. In a real implementation, you'd download the invoice
     toast.info("Invoice download feature coming soon");
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-800">Billing & Subscription</h1>
       
-      {/* Subscription Status Card */}
+      {/* Team Slots & Billing Section */}
       <SubscriptionStatusCard />
       
+      {/* Billing History Section */}
       <Card className="dashboard-card">
         <div className="card-header">
           <h2 className="card-title">Billing History</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchBillingHistory}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
         </div>
         
-        {isLoading ? <div className="p-6">
+        {isLoading ? (
+          <div className="p-6">
             <div className="animate-pulse">Loading billing history...</div>
-          </div> : <Table>
+          </div>
+        ) : (
+          <Table>
             <TableHeader>
               <TableRow className="border-gray-100">
                 <TableHead className="text-gray-500">Invoice</TableHead>
@@ -146,11 +163,15 @@ const Billing = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {billingHistory.length === 0 ? <TableRow>
+              {billingHistory.length === 0 ? (
+                <TableRow>
                   <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                     No billing history found
                   </TableCell>
-                </TableRow> : billingHistory.map(item => <TableRow key={item.id} className="border-gray-100">
+                </TableRow>
+              ) : (
+                billingHistory.map(item => (
+                  <TableRow key={item.id} className="border-gray-100">
                     <TableCell className="font-medium">{item.id.substring(0, 8)}</TableCell>
                     <TableCell className="text-gray-600">{item.date}</TableCell>
                     <TableCell>
@@ -166,14 +187,24 @@ const Billing = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="text-gray-500" onClick={() => handleDownload(item)}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-gray-500" 
+                        onClick={() => handleDownload(item)}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </TableCell>
-                  </TableRow>)}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
-          </Table>}
+          </Table>
+        )}
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default Billing;
