@@ -26,10 +26,14 @@ export const SetupBillingButton = ({ employeeCount, onSuccess }: SetupBillingBut
     try {
       console.log("Creating subscription checkout for:", { companyId, employeeCount });
       
+      // Get the current origin to pass to the edge function
+      const origin = window.location.origin;
+      
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: { 
           companyId,
-          employeeCount
+          employeeCount,
+          origin
         }
       });
       

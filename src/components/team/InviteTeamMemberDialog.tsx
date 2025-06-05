@@ -51,13 +51,18 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     
     try {
       console.log("Inviting team member:", { email, name, role, companyId, isFirstMember });
+      
+      // Get the current origin to pass to the edge function
+      const origin = window.location.origin;
+      
       const { data, error } = await supabase.functions.invoke('create-team-member', {
         body: { 
           email, 
           name, 
           companyId,
           role,
-          invitedBy: user?.id
+          invitedBy: user?.id,
+          origin
         }
       });
       
