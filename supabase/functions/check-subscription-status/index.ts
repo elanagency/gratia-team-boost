@@ -68,11 +68,44 @@ serve(async (req: Request) => {
       .eq("is_admin", true)
       .single();
 
-    if (membershipError || !membership) {
+    if (membershipError) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Membership error:", membershipError);
+      
+      // Check if the user is a member of any company (not necessarily admin)
+      const { data: nonAdminMembership, error: nonAdminError } = await supabaseAdmin
+        .from("company_members")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (nonAdminError || !nonAdminMembership) {
+        return new Response(
+          JSON.stringify({ error: "Company membership not found" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Non-admin user, return limited information
+      const { data: usedSlots } = await supabaseAdmin
+        .rpc('get_used_team_slots', { company_id: nonAdminMembership.company_id });
+      
+      const currentUsedSlots = usedSlots || 0;
+      
       return new Response(
-        JSON.stringify({ error: "Company membership not found or not admin" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          has_subscription: false,
+          status: 'team_member',
+          team_slots: 0,
+          used_slots: currentUsedSlots,
+          available_slots: 0,
+          next_billing_date: null,
+          amount_per_slot: 299,
+          slot_utilization: 0,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -102,7 +135,7 @@ serve(async (req: Request) => {
           used_slots: currentUsedSlots,
           available_slots: 0,
           next_billing_date: null,
-          amount_per_slot: 299, // $2.99 in cents
+          amount_per_slot: 299,
           slot_utilization: 0,
         }),
         {

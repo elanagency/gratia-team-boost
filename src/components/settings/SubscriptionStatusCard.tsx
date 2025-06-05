@@ -31,6 +31,7 @@ export const SubscriptionStatusCard = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
   const { user, companyId } = useAuth();
 
   const fetchSubscriptionStatus = async () => {
@@ -41,7 +42,24 @@ export const SubscriptionStatusCard = () => {
     
     setIsLoading(true);
     setHasError(false);
+    
     try {
+      // First check if the company has an existing subscription ID in the database
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('stripe_subscription_id')
+        .eq('id', companyId)
+        .single();
+      
+      if (companyError && companyError.code !== 'PGRST116') {
+        console.error("Error fetching company data:", companyError);
+      }
+      
+      // Set whether the company has ever had a subscription
+      const hasStripeSubscriptionId = companyData?.stripe_subscription_id ? true : false;
+      setHasExistingSubscription(hasStripeSubscriptionId);
+      console.log("Company has existing subscription ID:", hasStripeSubscriptionId);
+
       // Check if we have a valid session to use for authentication
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
@@ -61,7 +79,10 @@ export const SubscriptionStatusCard = () => {
       setSubscriptionStatus(data);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
-      setHasError(true);
+      
+      // Only set hasError to true if the company has an existing subscription
+      // For new companies without subscriptions, we don't want to show the error
+      setHasError(hasExistingSubscription);
       
       // For new companies or when there's an error, set default values to allow purchase
       setSubscriptionStatus({
@@ -75,7 +96,9 @@ export const SubscriptionStatusCard = () => {
         slot_utilization: 0,
       });
       
-      toast.error("Unable to load subscription status, but you can still purchase team slots");
+      if (hasExistingSubscription) {
+        toast.error("Unable to load subscription status, but you can still manage team slots");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +202,8 @@ export const SubscriptionStatusCard = () => {
       </div>
       
       <div className="p-6 space-y-4">
-        {hasError && (
+        {/* Only show error message if the company has an existing subscription */}
+        {hasError && hasExistingSubscription && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-amber-800">
               ⚠️ Unable to load current subscription data, but you can still manage team slots below.
@@ -193,6 +217,7 @@ export const SubscriptionStatusCard = () => {
         </div>
 
         {subscriptionStatus.has_subscription ? (
+          // ... keep existing code (subscription active UI)
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
@@ -268,6 +293,7 @@ export const SubscriptionStatusCard = () => {
             </div>
           </>
         ) : subscriptionStatus.used_slots > 0 ? (
+          // ... keep existing code (no subscription but used slots UI)
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
             <p className="text-sm text-amber-700 mb-4">
@@ -281,6 +307,7 @@ export const SubscriptionStatusCard = () => {
             />
           </div>
         ) : (
+          // ... keep existing code (no subscription UI)
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-gray-800 mb-2">No Active Subscription</h4>
             <p className="text-sm text-gray-600 mb-3">
