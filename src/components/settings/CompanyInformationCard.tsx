@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +89,11 @@ export const CompanyInformationCard = () => {
       
       if (error) throw error;
       
-      setCompanyData(data);
+      const updatedCompanyData: CompanyData = {
+        name: data.name,
+        handle: data.handle,
+      };
+      setCompanyData(updatedCompanyData);
       setIsEditing(false);
       toast.success("Company information updated successfully");
     } catch (error) {
