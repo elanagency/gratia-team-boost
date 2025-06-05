@@ -49,12 +49,12 @@ const Settings = () => {
       <h1 className="text-2xl font-semibold text-gray-800">Settings</h1>
       
       <div className="space-y-6">
-        <CompanyInformationCard />
         <CompanyPointsCard 
           companyPoints={companyPoints} 
           onPointsUpdated={fetchCompanyData}
         />
         <SubscriptionStatusCard />
+        <CompanyInformationCard />
       </div>
     </div>
   );
