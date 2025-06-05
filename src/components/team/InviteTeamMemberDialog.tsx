@@ -95,17 +95,25 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       // Normal flow - member was created successfully
       if (data.isNewUser && data.password) {
         console.log("New user created, showing password dialog");
-        setPasswordInfo({
-          isNewUser: true,
-          password: data.password,
-          email: email,
-          name: name
-        });
         
+        // Store the current form data for the password dialog
+        const currentEmail = email;
+        const currentName = name;
+        
+        // Clear form first
         setEmail('');
         setName('');
         setRole('member');
         
+        // Set password info with the stored data
+        setPasswordInfo({
+          isNewUser: true,
+          password: data.password,
+          email: currentEmail,
+          name: currentName
+        });
+        
+        // Show password dialog
         setShowPasswordDialog(true);
         console.log("Password dialog state set to:", true);
       } else {
@@ -144,7 +152,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   };
   
   const handleOpenChange = (newOpen: boolean) => {
-    if (showPasswordDialog) {
+    // Don't allow closing the main dialog if password dialog is open
+    if (showPasswordDialog && !newOpen) {
       return;
     }
     setOpen(newOpen);
