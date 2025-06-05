@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
-import Stripe from "https://esm.sh/stripe@14.21.0";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -89,106 +88,126 @@ serve(async (req: Request) => {
         },
       }
     );
-
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
     
-    // Get current NON-ADMIN member count before adding new member
-    const { data: currentMembers, error: countError } = await supabaseAdmin
-      .from('company_members')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('is_admin', false);
-
-    if (countError) {
-      console.error("[CREATE-TEAM-MEMBER] Error getting current member count:", countError);
-    }
-
-    const memberCountBeforeAdd = currentMembers?.length || 0;
-    console.log("[CREATE-TEAM-MEMBER] Current NON-ADMIN member count before adding:", memberCountBeforeAdd);
-    
-    // Check if company has active subscription
+    // Check company's team slots availability
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
-      .select('stripe_subscription_id, subscription_status')
+      .select('team_slots, subscription_status, stripe_subscription_id')
       .eq('id', companyId)
       .single();
 
-    const hasActiveSubscription = company?.stripe_subscription_id && 
-                                 company?.subscription_status === 'active';
+    if (companyError) {
+      console.error("[CREATE-TEAM-MEMBER] Error fetching company:", companyError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch company information" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    console.log("[CREATE-TEAM-MEMBER] Company subscription status:", { 
-      hasSubscription: !!company?.stripe_subscription_id,
-      status: company?.subscription_status,
-      hasActiveSubscription 
+    // Get current used slots
+    const { data: usedSlots, error: slotsError } = await supabaseAdmin
+      .rpc('get_used_team_slots', { company_id: companyId });
+
+    if (slotsError) {
+      console.error("[CREATE-TEAM-MEMBER] Error getting used slots:", slotsError);
+      return new Response(
+        JSON.stringify({ error: "Failed to check team slot availability" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const currentUsedSlots = usedSlots || 0;
+    const availableSlots = company.team_slots || 0;
+
+    console.log("[CREATE-TEAM-MEMBER] Slot check:", {
+      availableSlots,
+      currentUsedSlots,
+      hasSlots: availableSlots > 0,
+      canAddMember: currentUsedSlots < availableSlots
     });
 
-    // If this is the first member and no active subscription, return checkout URL without creating member
-    const needsBillingSetup = memberCountBeforeAdd === 0 && !hasActiveSubscription;
-    
-    console.log("[CREATE-TEAM-MEMBER] Billing setup decision:", {
-      memberCountBeforeAdd,
-      hasActiveSubscription,
-      needsBillingSetup
-    });
-    
-    if (needsBillingSetup && authHeader) {
-      console.log("[CREATE-TEAM-MEMBER] First member requires billing setup - creating checkout session");
-      try {
-        // Store member data temporarily in session storage via metadata
-        const memberData = {
-          name,
-          email,
-          companyId,
-          role,
-          invitedBy
-        };
-        
-        // Make a direct HTTP request to the checkout function with proper auth headers
-        const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': authHeader,
-            'Content-Type': 'application/json',
-            'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
-          },
-          body: JSON.stringify({ 
-            companyId,
-            employeeCount: 1,
-            memberData, // Pass member data to be stored in checkout metadata
-            origin // Pass the origin for proper redirect URLs
-          })
-        });
-        
-        if (checkoutResponse.ok) {
-          const checkoutData = await checkoutResponse.json();
-          console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutData?.url);
+    // Check if company has any slots purchased
+    if (availableSlots === 0) {
+      console.log("[CREATE-TEAM-MEMBER] No team slots purchased - redirecting to billing setup");
+      
+      if (authHeader) {
+        try {
+          // Create checkout session for initial slot purchase
+          const memberData = { name, email, companyId, role, invitedBy };
           
+          const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json',
+              'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
+            },
+            body: JSON.stringify({ 
+              companyId,
+              teamSlots: 5, // Default suggestion
+              memberData,
+              origin
+            })
+          });
+          
+          if (checkoutResponse.ok) {
+            const checkoutData = await checkoutResponse.json();
+            console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutData?.url);
+            
+            return new Response(
+              JSON.stringify({
+                needsBillingSetup: true,
+                checkoutUrl: checkoutData?.url,
+                message: "Please purchase team slots before adding members"
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          } else {
+            throw new Error("Failed to create checkout session");
+          }
+        } catch (checkoutErr) {
+          console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
           return new Response(
-            JSON.stringify({
-              needsBillingSetup: true,
-              checkoutUrl: checkoutData?.url,
-              message: "Billing setup required before adding team member"
+            JSON.stringify({ 
+              error: "No team slots available. Please purchase team slots in billing settings.",
+              needsBillingSetup: true 
             }),
             {
-              status: 200,
+              status: 400,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );
-        } else {
-          const errorText = await checkoutResponse.text();
-          console.error("[CREATE-TEAM-MEMBER] Error creating checkout session:", errorText);
-          throw new Error("Failed to create billing setup");
         }
-      } catch (checkoutErr) {
-        console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
-        throw new Error("Failed to create billing setup");
       }
     }
+
+    // Check if all slots are used
+    if (currentUsedSlots >= availableSlots) {
+      console.log("[CREATE-TEAM-MEMBER] All team slots are used");
+      return new Response(
+        JSON.stringify({
+          error: `All ${availableSlots} team slots are in use. Please upgrade your subscription to add more members.`,
+          slotsExhausted: true,
+          usedSlots: currentUsedSlots,
+          availableSlots: availableSlots
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
     
-    // Continue with normal member creation (either not first member or has active subscription)
+    // Continue with normal member creation (slots are available)
     
     // Check if user already exists
     const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
@@ -275,7 +294,6 @@ serve(async (req: Request) => {
     
     if (membershipCheckError) {
       console.error("[CREATE-TEAM-MEMBER] Error checking existing membership:", membershipCheckError);
-      // Continue anyway, as this might just be the first membership
     }
     
     if (existingMembership) {
@@ -299,7 +317,7 @@ serve(async (req: Request) => {
       .insert({
         company_id: companyId,
         user_id: userId,
-        is_admin: false, // Explicitly set as non-admin
+        is_admin: false,
         role: role.toLowerCase(),
       })
       .select()
@@ -318,97 +336,11 @@ serve(async (req: Request) => {
     
     console.log("[CREATE-TEAM-MEMBER] Added user to company successfully");
     
-    // Get updated NON-ADMIN member count
-    const { data: newMembers, error: newCountError } = await supabaseAdmin
-      .from('company_members')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('is_admin', false);
+    // Get updated slot usage
+    const { data: newUsedSlots } = await supabaseAdmin
+      .rpc('get_used_team_slots', { company_id: companyId });
 
-    if (newCountError) {
-      console.error("[CREATE-TEAM-MEMBER] Error getting new member count:", newCountError);
-    }
-
-    const memberCountAfterAdd = newMembers?.length || 1; // Default to 1 if we can't count
-    console.log("[CREATE-TEAM-MEMBER] NON-ADMIN member count after adding:", memberCountAfterAdd);
-
-    // Update Stripe subscription quantity if there's an active subscription
-    if (hasActiveSubscription && company?.stripe_subscription_id) {
-      try {
-        console.log("[CREATE-TEAM-MEMBER] Updating Stripe subscription quantity");
-        
-        // Get current subscription
-        const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
-        const currentQuantity = subscription.items.data[0].quantity || 0;
-        const newQuantity = memberCountAfterAdd;
-        
-        console.log("[CREATE-TEAM-MEMBER] Subscription quantity update:", {
-          currentQuantity,
-          newQuantity,
-          subscriptionId: company.stripe_subscription_id
-        });
-        
-        if (currentQuantity !== newQuantity) {
-          // Update subscription quantity
-          const updatedSubscription = await stripe.subscriptions.update(
-            company.stripe_subscription_id,
-            {
-              items: [
-                {
-                  id: subscription.items.data[0].id,
-                  quantity: newQuantity,
-                },
-              ],
-              proration_behavior: "always_invoice",
-            }
-          );
-          
-          console.log("[CREATE-TEAM-MEMBER] Subscription updated successfully");
-          
-          // Get the latest invoice for amount charged
-          const latestInvoice = await stripe.invoices.list({
-            customer: subscription.customer as string,
-            limit: 1,
-          });
-          
-          const amountCharged = latestInvoice.data[0]?.amount_paid || 0;
-          
-          console.log("[CREATE-TEAM-MEMBER] Prorated amount charged:", amountCharged);
-          
-          // Create subscription event record
-          const { error: subscriptionEventError } = await supabaseAdmin
-            .from('subscription_events')
-            .insert({
-              company_id: companyId,
-              event_type: 'member_added',
-              previous_quantity: currentQuantity,
-              new_quantity: newQuantity,
-              amount_charged: amountCharged,
-              stripe_invoice_id: latestInvoice.data[0]?.id,
-              metadata: {
-                subscription_id: updatedSubscription.id,
-                member_email: email,
-                member_name: name,
-                member_role: role,
-                change_type: 'increase',
-                user_id: userId
-              },
-            });
-          
-          if (subscriptionEventError) {
-            console.error("[CREATE-TEAM-MEMBER] Error creating subscription event:", subscriptionEventError);
-          } else {
-            console.log("[CREATE-TEAM-MEMBER] Created subscription event for billing history");
-          }
-        } else {
-          console.log("[CREATE-TEAM-MEMBER] Subscription quantity already matches member count");
-        }
-      } catch (stripeError) {
-        console.error("[CREATE-TEAM-MEMBER] Error updating Stripe subscription:", stripeError);
-        // Don't fail the member creation if subscription update fails
-        // The member was already created successfully
-      }
-    }
+    const finalUsedSlots = newUsedSlots || (currentUsedSlots + 1);
     
     // Return success response
     const response = {
@@ -416,7 +348,8 @@ serve(async (req: Request) => {
       userId,
       membership,
       isNewUser,
-      memberCount: memberCountAfterAdd,
+      usedSlots: finalUsedSlots,
+      availableSlots: availableSlots,
       needsBillingSetup: false,
       ...(isNewUser && password ? { password } : {}),
     };
@@ -439,7 +372,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {
-      status: 500,
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );

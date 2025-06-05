@@ -1,184 +1,146 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper logging function
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CHECK-SUBSCRIPTION-STATUS] ${step}${detailsStr}`);
-};
-
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("Function started");
-
-    // Use service role to access company data
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("No authorization header provided");
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseService.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.id) throw new Error("User not authenticated");
-
-    logStep("User authenticated", { userId: user.id });
-
-    // Get user's company
-    const { data: memberData, error: memberError } = await supabaseService
-      .from('company_members')
-      .select('company_id, is_admin')
-      .eq('user_id', user.id)
-      .eq('is_admin', true)
-      .single();
-
-    if (memberError || !memberData) {
-      logStep("User is not a company admin", { memberError });
       return new Response(
-        JSON.stringify({
-          has_subscription: false,
-          status: "inactive",
-          current_quantity: 0,
-          member_count: 0,
-          next_billing_date: null,
-          amount_per_member: 299,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
+        JSON.stringify({ error: "Authorization header required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const companyId = memberData.company_id;
-    logStep("Company found", { companyId });
-
-    // Get company details including subscription info
-    const { data: company, error: companyError } = await supabaseService
-      .from('companies')
-      .select('*')
-      .eq('id', companyId)
-      .single();
-
-    if (companyError || !company) {
-      throw new Error("Company not found");
-    }
-
-    logStep("Company data retrieved", { 
-      companyName: company.name,
-      subscriptionId: company.stripe_subscription_id 
-    });
-
-    // Count non-admin members
-    const { data: members, error: membersError } = await supabaseService
-      .from('company_members')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('is_admin', false);
-
-    if (membersError) {
-      console.error("Error counting members:", membersError);
-    }
-
-    const memberCount = members?.length || 0;
-    logStep("Member count retrieved", { memberCount });
-
-    // If no subscription ID, return no subscription
-    if (!company.stripe_subscription_id) {
-      logStep("No subscription found");
-      return new Response(
-        JSON.stringify({
-          has_subscription: false,
-          status: "inactive",
-          current_quantity: 0,
-          member_count: memberCount,
-          next_billing_date: null,
-          amount_per_member: 299,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    }
-
-    // Check subscription status with Stripe
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY not configured");
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    
-    logStep("Fetching subscription from Stripe", { subscriptionId: company.stripe_subscription_id });
-    
-    const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
-    
-    logStep("Subscription retrieved from Stripe", {
-      status: subscription.status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
-      quantity: subscription.items.data[0]?.quantity || 0
-    });
-
-    // Update company subscription status
-    await supabaseService
-      .from('companies')
-      .update({ subscription_status: subscription.status })
-      .eq('id', companyId);
-
-    const nextBillingDate = new Date(subscription.current_period_end * 1000).toISOString();
-    const currentQuantity = subscription.items.data[0]?.quantity || 0;
-
-    return new Response(
-      JSON.stringify({
-        has_subscription: subscription.status === 'active',
-        status: subscription.status,
-        current_quantity: currentQuantity,
-        member_count: memberCount,
-        next_billing_date: nextBillingDate,
-        amount_per_member: 299,
-      }),
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_ANON_KEY") || "",
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        global: {
+          headers: { Authorization: authHeader },
+        },
       }
     );
 
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription-status", { error: errorMessage });
-    console.error("Subscription status check error:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        has_subscription: false,
-        status: "error",
-        current_quantity: 0,
-        member_count: 0,
-        next_billing_date: null,
-        amount_per_member: 299,
-      }),
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "User not authenticated" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user's company membership
+    const { data: membership, error: membershipError } = await supabaseClient
+      .from("company_members")
+      .select("company_id, is_admin")
+      .eq("user_id", user.id)
+      .eq("is_admin", true)
+      .single();
+
+    if (membershipError || !membership) {
+      return new Response(
+        JSON.stringify({ error: "Company membership not found or not admin" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const companyId = membership.company_id;
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
       {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    // Get company info with subscription status
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .select("team_slots, subscription_status, stripe_subscription_id")
+      .eq("id", companyId)
+      .single();
+
+    if (companyError) {
+      console.error("Error fetching company:", companyError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch company information" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get current used slots
+    const { data: usedSlots, error: slotsError } = await supabaseAdmin
+      .rpc('get_used_team_slots', { company_id: companyId });
+
+    if (slotsError) {
+      console.error("Error getting used slots:", slotsError);
+    }
+
+    const currentUsedSlots = usedSlots || 0;
+    const availableSlots = company.team_slots || 0;
+
+    let subscriptionDetails = null;
+    if (company.stripe_subscription_id) {
+      try {
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+          apiVersion: "2023-10-16",
+        });
+
+        const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
+        
+        subscriptionDetails = {
+          current_period_end: subscription.current_period_end,
+          status: subscription.status,
+          quantity: subscription.items.data[0]?.quantity || 0,
+        };
+      } catch (stripeError) {
+        console.error("Error fetching Stripe subscription:", stripeError);
+      }
+    }
+
+    const response = {
+      has_subscription: !!company.stripe_subscription_id,
+      status: company.subscription_status || 'inactive',
+      team_slots: availableSlots,
+      used_slots: currentUsedSlots,
+      available_slots: Math.max(0, availableSlots - currentUsedSlots),
+      next_billing_date: subscriptionDetails?.current_period_end 
+        ? new Date(subscriptionDetails.current_period_end * 1000).toISOString()
+        : null,
+      amount_per_slot: 299, // $2.99 in cents
+      slot_utilization: availableSlots > 0 ? Math.round((currentUsedSlots / availableSlots) * 100) : 0,
+    };
+
+    return new Response(
+      JSON.stringify(response),
+      {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Error in check-subscription-status:", error);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      {
         status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }

@@ -9,20 +9,23 @@ import {
   CreditCard, 
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  TrendingUp
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { SetupBillingButton } from "@/components/billing/SetupBillingButton";
+import { TeamSlotsBillingButton } from "@/components/billing/TeamSlotsBillingButton";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
   status: string;
-  current_quantity: number;
-  member_count: number;
+  team_slots: number;
+  used_slots: number;
+  available_slots: number;
   next_billing_date: string | null;
-  amount_per_member: number;
+  amount_per_slot: number;
+  slot_utilization: number;
 }
 
 export const SubscriptionStatusCard = () => {
@@ -58,14 +61,14 @@ export const SubscriptionStatusCard = () => {
     const setup = urlParams.get('setup');
     
     if (setup === 'success') {
-      toast.success("Billing setup completed successfully!");
+      toast.success("Team slots purchased successfully!");
       // Remove the query param and refresh subscription status
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => {
         fetchSubscriptionStatus();
-      }, 2000); // Give time for Stripe to process
+      }, 2000);
     } else if (setup === 'cancelled') {
-      toast.error("Billing setup was cancelled");
+      toast.error("Team slots purchase was cancelled");
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -74,7 +77,7 @@ export const SubscriptionStatusCard = () => {
     return (
       <Card className="dashboard-card">
         <div className="card-header">
-          <h2 className="card-title">Subscription Status</h2>
+          <h2 className="card-title">Team Slots & Billing</h2>
         </div>
         <div className="p-6">
           <div className="animate-pulse">Loading subscription status...</div>
@@ -102,12 +105,15 @@ export const SubscriptionStatusCard = () => {
     }
   };
 
-  const monthlyTotal = (subscriptionStatus.current_quantity * subscriptionStatus.amount_per_member) / 100;
+  const monthlyTotal = (subscriptionStatus.team_slots * subscriptionStatus.amount_per_slot) / 100;
+  const utilizationColor = subscriptionStatus.slot_utilization >= 90 ? 'text-red-600' : 
+                          subscriptionStatus.slot_utilization >= 75 ? 'text-yellow-600' : 
+                          'text-green-600';
 
   return (
     <Card className="dashboard-card">
       <div className="card-header">
-        <h2 className="card-title">Subscription Status</h2>
+        <h2 className="card-title">Team Slots & Billing</h2>
         <Button 
           variant="outline" 
           size="sm"
@@ -129,8 +135,10 @@ export const SubscriptionStatusCard = () => {
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4 text-gray-500" />
                 <div>
-                  <p className="text-sm text-gray-600">Team Members</p>
-                  <p className="text-lg font-semibold">{subscriptionStatus.member_count}</p>
+                  <p className="text-sm text-gray-600">Team Slots</p>
+                  <p className="text-lg font-semibold">
+                    {subscriptionStatus.used_slots} / {subscriptionStatus.team_slots}
+                  </p>
                 </div>
               </div>
               
@@ -140,6 +148,25 @@ export const SubscriptionStatusCard = () => {
                   <p className="text-sm text-gray-600">Monthly Total</p>
                   <p className="text-lg font-semibold">${monthlyTotal.toFixed(2)}</p>
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Slot Utilization</span>
+                <span className={`text-sm font-medium ${utilizationColor}`}>
+                  {subscriptionStatus.slot_utilization}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    subscriptionStatus.slot_utilization >= 90 ? 'bg-red-500' :
+                    subscriptionStatus.slot_utilization >= 75 ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(subscriptionStatus.slot_utilization, 100)}%` }}
+                />
               </div>
             </div>
 
@@ -156,28 +183,37 @@ export const SubscriptionStatusCard = () => {
             )}
 
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-2">Billing Information</h4>
+              <h4 className="font-medium text-blue-800 mb-2">Team Slots Information</h4>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• $2.99 per team member per month</li>
-                <li>• Prorated billing when adding/removing members</li>
-                <li>• Billed monthly on the 1st of each month</li>
-                {subscriptionStatus.current_quantity !== subscriptionStatus.member_count && (
-                  <li className="text-amber-700">
-                    • Subscription quantity ({subscriptionStatus.current_quantity}) will be updated to match team size ({subscriptionStatus.member_count})
+                <li>• $2.99 per team slot per month</li>
+                <li>• Add team members up to your slot limit</li>
+                <li>• Upgrade or downgrade anytime</li>
+                <li>• Available slots: {subscriptionStatus.available_slots}</li>
+                {subscriptionStatus.slot_utilization >= 90 && (
+                  <li className="text-amber-700 font-medium">
+                    • ⚠️ Running low on slots - consider upgrading
                   </li>
                 )}
               </ul>
             </div>
+
+            <div className="pt-4">
+              <TeamSlotsBillingButton 
+                currentSlots={subscriptionStatus.team_slots}
+                onSuccess={fetchSubscriptionStatus}
+              />
+            </div>
           </>
-        ) : subscriptionStatus.member_count > 0 ? (
+        ) : subscriptionStatus.used_slots > 0 ? (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="font-medium text-amber-800 mb-2">Billing Setup Required</h4>
+            <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
             <p className="text-sm text-amber-700 mb-4">
-              You have {subscriptionStatus.member_count} team member{subscriptionStatus.member_count > 1 ? 's' : ''} but no active subscription. 
-              Please setup billing to continue using the service.
+              You have {subscriptionStatus.used_slots} team member{subscriptionStatus.used_slots > 1 ? 's' : ''} but no active subscription. 
+              Please purchase team slots to continue using the service.
             </p>
-            <SetupBillingButton 
-              employeeCount={subscriptionStatus.member_count} 
+            <TeamSlotsBillingButton 
+              currentSlots={0}
+              suggestedSlots={Math.max(5, subscriptionStatus.used_slots + 2)}
               onSuccess={fetchSubscriptionStatus}
             />
           </div>
@@ -185,13 +221,18 @@ export const SubscriptionStatusCard = () => {
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-gray-800 mb-2">No Active Subscription</h4>
             <p className="text-sm text-gray-600 mb-3">
-              Your subscription will start automatically when you add your first team member.
+              Purchase team slots to start adding team members to your organization.
             </p>
-            <div className="text-sm text-gray-500">
-              <p>• $2.99 per team member per month</p>
-              <p>• Free signup - pay only when you add team members</p>
-              <p>• Prorated billing for mid-month additions</p>
+            <div className="text-sm text-gray-500 mb-4">
+              <p>• $2.99 per team slot per month</p>
+              <p>• Choose any number of slots (e.g., 5, 7, 12, 25)</p>
+              <p>• Add team members up to your slot limit</p>
+              <p>• Upgrade or downgrade anytime</p>
             </div>
+            <TeamSlotsBillingButton 
+              currentSlots={0}
+              onSuccess={fetchSubscriptionStatus}
+            />
           </div>
         )}
       </div>

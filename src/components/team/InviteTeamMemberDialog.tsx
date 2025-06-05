@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -13,7 +14,6 @@ import { useAuth } from "@/context/AuthContext";
 import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
-import BillingSetupInfo from "./BillingSetupInfo";
 import PasswordDisplayDialog from "./PasswordDisplayDialog";
 import InviteForm from "./InviteForm";
 
@@ -24,13 +24,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [role, setRole] = useState('member');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
-  const { teamMembers } = useTeamMembers();
+  const { teamSlots } = useTeamMembers();
   
-  // Check if this will be the first member (since teamMembers already excludes admins)
-  const currentMemberCount = teamMembers?.length || 0;
-  const isFirstMember = currentMemberCount === 0;
-  
-  // Add state for password info and dialog
   const [passwordInfo, setPasswordInfo] = useState({ 
     isNewUser: false, 
     password: "", 
@@ -50,9 +45,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setIsSubmitting(true);
     
     try {
-      console.log("Inviting team member:", { email, name, role, companyId, isFirstMember });
+      console.log("Inviting team member:", { email, name, role, companyId, teamSlots });
       
-      // Get the current origin to pass to the edge function
       const origin = window.location.origin;
       
       const { data, error } = await supabase.functions.invoke('create-team-member', {
@@ -73,23 +67,28 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       console.log("Team member creation response:", data);
       
-      // Check if billing setup is needed (first member case)
+      // Check if billing setup is needed (no slots purchased)
       if (data.needsBillingSetup && data.checkoutUrl) {
-        console.log("First member requires billing setup, redirecting to checkout");
+        console.log("No team slots purchased, redirecting to checkout");
         
-        // Reset form fields
         setEmail('');
         setName('');
         setRole('member');
         setOpen(false);
         
-        toast.success("Redirecting to billing setup. Complete payment to add the team member.");
+        toast.success("Redirecting to team slots purchase. Complete payment to add the team member.");
         
-        // Redirect to Stripe checkout immediately
         setTimeout(() => {
           window.location.href = data.checkoutUrl;
         }, 1500);
         
+        return;
+      }
+
+      // Check if all slots are exhausted
+      if (data.slotsExhausted) {
+        console.log("All team slots are used");
+        toast.error(data.error || "All team slots are in use. Please upgrade your subscription.");
         return;
       }
       
@@ -103,26 +102,22 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           name: name
         });
         
-        // Reset form fields but keep the main dialog open until password dialog is closed
         setEmail('');
         setName('');
         setRole('member');
         
-        // Important: Show password dialog AFTER updating state
         setShowPasswordDialog(true);
         console.log("Password dialog state set to:", true);
       } else {
         console.log("Existing user invited");
         setOpen(false);
         
-        // Reset form
         setEmail('');
         setName('');
         setRole('member');
         
         toast.success(`${name} has been invited to join the team!`);
         
-        // Call onSuccess for existing user
         if (onSuccess) {
           onSuccess();
         }
@@ -138,9 +133,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const closePasswordDialog = () => {
     console.log("Closing password dialog");
     setShowPasswordDialog(false);
-    setOpen(false); // Close the main dialog as well
+    setOpen(false);
     
-    // Now call onSuccess callback after user has seen the password
     if (onSuccess) {
       console.log("Calling onSuccess callback");
       onSuccess();
@@ -149,21 +143,24 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     toast.success(`${passwordInfo.name} has been added to the team!`);
   };
   
-  // Make sure we don't close the main dialog while password dialog is showing
   const handleOpenChange = (newOpen: boolean) => {
     if (showPasswordDialog) {
-      // If password dialog is open, don't allow closing the main dialog
-      // This ensures the password dialog stays visible
       return;
     }
     setOpen(newOpen);
   };
+
+  const canAddMembers = teamSlots.total > 0 && teamSlots.available > 0;
   
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
-          <Button variant="default" className="bg-[#F572FF] hover:bg-[#E061EE] text-white">
+          <Button 
+            variant="default" 
+            className="bg-[#F572FF] hover:bg-[#E061EE] text-white"
+            disabled={!canAddMembers}
+          >
             <PlusCircle className="mr-2 h-4 w-4" />
             Invite Team Member
           </Button>
@@ -176,7 +173,34 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
             </DialogDescription>
           </DialogHeader>
           
-          <BillingSetupInfo isFirstMember={isFirstMember} />
+          {teamSlots.total === 0 ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
+              <p className="text-sm text-amber-700 mb-3">
+                You need to purchase team slots before adding members. 
+                The first member will trigger the billing setup process.
+              </p>
+              <p className="text-xs text-amber-600">
+                • $2.99 per team slot per month<br/>
+                • Choose any number of slots you need<br/>
+                • Add members up to your slot limit
+              </p>
+            </div>
+          ) : teamSlots.available === 0 ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-medium text-red-800 mb-2">No Available Slots</h4>
+              <p className="text-sm text-red-700 mb-3">
+                All {teamSlots.total} team slots are in use. Upgrade your subscription to add more members.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-medium text-green-800 mb-2">Team Slots Available</h4>
+              <p className="text-sm text-green-700">
+                {teamSlots.available} of {teamSlots.total} slots available for new team members.
+              </p>
+            </div>
+          )}
           
           <InviteForm
             email={email}
@@ -186,7 +210,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
             role={role}
             setRole={setRole}
             isSubmitting={isSubmitting}
-            isFirstMember={isFirstMember}
+            isFirstMember={teamSlots.total === 0}
             onSubmit={handleSubmit}
           />
         </DialogContent>

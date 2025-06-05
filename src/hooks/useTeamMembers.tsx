@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -18,6 +19,7 @@ export interface TeamMember {
 export const useTeamMembers = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0 });
   const { user, companyId } = useAuth();
 
   const fetchTeamMembers = useCallback(async () => {
@@ -30,6 +32,17 @@ export const useTeamMembers = () => {
     try {
       console.log("Fetching team members for company:", companyId);
       
+      // Get company info with team slots
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('team_slots')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError) {
+        console.error("Error fetching company:", companyError);
+      }
+
       // Get all members but exclude admins from the team view
       const { data: members, error: membersError } = await supabase
         .from('company_members')
@@ -48,6 +61,16 @@ export const useTeamMembers = () => {
       }
       
       console.log(`Found ${members?.length || 0} team members (excluding admins)`);
+      
+      const totalSlots = company?.team_slots || 0;
+      const usedSlots = members?.length || 0;
+      const availableSlots = Math.max(0, totalSlots - usedSlots);
+      
+      setTeamSlots({
+        used: usedSlots,
+        available: availableSlots,
+        total: totalSlots
+      });
       
       if (!members?.length) {
         setTeamMembers([]);
@@ -80,7 +103,6 @@ export const useTeamMembers = () => {
       
       if (emailsError) {
         console.error("Error fetching emails:", emailsError);
-        // Continue without emails, we'll still show other user data
       }
       
       const emailsMap = emailsResponse?.emails || {};
@@ -137,7 +159,7 @@ export const useTeamMembers = () => {
         return {
           id: member.id,
           name: memberName || 'No Name',
-          email: emailsMap[member.user_id] || '', // Get email from our emails map
+          email: emailsMap[member.user_id] || '',
           role: member.role || 'Member',
           user_id: member.user_id,
           points: member.points || 0,
@@ -158,16 +180,6 @@ export const useTeamMembers = () => {
   const removeMember = useCallback(async (member: TeamMember) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
-      
-      const { data: currentMemberCount, error: countError } = await supabase
-        .rpc('get_company_member_count', { company_id: companyId });
-
-      if (countError) {
-        console.error("Error getting current member count:", countError);
-      }
-
-      const memberCountBeforeRemoval = currentMemberCount || 0;
-      console.log("Member count before removal:", memberCountBeforeRemoval);
       
       if (member.points > 0) {
         const { data: companyData, error: companyError } = await supabase
@@ -208,43 +220,6 @@ export const useTeamMembers = () => {
         
       if (error) throw error;
 
-      const newMemberCount = memberCountBeforeRemoval - 1;
-      console.log("New member count after removal:", newMemberCount);
-
-      try {
-        if (newMemberCount === 0) {
-          console.log("No employees left, updating subscription to 0");
-          const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
-            body: { 
-              companyId: companyId,
-              newQuantity: 0
-            }
-          });
-          
-          if (updateError) {
-            console.error("Error cancelling subscription:", updateError);
-          } else {
-            console.log("Subscription cancelled successfully:", updateResult);
-          }
-        } else if (newMemberCount > 0) {
-          console.log("Updating subscription quantity to:", newMemberCount);
-          const { data: updateResult, error: updateError } = await supabase.functions.invoke('update-subscription', {
-            body: { 
-              companyId: companyId,
-              newQuantity: newMemberCount
-            }
-          });
-          
-          if (updateError) {
-            console.error("Error updating subscription:", updateError);
-          } else {
-            console.log("Subscription updated successfully:", updateResult);
-          }
-        }
-      } catch (subscriptionError) {
-        console.error("Subscription update failed:", subscriptionError);
-      }
-      
       toast.success(
         member.points > 0 
           ? `Team member removed successfully. ${member.points} points have been returned to the company.`
@@ -269,6 +244,7 @@ export const useTeamMembers = () => {
     isLoading,
     fetchTeamMembers,
     removeMember,
-    companyId
+    companyId,
+    teamSlots
   };
 };

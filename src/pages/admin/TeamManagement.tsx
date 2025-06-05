@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Filter } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Filter, Users, AlertTriangle } from "lucide-react";
 import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
@@ -10,6 +11,7 @@ import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import { toast } from "@/components/ui/use-toast";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { TeamSlotsBillingButton } from "@/components/billing/TeamSlotsBillingButton";
 
 const TeamManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -21,7 +23,8 @@ const TeamManagement = () => {
     teamMembers,
     fetchTeamMembers,
     removeMember,
-    isLoading
+    isLoading,
+    teamSlots
   } = useTeamMembers();
 
   // Handle billing setup success/cancellation from URL params
@@ -30,7 +33,6 @@ const TeamManagement = () => {
     const sessionId = searchParams.get('session_id');
     
     if (setupStatus === 'success' && sessionId) {
-      // Check if we've already processed this session ID
       if (processedSessionIds.current.has(sessionId) || isVerifying) {
         return;
       }
@@ -38,24 +40,17 @@ const TeamManagement = () => {
       console.log("Processing successful payment with session ID:", sessionId);
       setIsVerifying(true);
       
-      // Mark this session as being processed
       processedSessionIds.current.add(sessionId);
       
-      // Verify the Stripe session and create the team member
       supabase.functions.invoke('verify-stripe-session', {
         body: { sessionId }
       }).then(({ data, error }) => {
         if (error) {
           console.error("Error verifying payment:", error);
-          toast.error("Failed to process payment and create team member. Please contact support.");
+          toast.error("Failed to process payment and setup team slots. Please contact support.");
         } else {
           console.log("Payment verification successful:", data);
-          if (data.isNewUser && data.password) {
-            toast.success(`Payment successful! Team member ${data.membership?.email || 'member'} has been created with a temporary password.`);
-          } else {
-            toast.success(`Payment successful! Team member has been added to your team.`);
-          }
-          // Refresh team members to show the newly added member
+          toast.success(`Payment successful! You now have ${data.teamSlots} team slots available.`);
           fetchTeamMembers();
         }
       }).catch((err) => {
@@ -63,25 +58,13 @@ const TeamManagement = () => {
         toast.error("Failed to verify payment. Please contact support.");
       }).finally(() => {
         setIsVerifying(false);
-        // Clean up URL params
         window.history.replaceState({}, '', '/dashboard/team');
       });
     } else if (setupStatus === 'cancelled') {
-      toast.error("Billing setup was cancelled. Team member was not added.");
-      
-      // Clean up URL params
+      toast.error("Team slots purchase was cancelled.");
       window.history.replaceState({}, '', '/dashboard/team');
     }
-  }, [searchParams]); // Only depend on searchParams, not fetchTeamMembers
-
-  // Add debug logging to help troubleshoot
-  useEffect(() => {
-    console.log("TeamManagement render:", {
-      isLoading,
-      teamMembersCount: teamMembers?.length,
-      isVerifying
-    });
-  }, [isLoading, teamMembers, isVerifying]);
+  }, [searchParams, fetchTeamMembers, isVerifying]);
 
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
@@ -100,6 +83,16 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
+  const getSlotUtilizationColor = () => {
+    if (teamSlots.total === 0) return "text-gray-500";
+    const utilization = (teamSlots.used / teamSlots.total) * 100;
+    if (utilization >= 90) return "text-red-600";
+    if (utilization >= 75) return "text-yellow-600";
+    return "text-green-600";
+  };
+
+  const shouldShowUpgradeWarning = teamSlots.total > 0 && teamSlots.available <= 1;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -114,11 +107,86 @@ const TeamManagement = () => {
           <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
         </div>
       </div>
+
+      {/* Team Slots Status Card */}
+      <Card className="dashboard-card">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#F572FF]" />
+              <h3 className="text-lg font-semibold">Team Slots Status</h3>
+            </div>
+            <TeamSlotsBillingButton 
+              currentSlots={teamSlots.total}
+              onSuccess={fetchTeamMembers}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-2xl font-bold text-gray-800">{teamSlots.used}</p>
+              <p className="text-sm text-gray-600">Used Slots</p>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className={`text-2xl font-bold ${getSlotUtilizationColor()}`}>{teamSlots.available}</p>
+              <p className="text-sm text-gray-600">Available Slots</p>
+            </div>
+            <div className="text-center p-4 bg-[#F572FF]/10 rounded-lg">
+              <p className="text-2xl font-bold text-[#F572FF]">{teamSlots.total}</p>
+              <p className="text-sm text-gray-600">Total Slots</p>
+            </div>
+          </div>
+
+          {teamSlots.total > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Slot Utilization</span>
+                <span className={getSlotUtilizationColor()}>
+                  {Math.round((teamSlots.used / teamSlots.total) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    teamSlots.used / teamSlots.total >= 0.9 ? 'bg-red-500' :
+                    teamSlots.used / teamSlots.total >= 0.75 ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min((teamSlots.used / teamSlots.total) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {shouldShowUpgradeWarning && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800">Running low on team slots</p>
+                <p className="text-amber-700">
+                  You have only {teamSlots.available} slot{teamSlots.available !== 1 ? 's' : ''} remaining. 
+                  Consider upgrading to add more team members.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {teamSlots.total === 0 && (
+            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+              <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="font-medium text-gray-800 mb-1">No Team Slots Purchased</p>
+              <p className="text-sm text-gray-600 mb-3">
+                Purchase team slots to start adding members to your organization.
+              </p>
+            </div>
+          )}
+        </div>
+      </Card>
       
       <Card className="dashboard-card">
         {isLoading || isVerifying ? (
           <div className="p-8 text-center">
-            {isVerifying ? "Processing payment and creating team member..." : "Loading team members..."}
+            {isVerifying ? "Processing payment and setting up team slots..." : "Loading team members..."}
           </div>
         ) : (
           <TeamMemberTable teamMembers={teamMembers} onRemoveMember={handleDeleteClick} />
