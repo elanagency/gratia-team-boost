@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
@@ -16,6 +16,7 @@ const TeamManagement = () => {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
+  const processedSessionIds = useRef(new Set<string>());
   const {
     teamMembers,
     fetchTeamMembers,
@@ -28,9 +29,17 @@ const TeamManagement = () => {
     const setupStatus = searchParams.get('setup');
     const sessionId = searchParams.get('session_id');
     
-    if (setupStatus === 'success' && sessionId && !isVerifying) {
+    if (setupStatus === 'success' && sessionId) {
+      // Check if we've already processed this session ID
+      if (processedSessionIds.current.has(sessionId) || isVerifying) {
+        return;
+      }
+
       console.log("Processing successful payment with session ID:", sessionId);
       setIsVerifying(true);
+      
+      // Mark this session as being processed
+      processedSessionIds.current.add(sessionId);
       
       // Verify the Stripe session and create the team member
       supabase.functions.invoke('verify-stripe-session', {
@@ -63,7 +72,7 @@ const TeamManagement = () => {
       // Clean up URL params
       window.history.replaceState({}, '', '/dashboard/team');
     }
-  }, [searchParams, fetchTeamMembers, isVerifying]);
+  }, [searchParams]); // Only depend on searchParams, not fetchTeamMembers
 
   // Add debug logging to help troubleshoot
   useEffect(() => {
