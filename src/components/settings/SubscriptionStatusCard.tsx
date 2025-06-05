@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,12 +28,46 @@ interface SubscriptionStatus {
   slot_utilization: number;
 }
 
+interface CompanyData {
+  stripe_subscription_id: string | null;
+  team_slots: number;
+  subscription_status: string | null;
+}
+
 export const SubscriptionStatusCard = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const { user, companyId } = useAuth();
+
+  const fetchCompanyData = async () => {
+    if (!companyId) return null;
+    
+    try {
+      const { data: company, error } = await supabase
+        .from('companies')
+        .select('stripe_subscription_id, team_slots, subscription_status')
+        .eq('id', companyId)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching company data:", error);
+        return null;
+      }
+      
+      setCompanyData(company);
+      const hasStripeSubscriptionId = company?.stripe_subscription_id ? true : false;
+      setHasExistingSubscription(hasStripeSubscriptionId);
+      console.log("Company has existing subscription ID:", hasStripeSubscriptionId);
+      
+      return company;
+    } catch (error) {
+      console.error("Error in fetchCompanyData:", error);
+      return null;
+    }
+  };
 
   const fetchSubscriptionStatus = async () => {
     if (!user || !companyId) {
@@ -44,34 +79,43 @@ export const SubscriptionStatusCard = () => {
     setHasError(false);
     
     try {
-      // First check if the company has an existing subscription ID in the database
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .select('stripe_subscription_id')
-        .eq('id', companyId)
-        .single();
+      // First get company data to check if subscription exists
+      const company = await fetchCompanyData();
       
-      if (companyError && companyError.code !== 'PGRST116') {
-        console.error("Error fetching company data:", companyError);
-      }
-      
-      // Set whether the company has ever had a subscription
-      const hasStripeSubscriptionId = companyData?.stripe_subscription_id ? true : false;
-      setHasExistingSubscription(hasStripeSubscriptionId);
-      console.log("Company has existing subscription ID:", hasStripeSubscriptionId);
-
-      // Check if we have a valid session to use for authentication
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        throw new Error("No valid session found");
-      }
-
       console.log("Fetching subscription status for company:", companyId);
       
       const { data, error } = await supabase.functions.invoke('check-subscription-status');
       
       if (error) {
         console.error("Function invocation error:", error);
+        
+        // If we have company data, use it as fallback
+        if (company && company.stripe_subscription_id) {
+          console.log("Using company data as fallback");
+          // Get used slots directly from database
+          const { data: usedSlotsData } = await supabase
+            .rpc('get_used_team_slots', { company_id: companyId });
+          
+          const usedSlots = usedSlotsData || 0;
+          const teamSlots = company.team_slots || 0;
+          
+          setSubscriptionStatus({
+            has_subscription: true,
+            status: company.subscription_status || 'active',
+            team_slots: teamSlots,
+            used_slots: usedSlots,
+            available_slots: Math.max(0, teamSlots - usedSlots),
+            next_billing_date: null,
+            amount_per_slot: 299,
+            slot_utilization: teamSlots > 0 ? Math.round((usedSlots / teamSlots) * 100) : 0,
+          });
+          
+          // Only show error for companies with existing subscriptions
+          setHasError(true);
+          toast.error("Unable to fetch latest subscription details from Stripe, showing cached data");
+          return;
+        }
+        
         throw error;
       }
       
@@ -81,7 +125,6 @@ export const SubscriptionStatusCard = () => {
       console.error("Error fetching subscription status:", error);
       
       // Only set hasError to true if the company has an existing subscription
-      // For new companies without subscriptions, we don't want to show the error
       setHasError(hasExistingSubscription);
       
       // For new companies or when there's an error, set default values to allow purchase
@@ -202,11 +245,11 @@ export const SubscriptionStatusCard = () => {
       </div>
       
       <div className="p-6 space-y-4">
-        {/* Only show error message if the company has an existing subscription */}
-        {hasError && hasExistingSubscription && (
+        {/* Only show error message if the company has an existing subscription and there was a genuine error */}
+        {hasError && hasExistingSubscription && subscriptionStatus.has_subscription && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-amber-800">
-              ⚠️ Unable to load current subscription data, but you can still manage team slots below.
+              ⚠️ Unable to load latest subscription data from Stripe, showing cached information. You can still manage team slots below.
             </p>
           </div>
         )}

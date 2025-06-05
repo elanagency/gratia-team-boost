@@ -25,6 +25,8 @@ serve(async (req: Request) => {
       );
     }
 
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Starting function execution");
+
     // Initialize the Supabase client with service role for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
@@ -45,15 +47,20 @@ serve(async (req: Request) => {
         global: {
           headers: { Authorization: authHeader },
         },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
       }
     );
 
     // Get the user from the authorization header
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Getting user from auth header");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] User auth error:", userError);
       return new Response(
-        JSON.stringify({ error: "User not authenticated" }),
+        JSON.stringify({ error: "User not authenticated", details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -61,6 +68,7 @@ serve(async (req: Request) => {
     console.log("[CHECK-SUBSCRIPTION-STATUS] Authenticated user:", user.id);
 
     // Get user's company membership
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching company membership");
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from("company_members")
       .select("company_id, is_admin")
@@ -79,6 +87,7 @@ serve(async (req: Request) => {
         .single();
         
       if (nonAdminError || !nonAdminMembership) {
+        console.error("[CHECK-SUBSCRIPTION-STATUS] No company membership found");
         return new Response(
           JSON.stringify({ error: "Company membership not found" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -86,6 +95,7 @@ serve(async (req: Request) => {
       }
       
       // Non-admin user, return limited information
+      console.log("[CHECK-SUBSCRIPTION-STATUS] Non-admin user, returning limited info");
       const { data: usedSlots } = await supabaseAdmin
         .rpc('get_used_team_slots', { company_id: nonAdminMembership.company_id });
       
@@ -113,6 +123,7 @@ serve(async (req: Request) => {
     console.log("[CHECK-SUBSCRIPTION-STATUS] Company ID:", companyId);
 
     // Get company info with subscription status
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching company data");
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
       .select("team_slots, subscription_status, stripe_subscription_id")
@@ -145,6 +156,12 @@ serve(async (req: Request) => {
       );
     }
 
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Company data:", {
+      teamSlots: company.team_slots,
+      subscriptionStatus: company.subscription_status,
+      hasStripeId: !!company.stripe_subscription_id
+    });
+
     // Get current used slots
     const { data: usedSlots, error: slotsError } = await supabaseAdmin
       .rpc('get_used_team_slots', { company_id: companyId });
@@ -159,6 +176,7 @@ serve(async (req: Request) => {
     let subscriptionDetails = null;
     if (company.stripe_subscription_id) {
       try {
+        console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching Stripe subscription details");
         const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
         if (!stripeKey) {
           console.error("[CHECK-SUBSCRIPTION-STATUS] Missing Stripe secret key");
@@ -184,12 +202,20 @@ serve(async (req: Request) => {
         });
       } catch (stripeError) {
         console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching Stripe subscription:", stripeError);
+        
+        // If Stripe call fails but we have database info, use database values
+        console.log("[CHECK-SUBSCRIPTION-STATUS] Falling back to database values due to Stripe error");
+        subscriptionDetails = {
+          current_period_end: null,
+          status: company.subscription_status,
+          quantity: company.team_slots,
+        };
       }
     }
 
     const response = {
       has_subscription: !!company.stripe_subscription_id,
-      status: company.subscription_status || 'inactive',
+      status: subscriptionDetails?.status || company.subscription_status || 'inactive',
       team_slots: availableSlots,
       used_slots: currentUsedSlots,
       available_slots: Math.max(0, availableSlots - currentUsedSlots),
@@ -210,9 +236,12 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("[CHECK-SUBSCRIPTION-STATUS] Error:", error);
+    console.error("[CHECK-SUBSCRIPTION-STATUS] Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error instanceof Error ? error.message : String(error)
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
