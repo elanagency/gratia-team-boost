@@ -27,11 +27,12 @@ const Dashboard = () => {
           .single();
         
         if (companyMember) {
-          // Count team members in the same company
+          // Count team members in the same company, excluding admins
           const { count } = await supabase
             .from('company_members')
             .select('*', { count: 'exact', head: true })
-            .eq('company_id', companyMember.company_id);
+            .eq('company_id', companyMember.company_id)
+            .eq('is_admin', false);
           
           // Get company points balance
           const { data: companyData } = await supabase

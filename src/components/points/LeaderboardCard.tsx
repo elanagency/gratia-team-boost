@@ -31,7 +31,7 @@ export function LeaderboardCard() {
     try {
       setIsLoading(true);
       
-      // Fetch members with their points
+      // Fetch members with their points, excluding admins
       const { data: members, error: membersError } = await supabase
         .from('company_members')
         .select(`
@@ -41,6 +41,7 @@ export function LeaderboardCard() {
           points
         `)
         .eq('company_id', companyId)
+        .eq('is_admin', false)
         .order('points', { ascending: false })
         .limit(10);
       
@@ -78,7 +79,7 @@ export function LeaderboardCard() {
         return {
           userId: member.user_id,
           name: memberName || 'No Name',
-          role: member.is_admin ? 'Admin' : member.role || 'Member',
+          role: member.role || 'Member',
           points: member.points || 0,
           rank: index + 1
         };
