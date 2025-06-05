@@ -17,27 +17,45 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Helper function to construct proper URLs
-const constructUrl = (origin: string | null, path: string): string => {
-  // Try to get the origin from the request
+const constructUrl = (req: Request, path: string): string => {
+  // Try multiple header sources to determine the app origin
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+  const host = req.headers.get("host");
+  const xForwardedHost = req.headers.get("x-forwarded-host");
+  
+  logStep("URL construction headers", { origin, referer, host, xForwardedHost });
+  
+  // If we have a direct origin header, use it
   if (origin && (origin.startsWith('http://') || origin.startsWith('https://'))) {
+    logStep("Using origin header", { origin });
     return `${origin}${path}`;
   }
   
-  // Check referer header as backup
-  const referer = origin; // In case origin is actually referer
+  // Try to extract from referer
   if (referer && (referer.startsWith('http://') || referer.startsWith('https://'))) {
-    // Extract the base URL from referer
     try {
       const url = new URL(referer);
-      return `${url.protocol}//${url.host}${path}`;
+      const baseUrl = `${url.protocol}//${url.host}`;
+      logStep("Using referer header", { referer, baseUrl });
+      return `${baseUrl}${path}`;
     } catch (e) {
       logStep("Error parsing referer URL", { referer, error: e.message });
     }
   }
   
-  // Last fallback - but this should not happen in production
-  logStep("Using fallback URL - this should not happen in production");
-  return `https://your-app-domain.com${path}`;
+  // Try to construct from host headers
+  if (xForwardedHost || host) {
+    const hostValue = xForwardedHost || host;
+    const scheme = hostValue?.includes('localhost') || hostValue?.includes('127.0.0.1') ? 'http' : 'https';
+    const baseUrl = `${scheme}://${hostValue}`;
+    logStep("Using host header", { hostValue, baseUrl });
+    return `${baseUrl}${path}`;
+  }
+  
+  // Final fallback - use the Lovable preview URL pattern
+  logStep("Using Lovable preview URL fallback");
+  return `https://lovable.dev/projects/kbjcjtycmfdjfnduxiud${path}`;
 };
 
 serve(async (req) => {
@@ -156,19 +174,15 @@ serve(async (req) => {
     // Calculate monthly cost
     const monthlyAmount = MONTHLY_PRICE_PER_EMPLOYEE * employeeCount;
 
-    // Get the origin from headers - try multiple sources
-    const origin = req.headers.get("origin") || req.headers.get("referer");
-    
     // Construct proper URLs - these should redirect to your actual app
-    const successUrl = constructUrl(origin, "/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}");
-    const cancelUrl = constructUrl(origin, "/dashboard/team?setup=cancelled");
+    const successUrl = constructUrl(req, "/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}");
+    const cancelUrl = constructUrl(req, "/dashboard/team?setup=cancelled");
 
     logStep("Creating Stripe checkout session", { 
       monthlyAmount, 
       employeeCount, 
       successUrl, 
       cancelUrl,
-      origin,
       allHeaders: Object.fromEntries(req.headers.entries())
     });
 
