@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,13 @@ import TeamDashboardLayout from "./pages/team/TeamDashboardLayout";
 import TeamDashboard from "./pages/team/TeamDashboard";
 import TeamRecognition from "./pages/team/TeamRecognition";
 import RewardShop from "./pages/team/RewardShop";
+
+// Import Platform Admin components
+import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
+import PlatformDashboard from "./pages/platform/PlatformDashboard";
+import CompaniesManagement from "./pages/platform/CompaniesManagement";
+import TransactionsOverview from "./pages/platform/TransactionsOverview";
+import PlatformSettings from "./pages/platform/PlatformSettings";
 
 // Create a client with better caching defaults
 const queryClient = new QueryClient({
@@ -70,6 +76,14 @@ const App = () => (
               {/* Add redirect from old admin routes to new dashboard routes */}
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
+              
+              {/* Platform Admin routes for platform owners */}
+              <Route path="/platform-admin" element={<PlatformAdminLayout />}>
+                <Route index element={<PlatformDashboard />} />
+                <Route path="companies" element={<CompaniesManagement />} />
+                <Route path="transactions" element={<TransactionsOverview />} />
+                <Route path="settings" element={<PlatformSettings />} />
+              </Route>
               
               {/* Dashboard routes for administrators */}
               <Route path="/dashboard" element={<DashboardLayout />}>

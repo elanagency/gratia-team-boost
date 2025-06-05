@@ -154,6 +154,30 @@ export type Database = {
           },
         ]
       }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       point_transactions: {
         Row: {
           company_id: string
@@ -469,6 +493,10 @@ export type Database = {
       }
       is_member_of_company: {
         Args: { company_id: string }
+        Returns: boolean
+      }
+      is_platform_admin: {
+        Args: { user_id?: string }
         Returns: boolean
       }
     }
