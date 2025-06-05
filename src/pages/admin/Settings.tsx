@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CompanyPointsCard } from "@/components/settings/CompanyPointsCard";
+import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
+import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatusCard";
 
 const Settings = () => {
   const { companyId } = useAuth();
@@ -47,10 +49,14 @@ const Settings = () => {
       <h1 className="text-2xl font-semibold text-gray-800">Settings</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CompanyInformationCard />
         <CompanyPointsCard 
           companyPoints={companyPoints} 
           onPointsUpdated={fetchCompanyData}
         />
+        <div className="lg:col-span-2">
+          <SubscriptionStatusCard />
+        </div>
       </div>
     </div>
   );
