@@ -56,7 +56,7 @@ export const SubscriptionStatusCard = () => {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${sessionData.session.access_token}`,
-            "apikey": supabase.supabaseKey
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiamNqdHljbWZkamZuZHV4aXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MjIwMDYsImV4cCI6MjA2MjI5ODAwNn0.eo_nQdvnNFpu8bHJF_e2o2a_9R1POkQRydgtuxyJvvI"
           }
         }
       );
