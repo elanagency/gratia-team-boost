@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -57,7 +56,7 @@ serve(async (req: Request) => {
   }
   
   try {
-    const { name, email, companyId, role = "member", invitedBy } = await req.json();
+    const { name, email, companyId, role = "member", invitedBy, origin } = await req.json();
     
     // Validate required inputs
     if (!name || !email || !companyId || !invitedBy) {
@@ -72,7 +71,7 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[CREATE-TEAM-MEMBER] Starting with data:", { name, email, companyId, role });
+    console.log("[CREATE-TEAM-MEMBER] Starting with data:", { name, email, companyId, role, origin });
 
     // Get the original authorization header to pass it along
     const authHeader = req.headers.get("Authorization");
@@ -151,7 +150,8 @@ serve(async (req: Request) => {
           body: JSON.stringify({ 
             companyId,
             employeeCount: 1,
-            memberData // Pass member data to be stored in checkout metadata
+            memberData, // Pass member data to be stored in checkout metadata
+            origin // Pass the origin for proper redirect URLs
           })
         });
         
