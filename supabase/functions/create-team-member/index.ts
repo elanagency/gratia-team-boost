@@ -1,5 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
+import Stripe from "https://esm.sh/stripe@14.21.0";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -87,6 +89,11 @@ serve(async (req: Request) => {
         },
       }
     );
+
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+    });
     
     // Get current NON-ADMIN member count before adding new member
     const { data: currentMembers, error: countError } = await supabaseAdmin
@@ -324,6 +331,84 @@ serve(async (req: Request) => {
 
     const memberCountAfterAdd = newMembers?.length || 1; // Default to 1 if we can't count
     console.log("[CREATE-TEAM-MEMBER] NON-ADMIN member count after adding:", memberCountAfterAdd);
+
+    // Update Stripe subscription quantity if there's an active subscription
+    if (hasActiveSubscription && company?.stripe_subscription_id) {
+      try {
+        console.log("[CREATE-TEAM-MEMBER] Updating Stripe subscription quantity");
+        
+        // Get current subscription
+        const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
+        const currentQuantity = subscription.items.data[0].quantity || 0;
+        const newQuantity = memberCountAfterAdd;
+        
+        console.log("[CREATE-TEAM-MEMBER] Subscription quantity update:", {
+          currentQuantity,
+          newQuantity,
+          subscriptionId: company.stripe_subscription_id
+        });
+        
+        if (currentQuantity !== newQuantity) {
+          // Update subscription quantity
+          const updatedSubscription = await stripe.subscriptions.update(
+            company.stripe_subscription_id,
+            {
+              items: [
+                {
+                  id: subscription.items.data[0].id,
+                  quantity: newQuantity,
+                },
+              ],
+              proration_behavior: "always_invoice",
+            }
+          );
+          
+          console.log("[CREATE-TEAM-MEMBER] Subscription updated successfully");
+          
+          // Get the latest invoice for amount charged
+          const latestInvoice = await stripe.invoices.list({
+            customer: subscription.customer as string,
+            limit: 1,
+          });
+          
+          const amountCharged = latestInvoice.data[0]?.amount_paid || 0;
+          
+          console.log("[CREATE-TEAM-MEMBER] Prorated amount charged:", amountCharged);
+          
+          // Create subscription event record
+          const { error: subscriptionEventError } = await supabaseAdmin
+            .from('subscription_events')
+            .insert({
+              company_id: companyId,
+              event_type: 'member_added',
+              previous_quantity: currentQuantity,
+              new_quantity: newQuantity,
+              amount_charged: amountCharged,
+              stripe_invoice_id: latestInvoice.data[0]?.id,
+              metadata: {
+                subscription_id: updatedSubscription.id,
+                member_email: email,
+                member_name: name,
+                member_role: role,
+                change_type: 'increase',
+                user_id: userId
+              },
+            });
+          
+          if (subscriptionEventError) {
+            console.error("[CREATE-TEAM-MEMBER] Error creating subscription event:", subscriptionEventError);
+          } else {
+            console.log("[CREATE-TEAM-MEMBER] Created subscription event for billing history");
+          }
+        } else {
+          console.log("[CREATE-TEAM-MEMBER] Subscription quantity already matches member count");
+        }
+      } catch (stripeError) {
+        console.error("[CREATE-TEAM-MEMBER] Error updating Stripe subscription:", stripeError);
+        // Don't fail the member creation if subscription update fails
+        // The member was already created successfully
+      }
+    }
     
     // Return success response
     const response = {
