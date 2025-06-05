@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ export const SubscriptionStatusCard = () => {
   const [hasError, setHasError] = useState(false);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [showStripeDataWarning, setShowStripeDataWarning] = useState(false);
   const { user, companyId } = useAuth();
 
   const fetchCompanyData = async () => {
@@ -77,6 +77,7 @@ export const SubscriptionStatusCard = () => {
     
     setIsLoading(true);
     setHasError(false);
+    setShowStripeDataWarning(false);
     
     try {
       // First get company data to check if subscription exists
@@ -110,9 +111,8 @@ export const SubscriptionStatusCard = () => {
             slot_utilization: teamSlots > 0 ? Math.round((usedSlots / teamSlots) * 100) : 0,
           });
           
-          // Only show error for companies with existing subscriptions
-          setHasError(true);
-          toast.error("Unable to fetch latest subscription details from Stripe, showing cached data");
+          // Only show Stripe warning if we have a subscription but couldn't get latest Stripe data
+          setShowStripeDataWarning(true);
           return;
         }
         
@@ -121,6 +121,7 @@ export const SubscriptionStatusCard = () => {
       
       console.log("Subscription status data:", data);
       setSubscriptionStatus(data);
+      setShowStripeDataWarning(false);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
       
@@ -245,8 +246,8 @@ export const SubscriptionStatusCard = () => {
       </div>
       
       <div className="p-6 space-y-4">
-        {/* Only show error message if the company has an existing subscription and there was a genuine error */}
-        {hasError && hasExistingSubscription && subscriptionStatus.has_subscription && (
+        {/* Only show Stripe data warning when we specifically couldn't get latest Stripe data but have cached data */}
+        {showStripeDataWarning && subscriptionStatus?.has_subscription && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-amber-800">
               ⚠️ Unable to load latest subscription data from Stripe, showing cached information. You can still manage team slots below.
@@ -261,112 +262,10 @@ export const SubscriptionStatusCard = () => {
 
         {subscriptionStatus.has_subscription ? (
           // ... keep existing code (subscription active UI)
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Users className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Team Slots</p>
-                  <p className="text-lg font-semibold">
-                    {subscriptionStatus.used_slots} / {subscriptionStatus.team_slots}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <CreditCard className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Monthly Total</p>
-                  <p className="text-lg font-semibold">${monthlyTotal.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Slot Utilization</span>
-                <span className={`text-sm font-medium ${utilizationColor}`}>
-                  {subscriptionStatus.slot_utilization}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    subscriptionStatus.slot_utilization >= 90 ? 'bg-red-500' :
-                    subscriptionStatus.slot_utilization >= 75 ? 'bg-yellow-500' :
-                    'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(subscriptionStatus.slot_utilization, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {subscriptionStatus.next_billing_date && (
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Next Billing Date</p>
-                  <p className="font-medium">
-                    {new Date(subscriptionStatus.next_billing_date).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-2">Team Slots Information</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• $2.99 per team slot per month</li>
-                <li>• Add team members up to your slot limit</li>
-                <li>• Upgrade or downgrade anytime</li>
-                <li>• Available slots: {subscriptionStatus.available_slots}</li>
-                {subscriptionStatus.slot_utilization >= 90 && (
-                  <li className="text-amber-700 font-medium">
-                    • ⚠️ Running low on slots - consider upgrading
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            <div className="pt-4">
-              <TeamSlotsBillingButton 
-                currentSlots={subscriptionStatus.team_slots}
-                onSuccess={fetchSubscriptionStatus}
-              />
-            </div>
-          </>
         ) : subscriptionStatus.used_slots > 0 ? (
           // ... keep existing code (no subscription but used slots UI)
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
-            <p className="text-sm text-amber-700 mb-4">
-              You have {subscriptionStatus.used_slots} team member{subscriptionStatus.used_slots > 1 ? 's' : ''} but no active subscription. 
-              Please purchase team slots to continue using the service.
-            </p>
-            <TeamSlotsBillingButton 
-              currentSlots={0}
-              suggestedSlots={Math.max(5, subscriptionStatus.used_slots + 2)}
-              onSuccess={fetchSubscriptionStatus}
-            />
-          </div>
         ) : (
           // ... keep existing code (no subscription UI)
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-800 mb-2">No Active Subscription</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Purchase team slots to start adding team members to your organization.
-            </p>
-            <div className="text-sm text-gray-500 mb-4">
-              <p>• $2.99 per team slot per month</p>
-              <p>• Choose any number of slots (e.g., 5, 7, 12, 25)</p>
-              <p>• Add team members up to your slot limit</p>
-              <p>• Upgrade or downgrade anytime</p>
-            </div>
-            <TeamSlotsBillingButton 
-              currentSlots={0}
-              onSuccess={fetchSubscriptionStatus}
-            />
-          </div>
         )}
       </div>
     </Card>
