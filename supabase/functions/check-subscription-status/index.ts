@@ -25,7 +25,19 @@ serve(async (req: Request) => {
       );
     }
 
-    // Initialize the Supabase client with the auth header
+    // Initialize the Supabase client with service role for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    // Initialize regular client for user operations
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_ANON_KEY") || "",
@@ -49,7 +61,7 @@ serve(async (req: Request) => {
     console.log("[CHECK-SUBSCRIPTION-STATUS] Authenticated user:", user.id);
 
     // Get user's company membership
-    const { data: membership, error: membershipError } = await supabaseClient
+    const { data: membership, error: membershipError } = await supabaseAdmin
       .from("company_members")
       .select("company_id, is_admin")
       .eq("user_id", user.id)
@@ -67,18 +79,6 @@ serve(async (req: Request) => {
     const companyId = membership.company_id;
     console.log("[CHECK-SUBSCRIPTION-STATUS] Company ID:", companyId);
 
-    // Use service role to get company details
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
     // Get company info with subscription status
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
@@ -88,9 +88,27 @@ serve(async (req: Request) => {
 
     if (companyError) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching company:", companyError);
+      // Return default values for new companies
+      const { data: usedSlots } = await supabaseAdmin
+        .rpc('get_used_team_slots', { company_id: companyId });
+      
+      const currentUsedSlots = usedSlots || 0;
+      
       return new Response(
-        JSON.stringify({ error: "Failed to fetch company information" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          has_subscription: false,
+          status: 'inactive',
+          team_slots: 0,
+          used_slots: currentUsedSlots,
+          available_slots: 0,
+          next_billing_date: null,
+          amount_per_slot: 299, // $2.99 in cents
+          slot_utilization: 0,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 

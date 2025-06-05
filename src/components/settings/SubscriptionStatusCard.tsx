@@ -30,6 +30,7 @@ interface SubscriptionStatus {
 export const SubscriptionStatusCard = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const { user, companyId } = useAuth();
 
   const fetchSubscriptionStatus = async () => {
@@ -39,6 +40,7 @@ export const SubscriptionStatusCard = () => {
     }
     
     setIsLoading(true);
+    setHasError(false);
     try {
       // Check if we have a valid session to use for authentication
       const { data: sessionData } = await supabase.auth.getSession();
@@ -48,30 +50,32 @@ export const SubscriptionStatusCard = () => {
 
       console.log("Fetching subscription status for company:", companyId);
       
-      // Use the REST API approach instead of functions.invoke
-      const response = await fetch(
-        "https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/check-subscription-status",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${sessionData.session.access_token}`,
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiamNqdHljbWZkamZuZHV4aXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MjIwMDYsImV4cCI6MjA2MjI5ODAwNn0.eo_nQdvnNFpu8bHJF_e2o2a_9R1POkQRydgtuxyJvvI"
-          }
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch subscription status: ${response.status} ${errorText}`);
+      const { data, error } = await supabase.functions.invoke('check-subscription-status');
+      
+      if (error) {
+        console.error("Function invocation error:", error);
+        throw error;
       }
       
-      const data = await response.json();
       console.log("Subscription status data:", data);
       setSubscriptionStatus(data);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
-      toast.error("Failed to fetch subscription status");
+      setHasError(true);
+      
+      // For new companies or when there's an error, set default values to allow purchase
+      setSubscriptionStatus({
+        has_subscription: false,
+        status: 'inactive',
+        team_slots: 0,
+        used_slots: 0,
+        available_slots: 0,
+        next_billing_date: null,
+        amount_per_slot: 299,
+        slot_utilization: 0,
+      });
+      
+      toast.error("Unable to load subscription status, but you can still purchase team slots");
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +116,7 @@ export const SubscriptionStatusCard = () => {
     );
   }
 
+  // Always show the card and allow purchasing, even if there was an error
   if (!subscriptionStatus) {
     return (
       <Card className="dashboard-card">
@@ -119,18 +124,21 @@ export const SubscriptionStatusCard = () => {
           <h2 className="card-title">Team Slots & Billing</h2>
         </div>
         <div className="p-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="font-medium text-amber-800 mb-2">Unable to load subscription data</h4>
-            <p className="text-sm text-amber-700 mb-3">
-              There was an issue loading your subscription information. Please refresh the page or try again later.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">Get Started with Team Slots</h4>
+            <p className="text-sm text-blue-700 mb-4">
+              Purchase team slots to start adding team members to your organization.
             </p>
-            <Button 
-              onClick={fetchSubscriptionStatus} 
-              variant="outline"
-              className="mt-2"
-            >
-              Retry
-            </Button>
+            <div className="text-sm text-blue-600 mb-4">
+              <p>• $2.99 per team slot per month</p>
+              <p>• Choose any number of slots (e.g., 5, 7, 12, 25)</p>
+              <p>• Add team members up to your slot limit</p>
+              <p>• Upgrade or downgrade anytime</p>
+            </div>
+            <TeamSlotsBillingButton 
+              currentSlots={0}
+              onSuccess={fetchSubscriptionStatus}
+            />
           </div>
         </div>
       </Card>
@@ -171,6 +179,14 @@ export const SubscriptionStatusCard = () => {
       </div>
       
       <div className="p-6 space-y-4">
+        {hasError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-amber-800">
+              ⚠️ Unable to load current subscription data, but you can still manage team slots below.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-600">Status</span>
           {getStatusBadge(subscriptionStatus.status)}
