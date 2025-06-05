@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Building, Edit, Save, X, Check } from "lucide-react";
+import { Building, Edit, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +15,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "Company name must be at least 2 characters"),
-  handle: z.string().min(2, "Company handle must be at least 2 characters").regex(/^[a-zA-Z0-9-_]+$/, "Handle can only contain letters, numbers, hyphens, and underscores"),
   address: z.string().optional(),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   logo_url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
@@ -25,7 +24,6 @@ type CompanyFormData = z.infer<typeof companyFormSchema>;
 
 interface CompanyData {
   name: string;
-  handle: string;
   address?: string | null;
   website?: string | null;
   logo_url?: string | null;
@@ -36,51 +34,17 @@ export const CompanyInformationCard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
-  const [isCheckingHandle, setIsCheckingHandle] = useState(false);
-  const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(null);
-  const [originalHandle, setOriginalHandle] = useState<string>("");
   const { companyId, isAdmin } = useAuth();
 
   const form = useForm<CompanyFormData>({
     resolver: zodResolver(companyFormSchema),
     defaultValues: {
       name: "",
-      handle: "",
       address: "",
       website: "",
       logo_url: "",
     },
   });
-
-  const companyHandle = form.watch("handle");
-
-  // Check handle availability when it changes (but skip if it's the original handle)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (companyHandle && companyHandle.length >= 2 && companyHandle !== originalHandle) {
-        setIsCheckingHandle(true);
-        try {
-          const { data, error } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('handle', companyHandle)
-            .maybeSingle();
-
-          if (error) throw error;
-          setIsHandleAvailable(data === null);
-        } catch (error) {
-          console.error("Error checking handle availability:", error);
-          setIsHandleAvailable(null);
-        } finally {
-          setIsCheckingHandle(false);
-        }
-      } else {
-        setIsHandleAvailable(null);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [companyHandle, originalHandle]);
 
   const fetchCompanyData = async () => {
     if (!companyId) return;
@@ -88,25 +52,22 @@ export const CompanyInformationCard = () => {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('name, handle, address, website, logo_url')
+        .select('name, address, website, logo_url')
         .eq('id', companyId)
         .single();
       
       if (error) throw error;
       
-      if (data && data.name && data.handle) {
+      if (data && data.name) {
         const companyInfo: CompanyData = {
           name: data.name,
-          handle: data.handle,
           address: data.address,
           website: data.website,
           logo_url: data.logo_url,
         };
         setCompanyData(companyInfo);
-        setOriginalHandle(data.handle);
         form.reset({
           name: data.name,
-          handle: data.handle,
           address: data.address || "",
           website: data.website || "",
           logo_url: data.logo_url || "",
@@ -127,19 +88,12 @@ export const CompanyInformationCard = () => {
   const onSubmit = async (data: CompanyFormData) => {
     if (!companyId) return;
     
-    // Prevent submission if handle is being used by another company
-    if (data.handle !== originalHandle && isHandleAvailable === false) {
-      toast.error("Company handle is already taken. Please choose another.");
-      return;
-    }
-    
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from('companies')
         .update({
           name: data.name,
-          handle: data.handle,
           address: data.address || null,
           website: data.website || null,
           logo_url: data.logo_url || null,
@@ -150,13 +104,11 @@ export const CompanyInformationCard = () => {
       
       const updatedCompanyData: CompanyData = {
         name: data.name,
-        handle: data.handle,
         address: data.address,
         website: data.website,
         logo_url: data.logo_url,
       };
       setCompanyData(updatedCompanyData);
-      setOriginalHandle(data.handle);
       setIsEditing(false);
       toast.success("Company information updated successfully");
     } catch (error) {
@@ -171,14 +123,12 @@ export const CompanyInformationCard = () => {
     if (companyData) {
       form.reset({
         name: companyData.name,
-        handle: companyData.handle,
         address: companyData.address || "",
         website: companyData.website || "",
         logo_url: companyData.logo_url || "",
       });
     }
     setIsEditing(false);
-    setIsHandleAvailable(null);
   };
 
   if (isLoading) {
@@ -246,42 +196,6 @@ export const CompanyInformationCard = () => {
               
               <FormField
                 control={form.control}
-                name="handle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Handle</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input {...field} placeholder="Enter company handle" />
-                        {isCheckingHandle ? (
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                            <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </div>
-                        ) : (field.value !== originalHandle && isHandleAvailable === true) ? (
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-green-500">
-                            <Check className="h-5 w-5" />
-                          </div>
-                        ) : (field.value !== originalHandle && isHandleAvailable === false) ? (
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-red-500">
-                            <X className="h-5 w-5" />
-                          </div>
-                        ) : null}
-                      </div>
-                    </FormControl>
-                    <p className="text-xs text-gray-400">Your team URL: grattia.com/{field.value || 'your-handle'}</p>
-                    {field.value !== originalHandle && isHandleAvailable === false && (
-                      <p className="text-xs text-red-500 mt-1">This handle is already taken</p>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
@@ -325,7 +239,7 @@ export const CompanyInformationCard = () => {
               <div className="flex gap-2 pt-4">
                 <Button
                   type="submit"
-                  disabled={isSaving || (companyHandle !== originalHandle && isHandleAvailable === false)}
+                  disabled={isSaving}
                   className="bg-[#F572FF] hover:bg-[#F572FF]/90"
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -348,11 +262,6 @@ export const CompanyInformationCard = () => {
             <div>
               <Label className="text-sm font-medium text-gray-600">Company Name</Label>
               <p className="text-lg font-medium text-gray-900">{companyData.name}</p>
-            </div>
-            
-            <div>
-              <Label className="text-sm font-medium text-gray-600">Company Handle</Label>
-              <p className="text-lg font-medium text-gray-900">@{companyData.handle}</p>
             </div>
             
             {companyData.address && (
