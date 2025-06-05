@@ -129,10 +129,7 @@ const Billing = () => {
           <h2 className="card-title">Billing History</h2>
           <div className="flex gap-2">
             
-            <Button variant="outline" className="text-gray-600 border-gray-300 hover:bg-gray-50">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Manage Payment Methods
-            </Button>
+            
           </div>
         </div>
         
