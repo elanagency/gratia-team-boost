@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,8 +112,13 @@ export const SubscriptionStatusCard = () => {
             slot_utilization: teamSlots > 0 ? Math.round((usedSlots / teamSlots) * 100) : 0,
           });
           
-          // Only show Stripe warning if we have a subscription but couldn't get latest Stripe data
-          setShowStripeDataWarning(true);
+          // Only show Stripe warning if authentication specifically failed (401)
+          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+            console.log("Authentication error detected, not showing Stripe warning");
+            setShowStripeDataWarning(false);
+          } else {
+            setShowStripeDataWarning(true);
+          }
           return;
         }
         
@@ -261,11 +267,91 @@ export const SubscriptionStatusCard = () => {
         </div>
 
         {subscriptionStatus.has_subscription ? (
-          // ... keep existing code (subscription active UI)
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-gray-600">Team Slots</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{subscriptionStatus.team_slots}</div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-gray-600">Used</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{subscriptionStatus.used_slots}</div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-medium text-gray-600">Available</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{subscriptionStatus.available_slots}</div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium text-gray-600">Utilization</span>
+                </div>
+                <div className={`text-2xl font-bold ${utilizationColor}`}>
+                  {subscriptionStatus.slot_utilization}%
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Monthly Total</span>
+                <span className="text-lg font-bold text-gray-900">${monthlyTotal.toFixed(2)}</span>
+              </div>
+              {subscriptionStatus.next_billing_date && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Calendar className="h-4 w-4" />
+                  <span>Next billing: {new Date(subscriptionStatus.next_billing_date).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+
+            <TeamSlotsBillingButton 
+              currentSlots={subscriptionStatus.team_slots}
+              onSuccess={fetchSubscriptionStatus}
+            />
+          </>
         ) : subscriptionStatus.used_slots > 0 ? (
-          // ... keep existing code (no subscription but used slots UI)
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-800 mb-2">Subscription Required</h4>
+            <p className="text-sm text-yellow-700 mb-4">
+              You have {subscriptionStatus.used_slots} team member(s) but no active subscription. 
+              Please purchase team slots to maintain access.
+            </p>
+            <TeamSlotsBillingButton 
+              currentSlots={0}
+              suggestedSlots={Math.max(5, subscriptionStatus.used_slots)}
+              onSuccess={fetchSubscriptionStatus}
+            />
+          </div>
         ) : (
-          // ... keep existing code (no subscription UI)
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">Get Started with Team Slots</h4>
+            <p className="text-sm text-blue-700 mb-4">
+              Purchase team slots to start adding team members to your organization.
+            </p>
+            <div className="text-sm text-blue-600 mb-4">
+              <p>• $2.99 per team slot per month</p>
+              <p>• Choose any number of slots (e.g., 5, 7, 12, 25)</p>
+              <p>• Add team members up to your slot limit</p>
+              <p>• Upgrade or downgrade anytime</p>
+            </div>
+            <TeamSlotsBillingButton 
+              currentSlots={0}
+              onSuccess={fetchSubscriptionStatus}
+            />
+          </div>
         )}
       </div>
     </Card>
