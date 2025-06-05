@@ -12,10 +12,9 @@ export const usePlatformAuth = () => {
       if (!user?.id) return false;
 
       const { data, error } = await supabase
-        .from('platform_admins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
+        .from('profiles')
+        .select('is_platform_admin')
+        .eq('id', user.id)
         .maybeSingle();
 
       if (error) {
@@ -23,7 +22,7 @@ export const usePlatformAuth = () => {
         return false;
       }
 
-      return !!data;
+      return data?.is_platform_admin || false;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes

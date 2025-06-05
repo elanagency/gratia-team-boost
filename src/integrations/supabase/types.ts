@@ -154,30 +154,6 @@ export type Database = {
           },
         ]
       }
-      platform_admins: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          is_active: boolean
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          user_id?: string
-        }
-        Relationships: []
-      }
       point_transactions: {
         Row: {
           company_id: string
@@ -222,6 +198,7 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          is_platform_admin: boolean
           last_name: string
           updated_at: string
         }
@@ -230,6 +207,7 @@ export type Database = {
           created_at?: string
           first_name: string
           id: string
+          is_platform_admin?: boolean
           last_name: string
           updated_at?: string
         }
@@ -238,6 +216,7 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          is_platform_admin?: boolean
           last_name?: string
           updated_at?: string
         }
