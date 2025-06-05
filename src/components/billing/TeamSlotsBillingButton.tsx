@@ -1,9 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Loader2, Users } from "lucide-react";
+import { CreditCard, Loader2, Users, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,34 @@ export const TeamSlotsBillingButton = ({
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [teamSlots, setTeamSlots] = useState(currentSlots > 0 ? currentSlots : suggestedSlots);
+  const [currentTeamMemberCount, setCurrentTeamMemberCount] = useState(0);
+  const [isLoadingTeamCount, setIsLoadingTeamCount] = useState(false);
   const { companyId } = useAuth();
+
+  // Fetch current team member count when dialog opens
+  useEffect(() => {
+    if (dialogOpen && companyId) {
+      fetchTeamMemberCount();
+    }
+  }, [dialogOpen, companyId]);
+
+  const fetchTeamMemberCount = async () => {
+    setIsLoadingTeamCount(true);
+    try {
+      const { count, error } = await supabase
+        .from('company_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('is_admin', false);
+
+      if (error) throw error;
+      setCurrentTeamMemberCount(count || 0);
+    } catch (error) {
+      console.error("Error fetching team member count:", error);
+    } finally {
+      setIsLoadingTeamCount(false);
+    }
+  };
 
   const handleCreateCheckout = async () => {
     if (!companyId) {
@@ -40,6 +67,12 @@ export const TeamSlotsBillingButton = ({
 
     if (teamSlots < 1) {
       toast.error("Please enter at least 1 team slot");
+      return;
+    }
+
+    // Check if trying to downgrade below current team member count
+    if (teamSlots < currentTeamMemberCount) {
+      toast.error(`Cannot downgrade to ${teamSlots} slots. You currently have ${currentTeamMemberCount} team members. Please remove team members first or choose a higher number of slots.`);
       return;
     }
 
@@ -85,6 +118,7 @@ export const TeamSlotsBillingButton = ({
   const isUpgrade = teamSlots > currentSlots;
   const isDowngrade = teamSlots < currentSlots && currentSlots > 0;
   const isNewSubscription = currentSlots === 0;
+  const isInvalidDowngrade = teamSlots < currentTeamMemberCount;
 
   const getButtonText = () => {
     if (isNewSubscription) return "Purchase Team Slots";
@@ -132,6 +166,13 @@ export const TeamSlotsBillingButton = ({
               <p className="text-sm text-gray-600">
                 Current subscription: <span className="font-semibold">{currentSlots} slots</span>
               </p>
+              {isLoadingTeamCount ? (
+                <p className="text-sm text-gray-500 mt-1">Loading team member count...</p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-1">
+                  Current team members: <span className="font-medium">{currentTeamMemberCount}</span>
+                </p>
+              )}
             </div>
           )}
           
@@ -145,11 +186,27 @@ export const TeamSlotsBillingButton = ({
               value={teamSlots}
               onChange={(e) => setTeamSlots(parseInt(e.target.value) || 1)}
               placeholder="Enter number of slots"
+              className={isInvalidDowngrade ? "border-red-500" : ""}
             />
             <p className="text-xs text-gray-500">
               Minimum: 1 slot • Maximum: 500 slots
             </p>
           </div>
+
+          {isInvalidDowngrade && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Cannot downgrade below current team size</p>
+                <p className="text-sm text-red-700 mt-1">
+                  You currently have {currentTeamMemberCount} team members. You need at least {currentTeamMemberCount} slots to accommodate your current team.
+                </p>
+                <p className="text-sm text-red-700 mt-2">
+                  Please remove some team members first or choose a higher number of slots.
+                </p>
+              </div>
+            </div>
+          )}
           
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
             <div className="flex justify-between items-center mb-2">
@@ -178,16 +235,25 @@ export const TeamSlotsBillingButton = ({
                   size="sm"
                   onClick={() => setTeamSlots(slots)}
                   className={teamSlots === slots ? "bg-[#F572FF] text-white" : ""}
+                  disabled={slots < currentTeamMemberCount}
                 >
                   {slots} slots
+                  {slots < currentTeamMemberCount && (
+                    <span className="ml-1 text-xs opacity-60">*</span>
+                  )}
                 </Button>
               ))}
             </div>
+            {currentTeamMemberCount > 0 && (
+              <p className="text-xs text-gray-500">
+                * Options below {currentTeamMemberCount} slots are disabled due to current team size
+              </p>
+            )}
           </div>
           
           <Button 
             onClick={handleCreateCheckout}
-            disabled={isLoading || teamSlots < 1}
+            disabled={isLoading || teamSlots < 1 || isInvalidDowngrade}
             className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
             size="lg"
           >
