@@ -225,6 +225,38 @@ serve(async (req) => {
       }
     }
 
+    // Record subscription event for billing history
+    const amountPaid = session.amount_total || 0; // Amount in cents
+    const currentMemberCount = 1; // This is for adding 1 member
+    
+    const { error: subscriptionEventError } = await supabaseAdmin
+      .from('subscription_events')
+      .insert({
+        company_id: memberData.companyId,
+        event_type: 'member_added',
+        previous_quantity: 0, // We don't track previous count in this context
+        new_quantity: currentMemberCount,
+        amount_charged: amountPaid,
+        stripe_invoice_id: sessionId, // Use session ID as reference
+        metadata: {
+          session_id: sessionId,
+          member_email: memberData.email,
+          member_name: memberData.name,
+          member_role: memberData.role || 'member',
+          payment_method: 'stripe_checkout'
+        }
+      });
+
+    if (subscriptionEventError) {
+      logStep("Error creating subscription event", subscriptionEventError);
+      // Don't throw here, member was created successfully
+    } else {
+      logStep("Created subscription event for billing history", { 
+        amount: amountPaid, 
+        memberCount: currentMemberCount 
+      });
+    }
+
     const response = {
       message: "Team member created successfully after payment verification",
       userId,
