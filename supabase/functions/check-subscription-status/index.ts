@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,12 +18,14 @@ serve(async (req: Request) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("[CHECK-SUBSCRIPTION-STATUS] No Authorization header");
       return new Response(
         JSON.stringify({ error: "Authorization header required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Initialize the Supabase client with the auth header
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_ANON_KEY") || "",
@@ -33,13 +36,17 @@ serve(async (req: Request) => {
       }
     );
 
+    // Get the user from the authorization header
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
+      console.error("[CHECK-SUBSCRIPTION-STATUS] User auth error:", userError);
       return new Response(
         JSON.stringify({ error: "User not authenticated" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Authenticated user:", user.id);
 
     // Get user's company membership
     const { data: membership, error: membershipError } = await supabaseClient
@@ -50,6 +57,7 @@ serve(async (req: Request) => {
       .single();
 
     if (membershipError || !membership) {
+      console.error("[CHECK-SUBSCRIPTION-STATUS] Membership error:", membershipError);
       return new Response(
         JSON.stringify({ error: "Company membership not found or not admin" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -57,7 +65,9 @@ serve(async (req: Request) => {
     }
 
     const companyId = membership.company_id;
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Company ID:", companyId);
 
+    // Use service role to get company details
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
@@ -77,7 +87,7 @@ serve(async (req: Request) => {
       .single();
 
     if (companyError) {
-      console.error("Error fetching company:", companyError);
+      console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching company:", companyError);
       return new Response(
         JSON.stringify({ error: "Failed to fetch company information" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -89,7 +99,7 @@ serve(async (req: Request) => {
       .rpc('get_used_team_slots', { company_id: companyId });
 
     if (slotsError) {
-      console.error("Error getting used slots:", slotsError);
+      console.error("[CHECK-SUBSCRIPTION-STATUS] Error getting used slots:", slotsError);
     }
 
     const currentUsedSlots = usedSlots || 0;
@@ -98,7 +108,13 @@ serve(async (req: Request) => {
     let subscriptionDetails = null;
     if (company.stripe_subscription_id) {
       try {
-        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) {
+          console.error("[CHECK-SUBSCRIPTION-STATUS] Missing Stripe secret key");
+          throw new Error("Stripe secret key not configured");
+        }
+
+        const stripe = new Stripe(stripeKey, {
           apiVersion: "2023-10-16",
         });
 
@@ -109,8 +125,14 @@ serve(async (req: Request) => {
           status: subscription.status,
           quantity: subscription.items.data[0]?.quantity || 0,
         };
+
+        console.log("[CHECK-SUBSCRIPTION-STATUS] Retrieved subscription details:", {
+          id: subscription.id,
+          status: subscription.status,
+          quantity: subscriptionDetails.quantity
+        });
       } catch (stripeError) {
-        console.error("Error fetching Stripe subscription:", stripeError);
+        console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching Stripe subscription:", stripeError);
       }
     }
 
@@ -127,6 +149,8 @@ serve(async (req: Request) => {
       slot_utilization: availableSlots > 0 ? Math.round((currentUsedSlots / availableSlots) * 100) : 0,
     };
 
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Sending response:", response);
+
     return new Response(
       JSON.stringify(response),
       {
@@ -135,7 +159,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Error in check-subscription-status:", error);
+    console.error("[CHECK-SUBSCRIPTION-STATUS] Error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,17 +30,44 @@ interface SubscriptionStatus {
 export const SubscriptionStatusCard = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, companyId } = useAuth();
 
   const fetchSubscriptionStatus = async () => {
-    if (!user) return;
+    if (!user || !companyId) {
+      console.log("No user or company ID available, cannot fetch subscription status");
+      return;
+    }
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription-status');
+      // Check if we have a valid session to use for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error("No valid session found");
+      }
+
+      console.log("Fetching subscription status for company:", companyId);
       
-      if (error) throw error;
+      // Use the REST API approach instead of functions.invoke
+      const response = await fetch(
+        "https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/check-subscription-status",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sessionData.session.access_token}`,
+            "apikey": supabase.supabaseKey
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch subscription status: ${response.status} ${errorText}`);
+      }
       
+      const data = await response.json();
+      console.log("Subscription status data:", data);
       setSubscriptionStatus(data);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
@@ -53,7 +79,7 @@ export const SubscriptionStatusCard = () => {
 
   useEffect(() => {
     fetchSubscriptionStatus();
-  }, [user]);
+  }, [user, companyId]);
 
   // Check for setup success in URL params
   useEffect(() => {
@@ -87,7 +113,28 @@ export const SubscriptionStatusCard = () => {
   }
 
   if (!subscriptionStatus) {
-    return null;
+    return (
+      <Card className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Team Slots & Billing</h2>
+        </div>
+        <div className="p-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 className="font-medium text-amber-800 mb-2">Unable to load subscription data</h4>
+            <p className="text-sm text-amber-700 mb-3">
+              There was an issue loading your subscription information. Please refresh the page or try again later.
+            </p>
+            <Button 
+              onClick={fetchSubscriptionStatus} 
+              variant="outline"
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
   }
 
   const getStatusBadge = (status: string) => {
