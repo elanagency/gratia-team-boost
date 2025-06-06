@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface PaymentMethodForm {
   cardNumber: string;
@@ -28,9 +28,17 @@ interface PaymentMethodForm {
   zipCode: string;
 }
 
+interface PlatformConfigForm {
+  pointRate: string;
+  minPurchase: string;
+  maxPurchase: string;
+  defaultSlots: string;
+}
+
 const PlatformSettings = () => {
   const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
-  
+  const { settings, isLoading, updateSetting, isUpdating, getSetting } = usePlatformSettings();
+
   const form = useForm<PaymentMethodForm>({
     defaultValues: {
       cardNumber: "",
@@ -45,12 +53,51 @@ const PlatformSettings = () => {
     },
   });
 
+  const configForm = useForm<PlatformConfigForm>({
+    defaultValues: {
+      pointRate: "",
+      minPurchase: "",
+      maxPurchase: "",
+      defaultSlots: "",
+    },
+  });
+
+  // Update form when settings are loaded
+  useEffect(() => {
+    if (settings && settings.length > 0) {
+      configForm.reset({
+        pointRate: getSetting('point_exchange_rate'),
+        minPurchase: getSetting('min_point_purchase'),
+        maxPurchase: getSetting('max_point_purchase'),
+        defaultSlots: getSetting('default_team_slots'),
+      });
+    }
+  }, [settings, getSetting, configForm]);
+
   const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
     console.log("Payment method data:", data);
     // Here you would integrate with Rye API to save the payment method
     setIsAddingPaymentMethod(false);
     form.reset();
   };
+
+  const onSubmitConfiguration = (data: PlatformConfigForm) => {
+    console.log("Configuration data:", data);
+    
+    // Update each setting
+    updateSetting({ key: 'point_exchange_rate', value: data.pointRate });
+    updateSetting({ key: 'min_point_purchase', value: data.minPurchase });
+    updateSetting({ key: 'max_point_purchase', value: data.maxPurchase });
+    updateSetting({ key: 'default_team_slots', value: data.defaultSlots });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-gray-600">Loading platform settings...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -71,27 +118,71 @@ const PlatformSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="point-rate">Point Exchange Rate (USD per point)</Label>
-              <Input id="point-rate" placeholder="0.01" />
-            </div>
-            <div>
-              <Label htmlFor="min-purchase">Minimum Point Purchase</Label>
-              <Input id="min-purchase" placeholder="100" />
-            </div>
-            <div>
-              <Label htmlFor="max-purchase">Maximum Point Purchase</Label>
-              <Input id="max-purchase" placeholder="10000" />
-            </div>
-            <div>
-              <Label htmlFor="default-slots">Default Team Slots</Label>
-              <Input id="default-slots" placeholder="5" />
-            </div>
-          </div>
-          <Button className="bg-[#F572FF] hover:bg-[#E061EE]">
-            Save Configuration
-          </Button>
+          <Form {...configForm}>
+            <form onSubmit={configForm.handleSubmit(onSubmitConfiguration)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={configForm.control}
+                  name="pointRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Point Exchange Rate (USD per point)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={configForm.control}
+                  name="minPurchase"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minimum Point Purchase</FormLabel>
+                      <FormControl>
+                        <Input placeholder="100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={configForm.control}
+                  name="maxPurchase"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Maximum Point Purchase</FormLabel>
+                      <FormControl>
+                        <Input placeholder="10000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={configForm.control}
+                  name="defaultSlots"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Team Slots</FormLabel>
+                      <FormControl>
+                        <Input placeholder="5" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="bg-[#F572FF] hover:bg-[#E061EE]"
+                disabled={isUpdating}
+              >
+                {isUpdating ? 'Saving...' : 'Save Configuration'}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 

@@ -35,15 +35,45 @@ serve(async (req) => {
       throw new Error("Authentication required");
     }
 
+    // Create Supabase service client to get platform settings
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Get current point exchange rate from platform settings
+    const { data: exchangeRateData, error: exchangeRateError } = await supabaseService
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'point_exchange_rate')
+      .single();
+
+    if (exchangeRateError) {
+      console.error('Error fetching exchange rate:', exchangeRateError);
+      throw new Error("Failed to get current exchange rate");
+    }
+
+    const exchangeRate = parseFloat(JSON.parse(exchangeRateData.value));
+    console.log('Current exchange rate:', exchangeRate);
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
-    // Calculate costs (points cost $0.01 each + Stripe fees: 2.9% + $0.30)
-    const pointsCost = pointsToAdd * 1; // $0.01 per point in cents
+    // Calculate costs using configurable exchange rate (convert to cents)
+    const pointsCost = Math.round(pointsToAdd * exchangeRate * 100); // Convert to cents
     const stripeFee = Math.round(pointsCost * 0.029) + 30; // 2.9% + $0.30
     const totalAmount = pointsCost + stripeFee;
+
+    console.log('Pricing breakdown:', {
+      pointsToAdd,
+      exchangeRate,
+      pointsCostCents: pointsCost,
+      stripeFee,
+      totalAmount
+    });
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -54,7 +84,7 @@ serve(async (req) => {
             currency: "usd",
             product_data: {
               name: `Company Points (${pointsToAdd} points)`,
-              description: `Add ${pointsToAdd} points to your company balance`,
+              description: `Add ${pointsToAdd} points to your company balance at $${exchangeRate} per point`,
             },
             unit_amount: totalAmount,
           },
@@ -69,15 +99,9 @@ serve(async (req) => {
         user_id: user.id,
         points_cost: pointsCost.toString(),
         stripe_fee: stripeFee.toString(),
+        exchange_rate: exchangeRate.toString(),
       },
     });
-
-    // Create pending transaction record using service role
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
 
     // Get user's company ID
     const { data: memberData, error: memberError } = await supabaseService
@@ -96,7 +120,7 @@ serve(async (req) => {
       .insert({
         company_id: memberData.company_id,
         amount: pointsToAdd,
-        description: `Stripe payment for ${pointsToAdd} points`,
+        description: `Stripe payment for ${pointsToAdd} points at $${exchangeRate} per point`,
         created_by: user.id,
         transaction_type: 'stripe_payment',
         stripe_session_id: session.id,
@@ -117,7 +141,8 @@ serve(async (req) => {
         breakdown: {
           points_cost: pointsCost,
           stripe_fee: stripeFee,
-          total_amount: totalAmount
+          total_amount: totalAmount,
+          exchange_rate: exchangeRate
         }
       }),
       {

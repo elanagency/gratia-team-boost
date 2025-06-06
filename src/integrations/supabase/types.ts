@@ -154,6 +154,33 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       point_transactions: {
         Row: {
           company_id: string
@@ -453,6 +480,10 @@ export type Database = {
       get_company_member_count: {
         Args: { company_id: string }
         Returns: number
+      }
+      get_platform_setting: {
+        Args: { setting_key: string }
+        Returns: string
       }
       get_used_team_slots: {
         Args: { company_id: string }
