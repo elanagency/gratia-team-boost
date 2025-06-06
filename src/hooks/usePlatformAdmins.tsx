@@ -36,7 +36,7 @@ export const usePlatformAdmins = () => {
         throw new Error('Not authorized to view platform admins');
       }
 
-      // Get all platform admin profiles with a workaround for email
+      // Get all platform admin profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, is_platform_admin')
@@ -51,17 +51,45 @@ export const usePlatformAdmins = () => {
         return [];
       }
 
-      // For now, we'll return the profiles without emails since we can't access auth.users
-      // In a real implementation, you'd need a server function or RPC to get emails
-      const adminProfiles: PlatformAdmin[] = profiles.map(profile => ({
-        id: profile.id,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        email: 'Email not available', // Placeholder since we can't access auth.users directly
-        is_platform_admin: profile.is_platform_admin,
-      }));
+      // Get emails using the edge function
+      const userIds = profiles.map(profile => profile.id);
+      
+      try {
+        const { data: emailsResponse, error: emailsError } = await supabase.functions.invoke('get-user-emails', {
+          body: { userIds }
+        });
 
-      return adminProfiles;
+        if (emailsError) {
+          console.error('Error fetching user emails:', emailsError);
+          throw emailsError;
+        }
+
+        const emails = emailsResponse?.emails || {};
+
+        // Map profiles with their emails
+        const adminProfiles: PlatformAdmin[] = profiles.map(profile => ({
+          id: profile.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: emails[profile.id] || 'Email not available',
+          is_platform_admin: profile.is_platform_admin,
+        }));
+
+        return adminProfiles;
+      } catch (error) {
+        console.error('Error calling get-user-emails function:', error);
+        
+        // Fallback to profiles without emails if edge function fails
+        const adminProfiles: PlatformAdmin[] = profiles.map(profile => ({
+          id: profile.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: 'Email not available',
+          is_platform_admin: profile.is_platform_admin,
+        }));
+
+        return adminProfiles;
+      }
     },
   });
 
@@ -69,9 +97,16 @@ export const usePlatformAdmins = () => {
     mutationFn: async (email: string) => {
       console.log('Adding platform admin:', email);
 
-      // We can't check if user exists by email without admin privileges
-      // This would need to be handled by a server function
-      throw new Error('Adding platform admins requires server-side implementation');
+      const { data, error } = await supabase.functions.invoke('add-platform-admin', {
+        body: { email }
+      });
+
+      if (error) {
+        console.error('Error adding platform admin:', error);
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-admins'] });
