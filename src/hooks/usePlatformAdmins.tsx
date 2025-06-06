@@ -77,7 +77,7 @@ export const usePlatformAdmins = () => {
         throw new Error('Failed to check user existence');
       }
 
-      const existingUser = data.users.find(user => user.email === email);
+      const existingUser = data.users.find((user: any) => user.email === email);
       
       if (!existingUser) {
         throw new Error('User with this email does not exist');
