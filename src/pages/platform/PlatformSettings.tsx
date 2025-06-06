@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Shield, Database, Users, Settings2, CreditCard } from "lucide-react";
 import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
   Form,
   FormControl,
   FormField,
@@ -15,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
 
 interface PaymentMethodForm {
   cardNumber: string;
@@ -37,7 +46,17 @@ interface PlatformConfigForm {
 
 const PlatformSettings = () => {
   const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  
   const { settings, isLoading, updateSetting, isUpdating, getSetting } = usePlatformSettings();
+  const { 
+    platformAdmins, 
+    isLoading: isLoadingAdmins, 
+    addAdmin, 
+    removeAdmin, 
+    isAdding, 
+    isRemoving 
+  } = usePlatformAdmins();
 
   const form = useForm<PaymentMethodForm>({
     defaultValues: {
@@ -89,6 +108,13 @@ const PlatformSettings = () => {
     updateSetting({ key: 'min_point_purchase', value: data.minPurchase });
     updateSetting({ key: 'max_point_purchase', value: data.maxPurchase });
     updateSetting({ key: 'default_team_slots', value: data.defaultSlots });
+  };
+
+  const handleAddAdmin = () => {
+    if (newAdminEmail.trim()) {
+      addAdmin(newAdminEmail.trim());
+      setNewAdminEmail("");
+    }
   };
 
   if (isLoading) {
@@ -381,7 +407,7 @@ const PlatformSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Admin Management */}
+      {/* Admin Management - Updated with real data */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -393,21 +419,67 @@ const PlatformSettings = () => {
           <div className="space-y-2">
             <Label htmlFor="new-admin">Add New Platform Admin</Label>
             <div className="flex space-x-2">
-              <Input id="new-admin" placeholder="admin@email.com" className="flex-1" />
-              <Button>Add Admin</Button>
+              <Input 
+                id="new-admin" 
+                placeholder="admin@email.com" 
+                className="flex-1"
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+              />
+              <Button 
+                onClick={handleAddAdmin}
+                disabled={isAdding || !newAdminEmail.trim()}
+                className="bg-[#F572FF] hover:bg-[#E061EE]"
+              >
+                {isAdding ? 'Adding...' : 'Add Admin'}
+              </Button>
             </div>
           </div>
           
           <Separator />
           
           <div>
-            <h4 className="font-medium mb-2">Current Platform Admins</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">admin@grattia.com</span>
-                <Button variant="outline" size="sm">Remove</Button>
+            <h4 className="font-medium mb-4">Current Platform Admins</h4>
+            {isLoadingAdmins ? (
+              <div className="text-center py-4 text-gray-500">Loading platform admins...</div>
+            ) : platformAdmins.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {platformAdmins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell className="font-medium">
+                        {admin.first_name && admin.last_name 
+                          ? `${admin.first_name} ${admin.last_name}`
+                          : 'No name set'
+                        }
+                      </TableCell>
+                      <TableCell>{admin.email}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => removeAdmin(admin.id)}
+                          disabled={isRemoving}
+                        >
+                          {isRemoving ? 'Removing...' : 'Remove'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-4 text-gray-500 border border-dashed rounded">
+                No platform admins found
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
