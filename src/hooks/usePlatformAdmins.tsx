@@ -39,19 +39,19 @@ export const usePlatformAdmins = () => {
       
       for (const profile of profiles) {
         try {
-          const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.id);
+          const { data, error: userError } = await supabase.auth.admin.getUserById(profile.id);
           
           if (userError) {
             console.error('Error fetching user email:', userError);
             continue;
           }
 
-          if (user) {
+          if (data?.user?.email) {
             adminEmails.push({
               id: profile.id,
               first_name: profile.first_name,
               last_name: profile.last_name,
-              email: user.email || '',
+              email: data.user.email,
               is_platform_admin: profile.is_platform_admin,
             });
           }
@@ -70,14 +70,14 @@ export const usePlatformAdmins = () => {
       console.log('Adding platform admin:', email);
 
       // First, check if user exists by email
-      const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+      const { data, error: userError } = await supabase.auth.admin.listUsers();
       
       if (userError) {
         console.error('Error listing users:', userError);
         throw new Error('Failed to check user existence');
       }
 
-      const existingUser = users.find(user => user.email === email);
+      const existingUser = data.users.find(user => user.email === email);
       
       if (!existingUser) {
         throw new Error('User with this email does not exist');
