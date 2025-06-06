@@ -19,7 +19,24 @@ export const usePlatformAdmins = () => {
     queryFn: async () => {
       console.log('Fetching platform admins...');
       
-      // Get all platform admin profiles
+      // First get current user to check if they're a platform admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if current user is platform admin
+      const { data: currentUserProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_platform_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !currentUserProfile?.is_platform_admin) {
+        throw new Error('Not authorized to view platform admins');
+      }
+
+      // Get all platform admin profiles with a workaround for email
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, is_platform_admin')
@@ -34,34 +51,17 @@ export const usePlatformAdmins = () => {
         return [];
       }
 
-      // Get email addresses from auth.users for each platform admin
-      const adminEmails: PlatformAdmin[] = [];
-      
-      for (const profile of profiles) {
-        try {
-          const { data, error: userError } = await supabase.auth.admin.getUserById(profile.id);
-          
-          if (userError) {
-            console.error('Error fetching user email:', userError);
-            continue;
-          }
+      // For now, we'll return the profiles without emails since we can't access auth.users
+      // In a real implementation, you'd need a server function or RPC to get emails
+      const adminProfiles: PlatformAdmin[] = profiles.map(profile => ({
+        id: profile.id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: 'Email not available', // Placeholder since we can't access auth.users directly
+        is_platform_admin: profile.is_platform_admin,
+      }));
 
-          if (data?.user?.email) {
-            adminEmails.push({
-              id: profile.id,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
-              email: data.user.email,
-              is_platform_admin: profile.is_platform_admin,
-            });
-          }
-        } catch (error) {
-          console.error('Error in admin user lookup:', error);
-          // Continue to next user if this one fails
-        }
-      }
-
-      return adminEmails;
+      return adminProfiles;
     },
   });
 
@@ -69,32 +69,9 @@ export const usePlatformAdmins = () => {
     mutationFn: async (email: string) => {
       console.log('Adding platform admin:', email);
 
-      // First, check if user exists by email
-      const { data, error: userError } = await supabase.auth.admin.listUsers();
-      
-      if (userError) {
-        console.error('Error listing users:', userError);
-        throw new Error('Failed to check user existence');
-      }
-
-      const existingUser = data.users.find((user: any) => user.email === email);
-      
-      if (!existingUser) {
-        throw new Error('User with this email does not exist');
-      }
-
-      // Update the user's profile to make them a platform admin
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ is_platform_admin: true })
-        .eq('id', existingUser.id);
-
-      if (updateError) {
-        console.error('Error updating platform admin status:', updateError);
-        throw updateError;
-      }
-
-      return existingUser;
+      // We can't check if user exists by email without admin privileges
+      // This would need to be handled by a server function
+      throw new Error('Adding platform admins requires server-side implementation');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-admins'] });
