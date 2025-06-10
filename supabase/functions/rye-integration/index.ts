@@ -1,4 +1,3 @@
-
 // Follow Deno Deploy runtime compatibility
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -416,49 +415,17 @@ serve(async (req) => {
           console.log('Created redemption record:', redemption.id);
 
           try {
-            // STEP 1: Create Cart
-            console.log('Step 1: Creating cart...');
+            // STEP 1: Create Cart WITH Product Items
+            console.log('Step 1: Creating cart with product...');
             const createCartMutation = `
               mutation CreateCart($input: CartCreateInput!) {
                 createCart(input: $input) {
                   cart {
                     id
-                  }
-                  errors {
-                    code
-                    message
-                  }
-                }
-              }
-            `;
-
-            const createCartVariables = {
-              input: {
-                // Empty input object as required by the API
-              }
-            };
-
-            const cartResult = await makeRyeRequest(createCartMutation, createCartVariables, ryeHeaders);
-            
-            if (cartResult.data.createCart.errors && cartResult.data.createCart.errors.length > 0) {
-              throw new Error(`Create cart failed: ${cartResult.data.createCart.errors[0].message}`);
-            }
-
-            const cartId = cartResult.data.createCart.cart.id;
-            console.log('Created cart with ID:', cartId);
-
-            // STEP 2: Add Product to Cart
-            console.log('Step 2: Adding product to cart...');
-            const addToCartMutation = `
-              mutation AddToCart($input: AddToCartInput!) {
-                addToCart(input: $input) {
-                  cart {
-                    id
-                    items {
-                      quantity
-                      product {
-                        id
-                        title
+                    cost {
+                      total {
+                        value
+                        currency
                       }
                     }
                   }
@@ -470,9 +437,9 @@ serve(async (req) => {
               }
             `;
 
-            const addToCartVariables = {
+            // Create cart with the product included from the start
+            const createCartVariables = {
               input: {
-                id: cartId,
                 items: {
                   amazonCartItemsInput: [{
                     productId: reward.external_id,
@@ -482,16 +449,26 @@ serve(async (req) => {
               }
             };
 
-            const addToCartResult = await makeRyeRequest(addToCartMutation, addToCartVariables, ryeHeaders);
+            console.log('Creating cart with variables:', JSON.stringify(createCartVariables, null, 2));
 
-            if (addToCartResult.data.addToCart.errors && addToCartResult.data.addToCart.errors.length > 0) {
-              throw new Error(`Add to cart failed: ${addToCartResult.data.addToCart.errors[0].message}`);
+            const cartResult = await makeRyeRequest(createCartMutation, createCartVariables, ryeHeaders);
+            
+            console.log('Cart creation response:', JSON.stringify(cartResult, null, 2));
+            
+            if (cartResult.data.createCart.errors && cartResult.data.createCart.errors.length > 0) {
+              throw new Error(`Create cart failed: ${cartResult.data.createCart.errors[0].message}`);
             }
 
-            console.log('Added product to cart successfully');
+            const cartId = cartResult.data.createCart.cart.id;
+            if (!cartId) {
+              console.log('CreateCart response:', JSON.stringify(cartResult, null, 2));
+              throw new Error('No cart ID returned from createCart');
+            }
+            
+            console.log('Created cart with ID:', cartId);
 
-            // STEP 3: Attach Buyer Identity
-            console.log('Step 3: Attaching buyer identity...');
+            // STEP 2: Attach Buyer Identity
+            console.log('Step 2: Attaching buyer identity...');
             const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
             
             const updateCartBuyerIdentityMutation = `
@@ -529,8 +506,8 @@ serve(async (req) => {
 
             console.log('Attached buyer identity successfully');
 
-            // STEP 4: Submit Cart
-            console.log('Step 4: Submitting cart...');
+            // STEP 3: Submit Cart
+            console.log('Step 3: Submitting cart...');
             const submitCartMutation = `
               mutation SubmitCart($input: SubmitCartInput!) {
                 submitCart(input: $input) {
