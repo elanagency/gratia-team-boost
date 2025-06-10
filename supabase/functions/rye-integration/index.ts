@@ -25,6 +25,68 @@ interface RedemptionRequest {
   };
 }
 
+interface RyeErrorResponse {
+  errors?: Array<{
+    code: string;
+    message: string;
+  }>;
+}
+
+// Helper function to make GraphQL requests to Rye
+async function makeRyeRequest(query: string, variables: any = {}, headers: any) {
+  const response = await fetch('https://staging.graphql.api.rye.com/v1/query', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': headers.Authorization,
+      'Rye-Shopper-IP': headers['Rye-Shopper-IP']
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const result = await response.json();
+  
+  if (result.errors && result.errors.length > 0) {
+    throw new Error(`Rye API error: ${result.errors[0].message}`);
+  }
+  
+  return result;
+}
+
+// Map shipping address to Rye format
+function mapShippingAddress(shippingAddress: any, userEmail: string) {
+  const [firstName, ...lastNameParts] = shippingAddress.name.split(' ');
+  const lastName = lastNameParts.join(' ') || firstName;
+  
+  // Map common state names to codes (expand as needed)
+  const stateMapping: { [key: string]: string } = {
+    'California': 'CA',
+    'New York': 'NY',
+    'Texas': 'TX',
+    'Florida': 'FL',
+    // Add more mappings as needed
+  };
+  
+  // Map common country names to codes
+  const countryMapping: { [key: string]: string } = {
+    'United States': 'US',
+    'Canada': 'CA',
+    'United Kingdom': 'GB',
+    // Add more mappings as needed
+  };
+
+  return {
+    firstName,
+    lastName,
+    email: userEmail,
+    address1: shippingAddress.address,
+    city: shippingAddress.city,
+    provinceCode: stateMapping[shippingAddress.state] || shippingAddress.state,
+    countryCode: countryMapping[shippingAddress.country] || shippingAddress.country,
+    postalCode: shippingAddress.zipCode
+  };
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -277,132 +339,345 @@ serve(async (req) => {
         );
 
       case 'redeem':
-        // Parse the request body
-        const redemptionData: RedemptionRequest = reqData;
-        const { rewardId, shippingAddress } = redemptionData;
-        
-        // In a real implementation, this would:
-        // 1. Fetch the reward details from the database
-        const { data: reward, error: rewardError } = await supabaseAdmin
-          .from('rewards')
-          .select('*')
-          .eq('id', rewardId)
-          .single();
+        try {
+          // Parse the request body
+          const redemptionData: RedemptionRequest = reqData;
+          const { rewardId, shippingAddress } = redemptionData;
           
-        if (rewardError || !reward) {
-          return new Response(
-            JSON.stringify({ error: 'Reward not found' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // 2. Verify the user has enough points
-        const { data: member, error: memberError } = await supabaseAdmin
-          .from('company_members')
-          .select('points')
-          .eq('user_id', user.id)
-          .eq('company_id', reward.company_id)
-          .single();
+          console.log('Starting Rye redemption flow for reward:', rewardId);
           
-        if (memberError || !member) {
-          return new Response(
-            JSON.stringify({ error: 'User membership not found' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        if (member.points < reward.points_cost) {
-          return new Response(
-            JSON.stringify({ error: 'Insufficient points' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // 3. Create a redemption record
-        const { data: redemption, error: redemptionError } = await supabaseAdmin
-          .from('reward_redemptions')
-          .insert({
-            user_id: user.id,
-            reward_id: rewardId,
-            points_spent: reward.points_cost,
-            shipping_address: shippingAddress,
-            status: 'pending'
-          })
-          .select()
-          .single();
+          // Get RYE API headers from environment variable
+          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
+          if (!stagingHeadersJson) {
+            throw new Error('Staging RYE API headers not configured');
+          }
           
-        if (redemptionError) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to create redemption record' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // 4. Deduct points from user
-        const { error: updateError } = await supabaseAdmin
-          .from('company_members')
-          .update({ points: member.points - reward.points_cost })
-          .eq('user_id', user.id)
-          .eq('company_id', reward.company_id);
+          let ryeHeaders;
+          try {
+            ryeHeaders = JSON.parse(stagingHeadersJson);
+          } catch (parseError) {
+            console.error('Error parsing staging headers JSON:', parseError);
+            throw new Error('Invalid staging headers configuration');
+          }
           
-        if (updateError) {
-          // Rollback redemption if points update fails
-          await supabaseAdmin
-            .from('reward_redemptions')
-            .delete()
-            .eq('id', redemption.id);
+          if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
+            throw new Error('Missing required headers in staging configuration');
+          }
+          
+          // Fetch the reward details from the database
+          const { data: reward, error: rewardError } = await supabaseAdmin
+            .from('rewards')
+            .select('*')
+            .eq('id', rewardId)
+            .single();
             
+          if (rewardError || !reward) {
+            throw new Error('Reward not found');
+          }
+
+          if (!reward.external_id) {
+            throw new Error('Reward does not have an external product ID');
+          }
+
+          // Verify the user has enough points
+          const { data: member, error: memberError } = await supabaseAdmin
+            .from('company_members')
+            .select('points')
+            .eq('user_id', user.id)
+            .eq('company_id', reward.company_id)
+            .single();
+            
+          if (memberError || !member) {
+            throw new Error('User membership not found');
+          }
+          
+          if (member.points < reward.points_cost) {
+            throw new Error('Insufficient points');
+          }
+
+          // Create a redemption record first
+          const { data: redemption, error: redemptionError } = await supabaseAdmin
+            .from('reward_redemptions')
+            .insert({
+              user_id: user.id,
+              reward_id: rewardId,
+              points_spent: reward.points_cost,
+              shipping_address: shippingAddress,
+              status: 'processing'
+            })
+            .select()
+            .single();
+            
+          if (redemptionError) {
+            throw new Error('Failed to create redemption record');
+          }
+
+          console.log('Created redemption record:', redemption.id);
+
+          try {
+            // STEP 1: Create Cart
+            console.log('Step 1: Creating cart...');
+            const createCartMutation = `
+              mutation CreateCart {
+                createCart {
+                  cart {
+                    id
+                  }
+                  errors {
+                    code
+                    message
+                  }
+                }
+              }
+            `;
+
+            const cartResult = await makeRyeRequest(createCartMutation, {}, ryeHeaders);
+            
+            if (cartResult.data.createCart.errors && cartResult.data.createCart.errors.length > 0) {
+              throw new Error(`Create cart failed: ${cartResult.data.createCart.errors[0].message}`);
+            }
+
+            const cartId = cartResult.data.createCart.cart.id;
+            console.log('Created cart with ID:', cartId);
+
+            // STEP 2: Add Product to Cart
+            console.log('Step 2: Adding product to cart...');
+            const addToCartMutation = `
+              mutation AddToCart($input: AddToCartInput!) {
+                addToCart(input: $input) {
+                  cart {
+                    id
+                    items {
+                      quantity
+                      product {
+                        id
+                        title
+                      }
+                    }
+                  }
+                  errors {
+                    code
+                    message
+                  }
+                }
+              }
+            `;
+
+            const addToCartVariables = {
+              input: {
+                id: cartId,
+                items: {
+                  amazonCartItemsInput: [{
+                    productId: reward.external_id,
+                    quantity: 1
+                  }]
+                }
+              }
+            };
+
+            const addToCartResult = await makeRyeRequest(addToCartMutation, addToCartVariables, ryeHeaders);
+
+            if (addToCartResult.data.addToCart.errors && addToCartResult.data.addToCart.errors.length > 0) {
+              throw new Error(`Add to cart failed: ${addToCartResult.data.addToCart.errors[0].message}`);
+            }
+
+            console.log('Added product to cart successfully');
+
+            // STEP 3: Attach Buyer Identity
+            console.log('Step 3: Attaching buyer identity...');
+            const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
+            
+            const updateCartBuyerIdentityMutation = `
+              mutation UpdateCartBuyerIdentity($input: UpdateCartBuyerIdentityInput!) {
+                updateCartBuyerIdentity(input: $input) {
+                  cart {
+                    id
+                    cost {
+                      total {
+                        value
+                        currency
+                      }
+                    }
+                  }
+                  errors {
+                    code
+                    message
+                  }
+                }
+              }
+            `;
+
+            const buyerIdentityVariables = {
+              input: {
+                id: cartId,
+                buyerIdentity: buyerIdentity
+              }
+            };
+
+            const buyerIdentityResult = await makeRyeRequest(updateCartBuyerIdentityMutation, buyerIdentityVariables, ryeHeaders);
+
+            if (buyerIdentityResult.data.updateCartBuyerIdentity.errors && buyerIdentityResult.data.updateCartBuyerIdentity.errors.length > 0) {
+              throw new Error(`Update buyer identity failed: ${buyerIdentityResult.data.updateCartBuyerIdentity.errors[0].message}`);
+            }
+
+            console.log('Attached buyer identity successfully');
+
+            // STEP 4: Submit Cart
+            console.log('Step 4: Submitting cart...');
+            const submitCartMutation = `
+              mutation SubmitCart($input: SubmitCartInput!) {
+                submitCart(input: $input) {
+                  cart {
+                    id
+                    stores {
+                      status
+                      orderId
+                      errors {
+                        code
+                        message
+                      }
+                    }
+                  }
+                  errors {
+                    code
+                    message
+                  }
+                }
+              }
+            `;
+
+            const submitCartVariables = {
+              input: {
+                id: cartId
+                // Note: No token provided since payment method is pre-configured in Rye console
+              }
+            };
+
+            const submitResult = await makeRyeRequest(submitCartMutation, submitCartVariables, ryeHeaders);
+
+            if (submitResult.data.submitCart.errors && submitResult.data.submitCart.errors.length > 0) {
+              throw new Error(`Submit cart failed: ${submitResult.data.submitCart.errors[0].message}`);
+            }
+
+            // Extract order information
+            const stores = submitResult.data.submitCart.cart.stores;
+            if (!stores || stores.length === 0) {
+              throw new Error('No stores found in cart submission response');
+            }
+
+            const store = stores[0];
+            if (store.errors && store.errors.length > 0) {
+              throw new Error(`Store processing failed: ${store.errors[0].message}`);
+            }
+
+            const orderId = store.orderId;
+            console.log('Cart submitted successfully, order ID:', orderId);
+
+            // Deduct points from user
+            const { error: updateError } = await supabaseAdmin
+              .from('company_members')
+              .update({ points: member.points - reward.points_cost })
+              .eq('user_id', user.id)
+              .eq('company_id', reward.company_id);
+              
+            if (updateError) {
+              console.error('Failed to update points, but order was placed:', updateError);
+              // Don't throw here as the order was successful
+            }
+
+            // Update the redemption record with Rye IDs and success status
+            await supabaseAdmin
+              .from('reward_redemptions')
+              .update({
+                rye_cart_id: cartId,
+                rye_order_id: orderId,
+                status: 'completed'
+              })
+              .eq('id', redemption.id);
+
+            console.log('Redemption completed successfully');
+
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                redemption: {
+                  id: redemption.id,
+                  status: 'completed',
+                  points_spent: reward.points_cost,
+                  rye_order_id: orderId
+                }
+              }),
+              { 
+                status: 200, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+
+          } catch (ryeError) {
+            console.error('Rye redemption flow failed:', ryeError);
+            
+            // Update redemption status to failed
+            await supabaseAdmin
+              .from('reward_redemptions')
+              .update({ status: 'failed' })
+              .eq('id', redemption.id);
+            
+            throw ryeError;
+          }
+
+        } catch (error) {
+          console.error('Redemption error:', error);
           return new Response(
-            JSON.stringify({ error: 'Failed to update points' }),
+            JSON.stringify({ error: error.message || 'Redemption failed' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // 5. In a real implementation, make API calls to Rye here
-        // - Create cart
-        // - Add item to cart
-        // - Set shipping information
-        // - Submit cart
-        
-        // For this implementation, we'll simulate a successful redemption
-        const mockCart = {
-          id: `cart_${Math.random().toString(36).substring(2, 10)}`,
-          items: [{ productId: reward.external_id || 'mock_product_id', quantity: 1 }]
-        };
-        
-        const mockOrder = {
-          id: `order_${Math.random().toString(36).substring(2, 10)}`,
-          status: 'processing',
-          tracking: {
-            carrier: 'USPS',
-            number: Math.random().toString().substring(2, 12)
+      case 'checkOrderStatus':
+        try {
+          const { orderId } = reqData;
+          
+          if (!orderId) {
+            throw new Error('Order ID is required');
           }
-        };
 
-        // 6. Update the redemption record with the Rye cart and order IDs
-        await supabaseAdmin
-          .from('reward_redemptions')
-          .update({
-            rye_cart_id: mockCart.id,
-            rye_order_id: mockOrder.id,
-            status: 'processing'
-          })
-          .eq('id', redemption.id);
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            redemption: {
-              id: redemption.id,
-              status: 'processing',
-              points_spent: reward.points_cost
+          // Get RYE API headers
+          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
+          if (!stagingHeadersJson) {
+            throw new Error('Staging RYE API headers not configured');
+          }
+          
+          const ryeHeaders = JSON.parse(stagingHeadersJson);
+          
+          const orderQuery = `
+            query OrderById($id: ID!) {
+              orderByID(id: $id) {
+                id
+                status
+                tracking {
+                  carrier
+                  trackingNumber
+                }
+              }
             }
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+          `;
+
+          const orderResult = await makeRyeRequest(orderQuery, { id: orderId }, ryeHeaders);
+
+          return new Response(
+            JSON.stringify({ order: orderResult.data.orderByID }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        } catch (error) {
+          console.error('Order status check error:', error);
+          return new Response(
+            JSON.stringify({ error: error.message || 'Failed to check order status' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
       default:
         return new Response(
