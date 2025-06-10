@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RewardDetailsProps {
   reward: Reward;
@@ -28,6 +29,37 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     zipCode: "",
     country: ""
   });
+
+  // Fetch saved shipping info when dialog opens
+  React.useEffect(() => {
+    const fetchShippingInfo = async () => {
+      if (!user?.id || !isDialogOpen) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('shipping_name, shipping_address, shipping_city, shipping_state, shipping_zip_code, shipping_country')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching shipping info:', error);
+        return;
+      }
+      
+      if (data) {
+        setShippingInfo({
+          name: data.shipping_name || "",
+          address: data.shipping_address || "",
+          city: data.shipping_city || "",
+          state: data.shipping_state || "",
+          zipCode: data.shipping_zip_code || "",
+          country: data.shipping_country || ""
+        });
+      }
+    };
+    
+    fetchShippingInfo();
+  }, [user?.id, isDialogOpen]);
 
   const handleConfirmRedeem = () => {
     if (!user) {
@@ -147,6 +179,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                 name="name" 
                 value={shippingInfo.name} 
                 onChange={handleInputChange}
+                placeholder="Full name for shipping"
               />
             </div>
             
@@ -157,6 +190,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                 name="address" 
                 value={shippingInfo.address} 
                 onChange={handleInputChange}
+                placeholder="Street address"
               />
             </div>
             
@@ -168,6 +202,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                   name="city" 
                   value={shippingInfo.city} 
                   onChange={handleInputChange}
+                  placeholder="City"
                 />
               </div>
               <div className="grid gap-2">
@@ -177,6 +212,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                   name="state" 
                   value={shippingInfo.state} 
                   onChange={handleInputChange}
+                  placeholder="State"
                 />
               </div>
             </div>
@@ -189,6 +225,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                   name="zipCode" 
                   value={shippingInfo.zipCode} 
                   onChange={handleInputChange}
+                  placeholder="Zip code"
                 />
               </div>
               <div className="grid gap-2">
@@ -198,6 +235,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
                   name="country" 
                   value={shippingInfo.country} 
                   onChange={handleInputChange}
+                  placeholder="Country"
                 />
               </div>
             </div>

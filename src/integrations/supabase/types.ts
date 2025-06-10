@@ -227,6 +227,12 @@ export type Database = {
           id: string
           is_platform_admin: boolean
           last_name: string
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_name: string | null
+          shipping_state: string | null
+          shipping_zip_code: string | null
           updated_at: string
         }
         Insert: {
@@ -236,6 +242,12 @@ export type Database = {
           id: string
           is_platform_admin?: boolean
           last_name: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_name?: string | null
+          shipping_state?: string | null
+          shipping_zip_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -245,6 +257,12 @@ export type Database = {
           id?: string
           is_platform_admin?: boolean
           last_name?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_name?: string | null
+          shipping_state?: string | null
+          shipping_zip_code?: string | null
           updated_at?: string
         }
         Relationships: []
