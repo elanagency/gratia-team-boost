@@ -1,3 +1,4 @@
+
 // Follow Deno Deploy runtime compatibility
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -418,8 +419,8 @@ serve(async (req) => {
             // STEP 1: Create Cart
             console.log('Step 1: Creating cart...');
             const createCartMutation = `
-              mutation CreateCart {
-                createCart {
+              mutation CreateCart($input: CartCreateInput!) {
+                createCart(input: $input) {
                   cart {
                     id
                   }
@@ -431,7 +432,13 @@ serve(async (req) => {
               }
             `;
 
-            const cartResult = await makeRyeRequest(createCartMutation, {}, ryeHeaders);
+            const createCartVariables = {
+              input: {
+                // Empty input object as required by the API
+              }
+            };
+
+            const cartResult = await makeRyeRequest(createCartMutation, createCartVariables, ryeHeaders);
             
             if (cartResult.data.createCart.errors && cartResult.data.createCart.errors.length > 0) {
               throw new Error(`Create cart failed: ${cartResult.data.createCart.errors[0].message}`);
