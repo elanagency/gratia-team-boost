@@ -79,6 +79,8 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     }
     
     try {
+      console.log('Submitting redemption with shipping info:', shippingInfo);
+      
       await redeemReward.mutateAsync({
         rewardId: reward.id,
         shippingAddress: shippingInfo
@@ -88,6 +90,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       onClose();
     } catch (error) {
       console.error("Error redeeming reward:", error);
+      // Error is already handled in the mutation's onError callback
     }
   };
 
@@ -151,10 +154,10 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
               
               <Button 
                 onClick={handleConfirmRedeem}
-                disabled={reward.stock === 0}
+                disabled={reward.stock === 0 || redeemReward.isPending}
                 className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
               >
-                Redeem Reward
+                {redeemReward.isPending ? "Processing..." : "Redeem Reward"}
               </Button>
               
               <p className="text-xs text-gray-500 mt-2 text-center">
@@ -242,7 +245,11 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(false)}
+              disabled={redeemReward.isPending}
+            >
               Cancel
             </Button>
             <Button 
@@ -250,7 +257,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
               className="bg-[#F572FF] hover:bg-[#F572FF]/90"
               disabled={redeemReward.isPending}
             >
-              {redeemReward.isPending ? "Processing..." : "Confirm Redemption"}
+              {redeemReward.isPending ? "Processing Redemption..." : "Confirm Redemption"}
             </Button>
           </DialogFooter>
         </DialogContent>
