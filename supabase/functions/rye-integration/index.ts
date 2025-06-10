@@ -110,14 +110,25 @@ serve(async (req) => {
           const { url } = reqData;
           console.log(`Request to fetch Amazon product from URL: ${url}`);
           
-          // Get Rye API key from environment variable
-          const RYE_API_KEY = Deno.env.get('RYE_API_KEY');
-          if (!RYE_API_KEY) {
-            throw new Error('Rye API key not configured');
+          // Get staging RYE API headers from environment variable
+          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
+          if (!stagingHeadersJson) {
+            throw new Error('Staging RYE API headers not configured');
           }
           
-          // Get shopper IP (for better pricing accuracy)
-          const SHOPPER_IP = req.headers.get('x-forwarded-for') || '8.8.8.8';
+          let ryeHeaders;
+          try {
+            ryeHeaders = JSON.parse(stagingHeadersJson);
+          } catch (parseError) {
+            console.error('Error parsing staging headers JSON:', parseError);
+            throw new Error('Invalid staging headers configuration');
+          }
+          
+          if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
+            throw new Error('Missing required headers in staging configuration');
+          }
+          
+          console.log('Using staging RYE headers for API calls');
           
           // Step 1: Call the Rye GraphQL API to request the product by URL
           // This returns a productId we can use to fetch details
@@ -133,8 +144,8 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': RYE_API_KEY, 
-              'Rye-Shopper-IP': SHOPPER_IP
+              'Authorization': ryeHeaders.Authorization,
+              'Rye-Shopper-IP': ryeHeaders['Rye-Shopper-IP']
             },
             body: JSON.stringify({ query: requestMutation }),
           });
@@ -172,8 +183,8 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': RYE_API_KEY,
-              'Rye-Shopper-IP': SHOPPER_IP
+              'Authorization': ryeHeaders.Authorization,
+              'Rye-Shopper-IP': ryeHeaders['Rye-Shopper-IP']
             },
             body: JSON.stringify({ query: detailQuery }),
           });
