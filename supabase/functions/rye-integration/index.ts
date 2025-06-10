@@ -1,4 +1,3 @@
-
 // Follow Deno Deploy runtime compatibility
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -140,7 +139,7 @@ serve(async (req) => {
             }
           `;
           
-          const requestResponse = await fetch('https://graphql.api.rye.com/v1/query', {
+          const requestResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -179,7 +178,7 @@ serve(async (req) => {
             }
           `;
           
-          const detailResponse = await fetch('https://graphql.api.rye.com/v1/query', {
+          const detailResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
