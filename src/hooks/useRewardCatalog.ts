@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -64,8 +63,8 @@ export const useRewardCatalog = () => {
         const isAmazon = url.includes('amazon.com') || url.includes('amzn.to');
         const action = isAmazon ? 'requestAmazonProductByURL' : 'requestShopifyProductByURL';
 
-        // Call the Rye integration endpoint
-        const response = await supabase.functions.invoke('rye-integration', {
+        // Call the new product service
+        const response = await supabase.functions.invoke('rye-product-service', {
           body: { action, url }
         });
 

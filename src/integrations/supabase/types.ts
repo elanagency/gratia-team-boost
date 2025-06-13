@@ -9,12 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      carts: {
+        Row: {
+          buyer_identity: Json
+          cart_cost: Json | null
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reward_id: string
+          rye_cart_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buyer_identity: Json
+          cart_cost?: Json | null
+          company_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          reward_id: string
+          rye_cart_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buyer_identity?: Json
+          cart_cost?: Json | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reward_id?: string
+          rye_cart_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_carts_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_carts_reward_id"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
           billing_cycle_anchor: number | null
           created_at: string
-          handle: string
+          handle: string | null
           id: string
           logo_url: string | null
           name: string
@@ -30,7 +90,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          handle: string
+          handle?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -46,7 +106,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          handle?: string
+          handle?: string | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -154,6 +214,48 @@ export type Database = {
           },
         ]
       }
+      platform_payment_methods: {
+        Row: {
+          card_last_four: string
+          card_type: string | null
+          cardholder_name: string
+          created_at: string
+          expiry_month: string
+          expiry_year: string
+          id: string
+          is_default: boolean
+          spreedly_token: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          card_last_four: string
+          card_type?: string | null
+          cardholder_name: string
+          created_at?: string
+          expiry_month: string
+          expiry_year: string
+          id?: string
+          is_default?: boolean
+          spreedly_token: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          card_last_four?: string
+          card_type?: string | null
+          cardholder_name?: string
+          created_at?: string
+          expiry_month?: string
+          expiry_year?: string
+          id?: string
+          is_default?: boolean
+          spreedly_token?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -227,6 +329,13 @@ export type Database = {
           id: string
           is_platform_admin: boolean
           last_name: string
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_name: string | null
+          shipping_phone: string | null
+          shipping_state: string | null
+          shipping_zip_code: string | null
           updated_at: string
         }
         Insert: {
@@ -236,6 +345,13 @@ export type Database = {
           id: string
           is_platform_admin?: boolean
           last_name: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_state?: string | null
+          shipping_zip_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -245,6 +361,13 @@ export type Database = {
           id?: string
           is_platform_admin?: boolean
           last_name?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_state?: string | null
+          shipping_zip_code?: string | null
           updated_at?: string
         }
         Relationships: []

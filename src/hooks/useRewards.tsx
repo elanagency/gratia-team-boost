@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -86,54 +85,51 @@ export const useRewards = (categoryId?: string) => {
     enabled: !!companyId
   });
 
-  // Redeem a reward
+  // Redeem a reward using the new cart service
   const redeemReward = useMutation({
     mutationFn: async ({ rewardId, shippingAddress }: { rewardId: string, shippingAddress: any }) => {
       if (!user?.id || !rewardId) {
         throw new Error('Missing user ID or reward ID');
       }
 
-      // First fetch the reward to get its points cost
-      const { data: reward, error: rewardError } = await supabase
-        .from('rewards')
-        .select('*')
-        .eq('id', rewardId)
-        .single();
+      console.log('🎯 useRewards: Starting redemption process for reward:', rewardId);
+      console.log('👤 User ID:', user.id);
+      console.log('📦 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
 
-      if (rewardError || !reward) {
-        throw new Error('Failed to fetch reward details');
-      }
-
-      // Create redemption record
-      const { data, error } = await supabase
-        .from('reward_redemptions')
-        .insert({
-          user_id: user.id,
-          reward_id: rewardId,
-          points_spent: reward.points_cost,
-          status: 'pending',
-          shipping_address: shippingAddress,
-        })
-        .select();
+      // Call the new cart service edge function
+      console.log('🔗 Calling rye-cart-service edge function...');
+      const { data, error } = await supabase.functions.invoke('rye-cart-service', {
+        body: {
+          action: 'redeem',
+          rewardId: rewardId,
+          userId: user.id,
+          shippingAddress: shippingAddress
+        }
+      });
 
       if (error) {
-        console.error('Error redeeming reward:', error);
-        throw error;
+        console.error('❌ Edge function error:', error);
+        throw new Error(error.message || 'Failed to process redemption');
       }
 
-      // In a real implementation, we would call a Supabase Edge Function 
-      // that would handle the Rye API interaction
-      
-      return data[0];
+      if (!data || !data.success) {
+        console.error('❌ Redemption failed:', data);
+        throw new Error(data?.error || 'Redemption failed');
+      }
+
+      console.log('✅ Redemption successful:', data);
+      return data.redemption;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🎉 Redemption mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
-      toast.success('Reward redeemed successfully!');
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // Refresh user points
+      toast.success(`Reward redeemed successfully! Order ID: ${data.rye_order_id}`);
     },
     onError: (error) => {
-      console.error('Redemption error:', error);
-      toast.error('Failed to redeem reward. Please try again.');
+      console.error('❌ Redemption mutation error:', error);
+      toast.error(error.message || 'Failed to redeem reward. Please try again.');
     }
   });
 

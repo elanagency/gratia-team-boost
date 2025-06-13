@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Database, Users, Settings2, CreditCard } from "lucide-react";
+import { Shield, Database, Users, Settings2, CreditCard, Star } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -21,9 +21,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
+import { usePlatformPaymentMethods } from "@/hooks/usePlatformPaymentMethods";
 
 interface PaymentMethodForm {
   cardNumber: string;
@@ -35,6 +37,7 @@ interface PaymentMethodForm {
   city: string;
   state: string;
   zipCode: string;
+  isDefault: boolean;
 }
 
 interface PlatformConfigForm {
@@ -57,6 +60,17 @@ const PlatformSettings = () => {
     isAdding, 
     isRemoving 
   } = usePlatformAdmins();
+  
+  const {
+    paymentMethods,
+    isLoading: isLoadingPaymentMethods,
+    addPaymentMethod,
+    updatePaymentMethod,
+    removePaymentMethod,
+    isAdding: isAddingPayment,
+    isUpdating: isUpdatingPayment,
+    isRemoving: isRemovingPayment
+  } = usePlatformPaymentMethods();
 
   const form = useForm<PaymentMethodForm>({
     defaultValues: {
@@ -69,6 +83,7 @@ const PlatformSettings = () => {
       city: "",
       state: "",
       zipCode: "",
+      isDefault: false,
     },
   });
 
@@ -81,21 +96,62 @@ const PlatformSettings = () => {
     },
   });
 
-  // Update form when settings are loaded
+  // Memoize the initial form values to prevent infinite loop
+  const initialFormValues = useMemo(() => {
+    if (!settings || settings.length === 0) return null;
+    
+    return {
+      pointRate: getSetting('point_exchange_rate'),
+      minPurchase: getSetting('min_point_purchase'),
+      maxPurchase: getSetting('max_point_purchase'),
+      defaultSlots: getSetting('default_team_slots'),
+    };
+  }, [settings, getSetting]);
+
+  // Update form when settings are loaded - with stable dependency
   useEffect(() => {
-    if (settings && settings.length > 0) {
-      configForm.reset({
-        pointRate: getSetting('point_exchange_rate'),
-        minPurchase: getSetting('min_point_purchase'),
-        maxPurchase: getSetting('max_point_purchase'),
-        defaultSlots: getSetting('default_team_slots'),
-      });
+    if (initialFormValues) {
+      configForm.reset(initialFormValues);
     }
-  }, [settings, getSetting, configForm]);
+  }, [initialFormValues, configForm]);
+
+  // Format card number with spaces
+  const formatCardNumber = (value: string) => {
+    // Remove all spaces and non-digits
+    const cardNumber = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    
+    // Add spaces every 4 digits
+    const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
+    
+    // Limit to 19 characters (16 digits + 3 spaces)
+    return formattedCardNumber.substring(0, 19);
+  };
+
+  // Handle card number input change
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (value: string) => void) => {
+    const formatted = formatCardNumber(e.target.value);
+    onChange(formatted);
+  };
+
+  // Set default checkbox when adding first payment method
+  useEffect(() => {
+    if (paymentMethods.length === 0) {
+      form.setValue('isDefault', true);
+    }
+  }, [paymentMethods.length, form]);
 
   const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
-    console.log("Payment method data:", data);
-    // Here you would integrate with Rye API to save the payment method
+    // Remove spaces from card number before submitting
+    const cardNumberWithoutSpaces = data.cardNumber.replace(/\s/g, '');
+    
+    addPaymentMethod({
+      cardNumber: cardNumberWithoutSpaces,
+      expiryMonth: data.expiryMonth,
+      expiryYear: data.expiryYear,
+      cvv: data.cvv,
+      nameOnCard: data.nameOnCard,
+      isDefault: data.isDefault,
+    });
     setIsAddingPaymentMethod(false);
     form.reset();
   };
@@ -115,6 +171,15 @@ const PlatformSettings = () => {
       addAdmin(newAdminEmail.trim());
       setNewAdminEmail("");
     }
+  };
+
+  const handleSetDefault = (id: string) => {
+    updatePaymentMethod({ id, isDefault: true });
+  };
+
+  const handleRemovePaymentMethod = (id: string) => {
+    console.log('Remove button clicked for payment method:', id);
+    removePaymentMethod(id);
   };
 
   if (isLoading) {
@@ -230,8 +295,9 @@ const PlatformSettings = () => {
               <Button 
                 onClick={() => setIsAddingPaymentMethod(true)}
                 className="bg-[#F572FF] hover:bg-[#E061EE]"
+                disabled={isAddingPayment}
               >
-                Add Payment Method
+                {isAddingPayment ? 'Adding...' : 'Add Payment Method'}
               </Button>
             </div>
           </div>
@@ -262,7 +328,12 @@ const PlatformSettings = () => {
                         <FormItem>
                           <FormLabel>Card Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="1234 5678 9012 3456" {...field} />
+                            <Input 
+                              placeholder="1234 5678 9012 3456" 
+                              value={field.value}
+                              onChange={(e) => handleCardNumberChange(e, field.onChange)}
+                              maxLength={19}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -308,6 +379,28 @@ const PlatformSettings = () => {
                       )}
                     />
                   </div>
+                  
+                  {paymentMethods.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="isDefault"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Set as default payment method
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   
                   <Separator />
                   
@@ -368,8 +461,12 @@ const PlatformSettings = () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button type="submit" className="bg-[#F572FF] hover:bg-[#E061EE]">
-                      Save Payment Method
+                    <Button 
+                      type="submit" 
+                      className="bg-[#F572FF] hover:bg-[#E061EE]"
+                      disabled={isAddingPayment}
+                    >
+                      {isAddingPayment ? 'Saving...' : 'Save Payment Method'}
                     </Button>
                     <Button 
                       type="button" 
@@ -388,21 +485,54 @@ const PlatformSettings = () => {
           
           <div>
             <h4 className="font-medium mb-2">Saved Payment Methods</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-4 w-4 text-gray-600" />
-                  <div>
-                    <p className="text-sm font-medium">•••• •••• •••• 1234</p>
-                    <p className="text-xs text-gray-500">Expires 12/25</p>
+            {isLoadingPaymentMethods ? (
+              <div className="text-center py-4 text-gray-500">Loading payment methods...</div>
+            ) : paymentMethods.length > 0 ? (
+              <div className="space-y-2">
+                {paymentMethods.map((method) => (
+                  <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-4 w-4 text-gray-600" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">•••• •••• •••• {method.card_last_four}</p>
+                          {method.is_default && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {method.card_type} • Expires {method.expiry_month}/{method.expiry_year} • {method.cardholder_name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!method.is_default && paymentMethods.length > 1 && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSetDefault(method.id)}
+                          disabled={isUpdatingPayment}
+                        >
+                          {isUpdatingPayment ? 'Setting...' : 'Set Default'}
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleRemovePaymentMethod(method.id)}
+                        disabled={isRemovingPayment}
+                      >
+                        {isRemovingPayment ? 'Removing...' : 'Remove'}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <Button variant="outline" size="sm">Remove</Button>
+                ))}
               </div>
+            ) : (
               <div className="text-sm text-gray-500 p-3 border border-dashed rounded">
                 No payment methods saved yet
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>

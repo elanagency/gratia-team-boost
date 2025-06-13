@@ -1,16 +1,7 @@
-// Follow Deno Deploy runtime compatibility
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
-
-interface RyeProduct {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  url: string;
-}
+import { corsHeaders, makeRyeRequest, getRyeHeaders } from "../_shared/rye-helpers.ts";
 
 interface RedemptionRequest {
   rewardId: string;
@@ -24,71 +15,6 @@ interface RedemptionRequest {
     country: string;
     phone: string;
   };
-}
-
-interface RyeErrorResponse {
-  errors?: Array<{
-    code: string;
-    message: string;
-  }>;
-}
-
-// Helper function to make GraphQL requests to Rye
-async function makeRyeRequest(query: string, variables: any = {}, headers: any) {
-  console.log('=== RYE API REQUEST ===');
-  console.log('Query:', query);
-  console.log('Variables:', JSON.stringify(variables, null, 2));
-  console.log('Headers (sanitized):', {
-    'Content-Type': headers['Content-Type'],
-    'Authorization': headers.Authorization ? '[PRESENT]' : '[MISSING]',
-    'Rye-Shopper-IP': headers['Rye-Shopper-IP'] || '[MISSING]'
-  });
-
-  try {
-    const response = await fetch('https://staging.graphql.api.rye.com/v1/query', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': headers.Authorization,
-        'Rye-Shopper-IP': headers['Rye-Shopper-IP']
-      },
-      body: JSON.stringify({ query, variables }),
-    });
-
-    console.log('=== RYE API RESPONSE STATUS ===');
-    console.log('Status:', response.status);
-    console.log('Status Text:', response.statusText);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      console.error('HTTP Error Response:', response.status, response.statusText);
-      const errorText = await response.text();
-      console.error('Error Response Body:', errorText);
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    
-    console.log('=== RYE API RESPONSE BODY ===');
-    console.log('Full Response:', JSON.stringify(result, null, 2));
-    
-    if (result.errors && result.errors.length > 0) {
-      console.error('=== RYE API GRAPHQL ERRORS ===');
-      result.errors.forEach((error: any, index: number) => {
-        console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2));
-      });
-      throw new Error(`Rye API error: ${result.errors[0].message}`);
-    }
-    
-    console.log('=== RYE API SUCCESS ===');
-    return result;
-  } catch (error) {
-    console.error('=== RYE API REQUEST FAILED ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    throw error;
-  }
 }
 
 // Map shipping address to Rye format
@@ -248,7 +174,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Edge function called with method:', req.method);
+    console.log('🚀 Cart service called with method:', req.method);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -264,7 +190,7 @@ serve(async (req) => {
 
     // Create a client to honor RLS policies
     const authHeader = req.headers.get('Authorization');
-    const clientSuapbase = createClient(
+    const clientSupabase = createClient(
       supabaseUrl,
       supabaseServiceKey,
       {
@@ -275,7 +201,7 @@ serve(async (req) => {
     );
 
     // Verify auth token for most operations
-    const { data: { user }, error: authError } = await clientSuapbase.auth.getUser();
+    const { data: { user }, error: authError } = await clientSupabase.auth.getUser();
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
       return new Response(
@@ -288,216 +214,6 @@ serve(async (req) => {
 
     // Handle different actions
     switch (action) {
-      case 'discover-products':
-        // In a real implementation, this would call the Rye API to fetch products
-        // Here we'll just return some mock data
-        return new Response(
-          JSON.stringify({
-            products: [
-              {
-                id: 'p1',
-                title: 'Wireless Earbuds',
-                description: 'High-quality wireless earbuds with noise cancellation',
-                price: 129.99,
-                imageUrl: 'https://images.unsplash.com/photo-1608228088998-57828365d486',
-                url: 'https://shop.example.com/products/wireless-earbuds',
-              },
-              {
-                id: 'p2',
-                title: 'Smart Watch',
-                description: 'Fitness and health tracking smart watch',
-                price: 199.99,
-                imageUrl: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a',
-                url: 'https://shop.example.com/products/smart-watch',
-              },
-              {
-                id: 'p3',
-                title: 'Portable Bluetooth Speaker',
-                description: 'Waterproof portable Bluetooth speaker with 20-hour battery life',
-                price: 89.99,
-                imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1',
-                url: 'https://shop.example.com/products/portable-speaker',
-              },
-            ]
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-        
-      case 'requestAmazonProductByURL':
-        try {
-          const { url } = reqData;
-          console.log(`Request to fetch Amazon product from URL: ${url}`);
-          
-          // Get staging RYE API headers from environment variable
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            throw new Error('Staging RYE API headers not configured');
-          }
-          
-          let ryeHeaders;
-          try {
-            ryeHeaders = JSON.parse(stagingHeadersJson);
-          } catch (parseError) {
-            console.error('Error parsing staging headers JSON:', parseError);
-            throw new Error('Invalid staging headers configuration');
-          }
-          
-          if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
-            throw new Error('Missing required headers in staging configuration');
-          }
-          
-          console.log('Using staging RYE headers for API calls');
-          
-          // Step 1: Call the Rye GraphQL API to request the product by URL
-          // This returns a productId we can use to fetch details
-          const requestMutation = `
-            mutation {
-              requestAmazonProductByURL(input: { url: "${url}" }) {
-                productId
-              }
-            }
-          `;
-          
-          const requestResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': ryeHeaders.Authorization,
-              'Rye-Shopper-IP': ryeHeaders['Rye-Shopper-IP']
-            },
-            body: JSON.stringify({ query: requestMutation }),
-          });
-          
-          const requestResult = await requestResponse.json();
-          console.log('Rye API request response:', JSON.stringify(requestResult));
-          
-          // Check for errors in the response
-          if (requestResult.errors && requestResult.errors.length > 0) {
-            throw new Error(`Rye API error: ${requestResult.errors[0].message}`);
-          }
-          
-          if (!requestResult.data || !requestResult.data.requestAmazonProductByURL || !requestResult.data.requestAmazonProductByURL.productId) {
-            throw new Error('Invalid product request data received from Rye API');
-          }
-          
-          // Extract the product ID from the first request
-          const productId = requestResult.data.requestAmazonProductByURL.productId;
-          
-          // Step 2: Fetch detailed product information using the product ID
-          const detailQuery = `
-            query {
-              productByID(input: { id: "${productId}", marketplace: AMAZON }) {
-                id
-                title
-                description
-                images { url }
-                price { value currency }
-                url
-              }
-            }
-          `;
-          
-          const detailResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': ryeHeaders.Authorization,
-              'Rye-Shopper-IP': ryeHeaders['Rye-Shopper-IP']
-            },
-            body: JSON.stringify({ query: detailQuery }),
-          });
-          
-          const detailResult = await detailResponse.json();
-          console.log('Rye API detail response:', JSON.stringify(detailResult));
-          
-          // Check for errors in the detail response
-          if (detailResult.errors && detailResult.errors.length > 0) {
-            throw new Error(`Rye API error: ${detailResult.errors[0].message}`);
-          }
-          
-          if (!detailResult.data || !detailResult.data.productByID) {
-            throw new Error('Invalid product detail data received from Rye API');
-          }
-          
-          // Transform the Rye product format to our application format
-          const ryeProduct = detailResult.data.productByID;
-          
-          const product: RyeProduct = {
-            id: ryeProduct.id,
-            title: ryeProduct.title,
-            description: ryeProduct.description || '',
-            price: ryeProduct.price.value || 0,
-            imageUrl: ryeProduct.images && ryeProduct.images.length > 0 ? ryeProduct.images[0].url : '',
-            url: ryeProduct.url
-          };
-          
-          return new Response(
-            JSON.stringify({ product }),
-            { 
-              status: 200, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        } catch (error) {
-          console.error('Error fetching Amazon product:', error);
-          return new Response(
-            JSON.stringify({ error: error.message || 'Failed to fetch Amazon product' }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
-        
-      case 'requestShopifyProductByURL':
-        // In a real implementation, this would call the Rye GraphQL API
-        // For now, we'll simulate this with mock data based on the URL
-        const { url } = reqData;
-        console.log(`Request to fetch Shopify product from URL: ${url}`);
-        
-        // Generate mock product data
-        const mockProduct: RyeProduct = {
-          id: `product_${Math.random().toString(36).substr(2, 9)}`,
-          title: 'Shopify Product',
-          description: `This is a mock Shopify product for ${url}`,
-          price: Math.floor(Math.random() * 200) + 20, // Random price between $20 and $220
-          imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
-          url: url
-        };
-        
-        return new Response(
-          JSON.stringify({ product: mockProduct }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-        
-      case 'productById':
-        // In a real implementation, this would call the Rye GraphQL API to get product details
-        const { productId } = reqData;
-        
-        // Generate mock product details
-        const mockProductDetails: RyeProduct = {
-          id: productId,
-          title: `Product ${productId.substring(0, 6)}`,
-          description: 'This is a detailed product description with specifications and features.',
-          price: Math.floor(Math.random() * 200) + 20,
-          imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-          url: `https://example.com/product/${productId}`
-        };
-        
-        return new Response(
-          JSON.stringify({ product: mockProductDetails }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-
       case 'redeem':
         try {
           // Parse the request body
@@ -515,26 +231,7 @@ serve(async (req) => {
             throw new Error('Phone number is required for shipping');
           }
           
-          // Get RYE API headers from environment variable
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            console.error('❌ Missing Staging_RYE_API_Key_Headers environment variable');
-            throw new Error('Staging RYE API headers not configured');
-          }
-          
-          let ryeHeaders;
-          try {
-            ryeHeaders = JSON.parse(stagingHeadersJson);
-          } catch (parseError) {
-            console.error('❌ Error parsing staging headers JSON:', parseError);
-            throw new Error('Invalid staging headers configuration');
-          }
-          
-          if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
-            console.error('❌ Missing required headers in staging configuration');
-            throw new Error('Missing required headers in staging configuration');
-          }
-          
+          const ryeHeaders = getRyeHeaders();
           console.log('✅ RYE Headers validated successfully');
 
           // Fetch the default payment method token
@@ -700,13 +397,11 @@ serve(async (req) => {
                   cart {
                     id
                     stores {
-                      ... on AmazonStore {
-                        status
-                        orderId
-                        errors {
-                          code
-                          message
-                        }
+                      id
+                      orderId
+                      errors {
+                        code
+                        message
                       }
                     }
                   }
@@ -826,13 +521,7 @@ serve(async (req) => {
             throw new Error('Order ID is required');
           }
 
-          // Get RYE API headers
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            throw new Error('Staging RYE API headers not configured');
-          }
-          
-          const ryeHeaders = JSON.parse(stagingHeadersJson);
+          const ryeHeaders = getRyeHeaders();
           
           const orderQuery = `
             query OrderById($id: ID!) {
@@ -872,7 +561,7 @@ serve(async (req) => {
         );
     }
   } catch (error) {
-    console.error('=== GENERAL ERROR ===');
+    console.error('=== CART SERVICE ERROR ===');
     console.error('❌ Error type:', error.constructor.name);
     console.error('❌ Error message:', error.message);
     console.error('❌ Error stack:', error.stack);
