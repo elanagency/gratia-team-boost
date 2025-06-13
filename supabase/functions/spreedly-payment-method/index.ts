@@ -240,27 +240,29 @@ serve(async (req) => {
 
       console.log('Found payment method with token:', paymentMethod.spreedly_token)
 
-      // Delete from Spreedly first
+      // Redact from Spreedly using the correct endpoint
       try {
-        const spreedlyDeleteResponse = await fetch(`https://core.spreedly.com/v1/payment_methods/${paymentMethod.spreedly_token}.json`, {
-          method: 'DELETE',
+        console.log('Calling Spreedly redact endpoint...')
+        const spreedlyRedactResponse = await fetch(`https://core.spreedly.com/v1/payment_methods/${paymentMethod.spreedly_token}/redact.json`, {
+          method: 'POST',
           headers: {
             'Authorization': 'Basic NUtGMkVKTk5DVDlKM0FXSjU3OFpTQUJXRFo6UkFHTmtSWWV2MFRqS080YndiYlJkeGk4aVEyem9IeTFPTUl3dzBYYjc0T0JtUXdVcHl4ZHF4R0xwN1VuMGlnZQ==',
             'Content-Type': 'application/json'
           }
         })
 
-        console.log('Spreedly delete response status:', spreedlyDeleteResponse.status)
+        console.log('Spreedly redact response status:', spreedlyRedactResponse.status)
 
-        if (!spreedlyDeleteResponse.ok) {
-          const spreedlyError = await spreedlyDeleteResponse.text()
-          console.error('Spreedly delete error:', spreedlyError)
+        if (!spreedlyRedactResponse.ok) {
+          const spreedlyError = await spreedlyRedactResponse.text()
+          console.error('Spreedly redact error:', spreedlyError)
           // Continue with database deletion even if Spreedly fails
         } else {
-          console.log('Successfully deleted from Spreedly')
+          const spreedlyResult = await spreedlyRedactResponse.json()
+          console.log('Successfully redacted from Spreedly:', spreedlyResult)
         }
       } catch (spreedlyError) {
-        console.error('Error calling Spreedly delete:', spreedlyError)
+        console.error('Error calling Spreedly redact:', spreedlyError)
         // Continue with database deletion even if Spreedly fails
       }
 
