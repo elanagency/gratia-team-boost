@@ -26,19 +26,26 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isPlatformAdmin, isAdmin, isAdminLoading } = useAuth();
   
   useEffect(() => {
     // If user is already logged in, check their role and redirect accordingly
-    if (user) {
+    if (user && !isAdminLoading) {
       console.log("User is already logged in, redirecting based on role");
-      if (isAdmin) {
+      
+      // Priority: Platform admin > Company admin > Team member
+      if (isPlatformAdmin) {
+        console.log("Redirecting platform admin to platform dashboard");
+        navigate("/platform-admin");
+      } else if (isAdmin) {
+        console.log("Redirecting company admin to admin dashboard");
         navigate("/dashboard");
       } else {
+        console.log("Redirecting team member to team dashboard");
         navigate("/dashboard-team");
       }
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, isPlatformAdmin, isAdmin, isAdminLoading, navigate]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

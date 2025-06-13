@@ -4,12 +4,10 @@ import { Menu, X, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { usePlatformAuth } from '@/hooks/usePlatformAuth';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, userName, isAdmin } = useAuth();
-  const { isPlatformAdmin } = usePlatformAuth();
+  const { user, userName, isAdmin, isPlatformAdmin } = useAuth();
 
   // Determine correct dashboard route based on admin status
   const dashboardRoute = isPlatformAdmin ? "/platform-admin" : 
