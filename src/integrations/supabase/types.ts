@@ -74,7 +74,7 @@ export type Database = {
           address: string | null
           billing_cycle_anchor: number | null
           created_at: string
-          handle: string
+          handle: string | null
           id: string
           logo_url: string | null
           name: string
@@ -90,7 +90,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          handle: string
+          handle?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -106,7 +106,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          handle?: string
+          handle?: string | null
           id?: string
           logo_url?: string | null
           name?: string

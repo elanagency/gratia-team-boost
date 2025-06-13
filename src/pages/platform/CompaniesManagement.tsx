@@ -36,8 +36,7 @@ const CompaniesManagement = () => {
   });
 
   const filteredCompanies = companies?.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.handle.toLowerCase().includes(searchTerm.toLowerCase())
+    company.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
@@ -73,7 +72,7 @@ const CompaniesManagement = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search by company name or handle..."
+              placeholder="Search by company name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -99,7 +98,6 @@ const CompaniesManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Company</TableHead>
-                  <TableHead>Handle</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Team Size</TableHead>
                   <TableHead>Points Balance</TableHead>
@@ -132,9 +130,6 @@ const CompaniesManagement = () => {
                           )}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-mono">@{company.handle}</span>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(company.subscription_status)}
