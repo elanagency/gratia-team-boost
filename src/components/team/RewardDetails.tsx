@@ -3,16 +3,15 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reward } from "@/hooks/useRewards";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/context/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDefaultPaymentMethod } from "@/hooks/useDefaultPaymentMethod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShippingInfoDialog } from "./ShippingInfoDialog";
+import { RewardImage } from "./RewardImage";
+import { RewardInfo } from "./RewardInfo";
 
 interface RewardDetailsProps {
   reward: Reward;
@@ -128,165 +127,30 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       
       <Card className="overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {reward.image_url ? (
-            <div className="h-64 md:h-auto overflow-hidden">
-              <img 
-                src={reward.image_url} 
-                alt={reward.name} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="h-64 md:h-auto bg-gray-100 flex items-center justify-center">
-              <span className="text-gray-400">No image available</span>
-            </div>
-          )}
+          <RewardImage 
+            imageUrl={reward.image_url} 
+            rewardName={reward.name} 
+          />
           
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold">{reward.name}</h2>
-              <div className="bg-[#F572FF]/10 text-[#F572FF] px-3 py-2 rounded-md font-semibold">
-                {reward.points_cost} points
-              </div>
-            </div>
-            
-            {reward.description && (
-              <p className="text-gray-600 mb-6">
-                {reward.description}
-              </p>
-            )}
-            
-            {!hasDefaultPaymentMethod && !isLoadingPaymentMethod && (
-              <Alert className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  An Error occurred at this moment, please try again later - Code 0001
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="mt-4">
-              {reward.stock !== null && (
-                <p className="text-sm text-gray-500 mb-4">
-                  {reward.stock > 0 
-                    ? `${reward.stock} in stock` 
-                    : "Currently out of stock"}
-                </p>
-              )}
-              
-              <Button 
-                onClick={handleConfirmRedeem}
-                disabled={isRedeemDisabled}
-                className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-              >
-                {redeemReward.isPending ? "Processing..." : 
-                 isLoadingPaymentMethod ? "Loading..." :
-                 !hasDefaultPaymentMethod ? "Payment Method Required" :
-                 "Redeem Reward"}
-              </Button>
-              
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Redeeming this reward will deduct {reward.points_cost} points from your balance
-              </p>
-            </div>
-          </div>
+          <RewardInfo
+            reward={reward}
+            hasDefaultPaymentMethod={hasDefaultPaymentMethod}
+            isLoadingPaymentMethod={isLoadingPaymentMethod}
+            onRedeem={handleConfirmRedeem}
+            isRedeemDisabled={isRedeemDisabled}
+            isProcessing={redeemReward.isPending}
+          />
         </div>
       </Card>
       
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Enter Shipping Information</DialogTitle>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input 
-                id="name" 
-                name="name" 
-                value={shippingInfo.name} 
-                onChange={handleInputChange}
-                placeholder="Full name for shipping"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="address">Address</Label>
-              <Input 
-                id="address" 
-                name="address" 
-                value={shippingInfo.address} 
-                onChange={handleInputChange}
-                placeholder="Street address"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input 
-                  id="city" 
-                  name="city" 
-                  value={shippingInfo.city} 
-                  onChange={handleInputChange}
-                  placeholder="City"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="state">State</Label>
-                <Input 
-                  id="state" 
-                  name="state" 
-                  value={shippingInfo.state} 
-                  onChange={handleInputChange}
-                  placeholder="State"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="zipCode">Zip Code</Label>
-                <Input 
-                  id="zipCode" 
-                  name="zipCode" 
-                  value={shippingInfo.zipCode} 
-                  onChange={handleInputChange}
-                  placeholder="Zip code"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="country">Country</Label>
-                <Input 
-                  id="country" 
-                  name="country" 
-                  value={shippingInfo.country} 
-                  onChange={handleInputChange}
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDialogOpen(false)}
-              disabled={redeemReward.isPending}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmitRedemption}
-              className="bg-[#F572FF] hover:bg-[#F572FF]/90"
-              disabled={redeemReward.isPending}
-            >
-              {redeemReward.isPending ? "Processing Redemption..." : "Confirm Redemption"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ShippingInfoDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        shippingInfo={shippingInfo}
+        onShippingInfoChange={handleInputChange}
+        onSubmit={handleSubmitRedemption}
+        isProcessing={redeemReward.isPending}
+      />
     </div>
   );
 };
