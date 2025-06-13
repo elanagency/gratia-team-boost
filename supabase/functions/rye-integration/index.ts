@@ -1,4 +1,3 @@
-
 // Follow Deno Deploy runtime compatibility
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -96,22 +95,131 @@ function mapShippingAddress(shippingAddress: any, userEmail: string) {
   const [firstName, ...lastNameParts] = shippingAddress.name.split(' ');
   const lastName = lastNameParts.join(' ') || firstName;
   
-  // Map common state names to codes (expand as needed)
+  // Expanded country mapping with more countries and ISO codes
+  const countryMapping: { [key: string]: string } = {
+    'United States': 'US',
+    'USA': 'US',
+    'Canada': 'CA',
+    'United Kingdom': 'GB',
+    'UK': 'GB',
+    'Portugal': 'PT',
+    'Spain': 'ES',
+    'France': 'FR',
+    'Germany': 'DE',
+    'Italy': 'IT',
+    'Netherlands': 'NL',
+    'Belgium': 'BE',
+    'Austria': 'AT',
+    'Switzerland': 'CH',
+    'Sweden': 'SE',
+    'Norway': 'NO',
+    'Denmark': 'DK',
+    'Finland': 'FI',
+    'Poland': 'PL',
+    'Czech Republic': 'CZ',
+    'Hungary': 'HU',
+    'Romania': 'RO',
+    'Bulgaria': 'BG',
+    'Croatia': 'HR',
+    'Slovenia': 'SI',
+    'Slovakia': 'SK',
+    'Lithuania': 'LT',
+    'Latvia': 'LV',
+    'Estonia': 'EE',
+    'Ireland': 'IE',
+    'Luxembourg': 'LU',
+    'Malta': 'MT',
+    'Cyprus': 'CY',
+    'Greece': 'GR',
+    'Australia': 'AU',
+    'New Zealand': 'NZ',
+    'Japan': 'JP',
+    'South Korea': 'KR',
+    'Singapore': 'SG',
+    'Hong Kong': 'HK',
+    'Taiwan': 'TW',
+    'Malaysia': 'MY',
+    'Thailand': 'TH',
+    'India': 'IN',
+    'Brazil': 'BR',
+    'Mexico': 'MX',
+    'Argentina': 'AR',
+    'Chile': 'CL',
+    'Colombia': 'CO',
+    'Peru': 'PE',
+    'South Africa': 'ZA',
+    'Israel': 'IL',
+    'Turkey': 'TR',
+    'Russia': 'RU',
+    'China': 'CN'
+  };
+  
+  // Expanded state mapping for common state names to codes
   const stateMapping: { [key: string]: string } = {
     'California': 'CA',
     'New York': 'NY',
     'Texas': 'TX',
     'Florida': 'FL',
-    // Add more mappings as needed
+    'Illinois': 'IL',
+    'Pennsylvania': 'PA',
+    'Ohio': 'OH',
+    'Georgia': 'GA',
+    'North Carolina': 'NC',
+    'Michigan': 'MI',
+    'New Jersey': 'NJ',
+    'Virginia': 'VA',
+    'Washington': 'WA',
+    'Arizona': 'AZ',
+    'Massachusetts': 'MA',
+    'Tennessee': 'TN',
+    'Indiana': 'IN',
+    'Missouri': 'MO',
+    'Maryland': 'MD',
+    'Wisconsin': 'WI',
+    'Colorado': 'CO',
+    'Minnesota': 'MN',
+    'South Carolina': 'SC',
+    'Alabama': 'AL',
+    'Louisiana': 'LA',
+    'Kentucky': 'KY',
+    'Oregon': 'OR',
+    'Oklahoma': 'OK',
+    'Connecticut': 'CT',
+    'Utah': 'UT',
+    'Iowa': 'IA',
+    'Nevada': 'NV',
+    'Arkansas': 'AR',
+    'Mississippi': 'MS',
+    'Kansas': 'KS',
+    'New Mexico': 'NM',
+    'Nebraska': 'NE',
+    'West Virginia': 'WV',
+    'Idaho': 'ID',
+    'Hawaii': 'HI',
+    'New Hampshire': 'NH',
+    'Maine': 'ME',
+    'Montana': 'MT',
+    'Rhode Island': 'RI',
+    'Delaware': 'DE',
+    'South Dakota': 'SD',
+    'North Dakota': 'ND',
+    'Alaska': 'AK',
+    'Vermont': 'VT',
+    'Wyoming': 'WY'
   };
-  
-  // Map common country names to codes
-  const countryMapping: { [key: string]: string } = {
-    'United States': 'US',
-    'Canada': 'CA',
-    'United Kingdom': 'GB',
-    // Add more mappings as needed
-  };
+
+  // Get country code with fallback and logging
+  let countryCode = countryMapping[shippingAddress.country];
+  if (!countryCode) {
+    console.warn(`Country '${shippingAddress.country}' not found in mapping. Using as-is.`);
+    countryCode = shippingAddress.country;
+  }
+
+  // Get state/province code with fallback
+  let provinceCode = stateMapping[shippingAddress.state] || shippingAddress.state;
+
+  console.log(`Country mapping: '${shippingAddress.country}' -> '${countryCode}'`);
+  console.log(`State mapping: '${shippingAddress.state}' -> '${provinceCode}'`);
 
   return {
     firstName,
@@ -119,8 +227,8 @@ function mapShippingAddress(shippingAddress: any, userEmail: string) {
     email: userEmail,
     address1: shippingAddress.address,
     city: shippingAddress.city,
-    provinceCode: stateMapping[shippingAddress.state] || shippingAddress.state,
-    countryCode: countryMapping[shippingAddress.country] || shippingAddress.country,
+    provinceCode: provinceCode,
+    countryCode: countryCode,
     postalCode: shippingAddress.zipCode
   };
 }
