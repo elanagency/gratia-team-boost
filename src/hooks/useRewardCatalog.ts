@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -111,11 +111,11 @@ export const useRewardCatalog = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       setIsAddProductOpen(false);
-      toast({ title: "Success", description: "Product added to your rewards catalog" });
+      toast.success("Product added to your rewards catalog");
     },
     onError: (error: Error) => {
       console.error("Error adding product:", error);
-      toast({ title: "Error", description: error.message || "An error occurred while adding the product", variant: "destructive" });
+      toast.error(error.message || "An error occurred while adding the product");
     }
   });
 
