@@ -6,17 +6,23 @@ export const useDefaultPaymentMethod = () => {
   const { data: hasDefaultPaymentMethod, isLoading } = useQuery({
     queryKey: ['default-payment-method'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-        method: 'GET',
-      });
+      console.log('Checking for default payment method in database...');
+      
+      const { data, error } = await supabase
+        .from('platform_payment_methods')
+        .select('id')
+        .eq('status', 'active')
+        .eq('is_default', true)
+        .limit(1);
 
       if (error) {
-        console.error('Error fetching payment methods:', error);
+        console.error('Error fetching default payment method:', error);
         return false;
       }
 
-      const paymentMethods = data.paymentMethods || [];
-      return paymentMethods.some((method: any) => method.is_default);
+      const hasDefault = data && data.length > 0;
+      console.log('Default payment method found:', hasDefault);
+      return hasDefault;
     },
   });
 
