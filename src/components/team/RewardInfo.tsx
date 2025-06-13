@@ -12,6 +12,9 @@ interface RewardInfoProps {
   onRedeem: () => void;
   isRedeemDisabled: boolean;
   isProcessing: boolean;
+  userPoints: number;
+  hasEnoughPoints: boolean;
+  isLoadingPoints: boolean;
 }
 
 export const RewardInfo = ({
@@ -20,7 +23,10 @@ export const RewardInfo = ({
   isLoadingPaymentMethod,
   onRedeem,
   isRedeemDisabled,
-  isProcessing
+  isProcessing,
+  userPoints,
+  hasEnoughPoints,
+  isLoadingPoints
 }: RewardInfoProps) => {
   return (
     <div className="p-6">
@@ -31,10 +37,29 @@ export const RewardInfo = ({
         </div>
       </div>
       
+      {/* User Points Display */}
+      <div className="mb-4 p-3 bg-gray-50 rounded-md">
+        <p className="text-sm text-gray-600">
+          Your current points: <span className="font-semibold text-[#F572FF]">
+            {isLoadingPoints ? "Loading..." : `${userPoints} points`}
+          </span>
+        </p>
+      </div>
+      
       {reward.description && (
         <p className="text-gray-600 mb-6">
           {reward.description}
         </p>
+      )}
+      
+      {/* Insufficient Points Alert */}
+      {!hasEnoughPoints && !isLoadingPoints && (
+        <Alert className="mb-4 border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <AlertDescription className="text-red-700">
+            You need {reward.points_cost - userPoints} more points to redeem this reward.
+          </AlertDescription>
+        </Alert>
       )}
       
       {!hasDefaultPaymentMethod && !isLoadingPaymentMethod && (
@@ -58,15 +83,20 @@ export const RewardInfo = ({
         <Button 
           onClick={onRedeem}
           disabled={isRedeemDisabled}
-          className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+          className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? "Processing..." : 
            isLoadingPaymentMethod ? "Loading..." :
+           isLoadingPoints ? "Loading..." :
+           !hasEnoughPoints ? "Insufficient Points" :
            "Redeem Reward"}
         </Button>
         
         <p className="text-xs text-gray-500 mt-2 text-center">
-          Redeeming this reward will deduct {reward.points_cost} points from your balance
+          {hasEnoughPoints 
+            ? `Redeeming this reward will deduct ${reward.points_cost} points from your balance`
+            : `You need ${reward.points_cost} points to redeem this reward`
+          }
         </p>
       </div>
     </div>

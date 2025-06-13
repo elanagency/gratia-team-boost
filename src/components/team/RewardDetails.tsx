@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDefaultPaymentMethod } from "@/hooks/useDefaultPaymentMethod";
+import { useUserPoints } from "@/hooks/useUserPoints";
 import { ShippingInfoDialog } from "./ShippingInfoDialog";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
@@ -22,6 +23,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { redeemReward } = useRewards();
   const { user } = useAuth();
   const { hasDefaultPaymentMethod, isLoading: isLoadingPaymentMethod } = useDefaultPaymentMethod();
+  const { userPoints, isLoading: isLoadingPoints } = useUserPoints();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
@@ -32,6 +34,9 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     country: "",
     phone: ""
   });
+
+  // Check if user has enough points
+  const hasEnoughPoints = userPoints >= reward.points_cost;
 
   // Fetch saved shipping info when dialog opens
   React.useEffect(() => {
@@ -74,6 +79,12 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     if (!user) {
       console.log('❌ No user logged in');
       toast.error("You must be logged in to redeem rewards");
+      return;
+    }
+    
+    if (!hasEnoughPoints) {
+      console.log('❌ Not enough points');
+      toast.error(`You need ${reward.points_cost} points to redeem this reward. You currently have ${userPoints} points.`);
       return;
     }
     
@@ -131,7 +142,9 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const isRedeemDisabled = reward.stock === 0 || 
                           redeemReward.isPending || 
                           isLoadingPaymentMethod || 
-                          !hasDefaultPaymentMethod;
+                          isLoadingPoints ||
+                          !hasDefaultPaymentMethod ||
+                          !hasEnoughPoints;
 
   return (
     <div className="space-y-6">
@@ -158,6 +171,9 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
             onRedeem={handleConfirmRedeem}
             isRedeemDisabled={isRedeemDisabled}
             isProcessing={redeemReward.isPending}
+            userPoints={userPoints}
+            hasEnoughPoints={hasEnoughPoints}
+            isLoadingPoints={isLoadingPoints}
           />
         </div>
       </Card>
