@@ -24,6 +24,7 @@ import {
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
+import { usePlatformPaymentMethods } from "@/hooks/usePlatformPaymentMethods";
 
 interface PaymentMethodForm {
   cardNumber: string;
@@ -57,6 +58,15 @@ const PlatformSettings = () => {
     isAdding, 
     isRemoving 
   } = usePlatformAdmins();
+  
+  const {
+    paymentMethods,
+    isLoading: isLoadingPaymentMethods,
+    addPaymentMethod,
+    removePaymentMethod,
+    isAdding: isAddingPayment,
+    isRemoving: isRemovingPayment
+  } = usePlatformPaymentMethods();
 
   const form = useForm<PaymentMethodForm>({
     defaultValues: {
@@ -94,8 +104,13 @@ const PlatformSettings = () => {
   }, [settings, getSetting, configForm]);
 
   const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
-    console.log("Payment method data:", data);
-    // Here you would integrate with Rye API to save the payment method
+    addPaymentMethod({
+      cardNumber: data.cardNumber,
+      expiryMonth: data.expiryMonth,
+      expiryYear: data.expiryYear,
+      cvv: data.cvv,
+      nameOnCard: data.nameOnCard,
+    });
     setIsAddingPaymentMethod(false);
     form.reset();
   };
@@ -230,8 +245,9 @@ const PlatformSettings = () => {
               <Button 
                 onClick={() => setIsAddingPaymentMethod(true)}
                 className="bg-[#F572FF] hover:bg-[#E061EE]"
+                disabled={isAddingPayment}
               >
-                Add Payment Method
+                {isAddingPayment ? 'Adding...' : 'Add Payment Method'}
               </Button>
             </div>
           </div>
@@ -368,8 +384,12 @@ const PlatformSettings = () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button type="submit" className="bg-[#F572FF] hover:bg-[#E061EE]">
-                      Save Payment Method
+                    <Button 
+                      type="submit" 
+                      className="bg-[#F572FF] hover:bg-[#E061EE]"
+                      disabled={isAddingPayment}
+                    >
+                      {isAddingPayment ? 'Saving...' : 'Save Payment Method'}
                     </Button>
                     <Button 
                       type="button" 
@@ -388,21 +408,37 @@ const PlatformSettings = () => {
           
           <div>
             <h4 className="font-medium mb-2">Saved Payment Methods</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded border">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-4 w-4 text-gray-600" />
-                  <div>
-                    <p className="text-sm font-medium">•••• •••• •••• 1234</p>
-                    <p className="text-xs text-gray-500">Expires 12/25</p>
+            {isLoadingPaymentMethods ? (
+              <div className="text-center py-4 text-gray-500">Loading payment methods...</div>
+            ) : paymentMethods.length > 0 ? (
+              <div className="space-y-2">
+                {paymentMethods.map((method) => (
+                  <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-4 w-4 text-gray-600" />
+                      <div>
+                        <p className="text-sm font-medium">•••• •••• •••• {method.card_last_four}</p>
+                        <p className="text-xs text-gray-500">
+                          {method.card_type} • Expires {method.expiry_month}/{method.expiry_year} • {method.cardholder_name}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => removePaymentMethod(method.id)}
+                      disabled={isRemovingPayment}
+                    >
+                      {isRemovingPayment ? 'Removing...' : 'Remove'}
+                    </Button>
                   </div>
-                </div>
-                <Button variant="outline" size="sm">Remove</Button>
+                ))}
               </div>
+            ) : (
               <div className="text-sm text-gray-500 p-3 border border-dashed rounded">
                 No payment methods saved yet
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
