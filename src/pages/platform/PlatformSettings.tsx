@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,24 @@ const PlatformSettings = () => {
     },
   });
 
+  // Format card number with spaces
+  const formatCardNumber = (value: string) => {
+    // Remove all spaces and non-digits
+    const cardNumber = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    
+    // Add spaces every 4 digits
+    const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
+    
+    // Limit to 19 characters (16 digits + 3 spaces)
+    return formattedCardNumber.substring(0, 19);
+  };
+
+  // Handle card number input change
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (value: string) => void) => {
+    const formatted = formatCardNumber(e.target.value);
+    onChange(formatted);
+  };
+
   // Update form when settings are loaded
   useEffect(() => {
     if (settings && settings.length > 0) {
@@ -116,8 +135,11 @@ const PlatformSettings = () => {
   }, [paymentMethods.length, form]);
 
   const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
+    // Remove spaces from card number before submitting
+    const cardNumberWithoutSpaces = data.cardNumber.replace(/\s/g, '');
+    
     addPaymentMethod({
-      cardNumber: data.cardNumber,
+      cardNumber: cardNumberWithoutSpaces,
       expiryMonth: data.expiryMonth,
       expiryYear: data.expiryYear,
       cvv: data.cvv,
@@ -295,7 +317,12 @@ const PlatformSettings = () => {
                         <FormItem>
                           <FormLabel>Card Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="1234 5678 9012 3456" {...field} />
+                            <Input 
+                              placeholder="1234 5678 9012 3456" 
+                              value={field.value}
+                              onChange={(e) => handleCardNumberChange(e, field.onChange)}
+                              maxLength={19}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
