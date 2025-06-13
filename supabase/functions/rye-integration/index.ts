@@ -22,6 +22,7 @@ interface RedemptionRequest {
     state: string;
     zipCode: string;
     country: string;
+    phone: string;
   };
 }
 
@@ -92,6 +93,8 @@ async function makeRyeRequest(query: string, variables: any = {}, headers: any) 
 
 // Map shipping address to Rye format
 function mapShippingAddress(shippingAddress: any, userEmail: string) {
+  console.log('📋 Mapping shipping address:', JSON.stringify(shippingAddress, null, 2));
+  
   const [firstName, ...lastNameParts] = shippingAddress.name.split(' ');
   const lastName = lastNameParts.join(' ') || firstName;
   
@@ -99,6 +102,7 @@ function mapShippingAddress(shippingAddress: any, userEmail: string) {
   const countryMapping: { [key: string]: string } = {
     'United States': 'US',
     'USA': 'US',
+    'US': 'US',
     'Canada': 'CA',
     'United Kingdom': 'GB',
     'UK': 'GB',
@@ -211,26 +215,30 @@ function mapShippingAddress(shippingAddress: any, userEmail: string) {
   // Get country code with fallback and logging
   let countryCode = countryMapping[shippingAddress.country];
   if (!countryCode) {
-    console.warn(`Country '${shippingAddress.country}' not found in mapping. Using as-is.`);
+    console.warn(`⚠️ Country '${shippingAddress.country}' not found in mapping. Using as-is.`);
     countryCode = shippingAddress.country;
   }
 
   // Get state/province code with fallback
   let provinceCode = stateMapping[shippingAddress.state] || shippingAddress.state;
 
-  console.log(`Country mapping: '${shippingAddress.country}' -> '${countryCode}'`);
-  console.log(`State mapping: '${shippingAddress.state}' -> '${provinceCode}'`);
+  console.log(`🗺️ Country mapping: '${shippingAddress.country}' -> '${countryCode}'`);
+  console.log(`🗺️ State mapping: '${shippingAddress.state}' -> '${provinceCode}'`);
 
-  return {
+  const buyerIdentity = {
     firstName,
     lastName,
     email: userEmail,
+    phone: shippingAddress.phone,
     address1: shippingAddress.address,
     city: shippingAddress.city,
     provinceCode: provinceCode,
     countryCode: countryCode,
     postalCode: shippingAddress.zipCode
   };
+
+  console.log('✅ Final buyer identity:', JSON.stringify(buyerIdentity, null, 2));
+  return buyerIdentity;
 }
 
 serve(async (req) => {
@@ -240,6 +248,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Edge function called with method:', req.method);
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     
@@ -249,6 +259,7 @@ serve(async (req) => {
     );
     
     const reqData = await req.json();
+    console.log('📥 Request data:', JSON.stringify(reqData, null, 2));
     const action = reqData.action;
 
     // Create a client to honor RLS policies
@@ -266,11 +277,14 @@ serve(async (req) => {
     // Verify auth token for most operations
     const { data: { user }, error: authError } = await clientSuapbase.auth.getUser();
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     // Handle different actions
     switch (action) {
@@ -491,13 +505,20 @@ serve(async (req) => {
           const { rewardId, shippingAddress } = redemptionData;
           
           console.log('=== REDEMPTION FLOW START ===');
-          console.log('Reward ID:', rewardId);
-          console.log('User ID:', user.id);
-          console.log('Shipping Address:', JSON.stringify(shippingAddress, null, 2));
+          console.log('📦 Reward ID:', rewardId);
+          console.log('👤 User ID:', user.id);
+          console.log('📍 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
+          
+          // Validate required fields
+          if (!shippingAddress.phone) {
+            console.error('❌ Phone number is missing from shipping address');
+            throw new Error('Phone number is required for shipping');
+          }
           
           // Get RYE API headers from environment variable
           const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
           if (!stagingHeadersJson) {
+            console.error('❌ Missing Staging_RYE_API_Key_Headers environment variable');
             throw new Error('Staging RYE API headers not configured');
           }
           
@@ -505,18 +526,19 @@ serve(async (req) => {
           try {
             ryeHeaders = JSON.parse(stagingHeadersJson);
           } catch (parseError) {
-            console.error('Error parsing staging headers JSON:', parseError);
+            console.error('❌ Error parsing staging headers JSON:', parseError);
             throw new Error('Invalid staging headers configuration');
           }
           
           if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
+            console.error('❌ Missing required headers in staging configuration');
             throw new Error('Missing required headers in staging configuration');
           }
           
-          console.log('RYE Headers validated successfully');
+          console.log('✅ RYE Headers validated successfully');
 
           // Fetch the default payment method token
-          console.log('Fetching default payment method...');
+          console.log('💳 Fetching default payment method...');
           const { data: defaultPaymentMethod, error: paymentMethodError } = await supabaseAdmin
             .from('platform_payment_methods')
             .select('spreedly_token')
@@ -525,14 +547,14 @@ serve(async (req) => {
             .single();
             
           if (paymentMethodError || !defaultPaymentMethod) {
-            console.error('Default payment method fetch error:', paymentMethodError);
+            console.error('❌ Default payment method fetch error:', paymentMethodError);
             throw new Error('No default payment method found');
           }
 
-          console.log('Default payment method found, token available');
+          console.log('✅ Default payment method found, token available');
           
           // Fetch the reward details from the database
-          console.log('Fetching reward details from database...');
+          console.log('🎁 Fetching reward details from database...');
           const { data: reward, error: rewardError } = await supabaseAdmin
             .from('rewards')
             .select('*')
@@ -540,18 +562,19 @@ serve(async (req) => {
             .single();
             
           if (rewardError || !reward) {
-            console.error('Reward fetch error:', rewardError);
+            console.error('❌ Reward fetch error:', rewardError);
             throw new Error('Reward not found');
           }
 
-          console.log('Reward details:', JSON.stringify(reward, null, 2));
+          console.log('✅ Reward details:', JSON.stringify(reward, null, 2));
 
           if (!reward.external_id) {
+            console.error('❌ Reward missing external_id');
             throw new Error('Reward does not have an external product ID');
           }
 
           // Verify the user has enough points
-          console.log('Checking user points...');
+          console.log('💰 Checking user points...');
           const { data: member, error: memberError } = await supabaseAdmin
             .from('company_members')
             .select('points')
@@ -560,18 +583,19 @@ serve(async (req) => {
             .single();
             
           if (memberError || !member) {
-            console.error('Member fetch error:', memberError);
+            console.error('❌ Member fetch error:', memberError);
             throw new Error('User membership not found');
           }
           
-          console.log('User points:', member.points, 'Required:', reward.points_cost);
+          console.log(`💰 User points: ${member.points}, Required: ${reward.points_cost}`);
           
           if (member.points < reward.points_cost) {
+            console.error('❌ Insufficient points');
             throw new Error('Insufficient points');
           }
 
           // Create a redemption record first
-          console.log('Creating redemption record...');
+          console.log('📝 Creating redemption record...');
           const { data: redemption, error: redemptionError } = await supabaseAdmin
             .from('reward_redemptions')
             .insert({
@@ -585,17 +609,16 @@ serve(async (req) => {
             .single();
             
           if (redemptionError) {
-            console.error('Redemption creation error:', redemptionError);
+            console.error('❌ Redemption creation error:', redemptionError);
             throw new Error('Failed to create redemption record');
           }
 
-          console.log('Created redemption record:', redemption.id);
+          console.log('✅ Created redemption record:', redemption.id);
 
           try {
             // STEP 1: Create Cart WITH Product Items AND Buyer Identity
             console.log('=== STEP 1: Creating cart with product and buyer identity ===');
             const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
-            console.log('Buyer identity:', JSON.stringify(buyerIdentity, null, 2));
             
             const createCartMutation = `
               mutation CreateCart($input: CartCreateInput!) {
@@ -630,7 +653,7 @@ serve(async (req) => {
               }
             };
 
-            console.log('Cart creation variables:', JSON.stringify(createCartVariables, null, 2));
+            console.log('🛒 Cart creation variables:', JSON.stringify(createCartVariables, null, 2));
 
             const cartResult = await makeRyeRequest(createCartMutation, createCartVariables, ryeHeaders);
             
@@ -640,14 +663,14 @@ serve(async (req) => {
 
             const cartId = cartResult.data.createCart.cart.id;
             if (!cartId) {
-              console.error('No cart ID in response:', JSON.stringify(cartResult, null, 2));
+              console.error('❌ No cart ID in response:', JSON.stringify(cartResult, null, 2));
               throw new Error('No cart ID returned from createCart');
             }
             
             console.log('✅ Cart created successfully with ID and buyer identity:', cartId);
 
             // Save cart information to the carts table
-            console.log('Saving cart information to database...');
+            console.log('💾 Saving cart information to database...');
             const { error: cartSaveError } = await supabaseAdmin
               .from('carts')
               .insert({
@@ -663,7 +686,7 @@ serve(async (req) => {
               });
 
             if (cartSaveError) {
-              console.error('Cart save error:', cartSaveError);
+              console.error('❌ Cart save error:', cartSaveError);
               // Don't throw here as the cart was successfully created in Rye
             } else {
               console.log('✅ Cart information saved to database');
@@ -672,16 +695,18 @@ serve(async (req) => {
             // STEP 2: Submit Cart with Payment Token
             console.log('=== STEP 2: Submitting cart with payment token ===');
             const submitCartMutation = `
-              mutation SubmitCart($input: SubmitCartInput!) {
+              mutation SubmitCart($input: CartSubmitInput!) {
                 submitCart(input: $input) {
                   cart {
                     id
                     stores {
-                      status
-                      orderId
-                      errors {
-                        code
-                        message
+                      ... on AmazonStore {
+                        status
+                        orderId
+                        errors {
+                          code
+                          message
+                        }
                       }
                     }
                   }
@@ -700,7 +725,7 @@ serve(async (req) => {
               }
             };
 
-            console.log('Submitting cart with token');
+            console.log('💳 Submitting cart with token');
 
             const submitResult = await makeRyeRequest(submitCartMutation, submitCartVariables, ryeHeaders);
 
@@ -729,7 +754,7 @@ serve(async (req) => {
               .eq('rye_cart_id', cartId);
 
             // Deduct points from user
-            console.log('Deducting points from user...');
+            console.log('💰 Deducting points from user...');
             const { error: updateError } = await supabaseAdmin
               .from('company_members')
               .update({ points: member.points - reward.points_cost })
@@ -737,7 +762,7 @@ serve(async (req) => {
               .eq('company_id', reward.company_id);
               
             if (updateError) {
-              console.error('Failed to update points, but order was placed:', updateError);
+              console.error('❌ Failed to update points, but order was placed:', updateError);
               // Don't throw here as the order was successful
             }
 
@@ -771,7 +796,7 @@ serve(async (req) => {
 
           } catch (ryeError) {
             console.error('=== RYE REDEMPTION FLOW FAILED ===');
-            console.error('Error details:', ryeError);
+            console.error('❌ Error details:', ryeError);
             
             // Update redemption status to failed
             await supabaseAdmin
@@ -784,9 +809,9 @@ serve(async (req) => {
 
         } catch (error) {
           console.error('=== REDEMPTION ERROR ===');
-          console.error('Error type:', error.constructor.name);
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
+          console.error('❌ Error type:', error.constructor.name);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error stack:', error.stack);
           return new Response(
             JSON.stringify({ error: error.message || 'Redemption failed' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -840,6 +865,7 @@ serve(async (req) => {
         }
 
       default:
+        console.error('❌ Invalid action:', action);
         return new Response(
           JSON.stringify({ error: 'Invalid action' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -847,9 +873,9 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('=== GENERAL ERROR ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('❌ Error type:', error.constructor.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal Server Error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

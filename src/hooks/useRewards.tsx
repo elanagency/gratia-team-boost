@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -92,9 +93,12 @@ export const useRewards = (categoryId?: string) => {
         throw new Error('Missing user ID or reward ID');
       }
 
-      console.log('Starting redemption process for reward:', rewardId);
+      console.log('🎯 useRewards: Starting redemption process for reward:', rewardId);
+      console.log('👤 User ID:', user.id);
+      console.log('📦 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
 
       // Call the rye-integration edge function
+      console.log('🔗 Calling rye-integration edge function...');
       const { data, error } = await supabase.functions.invoke('rye-integration', {
         body: {
           action: 'redeem',
@@ -105,26 +109,27 @@ export const useRewards = (categoryId?: string) => {
       });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('❌ Edge function error:', error);
         throw new Error(error.message || 'Failed to process redemption');
       }
 
       if (!data || !data.success) {
-        console.error('Redemption failed:', data);
+        console.error('❌ Redemption failed:', data);
         throw new Error(data?.error || 'Redemption failed');
       }
 
-      console.log('Redemption successful:', data);
+      console.log('✅ Redemption successful:', data);
       return data.redemption;
     },
     onSuccess: (data) => {
+      console.log('🎉 Redemption mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // Refresh user points
       toast.success(`Reward redeemed successfully! Order ID: ${data.rye_order_id}`);
     },
     onError: (error) => {
-      console.error('Redemption error:', error);
+      console.error('❌ Redemption mutation error:', error);
       toast.error(error.message || 'Failed to redeem reward. Please try again.');
     }
   });
