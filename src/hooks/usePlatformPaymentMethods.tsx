@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface PaymentMethod {
   id: string;
@@ -27,6 +28,7 @@ interface PaymentMethodForm {
 
 export const usePlatformPaymentMethods = () => {
   const queryClient = useQueryClient();
+  const [removingPaymentMethodId, setRemovingPaymentMethodId] = useState<string | null>(null);
 
   const { data: paymentMethods, isLoading } = useQuery({
     queryKey: ['platform-payment-methods'],
@@ -115,6 +117,9 @@ export const usePlatformPaymentMethods = () => {
       console.log('=== STARTING PAYMENT METHOD REMOVAL ===');
       console.log('Payment Method ID:', paymentMethodId);
       
+      // Set the removing state for this specific payment method
+      setRemovingPaymentMethodId(paymentMethodId);
+      
       try {
         console.log('About to call remove-payment-method function...');
         
@@ -145,15 +150,22 @@ export const usePlatformPaymentMethods = () => {
     onSuccess: (data) => {
       console.log('=== MUTATION SUCCESS ===');
       console.log('Success data:', data);
+      setRemovingPaymentMethodId(null);
       queryClient.invalidateQueries({ queryKey: ['platform-payment-methods'] });
       toast.success('Payment method removed successfully');
     },
     onError: (error: any) => {
       console.error('=== MUTATION ERROR ===');
       console.error('Error in onError:', error);
+      setRemovingPaymentMethodId(null);
       toast.error(`Failed to remove payment method: ${error?.message || 'Unknown error'}`);
     },
   });
+
+  // Function to check if a specific payment method is being removed
+  const isRemovingPaymentMethod = (paymentMethodId: string) => {
+    return removingPaymentMethodId === paymentMethodId;
+  };
 
   return {
     paymentMethods: paymentMethods || [],
@@ -163,6 +175,6 @@ export const usePlatformPaymentMethods = () => {
     removePaymentMethod: removePaymentMethodMutation.mutate,
     isAdding: addPaymentMethodMutation.isPending,
     isUpdating: updatePaymentMethodMutation.isPending,
-    isRemoving: removePaymentMethodMutation.isPending,
+    isRemovingPaymentMethod,
   };
 };
