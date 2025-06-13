@@ -467,8 +467,11 @@ serve(async (req) => {
           console.log('Created redemption record:', redemption.id);
 
           try {
-            // STEP 1: Create Cart WITH Product Items
-            console.log('=== STEP 1: Creating cart with product ===');
+            // STEP 1: Create Cart WITH Product Items AND Buyer Identity
+            console.log('=== STEP 1: Creating cart with product and buyer identity ===');
+            const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
+            console.log('Buyer identity:', JSON.stringify(buyerIdentity, null, 2));
+            
             const createCartMutation = `
               mutation CreateCart($input: CartCreateInput!) {
                 createCart(input: $input) {
@@ -489,7 +492,7 @@ serve(async (req) => {
               }
             `;
 
-            // Create cart with the product included from the start
+            // Create cart with the product AND buyer identity included from the start
             const createCartVariables = {
               input: {
                 items: {
@@ -497,7 +500,8 @@ serve(async (req) => {
                     productId: reward.external_id,
                     quantity: 1
                   }]
-                }
+                },
+                buyerIdentity: buyerIdentity
               }
             };
 
@@ -515,50 +519,10 @@ serve(async (req) => {
               throw new Error('No cart ID returned from createCart');
             }
             
-            console.log('✅ Cart created successfully with ID:', cartId);
+            console.log('✅ Cart created successfully with ID and buyer identity:', cartId);
 
-            // STEP 2: Attach Buyer Identity
-            console.log('=== STEP 2: Attaching buyer identity ===');
-            const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
-            console.log('Buyer identity:', JSON.stringify(buyerIdentity, null, 2));
-            
-            const updateCartBuyerIdentityMutation = `
-              mutation UpdateCartBuyerIdentity($input: UpdateCartBuyerIdentityInput!) {
-                updateCartBuyerIdentity(input: $input) {
-                  cart {
-                    id
-                    cost {
-                      total {
-                        value
-                        currency
-                      }
-                    }
-                  }
-                  errors {
-                    code
-                    message
-                  }
-                }
-              }
-            `;
-
-            const buyerIdentityVariables = {
-              input: {
-                id: cartId,
-                buyerIdentity: buyerIdentity
-              }
-            };
-
-            const buyerIdentityResult = await makeRyeRequest(updateCartBuyerIdentityMutation, buyerIdentityVariables, ryeHeaders);
-
-            if (buyerIdentityResult.data.updateCartBuyerIdentity.errors && buyerIdentityResult.data.updateCartBuyerIdentity.errors.length > 0) {
-              throw new Error(`Update buyer identity failed: ${buyerIdentityResult.data.updateCartBuyerIdentity.errors[0].message}`);
-            }
-
-            console.log('✅ Buyer identity attached successfully');
-
-            // STEP 3: Submit Cart
-            console.log('=== STEP 3: Submitting cart ===');
+            // STEP 2: Submit Cart (Skip the buyer identity update step)
+            console.log('=== STEP 2: Submitting cart ===');
             const submitCartMutation = `
               mutation SubmitCart($input: SubmitCartInput!) {
                 submitCart(input: $input) {
