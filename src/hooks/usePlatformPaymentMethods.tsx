@@ -32,9 +32,7 @@ export const usePlatformPaymentMethods = () => {
     queryKey: ['platform-payment-methods'],
     queryFn: async () => {
       console.log('Fetching payment methods...');
-      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-        method: 'GET',
-      });
+      const { data, error } = await supabase.functions.invoke('get-payment-methods');
 
       if (error) {
         console.error('Error fetching payment methods:', error);
@@ -49,8 +47,7 @@ export const usePlatformPaymentMethods = () => {
   const addPaymentMethodMutation = useMutation({
     mutationFn: async (paymentData: PaymentMethodForm) => {
       console.log('Adding payment method...');
-      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-        method: 'POST',
+      const { data, error } = await supabase.functions.invoke('add-payment-method', {
         body: paymentData,
       });
 
@@ -75,8 +72,7 @@ export const usePlatformPaymentMethods = () => {
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async ({ id, isDefault }: { id: string; isDefault: boolean }) => {
       console.log('Updating payment method:', id, 'isDefault:', isDefault);
-      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-        method: 'PATCH',
+      const { data, error } = await supabase.functions.invoke('update-payment-method', {
         body: { id, isDefault },
       });
 
@@ -103,18 +99,14 @@ export const usePlatformPaymentMethods = () => {
       console.log('=== STARTING PAYMENT METHOD REMOVAL ===');
       console.log('Payment Method ID:', paymentMethodId);
       console.log('Supabase client available:', !!supabase);
-      console.log('Current user session:', await supabase.auth.getSession());
       
       try {
-        console.log('About to call supabase.functions.invoke...');
-        console.log('Function name: spreedly-payment-method');
-        console.log('Method: DELETE');
+        console.log('About to call remove-payment-method function...');
         console.log('Body:', { id: paymentMethodId });
         
         const startTime = Date.now();
         
-        const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-          method: 'DELETE',
+        const { data, error } = await supabase.functions.invoke('remove-payment-method', {
           body: { id: paymentMethodId },
         });
 
