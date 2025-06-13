@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,8 +63,8 @@ export const useRewardCatalog = () => {
         const isAmazon = url.includes('amazon.com') || url.includes('amzn.to');
         const action = isAmazon ? 'requestAmazonProductByURL' : 'requestShopifyProductByURL';
 
-        // Call the Rye integration endpoint
-        const response = await supabase.functions.invoke('rye-integration', {
+        // Call the new product service
+        const response = await supabase.functions.invoke('rye-product-service', {
           body: { action, url }
         });
 
@@ -112,11 +111,11 @@ export const useRewardCatalog = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       setIsAddProductOpen(false);
-      toast.success("Product added to your rewards catalog");
+      toast({ title: "Success", description: "Product added to your rewards catalog" });
     },
     onError: (error: Error) => {
       console.error("Error adding product:", error);
-      toast.error(error.message || "An error occurred while adding the product");
+      toast({ title: "Error", description: error.message || "An error occurred while adding the product", variant: "destructive" });
     }
   });
 

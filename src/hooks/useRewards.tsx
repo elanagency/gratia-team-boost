@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -86,7 +85,7 @@ export const useRewards = (categoryId?: string) => {
     enabled: !!companyId
   });
 
-  // Redeem a reward using the Rye edge function
+  // Redeem a reward using the new cart service
   const redeemReward = useMutation({
     mutationFn: async ({ rewardId, shippingAddress }: { rewardId: string, shippingAddress: any }) => {
       if (!user?.id || !rewardId) {
@@ -97,9 +96,9 @@ export const useRewards = (categoryId?: string) => {
       console.log('👤 User ID:', user.id);
       console.log('📦 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
 
-      // Call the rye-integration edge function
-      console.log('🔗 Calling rye-integration edge function...');
-      const { data, error } = await supabase.functions.invoke('rye-integration', {
+      // Call the new cart service edge function
+      console.log('🔗 Calling rye-cart-service edge function...');
+      const { data, error } = await supabase.functions.invoke('rye-cart-service', {
         body: {
           action: 'redeem',
           rewardId: rewardId,
