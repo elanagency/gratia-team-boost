@@ -11,6 +11,7 @@ type UserProfile = {
   company_id: string | null;
   company_name: string;
   is_admin: boolean;
+  is_platform_admin: boolean;
 };
 
 // Cache user profile data in sessionStorage
@@ -62,7 +63,7 @@ export const useOptimizedAuth = () => {
       const [profileResponse, companyMemberResponse] = await Promise.all([
         supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, is_platform_admin')
           .eq('id', user.id)
           .maybeSingle(),
         supabase
@@ -94,6 +95,7 @@ export const useOptimizedAuth = () => {
         company_id: companyMemberResponse.data?.company_id || null,
         company_name: companyName,
         is_admin: companyMemberResponse.data?.is_admin || false,
+        is_platform_admin: profileResponse.data?.is_platform_admin || false,
       };
 
       // Cache the profile data
@@ -146,6 +148,7 @@ export const useOptimizedAuth = () => {
   const companyId = profile?.company_id || null;
   const companyName = profile?.company_name || '';
   const isAdmin = profile?.is_admin || false;
+  const isPlatformAdmin = profile?.is_platform_admin || false;
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -164,6 +167,7 @@ export const useOptimizedAuth = () => {
     companyId,
     companyName,
     isAdmin,
+    isPlatformAdmin,
     signOut,
   };
 };
