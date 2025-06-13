@@ -34,23 +34,60 @@ interface RyeErrorResponse {
 
 // Helper function to make GraphQL requests to Rye
 async function makeRyeRequest(query: string, variables: any = {}, headers: any) {
-  const response = await fetch('https://staging.graphql.api.rye.com/v1/query', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': headers.Authorization,
-      'Rye-Shopper-IP': headers['Rye-Shopper-IP']
-    },
-    body: JSON.stringify({ query, variables }),
+  console.log('=== RYE API REQUEST ===');
+  console.log('Query:', query);
+  console.log('Variables:', JSON.stringify(variables, null, 2));
+  console.log('Headers (sanitized):', {
+    'Content-Type': headers['Content-Type'],
+    'Authorization': headers.Authorization ? '[PRESENT]' : '[MISSING]',
+    'Rye-Shopper-IP': headers['Rye-Shopper-IP'] || '[MISSING]'
   });
 
-  const result = await response.json();
-  
-  if (result.errors && result.errors.length > 0) {
-    throw new Error(`Rye API error: ${result.errors[0].message}`);
+  try {
+    const response = await fetch('https://staging.graphql.api.rye.com/v1/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': headers.Authorization,
+        'Rye-Shopper-IP': headers['Rye-Shopper-IP']
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    console.log('=== RYE API RESPONSE STATUS ===');
+    console.log('Status:', response.status);
+    console.log('Status Text:', response.statusText);
+    console.log('Headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      console.error('HTTP Error Response:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error Response Body:', errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    console.log('=== RYE API RESPONSE BODY ===');
+    console.log('Full Response:', JSON.stringify(result, null, 2));
+    
+    if (result.errors && result.errors.length > 0) {
+      console.error('=== RYE API GRAPHQL ERRORS ===');
+      result.errors.forEach((error: any, index: number) => {
+        console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2));
+      });
+      throw new Error(`Rye API error: ${result.errors[0].message}`);
+    }
+    
+    console.log('=== RYE API SUCCESS ===');
+    return result;
+  } catch (error) {
+    console.error('=== RYE API REQUEST FAILED ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    throw error;
   }
-  
-  return result;
 }
 
 // Map shipping address to Rye format
@@ -344,7 +381,10 @@ serve(async (req) => {
           const redemptionData: RedemptionRequest = reqData;
           const { rewardId, shippingAddress } = redemptionData;
           
-          console.log('Starting Rye redemption flow for reward:', rewardId);
+          console.log('=== REDEMPTION FLOW START ===');
+          console.log('Reward ID:', rewardId);
+          console.log('User ID:', user.id);
+          console.log('Shipping Address:', JSON.stringify(shippingAddress, null, 2));
           
           // Get RYE API headers from environment variable
           const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
@@ -364,7 +404,10 @@ serve(async (req) => {
             throw new Error('Missing required headers in staging configuration');
           }
           
+          console.log('RYE Headers validated successfully');
+          
           // Fetch the reward details from the database
+          console.log('Fetching reward details from database...');
           const { data: reward, error: rewardError } = await supabaseAdmin
             .from('rewards')
             .select('*')
@@ -372,14 +415,18 @@ serve(async (req) => {
             .single();
             
           if (rewardError || !reward) {
+            console.error('Reward fetch error:', rewardError);
             throw new Error('Reward not found');
           }
+
+          console.log('Reward details:', JSON.stringify(reward, null, 2));
 
           if (!reward.external_id) {
             throw new Error('Reward does not have an external product ID');
           }
 
           // Verify the user has enough points
+          console.log('Checking user points...');
           const { data: member, error: memberError } = await supabaseAdmin
             .from('company_members')
             .select('points')
@@ -388,14 +435,18 @@ serve(async (req) => {
             .single();
             
           if (memberError || !member) {
+            console.error('Member fetch error:', memberError);
             throw new Error('User membership not found');
           }
+          
+          console.log('User points:', member.points, 'Required:', reward.points_cost);
           
           if (member.points < reward.points_cost) {
             throw new Error('Insufficient points');
           }
 
           // Create a redemption record first
+          console.log('Creating redemption record...');
           const { data: redemption, error: redemptionError } = await supabaseAdmin
             .from('reward_redemptions')
             .insert({
@@ -409,6 +460,7 @@ serve(async (req) => {
             .single();
             
           if (redemptionError) {
+            console.error('Redemption creation error:', redemptionError);
             throw new Error('Failed to create redemption record');
           }
 
@@ -416,7 +468,7 @@ serve(async (req) => {
 
           try {
             // STEP 1: Create Cart WITH Product Items
-            console.log('Step 1: Creating cart with product...');
+            console.log('=== STEP 1: Creating cart with product ===');
             const createCartMutation = `
               mutation CreateCart($input: CartCreateInput!) {
                 createCart(input: $input) {
@@ -449,11 +501,9 @@ serve(async (req) => {
               }
             };
 
-            console.log('Creating cart with variables:', JSON.stringify(createCartVariables, null, 2));
+            console.log('Cart creation variables:', JSON.stringify(createCartVariables, null, 2));
 
             const cartResult = await makeRyeRequest(createCartMutation, createCartVariables, ryeHeaders);
-            
-            console.log('Cart creation response:', JSON.stringify(cartResult, null, 2));
             
             if (cartResult.data.createCart.errors && cartResult.data.createCart.errors.length > 0) {
               throw new Error(`Create cart failed: ${cartResult.data.createCart.errors[0].message}`);
@@ -461,15 +511,16 @@ serve(async (req) => {
 
             const cartId = cartResult.data.createCart.cart.id;
             if (!cartId) {
-              console.log('CreateCart response:', JSON.stringify(cartResult, null, 2));
+              console.error('No cart ID in response:', JSON.stringify(cartResult, null, 2));
               throw new Error('No cart ID returned from createCart');
             }
             
-            console.log('Created cart with ID:', cartId);
+            console.log('✅ Cart created successfully with ID:', cartId);
 
             // STEP 2: Attach Buyer Identity
-            console.log('Step 2: Attaching buyer identity...');
+            console.log('=== STEP 2: Attaching buyer identity ===');
             const buyerIdentity = mapShippingAddress(shippingAddress, user.email);
+            console.log('Buyer identity:', JSON.stringify(buyerIdentity, null, 2));
             
             const updateCartBuyerIdentityMutation = `
               mutation UpdateCartBuyerIdentity($input: UpdateCartBuyerIdentityInput!) {
@@ -504,10 +555,10 @@ serve(async (req) => {
               throw new Error(`Update buyer identity failed: ${buyerIdentityResult.data.updateCartBuyerIdentity.errors[0].message}`);
             }
 
-            console.log('Attached buyer identity successfully');
+            console.log('✅ Buyer identity attached successfully');
 
             // STEP 3: Submit Cart
-            console.log('Step 3: Submitting cart...');
+            console.log('=== STEP 3: Submitting cart ===');
             const submitCartMutation = `
               mutation SubmitCart($input: SubmitCartInput!) {
                 submitCart(input: $input) {
@@ -555,9 +606,10 @@ serve(async (req) => {
             }
 
             const orderId = store.orderId;
-            console.log('Cart submitted successfully, order ID:', orderId);
+            console.log('✅ Cart submitted successfully, order ID:', orderId);
 
             // Deduct points from user
+            console.log('Deducting points from user...');
             const { error: updateError } = await supabaseAdmin
               .from('company_members')
               .update({ points: member.points - reward.points_cost })
@@ -579,7 +631,7 @@ serve(async (req) => {
               })
               .eq('id', redemption.id);
 
-            console.log('Redemption completed successfully');
+            console.log('=== REDEMPTION COMPLETED SUCCESSFULLY ===');
 
             return new Response(
               JSON.stringify({ 
@@ -598,7 +650,8 @@ serve(async (req) => {
             );
 
           } catch (ryeError) {
-            console.error('Rye redemption flow failed:', ryeError);
+            console.error('=== RYE REDEMPTION FLOW FAILED ===');
+            console.error('Error details:', ryeError);
             
             // Update redemption status to failed
             await supabaseAdmin
@@ -610,7 +663,10 @@ serve(async (req) => {
           }
 
         } catch (error) {
-          console.error('Redemption error:', error);
+          console.error('=== REDEMPTION ERROR ===');
+          console.error('Error type:', error.constructor.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
           return new Response(
             JSON.stringify({ error: error.message || 'Redemption failed' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -670,7 +726,10 @@ serve(async (req) => {
         );
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('=== GENERAL ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal Server Error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
