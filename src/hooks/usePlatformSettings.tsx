@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCallback } from 'react';
 
 interface PlatformSetting {
   id: string;
@@ -55,10 +56,10 @@ export const usePlatformSettings = () => {
     },
   });
 
-  const getSetting = (key: string): string => {
+  const getSetting = useCallback((key: string): string => {
     const setting = settings?.find(s => s.key === key);
     return setting ? JSON.parse(setting.value) : '';
-  };
+  }, [settings]);
 
   return {
     settings,

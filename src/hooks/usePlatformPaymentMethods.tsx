@@ -31,6 +31,7 @@ export const usePlatformPaymentMethods = () => {
   const { data: paymentMethods, isLoading } = useQuery({
     queryKey: ['platform-payment-methods'],
     queryFn: async () => {
+      console.log('Fetching payment methods...');
       const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
         method: 'GET',
       });
@@ -40,12 +41,14 @@ export const usePlatformPaymentMethods = () => {
         throw error;
       }
 
+      console.log('Successfully fetched payment methods:', data);
       return data.paymentMethods as PaymentMethod[];
     },
   });
 
   const addPaymentMethodMutation = useMutation({
     mutationFn: async (paymentData: PaymentMethodForm) => {
+      console.log('Adding payment method...');
       const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
         method: 'POST',
         body: paymentData,
@@ -56,6 +59,7 @@ export const usePlatformPaymentMethods = () => {
         throw error;
       }
 
+      console.log('Successfully added payment method');
       return data;
     },
     onSuccess: () => {
@@ -70,6 +74,7 @@ export const usePlatformPaymentMethods = () => {
 
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async ({ id, isDefault }: { id: string; isDefault: boolean }) => {
+      console.log('Updating payment method:', id, 'isDefault:', isDefault);
       const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
         method: 'PATCH',
         body: { id, isDefault },
@@ -80,6 +85,7 @@ export const usePlatformPaymentMethods = () => {
         throw error;
       }
 
+      console.log('Successfully updated payment method');
       return data;
     },
     onSuccess: () => {
@@ -94,25 +100,34 @@ export const usePlatformPaymentMethods = () => {
 
   const removePaymentMethodMutation = useMutation({
     mutationFn: async (paymentMethodId: string) => {
-      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
-        method: 'DELETE',
-        body: { id: paymentMethodId },
-      });
+      console.log('Attempting to remove payment method with ID:', paymentMethodId);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
+          method: 'DELETE',
+          body: { id: paymentMethodId },
+        });
 
-      if (error) {
-        console.error('Error removing payment method:', error);
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
+        }
+
+        console.log('Successfully removed payment method from server:', data);
+        return data;
+      } catch (error) {
+        console.error('Failed to call remove payment method function:', error);
         throw error;
       }
-
-      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Payment method removed successfully, invalidating queries...');
       queryClient.invalidateQueries({ queryKey: ['platform-payment-methods'] });
       toast.success('Payment method removed successfully');
     },
     onError: (error: any) => {
-      console.error('Failed to remove payment method:', error);
-      toast.error('Failed to remove payment method');
+      console.error('Remove payment method mutation failed:', error);
+      toast.error(`Failed to remove payment method: ${error.message || 'Unknown error'}`);
     },
   });
 

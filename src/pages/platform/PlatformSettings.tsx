@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +96,25 @@ const PlatformSettings = () => {
     },
   });
 
+  // Memoize the initial form values to prevent infinite loop
+  const initialFormValues = useMemo(() => {
+    if (!settings || settings.length === 0) return null;
+    
+    return {
+      pointRate: getSetting('point_exchange_rate'),
+      minPurchase: getSetting('min_point_purchase'),
+      maxPurchase: getSetting('max_point_purchase'),
+      defaultSlots: getSetting('default_team_slots'),
+    };
+  }, [settings, getSetting]);
+
+  // Update form when settings are loaded - with stable dependency
+  useEffect(() => {
+    if (initialFormValues) {
+      configForm.reset(initialFormValues);
+    }
+  }, [initialFormValues, configForm]);
+
   // Format card number with spaces
   const formatCardNumber = (value: string) => {
     // Remove all spaces and non-digits
@@ -114,18 +132,6 @@ const PlatformSettings = () => {
     const formatted = formatCardNumber(e.target.value);
     onChange(formatted);
   };
-
-  // Update form when settings are loaded
-  useEffect(() => {
-    if (settings && settings.length > 0) {
-      configForm.reset({
-        pointRate: getSetting('point_exchange_rate'),
-        minPurchase: getSetting('min_point_purchase'),
-        maxPurchase: getSetting('max_point_purchase'),
-        defaultSlots: getSetting('default_team_slots'),
-      });
-    }
-  }, [settings, getSetting, configForm]);
 
   // Set default checkbox when adding first payment method
   useEffect(() => {
@@ -169,6 +175,11 @@ const PlatformSettings = () => {
 
   const handleSetDefault = (id: string) => {
     updatePaymentMethod({ id, isDefault: true });
+  };
+
+  const handleRemovePaymentMethod = (id: string) => {
+    console.log('Remove button clicked for payment method:', id);
+    removePaymentMethod(id);
   };
 
   if (isLoading) {
@@ -508,7 +519,7 @@ const PlatformSettings = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => removePaymentMethod(method.id)}
+                        onClick={() => handleRemovePaymentMethod(method.id)}
                         disabled={isRemovingPayment}
                       >
                         {isRemovingPayment ? 'Removing...' : 'Remove'}
