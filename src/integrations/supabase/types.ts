@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      carts: {
+        Row: {
+          buyer_identity: Json
+          cart_cost: Json | null
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reward_id: string
+          rye_cart_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buyer_identity: Json
+          cart_cost?: Json | null
+          company_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          reward_id: string
+          rye_cart_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buyer_identity?: Json
+          cart_cost?: Json | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reward_id?: string
+          rye_cart_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_carts_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_carts_reward_id"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null

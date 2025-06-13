@@ -521,6 +521,29 @@ serve(async (req) => {
             
             console.log('✅ Cart created successfully with ID and buyer identity:', cartId);
 
+            // Save cart information to the carts table
+            console.log('Saving cart information to database...');
+            const { error: cartSaveError } = await supabaseAdmin
+              .from('carts')
+              .insert({
+                rye_cart_id: cartId,
+                user_id: user.id,
+                company_id: reward.company_id,
+                reward_id: rewardId,
+                product_id: reward.external_id,
+                quantity: 1,
+                buyer_identity: buyerIdentity,
+                cart_cost: cartResult.data.createCart.cart.cost,
+                status: 'created'
+              });
+
+            if (cartSaveError) {
+              console.error('Cart save error:', cartSaveError);
+              // Don't throw here as the cart was successfully created in Rye
+            } else {
+              console.log('✅ Cart information saved to database');
+            }
+
             // STEP 2: Submit Cart (Skip the buyer identity update step)
             console.log('=== STEP 2: Submitting cart ===');
             const submitCartMutation = `
@@ -571,6 +594,12 @@ serve(async (req) => {
 
             const orderId = store.orderId;
             console.log('✅ Cart submitted successfully, order ID:', orderId);
+
+            // Update cart status to submitted
+            await supabaseAdmin
+              .from('carts')
+              .update({ status: 'submitted' })
+              .eq('rye_cart_id', cartId);
 
             // Deduct points from user
             console.log('Deducting points from user...');
