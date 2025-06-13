@@ -333,6 +333,7 @@ export type Database = {
           shipping_city: string | null
           shipping_country: string | null
           shipping_name: string | null
+          shipping_phone: string | null
           shipping_state: string | null
           shipping_zip_code: string | null
           updated_at: string
@@ -348,6 +349,7 @@ export type Database = {
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_name?: string | null
+          shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
           updated_at?: string
@@ -363,6 +365,7 @@ export type Database = {
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_name?: string | null
+          shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
           updated_at?: string
