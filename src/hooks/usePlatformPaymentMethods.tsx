@@ -12,6 +12,7 @@ interface PaymentMethod {
   expiry_year: string;
   cardholder_name: string;
   status: string;
+  is_default: boolean;
   created_at: string;
 }
 
@@ -21,6 +22,7 @@ interface PaymentMethodForm {
   expiryYear: string;
   cvv: string;
   nameOnCard: string;
+  isDefault?: boolean;
 }
 
 export const usePlatformPaymentMethods = () => {
@@ -66,6 +68,30 @@ export const usePlatformPaymentMethods = () => {
     },
   });
 
+  const updatePaymentMethodMutation = useMutation({
+    mutationFn: async ({ id, isDefault }: { id: string; isDefault: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
+        method: 'PATCH',
+        body: { id, isDefault },
+      });
+
+      if (error) {
+        console.error('Error updating payment method:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-payment-methods'] });
+      toast.success('Payment method updated successfully');
+    },
+    onError: (error: any) => {
+      console.error('Failed to update payment method:', error);
+      toast.error('Failed to update payment method');
+    },
+  });
+
   const removePaymentMethodMutation = useMutation({
     mutationFn: async (paymentMethodId: string) => {
       const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
@@ -94,8 +120,10 @@ export const usePlatformPaymentMethods = () => {
     paymentMethods: paymentMethods || [],
     isLoading,
     addPaymentMethod: addPaymentMethodMutation.mutate,
+    updatePaymentMethod: updatePaymentMethodMutation.mutate,
     removePaymentMethod: removePaymentMethodMutation.mutate,
     isAdding: addPaymentMethodMutation.isPending,
+    isUpdating: updatePaymentMethodMutation.isPending,
     isRemoving: removePaymentMethodMutation.isPending,
   };
 };

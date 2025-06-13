@@ -13,6 +13,7 @@ interface PaymentMethodRequest {
   expiryYear: string;
   cvv: string;
   nameOnCard: string;
+  isDefault?: boolean;
 }
 
 serve(async (req) => {
@@ -63,7 +64,7 @@ serve(async (req) => {
     }
 
     if (req.method === 'POST') {
-      const { cardNumber, expiryMonth, expiryYear, cvv, nameOnCard }: PaymentMethodRequest = await req.json()
+      const { cardNumber, expiryMonth, expiryYear, cvv, nameOnCard, isDefault }: PaymentMethodRequest = await req.json()
 
       // Split the name for Spreedly API
       const nameParts = nameOnCard.trim().split(' ')
@@ -105,6 +106,14 @@ serve(async (req) => {
       const paymentMethod = spreedlyData.transaction.payment_method
       const paymentToken = paymentMethod.token
 
+      // Check if this is the first payment method to set as default
+      const { count } = await supabase
+        .from('platform_payment_methods')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+
+      const shouldBeDefault = isDefault || count === 0
+
       // Store the payment method in our database
       const { data: savedPaymentMethod, error: dbError } = await supabase
         .from('platform_payment_methods')
@@ -115,7 +124,8 @@ serve(async (req) => {
           expiry_month: expiryMonth,
           expiry_year: expiryYear,
           cardholder_name: nameOnCard,
-          status: 'active'
+          status: 'active',
+          is_default: shouldBeDefault
         })
         .select()
         .single()
@@ -156,6 +166,36 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ paymentMethods }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (req.method === 'PATCH') {
+      const { id, isDefault } = await req.json()
+
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: 'Payment method ID required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Update the payment method's default status
+      const { error } = await supabase
+        .from('platform_payment_methods')
+        .update({ is_default: isDefault, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) {
+        console.error('Database error:', error)
+        return new Response(
+          JSON.stringify({ error: 'Failed to update payment method' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Payment method updated successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

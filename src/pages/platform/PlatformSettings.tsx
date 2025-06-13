@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Database, Users, Settings2, CreditCard } from "lucide-react";
+import { Shield, Database, Users, Settings2, CreditCard, Star } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -21,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
@@ -36,6 +37,7 @@ interface PaymentMethodForm {
   city: string;
   state: string;
   zipCode: string;
+  isDefault: boolean;
 }
 
 interface PlatformConfigForm {
@@ -63,8 +65,10 @@ const PlatformSettings = () => {
     paymentMethods,
     isLoading: isLoadingPaymentMethods,
     addPaymentMethod,
+    updatePaymentMethod,
     removePaymentMethod,
     isAdding: isAddingPayment,
+    isUpdating: isUpdatingPayment,
     isRemoving: isRemovingPayment
   } = usePlatformPaymentMethods();
 
@@ -79,6 +83,7 @@ const PlatformSettings = () => {
       city: "",
       state: "",
       zipCode: "",
+      isDefault: false,
     },
   });
 
@@ -103,6 +108,13 @@ const PlatformSettings = () => {
     }
   }, [settings, getSetting, configForm]);
 
+  // Set default checkbox when adding first payment method
+  useEffect(() => {
+    if (paymentMethods.length === 0) {
+      form.setValue('isDefault', true);
+    }
+  }, [paymentMethods.length, form]);
+
   const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
     addPaymentMethod({
       cardNumber: data.cardNumber,
@@ -110,6 +122,7 @@ const PlatformSettings = () => {
       expiryYear: data.expiryYear,
       cvv: data.cvv,
       nameOnCard: data.nameOnCard,
+      isDefault: data.isDefault,
     });
     setIsAddingPaymentMethod(false);
     form.reset();
@@ -130,6 +143,10 @@ const PlatformSettings = () => {
       addAdmin(newAdminEmail.trim());
       setNewAdminEmail("");
     }
+  };
+
+  const handleSetDefault = (id: string) => {
+    updatePaymentMethod({ id, isDefault: true });
   };
 
   if (isLoading) {
@@ -325,6 +342,28 @@ const PlatformSettings = () => {
                     />
                   </div>
                   
+                  {paymentMethods.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="isDefault"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Set as default payment method
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
                   <Separator />
                   
                   <h6 className="font-medium">Billing Address</h6>
@@ -417,20 +456,37 @@ const PlatformSettings = () => {
                     <div className="flex items-center gap-3">
                       <CreditCard className="h-4 w-4 text-gray-600" />
                       <div>
-                        <p className="text-sm font-medium">•••• •••• •••• {method.card_last_four}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">•••• •••• •••• {method.card_last_four}</p>
+                          {method.is_default && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500">
                           {method.card_type} • Expires {method.expiry_month}/{method.expiry_year} • {method.cardholder_name}
                         </p>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => removePaymentMethod(method.id)}
-                      disabled={isRemovingPayment}
-                    >
-                      {isRemovingPayment ? 'Removing...' : 'Remove'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {!method.is_default && paymentMethods.length > 1 && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSetDefault(method.id)}
+                          disabled={isUpdatingPayment}
+                        >
+                          {isUpdatingPayment ? 'Setting...' : 'Set Default'}
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => removePaymentMethod(method.id)}
+                        disabled={isRemovingPayment}
+                      >
+                        {isRemovingPayment ? 'Removing...' : 'Remove'}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

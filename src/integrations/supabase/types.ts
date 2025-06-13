@@ -223,6 +223,7 @@ export type Database = {
           expiry_month: string
           expiry_year: string
           id: string
+          is_default: boolean
           spreedly_token: string
           status: string
           updated_at: string
@@ -235,6 +236,7 @@ export type Database = {
           expiry_month: string
           expiry_year: string
           id?: string
+          is_default?: boolean
           spreedly_token: string
           status?: string
           updated_at?: string
@@ -247,6 +249,7 @@ export type Database = {
           expiry_month?: string
           expiry_year?: string
           id?: string
+          is_default?: boolean
           spreedly_token?: string
           status?: string
           updated_at?: string
