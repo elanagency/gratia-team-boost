@@ -180,6 +180,15 @@ serve(async (req) => {
         )
       }
 
+      // If setting as default, first unset all other defaults
+      if (isDefault) {
+        await supabase
+          .from('platform_payment_methods')
+          .update({ is_default: false })
+          .eq('status', 'active')
+          .neq('id', id)
+      }
+
       // Update the payment method's default status
       const { error } = await supabase
         .from('platform_payment_methods')
@@ -201,8 +210,8 @@ serve(async (req) => {
     }
 
     if (req.method === 'DELETE') {
-      const url = new URL(req.url)
-      const paymentMethodId = url.searchParams.get('id')
+      const body = await req.json()
+      const paymentMethodId = body.id
 
       if (!paymentMethodId) {
         return new Response(
@@ -211,19 +220,65 @@ serve(async (req) => {
         )
       }
 
-      // Soft delete by updating status
-      const { error } = await supabase
+      console.log('Attempting to delete payment method:', paymentMethodId)
+
+      // First, get the payment method to retrieve the Spreedly token
+      const { data: paymentMethod, error: fetchError } = await supabase
+        .from('platform_payment_methods')
+        .select('spreedly_token')
+        .eq('id', paymentMethodId)
+        .eq('status', 'active')
+        .single()
+
+      if (fetchError || !paymentMethod) {
+        console.error('Payment method not found:', fetchError)
+        return new Response(
+          JSON.stringify({ error: 'Payment method not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log('Found payment method with token:', paymentMethod.spreedly_token)
+
+      // Delete from Spreedly first
+      try {
+        const spreedlyDeleteResponse = await fetch(`https://core.spreedly.com/v1/payment_methods/${paymentMethod.spreedly_token}.json`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Basic NUtGMkVKTk5DVDlKM0FXSjU3OFpTQUJXRFo6UkFHTmtSWWV2MFRqS080YndiYlJkeGk4aVEyem9IeTFPTUl3dzBYYjc0T0JtUXdVcHl4ZHF4R0xwN1VuMGlnZQ==',
+            'Content-Type': 'application/json'
+          }
+        })
+
+        console.log('Spreedly delete response status:', spreedlyDeleteResponse.status)
+
+        if (!spreedlyDeleteResponse.ok) {
+          const spreedlyError = await spreedlyDeleteResponse.text()
+          console.error('Spreedly delete error:', spreedlyError)
+          // Continue with database deletion even if Spreedly fails
+        } else {
+          console.log('Successfully deleted from Spreedly')
+        }
+      } catch (spreedlyError) {
+        console.error('Error calling Spreedly delete:', spreedlyError)
+        // Continue with database deletion even if Spreedly fails
+      }
+
+      // Soft delete from database (update status to 'deleted')
+      const { error: deleteError } = await supabase
         .from('platform_payment_methods')
         .update({ status: 'deleted', updated_at: new Date().toISOString() })
         .eq('id', paymentMethodId)
 
-      if (error) {
-        console.error('Database error:', error)
+      if (deleteError) {
+        console.error('Database delete error:', deleteError)
         return new Response(
-          JSON.stringify({ error: 'Failed to delete payment method' }),
+          JSON.stringify({ error: 'Failed to delete payment method from database' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+
+      console.log('Successfully deleted payment method from database')
 
       return new Response(
         JSON.stringify({ success: true, message: 'Payment method removed successfully' }),
