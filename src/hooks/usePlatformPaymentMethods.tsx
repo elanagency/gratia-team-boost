@@ -31,8 +31,12 @@ export const usePlatformPaymentMethods = () => {
   const { data: paymentMethods, isLoading } = useQuery({
     queryKey: ['platform-payment-methods'],
     queryFn: async () => {
-      console.log('Fetching payment methods...');
-      const { data, error } = await supabase.functions.invoke('get-payment-methods');
+      console.log('Fetching payment methods from database...');
+      const { data, error } = await supabase
+        .from('platform_payment_methods')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching payment methods:', error);
@@ -40,7 +44,7 @@ export const usePlatformPaymentMethods = () => {
       }
 
       console.log('Successfully fetched payment methods:', data);
-      return data.paymentMethods as PaymentMethod[];
+      return data as PaymentMethod[];
     },
   });
 
@@ -72,9 +76,21 @@ export const usePlatformPaymentMethods = () => {
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async ({ id, isDefault }: { id: string; isDefault: boolean }) => {
       console.log('Updating payment method:', id, 'isDefault:', isDefault);
-      const { data, error } = await supabase.functions.invoke('update-payment-method', {
-        body: { id, isDefault },
-      });
+      
+      // If setting as default, first unset all other defaults
+      if (isDefault) {
+        await supabase
+          .from('platform_payment_methods')
+          .update({ is_default: false })
+          .eq('status', 'active')
+          .neq('id', id);
+      }
+
+      // Update the payment method's default status
+      const { error } = await supabase
+        .from('platform_payment_methods')
+        .update({ is_default: isDefault, updated_at: new Date().toISOString() })
+        .eq('id', id);
 
       if (error) {
         console.error('Error updating payment method:', error);
@@ -82,7 +98,7 @@ export const usePlatformPaymentMethods = () => {
       }
 
       console.log('Successfully updated payment method');
-      return data;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-payment-methods'] });
@@ -98,31 +114,20 @@ export const usePlatformPaymentMethods = () => {
     mutationFn: async (paymentMethodId: string) => {
       console.log('=== STARTING PAYMENT METHOD REMOVAL ===');
       console.log('Payment Method ID:', paymentMethodId);
-      console.log('Supabase client available:', !!supabase);
       
       try {
         console.log('About to call remove-payment-method function...');
-        console.log('Body:', { id: paymentMethodId });
-        
-        const startTime = Date.now();
         
         const { data, error } = await supabase.functions.invoke('remove-payment-method', {
           body: { id: paymentMethodId },
         });
 
-        const endTime = Date.now();
-        console.log(`Function call completed in ${endTime - startTime}ms`);
-        
         console.log('Raw response data:', data);
         console.log('Raw response error:', error);
 
         if (error) {
           console.error('=== SUPABASE FUNCTION ERROR ===');
           console.error('Error object:', error);
-          console.error('Error message:', error.message);
-          console.error('Error code:', error.code);
-          console.error('Error details:', error.details);
-          console.error('Error hint:', error.hint);
           throw new Error(`Edge Function error: ${error.message || 'Unknown error'}`);
         }
 
@@ -131,14 +136,10 @@ export const usePlatformPaymentMethods = () => {
         return data;
       } catch (error) {
         console.error('=== CAUGHT ERROR IN MUTATION ===');
-        console.error('Error type:', typeof error);
-        console.error('Error instanceof Error:', error instanceof Error);
-        console.error('Error message:', error instanceof Error ? error.message : String(error));
-        console.error('Full error object:', error);
+        console.error('Error:', error);
         
-        // Re-throw with more context
         const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(`Failed to send a request to the Edge Function: ${errorMessage}`);
+        throw new Error(`Failed to remove payment method: ${errorMessage}`);
       }
     },
     onSuccess: (data) => {
@@ -150,7 +151,6 @@ export const usePlatformPaymentMethods = () => {
     onError: (error: any) => {
       console.error('=== MUTATION ERROR ===');
       console.error('Error in onError:', error);
-      console.error('Error message:', error?.message);
       toast.error(`Failed to remove payment method: ${error?.message || 'Unknown error'}`);
     },
   });
