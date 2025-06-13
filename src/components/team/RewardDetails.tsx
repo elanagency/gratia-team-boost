@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -70,7 +71,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     }
     
     if (!hasDefaultPaymentMethod) {
-      toast.error("No default payment method found. Please set up a payment method in platform settings.");
+      toast.error("An Error occurred at this moment, please try again later - Code 0001");
       return;
     }
     
@@ -159,7 +160,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  No default payment method found. Please set up a payment method in platform settings to redeem rewards.
+                  An Error occurred at this moment, please try again later - Code 0001
                 </AlertDescription>
               </Alert>
             )}
