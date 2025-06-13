@@ -88,7 +88,7 @@ export const RewardShop = () => {
                 <RewardCard 
                   key={reward.id} 
                   reward={reward} 
-                  onSelect={handleSelectReward}
+                  onClick={() => handleSelectReward(reward)}
                 />
               ))}
             </div>
