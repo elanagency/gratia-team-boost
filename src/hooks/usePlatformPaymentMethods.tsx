@@ -121,23 +121,38 @@ export const usePlatformPaymentMethods = () => {
       setRemovingPaymentMethodId(paymentMethodId);
       
       try {
-        console.log('About to call remove-payment-method function...');
+        console.log('About to call remove-payment-method function with DELETE...');
         
-        const { data, error } = await supabase.functions.invoke('remove-payment-method', {
-          body: { id: paymentMethodId },
-        });
-
-        console.log('Raw response data:', data);
-        console.log('Raw response error:', error);
-
-        if (error) {
-          console.error('=== SUPABASE FUNCTION ERROR ===');
-          console.error('Error object:', error);
-          throw new Error(`Edge Function error: ${error.message || 'Unknown error'}`);
+        // Get the current session for authorization
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
         }
 
-        console.log('=== SUCCESSFUL RESPONSE ===');
+        // Use direct fetch with DELETE method instead of supabase.functions.invoke
+        const response = await fetch(`https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/remove-payment-method`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiamNqdHljbWZkamZuZHV4aXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MjIwMDYsImV4cCI6MjA2MjI5ODAwNn0.eo_nQdvnNFpu8bHJF_e2o2a_9R1POkQRydgtuxyJvvI'
+          },
+          body: JSON.stringify({ id: paymentMethodId }),
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Response error:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
         console.log('Response data:', data);
+
         return data;
       } catch (error) {
         console.error('=== CAUGHT ERROR IN MUTATION ===');
