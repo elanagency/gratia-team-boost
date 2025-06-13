@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reward } from "@/hooks/useRewards";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/context/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -11,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useDefaultPaymentMethod } from "@/hooks/useDefaultPaymentMethod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RewardDetailsProps {
   reward: Reward;
@@ -20,6 +21,7 @@ interface RewardDetailsProps {
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { redeemReward } = useRewards();
   const { user } = useAuth();
+  const { hasDefaultPaymentMethod, isLoading: isLoadingPaymentMethod } = useDefaultPaymentMethod();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
@@ -67,6 +69,11 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       return;
     }
     
+    if (!hasDefaultPaymentMethod) {
+      toast.error("No default payment method found. Please set up a payment method in platform settings.");
+      return;
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -101,6 +108,11 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       [name]: value
     }));
   };
+
+  const isRedeemDisabled = reward.stock === 0 || 
+                          redeemReward.isPending || 
+                          isLoadingPaymentMethod || 
+                          !hasDefaultPaymentMethod;
 
   return (
     <div className="space-y-6">
@@ -143,6 +155,15 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
               </p>
             )}
             
+            {!hasDefaultPaymentMethod && !isLoadingPaymentMethod && (
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No default payment method found. Please set up a payment method in platform settings to redeem rewards.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="mt-4">
               {reward.stock !== null && (
                 <p className="text-sm text-gray-500 mb-4">
@@ -154,10 +175,13 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
               
               <Button 
                 onClick={handleConfirmRedeem}
-                disabled={reward.stock === 0 || redeemReward.isPending}
+                disabled={isRedeemDisabled}
                 className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
               >
-                {redeemReward.isPending ? "Processing..." : "Redeem Reward"}
+                {redeemReward.isPending ? "Processing..." : 
+                 isLoadingPaymentMethod ? "Loading..." :
+                 !hasDefaultPaymentMethod ? "Payment Method Required" :
+                 "Redeem Reward"}
               </Button>
               
               <p className="text-xs text-gray-500 mt-2 text-center">

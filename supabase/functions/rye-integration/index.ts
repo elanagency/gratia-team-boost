@@ -1,3 +1,4 @@
+
 // Follow Deno Deploy runtime compatibility
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -405,6 +406,22 @@ serve(async (req) => {
           }
           
           console.log('RYE Headers validated successfully');
+
+          // Fetch the default payment method token
+          console.log('Fetching default payment method...');
+          const { data: defaultPaymentMethod, error: paymentMethodError } = await supabaseAdmin
+            .from('platform_payment_methods')
+            .select('spreedly_token')
+            .eq('is_default', true)
+            .eq('status', 'active')
+            .single();
+            
+          if (paymentMethodError || !defaultPaymentMethod) {
+            console.error('Default payment method fetch error:', paymentMethodError);
+            throw new Error('No default payment method found');
+          }
+
+          console.log('Default payment method found, token available');
           
           // Fetch the reward details from the database
           console.log('Fetching reward details from database...');
@@ -544,8 +561,8 @@ serve(async (req) => {
               console.log('✅ Cart information saved to database');
             }
 
-            // STEP 2: Submit Cart (Skip the buyer identity update step)
-            console.log('=== STEP 2: Submitting cart ===');
+            // STEP 2: Submit Cart with Payment Token
+            console.log('=== STEP 2: Submitting cart with payment token ===');
             const submitCartMutation = `
               mutation SubmitCart($input: SubmitCartInput!) {
                 submitCart(input: $input) {
@@ -570,10 +587,12 @@ serve(async (req) => {
 
             const submitCartVariables = {
               input: {
-                id: cartId
-                // Note: No token provided since payment method is pre-configured in Rye console
+                id: cartId,
+                token: defaultPaymentMethod.spreedly_token
               }
             };
+
+            console.log('Submitting cart with token');
 
             const submitResult = await makeRyeRequest(submitCartMutation, submitCartVariables, ryeHeaders);
 
@@ -593,7 +612,7 @@ serve(async (req) => {
             }
 
             const orderId = store.orderId;
-            console.log('✅ Cart submitted successfully, order ID:', orderId);
+            console.log('✅ Cart submitted successfully with payment token, order ID:', orderId);
 
             // Update cart status to submitted
             await supabaseAdmin
