@@ -62,7 +62,6 @@ export const RewardInfo = ({
         >
           {isProcessing ? "Processing..." : 
            isLoadingPaymentMethod ? "Loading..." :
-           !hasDefaultPaymentMethod ? "Payment Method Required" :
            "Redeem Reward"}
         </Button>
         
