@@ -100,34 +100,66 @@ export const usePlatformPaymentMethods = () => {
 
   const removePaymentMethodMutation = useMutation({
     mutationFn: async (paymentMethodId: string) => {
-      console.log('Attempting to remove payment method with ID:', paymentMethodId);
+      console.log('=== STARTING PAYMENT METHOD REMOVAL ===');
+      console.log('Payment Method ID:', paymentMethodId);
+      console.log('Supabase client available:', !!supabase);
+      console.log('Current user session:', await supabase.auth.getSession());
       
       try {
+        console.log('About to call supabase.functions.invoke...');
+        console.log('Function name: spreedly-payment-method');
+        console.log('Method: DELETE');
+        console.log('Body:', { id: paymentMethodId });
+        
+        const startTime = Date.now();
+        
         const { data, error } = await supabase.functions.invoke('spreedly-payment-method', {
           method: 'DELETE',
           body: { id: paymentMethodId },
         });
 
+        const endTime = Date.now();
+        console.log(`Function call completed in ${endTime - startTime}ms`);
+        
+        console.log('Raw response data:', data);
+        console.log('Raw response error:', error);
+
         if (error) {
-          console.error('Supabase function error:', error);
-          throw error;
+          console.error('=== SUPABASE FUNCTION ERROR ===');
+          console.error('Error object:', error);
+          console.error('Error message:', error.message);
+          console.error('Error code:', error.code);
+          console.error('Error details:', error.details);
+          console.error('Error hint:', error.hint);
+          throw new Error(`Edge Function error: ${error.message || 'Unknown error'}`);
         }
 
-        console.log('Successfully removed payment method from server:', data);
+        console.log('=== SUCCESSFUL RESPONSE ===');
+        console.log('Response data:', data);
         return data;
       } catch (error) {
-        console.error('Failed to call remove payment method function:', error);
-        throw error;
+        console.error('=== CAUGHT ERROR IN MUTATION ===');
+        console.error('Error type:', typeof error);
+        console.error('Error instanceof Error:', error instanceof Error);
+        console.error('Error message:', error instanceof Error ? error.message : String(error));
+        console.error('Full error object:', error);
+        
+        // Re-throw with more context
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to send a request to the Edge Function: ${errorMessage}`);
       }
     },
     onSuccess: (data) => {
-      console.log('Payment method removed successfully, invalidating queries...');
+      console.log('=== MUTATION SUCCESS ===');
+      console.log('Success data:', data);
       queryClient.invalidateQueries({ queryKey: ['platform-payment-methods'] });
       toast.success('Payment method removed successfully');
     },
     onError: (error: any) => {
-      console.error('Remove payment method mutation failed:', error);
-      toast.error(`Failed to remove payment method: ${error.message || 'Unknown error'}`);
+      console.error('=== MUTATION ERROR ===');
+      console.error('Error in onError:', error);
+      console.error('Error message:', error?.message);
+      toast.error(`Failed to remove payment method: ${error?.message || 'Unknown error'}`);
     },
   });
 
