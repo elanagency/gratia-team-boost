@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import {
   Dialog,
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Download, Users, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Papa from "papaparse";
-import { useAuth } from "@/context/AuthContext";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CSVRow {
@@ -42,7 +41,9 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
   const [uploadResults, setUploadResults] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'results'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { companyId, user } = useAuth();
+  const { companyId, user } = useOptimizedAuth();
+
+  console.log("BulkUploadDialog render - open:", open, "companyId:", companyId, "user:", user?.id);
 
   const downloadSampleCSV = () => {
     const sampleData = [
@@ -202,18 +203,30 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setTimeout(resetDialog, 200);
+  const handleOpenChange = (newOpen: boolean) => {
+    console.log("Dialog open state changing from", open, "to", newOpen);
+    setOpen(newOpen);
+    if (!newOpen) {
+      resetDialog();
+    }
+  };
+
+  const handleButtonClick = () => {
+    console.log("Bulk upload button clicked, current open state:", open);
+    setOpen(true);
   };
 
   const validCount = parsedMembers.filter(m => m.isValid).length;
   const invalidCount = parsedMembers.length - validCount;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button 
+          variant="outline" 
+          className="gap-2"
+          onClick={handleButtonClick}
+        >
           <Upload className="h-4 w-4" />
           Bulk Upload
         </Button>
@@ -396,7 +409,7 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
             )}
 
             <div className="flex justify-end">
-              <Button onClick={handleClose}>
+              <Button onClick={() => handleOpenChange(false)}>
                 Close
               </Button>
             </div>
