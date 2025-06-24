@@ -1,7 +1,6 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Award, Gift, CreditCard, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Award, Gift, CreditCard, Settings, LogOut } from "lucide-react";
 
 type SidebarProps = {
   user: any;
@@ -19,10 +18,6 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }:
     name: "Dashboard",
     icon: LayoutDashboard,
     path: "/dashboard"
-  }, {
-    name: "Team",
-    icon: Users,
-    path: "/dashboard/team"
   }, {
     name: "Recognition",
     icon: Award,
