@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CompanyPointsCard } from "@/components/settings/CompanyPointsCard";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
+import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
 
 const Settings = () => {
   const { companyId } = useAuth();
@@ -52,6 +53,7 @@ const Settings = () => {
           companyPoints={companyPoints} 
           onPointsUpdated={fetchCompanyData}
         />
+        <TeamManagementCard />
         <CompanyInformationCard />
       </div>
     </div>
