@@ -14,27 +14,6 @@ type UserProfile = {
   is_platform_admin: boolean;
 };
 
-// Cache user profile data in sessionStorage
-const PROFILE_CACHE_KEY = 'user_profile_cache';
-
-const cacheProfile = (profile: UserProfile) => {
-  try {
-    sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
-  } catch (error) {
-    console.warn('Failed to cache profile:', error);
-  }
-};
-
-const getCachedProfile = (): UserProfile | null => {
-  try {
-    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
-    return cached ? JSON.parse(cached) : null;
-  } catch (error) {
-    console.warn('Failed to get cached profile:', error);
-    return null;
-  }
-};
-
 export const useOptimizedAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -86,15 +65,14 @@ export const useOptimizedAuth = () => {
         is_admin: companyMemberResponse.data?.is_admin || false,
         is_platform_admin: profileResponse.data?.is_platform_admin || false,
       };
-
-      // Cache the profile data
-      cacheProfile(userProfile);
       
       return userProfile;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: false, // Prevent refetch on component mount if data exists
   });
 
   // Handle auth state changes
@@ -105,8 +83,6 @@ export const useOptimizedAuth = () => {
       setUser(newSession?.user ?? null);
       
       if (event === "SIGNED_OUT") {
-        // Clear cached profile data on signout
-        sessionStorage.removeItem(PROFILE_CACHE_KEY);
         queryClient.removeQueries({ queryKey: ['user-profile'] });
       }
     });
@@ -141,7 +117,6 @@ export const useOptimizedAuth = () => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
     queryClient.removeQueries({ queryKey: ['user-profile'] });
   };
 
