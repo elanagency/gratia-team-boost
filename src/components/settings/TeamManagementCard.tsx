@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle } from "lucide-react";
 import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
+import BulkUploadDialog from "@/components/team/BulkUploadDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import { toast } from "@/components/ui/use-toast";
@@ -99,7 +100,13 @@ export const TeamManagementCard = () => {
               </span>
             </div>
             
-            <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
+            <div className="flex gap-2">
+              <BulkUploadDialog 
+                onSuccess={fetchTeamMembers} 
+                availableSlots={teamSlots.available}
+              />
+              <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
+            </div>
           </div>
         </div>
 
