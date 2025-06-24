@@ -49,17 +49,6 @@ export const useOptimizedAuth = () => {
 
       console.log('Fetching user profile data...');
       
-      // Try to get cached data first
-      const cached = getCachedProfile();
-      if (cached && cached.id === user.id) {
-        console.log('Using cached profile data');
-        // Return cached data immediately, but still fetch fresh data in background
-        setTimeout(() => {
-          queryClient.refetchQueries({ queryKey: ['user-profile', user.id] });
-        }, 0);
-        return cached;
-      }
-
       const [profileResponse, companyMemberResponse] = await Promise.all([
         supabase
           .from('profiles')
