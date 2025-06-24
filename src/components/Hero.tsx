@@ -18,7 +18,7 @@ const Hero = () => {
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-6">
             Recognize & Reward
             <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-grattia-pink">Your Team</span>
+            <span className="text-white">Your Team</span>
           </h1>
           
           <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10">
