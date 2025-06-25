@@ -1,12 +1,13 @@
 
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
-    <section className="relative py-20 px-4 overflow-hidden bg-black">
+    <section className="relative py-20 px-4 overflow-hidden">
       {/* Background gradient effect */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-grattia-purple/30 via-black/95 to-black"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-grattia-purple/30 via-transparent to-transparent"></div>
       </div>
       
       {/* Glowing orb effects */}
@@ -18,16 +19,18 @@ const Hero = () => {
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-6">
             Recognize & Reward
             <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-grattia-pink">Your Team</span>
+            <span className="text-white">Your Team</span>
           </h1>
           
           <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10">
             Build a culture of appreciation with instant peer recognition and meaningful rewards that make your team feel valued.
           </p>
           
-          <Button className="grattia-button text-lg py-6 px-10">
-            Get Started
-          </Button>
+          <Link to="/signup">
+            <Button className="grattia-button text-lg py-6 px-10">
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

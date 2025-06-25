@@ -54,8 +54,7 @@ export function GivePointsDialog() {
       setFilteredMembers(
         teamMembers.filter((member) => 
           member.name.toLowerCase().includes(lowercaseQuery) || 
-          member.email?.toLowerCase().includes(lowercaseQuery) ||
-          member.role.toLowerCase().includes(lowercaseQuery)
+          member.email?.toLowerCase().includes(lowercaseQuery)
         )
       );
     }
@@ -94,7 +93,6 @@ export function GivePointsDialog() {
         .from('company_members')
         .select(`
           id,
-          role,
           is_admin,
           user_id,
           points
@@ -137,7 +135,6 @@ export function GivePointsDialog() {
           id: member.id,
           name: memberName || 'No Name',
           email: '', // We don't have email in the profiles table
-          role: member.is_admin ? 'Admin' : member.role || 'Member',
           user_id: member.user_id,
           points: member.points || 0,
           recognitionsReceived: 0,
@@ -262,7 +259,7 @@ export function GivePointsDialog() {
                         </div>
                         <div className="ml-3">
                           <p className="font-medium">{member.name}</p>
-                          <p className="text-xs text-gray-500">{member.role}</p>
+                          <p className="text-xs text-gray-500">Team Member</p>
                         </div>
                       </div>
                       <div className="text-sm">
@@ -285,7 +282,7 @@ export function GivePointsDialog() {
                 </div>
                 <div className="ml-3">
                   <p className="font-medium">{selectedMember.name}</p>
-                  <p className="text-sm text-gray-500">{selectedMember.role}</p>
+                  <p className="text-sm text-gray-500">Team Member</p>
                 </div>
               </div>
               <Button

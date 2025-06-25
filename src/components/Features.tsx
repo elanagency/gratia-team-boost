@@ -1,4 +1,3 @@
-
 import { Gift, LineChart, Store } from 'lucide-react';
 
 const Features = () => {
@@ -9,7 +8,7 @@ const Features = () => {
       description: "Send points in real-time to celebrate wins, big and small."
     },
     {
-      icon: <LineChart className="h-12 w-12 text-grattia-teal mb-4 mx-auto" />,
+      icon: <LineChart className="h-12 w-12 text-grattia-pink mb-4 mx-auto" />,
       title: "Track Impact",
       description: "Measure engagement and see how recognition drives team performance."
     },

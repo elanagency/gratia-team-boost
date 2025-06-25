@@ -69,7 +69,7 @@ const PlatformSettings = () => {
     removePaymentMethod,
     isAdding: isAddingPayment,
     isUpdating: isUpdatingPayment,
-    isRemoving: isRemovingPayment
+    isRemovingPaymentMethod,
   } = usePlatformPaymentMethods();
 
   const form = useForm<PaymentMethodForm>({
@@ -520,9 +520,9 @@ const PlatformSettings = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleRemovePaymentMethod(method.id)}
-                        disabled={isRemovingPayment}
+                        disabled={isRemovingPaymentMethod(method.id)}
                       >
-                        {isRemovingPayment ? 'Removing...' : 'Remove'}
+                        {isRemovingPaymentMethod(method.id) ? 'Removing...' : 'Remove'}
                       </Button>
                     </div>
                   </div>

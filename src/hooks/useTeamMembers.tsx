@@ -8,7 +8,6 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: string;
   user_id: string;
   points: number;
   recognitionsReceived: number;
@@ -48,7 +47,6 @@ export const useTeamMembers = () => {
         .from('company_members')
         .select(`
           id,
-          role,
           is_admin,
           user_id,
           points
@@ -160,7 +158,6 @@ export const useTeamMembers = () => {
           id: member.id,
           name: memberName || 'No Name',
           email: emailsMap[member.user_id] || '',
-          role: member.role || 'Member',
           user_id: member.user_id,
           points: member.points || 0,
           recognitionsReceived: stats.received,
