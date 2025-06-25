@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 const SignUp = () => {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
       {/* Centered logo */}
       <div className="flex justify-center pt-8 pb-4">
         <Link to="/">
