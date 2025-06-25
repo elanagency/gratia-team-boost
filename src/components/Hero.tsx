@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 
 const Hero = () => {
   return (
-    <section className="relative py-20 px-4 overflow-hidden bg-black">
+    <section className="relative py-20 px-4 overflow-hidden">
       {/* Background gradient effect */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-grattia-purple/30 via-black/95 to-black"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-grattia-purple/30 via-transparent to-transparent"></div>
       </div>
       
       {/* Glowing orb effects */}
