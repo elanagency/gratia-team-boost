@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
@@ -25,9 +26,11 @@ const Hero = () => {
             Build a culture of appreciation with instant peer recognition and meaningful rewards that make your team feel valued.
           </p>
           
-          <Button className="grattia-button text-lg py-6 px-10">
-            Get Started
-          </Button>
+          <Link to="/signup">
+            <Button className="grattia-button text-lg py-6 px-10">
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
