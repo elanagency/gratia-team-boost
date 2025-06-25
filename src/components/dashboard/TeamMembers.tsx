@@ -31,9 +31,9 @@ export const TeamMembers = () => {
               <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF] font-medium">
                 {member.name.charAt(0)}
               </div>
-              <div className="ml-3">
+              <div className="ml-3 flex-1">
                 <p className="font-medium text-gray-800">{member.name}</p>
-                <p className="text-xs text-gray-500">{member.role}</p>
+                <p className="text-xs text-gray-500">Team Member</p>
               </div>
               <div className="ml-auto flex items-center">
                 <span className="text-sm font-medium mr-1 text-[#F572FF]">{member.points}</span>

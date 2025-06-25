@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import {
   Dialog,
@@ -17,13 +18,11 @@ import { supabase } from "@/integrations/supabase/client";
 interface CSVRow {
   Name: string;
   Email: string;
-  Role: string;
 }
 
 interface ParsedMember {
   name: string;
   email: string;
-  role: string;
   isValid: boolean;
   errors: string[];
   rowIndex: number;
@@ -47,9 +46,9 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
 
   const downloadSampleCSV = () => {
     const sampleData = [
-      { Name: "John Doe", Email: "john.doe@company.com", Role: "member" },
-      { Name: "Jane Smith", Email: "jane.smith@company.com", Role: "member" },
-      { Name: "Bob Johnson", Email: "bob.johnson@company.com", Role: "admin" }
+      { Name: "John Doe", Email: "john.doe@company.com" },
+      { Name: "Jane Smith", Email: "jane.smith@company.com" },
+      { Name: "Bob Johnson", Email: "bob.johnson@company.com" }
     ];
     
     const csv = Papa.unparse(sampleData);
@@ -69,11 +68,6 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  const validateRole = (role: string): boolean => {
-    const validRoles = ['member', 'admin'];
-    return validRoles.includes(role.toLowerCase());
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,22 +97,15 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
           } else if (!validateEmail(row.Email.trim())) {
             errors.push("Invalid email format");
           }
-          
-          if (!row.Role?.trim()) {
-            errors.push("Role is required");
-          } else if (!validateRole(row.Role.trim())) {
-            errors.push("Role must be 'member' or 'admin'");
-          }
 
           // Skip completely empty rows
-          if (!row.Name && !row.Email && !row.Role) {
+          if (!row.Name && !row.Email) {
             return;
           }
 
           validatedMembers.push({
             name: row.Name?.trim() || '',
             email: row.Email?.trim().toLowerCase() || '',
-            role: row.Role?.trim().toLowerCase() || 'member',
             isValid: errors.length === 0,
             errors,
             rowIndex: index + 1
@@ -169,7 +156,7 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
           members: validMembers.map(member => ({
             name: member.name,
             email: member.email,
-            role: member.role
+            role: 'member'
           })),
           companyId,
           invitedBy: user?.id
@@ -269,9 +256,9 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-800 mb-2">CSV Format Requirements</h4>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Headers: Name, Email, Role</li>
-                <li>• Role must be 'member' or 'admin'</li>
+                <li>• Headers: Name, Email</li>
                 <li>• Email addresses must be unique</li>
+                <li>• All members will be added as team members</li>
                 <li>• You have {availableSlots} team slots available</li>
               </ul>
             </div>
@@ -302,7 +289,6 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
                   <tr>
                     <th className="text-left p-2 border-b">Name</th>
                     <th className="text-left p-2 border-b">Email</th>
-                    <th className="text-left p-2 border-b">Role</th>
                     <th className="text-left p-2 border-b">Status</th>
                   </tr>
                 </thead>
@@ -311,7 +297,6 @@ const BulkUploadDialog = ({ onSuccess, availableSlots }: BulkUploadDialogProps) 
                     <tr key={index} className={member.isValid ? '' : 'bg-red-50'}>
                       <td className="p-2 border-b">{member.name}</td>
                       <td className="p-2 border-b">{member.email}</td>
-                      <td className="p-2 border-b">{member.role}</td>
                       <td className="p-2 border-b">
                         {member.isValid ? (
                           <span className="text-green-600 text-xs">Valid</span>

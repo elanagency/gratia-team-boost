@@ -21,7 +21,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState('member');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
@@ -45,7 +44,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setIsSubmitting(true);
     
     try {
-      console.log("Inviting team member:", { email, name, role, companyId, teamSlots });
+      console.log("Inviting team member:", { email, name, companyId, teamSlots });
       
       const origin = window.location.origin;
       
@@ -54,7 +53,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           email, 
           name, 
           companyId,
-          role,
+          role: 'member',
           invitedBy: user?.id,
           origin
         }
@@ -73,7 +72,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         
         setEmail('');
         setName('');
-        setRole('member');
         setOpen(false);
         
         toast.success("Redirecting to team slots purchase. Complete payment to add the team member.");
@@ -103,7 +101,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         // Clear form first
         setEmail('');
         setName('');
-        setRole('member');
         
         // Set password info with the stored data
         setPasswordInfo({
@@ -122,7 +119,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         
         setEmail('');
         setName('');
-        setRole('member');
         
         toast.success(`${name} has been invited to join the team!`);
         
@@ -178,7 +174,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           <DialogHeader>
             <DialogTitle>Invite a team member</DialogTitle>
             <DialogDescription>
-              Add a new team member to your company.
+              Add a new team member to your company. All members will be added as team members.
             </DialogDescription>
           </DialogHeader>
           
@@ -216,8 +212,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
             setEmail={setEmail}
             name={name}
             setName={setName}
-            role={role}
-            setRole={setRole}
             isSubmitting={isSubmitting}
             isFirstMember={teamSlots.total === 0}
             onSubmit={handleSubmit}
