@@ -1,5 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
+
 const Pricing = () => {
   return <section id="pricing" className="py-20 px-4">
       <div className="container mx-auto max-w-6xl">
@@ -23,7 +26,9 @@ const Pricing = () => {
               
             </div>
 
-            <Button className="grattia-button text-lg py-6 px-10 mb-4">Signup</Button>
+            <Link to="/signup">
+              <Button className="grattia-button text-lg py-6 px-10 mb-4">Signup</Button>
+            </Link>
             
           </div>
 
@@ -33,4 +38,5 @@ const Pricing = () => {
       </div>
     </section>;
 };
+
 export default Pricing;
