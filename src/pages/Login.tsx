@@ -78,7 +78,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
       <Navbar />
       
       <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
