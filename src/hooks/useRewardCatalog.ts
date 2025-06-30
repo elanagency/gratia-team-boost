@@ -12,7 +12,7 @@ export interface Reward {
   company_id: string;
   external_id: string;
   rye_product_url: string;
-  is_global?: boolean;
+  is_global: boolean;
 }
 
 export const useRewardCatalog = () => {
@@ -31,7 +31,7 @@ export const useRewardCatalog = () => {
         throw error;
       }
 
-      return data || [];
+      return data as Reward[];
     }
   });
 
