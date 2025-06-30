@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ import RewardShop from "./pages/team/RewardShop";
 import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import CompaniesManagement from "./pages/platform/CompaniesManagement";
+import PlatformRewardsCatalog from "./pages/platform/PlatformRewardsCatalog";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
 
@@ -81,6 +83,7 @@ const App = () => (
               <Route path="/platform-admin" element={<PlatformAdminLayout />}>
                 <Route index element={<PlatformDashboard />} />
                 <Route path="companies" element={<CompaniesManagement />} />
+                <Route path="rewards" element={<PlatformRewardsCatalog />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
               </Route>
