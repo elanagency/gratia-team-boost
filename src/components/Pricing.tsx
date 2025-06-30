@@ -6,9 +6,7 @@ const Pricing = () => {
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Transparent Pricing</h2>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            No hidden fees, no complex tiers. Just $2.99 per employee per month.
-          </p>
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto">No hidden fees, no complex tiers</p>
         </div>
         
         <div className="max-w-4xl mx-auto">
