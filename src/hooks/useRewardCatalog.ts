@@ -9,7 +9,7 @@ export interface Reward {
   points_cost: number;
   image_url: string;
   stock?: number;
-  company_id: string;
+  company_id: string | null;
   external_id: string;
   rye_product_url: string;
   is_global: boolean;
@@ -23,7 +23,7 @@ export const useRewardCatalog = () => {
       const { data, error } = await supabase
         .from('rewards')
         .select('*')
-        .eq('is_global', true)
+        .is('company_id', null)
         .order('created_at', { ascending: false });
 
       if (error) {

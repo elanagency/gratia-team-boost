@@ -20,7 +20,7 @@ export interface Reward {
   points_cost: number;
   image_url: string;
   stock?: number;
-  company_id: string;
+  company_id: string | null;
   external_id: string;
   rye_product_url: string;
   is_global: boolean;
@@ -40,7 +40,7 @@ export const usePlatformRewardCatalog = () => {
       const { data, error } = await supabase
         .from('rewards')
         .select('*')
-        .eq('is_global', true)
+        .is('company_id', null)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -78,7 +78,7 @@ export const usePlatformRewardCatalog = () => {
         const priceInDollars = product.price;
         const pointsCost = Math.round(priceInDollars * pointsMultiplier);
 
-        // Store as global reward (no company_id, is_global = true)
+        // Store as global reward (company_id = null, is_global = true)
         const { data, error } = await supabase
           .from('rewards')
           .insert({
@@ -88,7 +88,7 @@ export const usePlatformRewardCatalog = () => {
             points_cost: pointsCost,
             external_id: product.id,
             rye_product_url: product.url,
-            company_id: '00000000-0000-0000-0000-000000000000', // Platform placeholder
+            company_id: null, // Global rewards have no company
             is_global: true,
             stock: 10
           })
@@ -121,7 +121,7 @@ export const usePlatformRewardCatalog = () => {
         .from('rewards')
         .delete()
         .eq('id', rewardId)
-        .eq('is_global', true);
+        .is('company_id', null);
       
       if (error) {
         throw error;

@@ -13,6 +13,7 @@ interface RewardCardProps {
     image_url: string | null;
     points_cost: number;
     stock: number | null;
+    company_id?: string | null;
   };
   onClick: () => void;
 }

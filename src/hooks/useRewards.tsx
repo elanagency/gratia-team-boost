@@ -11,7 +11,7 @@ export interface Reward {
   image_url: string | null;
   points_cost: number;
   stock: number | null;
-  company_id: string;
+  company_id: string | null;
   external_id: string | null;
   rye_product_url: string | null;
   created_at: string;
@@ -45,13 +45,13 @@ export const useRewards = (categoryId?: string) => {
           throw error;
         }
 
-        return data ? data.map((item: any) => item.reward).filter((reward: any) => reward.is_global) : [];
+        return data ? data.map((item: any) => item.reward).filter((reward: any) => reward.company_id === null) : [];
       } else {
-        // Fetch all global rewards
+        // Fetch all global rewards (where company_id is NULL)
         const { data, error } = await supabase
           .from('rewards')
           .select('*')
-          .eq('is_global', true)
+          .is('company_id', null)
           .order('created_at', { ascending: false });
 
         if (error) {
