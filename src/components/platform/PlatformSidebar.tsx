@@ -8,7 +8,8 @@ import {
   CreditCard, 
   Settings, 
   LogOut,
-  Shield
+  Shield,
+  Gift
 } from "lucide-react";
 
 interface PlatformSidebarProps {
@@ -19,6 +20,7 @@ interface PlatformSidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/platform-admin', icon: BarChart3 },
   { name: 'Companies', href: '/platform-admin/companies', icon: Building2 },
+  { name: 'Rewards Catalog', href: '/platform-admin/rewards', icon: Gift },
   { name: 'Transactions', href: '/platform-admin/transactions', icon: CreditCard },
   { name: 'Settings', href: '/platform-admin/settings', icon: Settings },
 ];

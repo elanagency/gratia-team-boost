@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +15,7 @@ export interface Reward {
   external_id: string | null;
   rye_product_url: string | null;
   created_at: string;
+  is_global?: boolean;
 }
 
 export interface RewardCategory {
@@ -23,17 +25,16 @@ export interface RewardCategory {
 }
 
 export const useRewards = (categoryId?: string) => {
-  const { user, companyId } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch rewards for the company
+  // Fetch global rewards (available to all users)
   const { data: rewards = [], isLoading, error } = useQuery({
-    queryKey: ['rewards', companyId, categoryId],
+    queryKey: ['rewards', categoryId],
     queryFn: async () => {
-      if (!companyId) return [];
-
       if (categoryId) {
         // If categoryId is provided, join with category mappings
+        // Note: Categories would need to be adapted for global rewards
         const { data, error } = await supabase
           .from('reward_category_mappings')
           .select('reward:reward_id(*)')
@@ -44,48 +45,35 @@ export const useRewards = (categoryId?: string) => {
           throw error;
         }
 
-        // Extract the rewards from the result
-        return data ? data.map((item: any) => item.reward) : [];
+        return data ? data.map((item: any) => item.reward).filter((reward: any) => reward.is_global) : [];
       } else {
-        // If no categoryId, fetch all rewards for the company
+        // Fetch all global rewards
         const { data, error } = await supabase
           .from('rewards')
           .select('*')
-          .eq('company_id', companyId);
+          .eq('is_global', true)
+          .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching rewards:', error);
+          console.error('Error fetching global rewards:', error);
           throw error;
         }
 
         return data || [];
       }
-    },
-    enabled: !!companyId
+    }
   });
 
-  // Fetch reward categories
+  // Fetch reward categories (might need adjustment for global system)
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['rewardCategories', companyId],
+    queryKey: ['rewardCategories'],
     queryFn: async () => {
-      if (!companyId) return [];
-
-      const { data, error } = await supabase
-        .from('reward_categories')
-        .select('*')
-        .eq('company_id', companyId);
-
-      if (error) {
-        console.error('Error fetching reward categories:', error);
-        throw error;
-      }
-
-      return data || [];
-    },
-    enabled: !!companyId
+      // For now, return empty array as categories might need restructuring for global rewards
+      return [];
+    }
   });
 
-  // Redeem a reward using the new cart service
+  // Redeem a reward using the cart service
   const redeemReward = useMutation({
     mutationFn: async ({ rewardId, shippingAddress }: { rewardId: string, shippingAddress: any }) => {
       if (!user?.id || !rewardId) {
@@ -96,8 +84,6 @@ export const useRewards = (categoryId?: string) => {
       console.log('👤 User ID:', user.id);
       console.log('📦 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
 
-      // Call the new cart service edge function
-      console.log('🔗 Calling rye-cart-service edge function...');
       const { data, error } = await supabase.functions.invoke('rye-cart-service', {
         body: {
           action: 'redeem',
@@ -124,7 +110,7 @@ export const useRewards = (categoryId?: string) => {
       console.log('🎉 Redemption mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // Refresh user points
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       toast.success(`Reward redeemed successfully! Order ID: ${data.rye_order_id}`);
     },
     onError: (error) => {
