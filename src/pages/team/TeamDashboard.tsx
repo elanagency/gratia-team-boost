@@ -1,7 +1,6 @@
 
 import React from "react";
 import { TeamStats } from "@/components/team/TeamStats";
-import { RewardShop } from "@/components/team/RewardShop";
 import { RedemptionHistory } from "@/components/team/RedemptionHistory";
 import { PointsHistory } from "@/components/points/PointsHistory";
 
@@ -13,9 +12,6 @@ const TeamDashboard = () => {
       
       {/* Points History - Personal transactions */}
       <PointsHistory personalView={true} />
-      
-      {/* Reward Shop */}
-      <RewardShop />
       
       {/* Redemption History */}
       <RedemptionHistory />
