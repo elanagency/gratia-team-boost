@@ -75,7 +75,18 @@ serve(async (req) => {
       totalAmount
     });
 
-    // Create Stripe checkout session
+    // Get user's company ID for session metadata
+    const { data: memberData, error: memberError } = await supabaseService
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (memberError || !memberData) {
+      throw new Error("User is not a member of any company");
+    }
+
+    // Create Stripe checkout session with all necessary metadata
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -97,42 +108,15 @@ serve(async (req) => {
       metadata: {
         points_amount: pointsToAdd.toString(),
         user_id: user.id,
+        company_id: memberData.company_id,
         points_cost: pointsCost.toString(),
         stripe_fee: stripeFee.toString(),
         exchange_rate: exchangeRate.toString(),
+        total_amount: totalAmount.toString(),
       },
     });
 
-    // Get user's company ID
-    const { data: memberData, error: memberError } = await supabaseService
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (memberError || !memberData) {
-      throw new Error("User is not a member of any company");
-    }
-
-    // Insert transaction record
-    const { error: transactionError } = await supabaseService
-      .from('company_point_transactions')
-      .insert({
-        company_id: memberData.company_id,
-        amount: pointsToAdd,
-        description: `Stripe payment for ${pointsToAdd} points at $${exchangeRate} per point`,
-        created_by: user.id,
-        transaction_type: 'stripe_payment',
-        stripe_session_id: session.id,
-        stripe_fee: stripeFee,
-        payment_status: 'pending',
-        total_amount: totalAmount,
-      });
-
-    if (transactionError) {
-      console.error("Transaction insert error:", transactionError);
-      throw new Error("Failed to create transaction record");
-    }
+    // DO NOT create transaction record here - only create after payment is verified
 
     return new Response(
       JSON.stringify({ 
