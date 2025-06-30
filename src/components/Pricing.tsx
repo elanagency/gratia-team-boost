@@ -1,15 +1,11 @@
-
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Pricing = () => {
   return <section id="pricing" className="py-20 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-            Simple, Transparent Pricing
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Transparent Pricing</h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             No hidden fees, no complex tiers. Just $2.99 per employee per month.
           </p>
@@ -38,5 +34,4 @@ const Pricing = () => {
       </div>
     </section>;
 };
-
 export default Pricing;
