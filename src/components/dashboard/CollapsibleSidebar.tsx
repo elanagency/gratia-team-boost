@@ -91,9 +91,6 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
       
       <SidebarContent className="py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/70 px-6 mb-2">
-            {!isCollapsed && "Navigation"}
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map(item => (
@@ -102,7 +99,7 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
                     <Link 
                       to={item.path} 
                       className={`
-                        flex items-center gap-3 px-6 py-3 mx-3 rounded-md transition-colors
+                        flex items-center gap-3 px-4 py-3 mx-auto rounded-md transition-colors w-full max-w-[calc(100%-1.5rem)]
                         ${isActive(item.path) 
                           ? 'bg-[#F572FF]/20 text-[#F572FF] border-l-2 border-[#F572FF]' 
                           : 'text-white hover:bg-white/10'
