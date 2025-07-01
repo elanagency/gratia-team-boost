@@ -79,7 +79,7 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
   
   return (
     <Sidebar className="dark-sidebar border-r-0">
-      <SidebarHeader className="p-4 border-b border-white/10">
+      <SidebarHeader className="p-6 border-b border-white/10">
         <Link to={isTeamView ? "/dashboard-team" : "/dashboard"} className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
@@ -89,9 +89,9 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
         </Link>
       </SidebarHeader>
       
-      <SidebarContent className="py-4">
+      <SidebarContent className="py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/70 px-4">
+          <SidebarGroupLabel className="text-white/70 px-6 mb-2">
             {!isCollapsed && "Navigation"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -102,7 +102,7 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
                     <Link 
                       to={item.path} 
                       className={`
-                        flex items-center gap-3 px-4 py-3 mx-2 rounded-md transition-colors
+                        flex items-center gap-3 px-6 py-3 mx-3 rounded-md transition-colors
                         ${isActive(item.path) 
                           ? 'bg-[#F572FF]/20 text-[#F572FF] border-l-2 border-[#F572FF]' 
                           : 'text-white hover:bg-white/10'
@@ -120,7 +120,7 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-white/10 p-4">
+      <SidebarFooter className="border-t border-white/10 p-6">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
             {firstName ? firstName.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
