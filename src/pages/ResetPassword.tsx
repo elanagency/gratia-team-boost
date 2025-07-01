@@ -12,70 +12,64 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import AuthHeader from "@/components/auth/AuthHeader";
-
 const formSchema = z.object({
-  password: z.string()
-    .min(8, { message: "Password must be at least 8 characters long." })
-    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter." })
-    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter." })
-    .regex(/[0-9]/, { message: "Password must contain at least one number." }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters long."
+  }).regex(/[A-Z]/, {
+    message: "Password must contain at least one uppercase letter."
+  }).regex(/[a-z]/, {
+    message: "Password must contain at least one lowercase letter."
+  }).regex(/[0-9]/, {
+    message: "Password must contain at least one number."
+  }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"],
+  path: ["confirmPassword"]
 });
-
 type FormValues = z.infer<typeof formSchema>;
 
 // Function to parse hash fragments from URL
 const parseHashParams = (hash: string): Record<string, string> => {
   const params: Record<string, string> = {};
-  
+
   // Remove the # symbol if present
   const hashString = hash.replace(/^#/, '');
-  
   if (!hashString) return params;
-  
+
   // Split by & to get individual parameters
   const pairs = hashString.split('&');
-  
   pairs.forEach(pair => {
     const [key, value] = pair.split('=');
     if (key && value) {
       params[key] = decodeURIComponent(value);
     }
   });
-  
   return params;
 };
-
 const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
   const navigate = useNavigate();
-  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       password: "",
-      confirmPassword: "",
-    },
+      confirmPassword: ""
+    }
   });
-
   useEffect(() => {
     console.log("Current URL:", window.location.href);
     console.log("Hash:", window.location.hash);
-    
+
     // Parse hash fragments instead of query parameters
     const hashParams = parseHashParams(window.location.hash);
     console.log("Parsed hash params:", hashParams);
-    
     const accessToken = hashParams.access_token;
     const refreshToken = hashParams.refresh_token;
     const type = hashParams.type;
-
     if (!accessToken || !refreshToken || type !== 'recovery') {
       console.log("Missing required tokens or invalid type");
       setIsValidToken(false);
@@ -86,11 +80,12 @@ const ResetPassword = () => {
     // Set the session with the tokens from the URL hash
     const setSession = async () => {
       try {
-        const { error } = await supabase.auth.setSession({
+        const {
+          error
+        } = await supabase.auth.setSession({
           access_token: accessToken,
-          refresh_token: refreshToken,
+          refresh_token: refreshToken
         });
-        
         if (error) {
           console.error("Session error:", error);
           setIsValidToken(false);
@@ -105,21 +100,19 @@ const ResetPassword = () => {
         toast.error("Invalid or expired password reset link");
       }
     };
-
     setSession();
   }, []);
-
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: data.password,
+      const {
+        error
+      } = await supabase.auth.updateUser({
+        password: data.password
       });
-      
       if (error) {
         throw error;
       }
-      
       toast.success("Password updated successfully!");
       navigate("/login");
     } catch (error: any) {
@@ -129,10 +122,10 @@ const ResetPassword = () => {
       setIsLoading(false);
     }
   };
-
   if (isValidToken === null) {
-    return (
-      <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
+    return <div className="min-h-screen text-white flex flex-col" style={{
+      backgroundColor: '#0F0533'
+    }}>
         <Navbar />
         <div className="flex-1 flex items-center justify-center py-20 px-4">
           <div className="text-center">
@@ -141,13 +134,12 @@ const ResetPassword = () => {
           </div>
         </div>
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
   if (isValidToken === false) {
-    return (
-      <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
+    return <div className="min-h-screen text-white flex flex-col" style={{
+      backgroundColor: '#0F0533'
+    }}>
         <Navbar />
         
         <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
@@ -160,19 +152,10 @@ const ResetPassword = () => {
                   This password reset link is invalid or has expired. Please request a new one.
                 </p>
                 <div className="space-y-4">
-                  <Button
-                    onClick={() => navigate("/forgot-password")}
-                    className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-                  >
+                  <Button onClick={() => navigate("/forgot-password")} className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white">
                     Request New Reset Link
                   </Button>
-                  <Button
-                    onClick={() => navigate("/login")}
-                    variant="outline"
-                    className="w-full border-grattia-purple-light/20 text-white hover:bg-grattia-purple-dark/40"
-                  >
-                    Back to Login
-                  </Button>
+                  
                 </div>
               </div>
             </div>
@@ -180,12 +163,11 @@ const ResetPassword = () => {
         </div>
         
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
+  return <div className="min-h-screen text-white flex flex-col" style={{
+    backgroundColor: '#0F0533'
+  }}>
       <Navbar />
       
       <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
@@ -203,67 +185,37 @@ const ResetPassword = () => {
           <div className="mt-10">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="password" render={({
+                field
+              }) => <FormItem>
                       <FormLabel className="text-white">New Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
-                            className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10" 
-                            {...field} 
-                          />
-                          <button 
-                            type="button"
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
+                          <Input type={showPassword ? "text" : "password"} placeholder="••••••••" className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10" {...field} />
+                          <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400" onClick={() => setShowPassword(!showPassword)}>
                             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="confirmPassword" render={({
+                field
+              }) => <FormItem>
                       <FormLabel className="text-white">Confirm New Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Input 
-                            type={showConfirmPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
-                            className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10" 
-                            {...field} 
-                          />
-                          <button 
-                            type="button"
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
+                          <Input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10" {...field} />
+                          <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
                 
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-                >
+                <Button type="submit" disabled={isLoading} className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white">
                   {isLoading ? "Updating Password..." : "Update Password"}
                 </Button>
               </form>
@@ -273,8 +225,6 @@ const ResetPassword = () => {
       </div>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default ResetPassword;
