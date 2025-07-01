@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,11 +28,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     e.preventDefault();
     
     if (!email || !name) {
-      toast({
-        title: "Error",
-        description: "Please fill out all required fields",
-        variant: "destructive"
-      });
+      toast.error("Please fill out all required fields");
       return;
     }
     
@@ -69,10 +65,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setName('');
         setOpen(false);
         
-        toast({
-          title: "Team Slots Required",
-          description: "Redirecting to team slots purchase. Complete payment to add the team member."
-        });
+        toast.success("Team Slots Required - Redirecting to team slots purchase. Complete payment to add the team member.");
         
         setTimeout(() => {
           window.location.href = data.checkoutUrl;
@@ -84,21 +77,14 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       // Check if all slots are exhausted
       if (data.slotsExhausted) {
         console.log("All team slots are used");
-        toast({
-          title: "No Available Slots",
-          description: data.error || "All team slots are in use. Please upgrade your subscription.",
-          variant: "destructive"
-        });
+        toast.error(data.error || "All team slots are in use. Please upgrade your subscription.");
         return;
       }
 
       // Check if user was already a member
       if (data.alreadyMember) {
         console.log("User is already a member");
-        toast({
-          title: "Already a Member",
-          description: `${name} is already a member of this company.`
-        });
+        toast.info(`${name} is already a member of this company.`);
         return;
       }
       
@@ -109,28 +95,10 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       // Show appropriate success message based on email status
       if (data.emailSent) {
-        toast({
-          title: "Team Member Invited!",
-          description: `${name} has been added to the team and an invitation email has been sent with login details.`,
-          action: (
-            <div className="flex items-center gap-1 text-green-600">
-              <Mail className="h-4 w-4" />
-              <span className="text-sm">Email sent</span>
-            </div>
-          )
-        });
+        toast.success(`${name} has been added to the team and an invitation email has been sent with login details.`);
       } else {
         // Show warning if email failed but member was still created
-        toast({
-          title: "Team Member Added",
-          description: `${name} has been added to the team, but the invitation email could not be sent. Please contact them directly with their login details.`,
-          action: data.emailError ? (
-            <div className="flex items-center gap-1 text-amber-600">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">Email failed</span>
-            </div>
-          ) : undefined
-        });
+        toast.warning(`${name} has been added to the team, but the invitation email could not be sent. Please contact them directly with their login details.`);
       }
       
       if (onSuccess) {
@@ -138,11 +106,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       }
     } catch (error) {
       console.error("Error inviting team member:", error);
-      toast({
-        title: "Invitation Failed",
-        description: "Failed to invite team member. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to invite team member. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
