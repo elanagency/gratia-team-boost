@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,7 +13,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import AuthHeader from "@/components/auth/AuthHeader";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -83,7 +83,12 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <AuthHeader />
+            <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Roboto' }}>
+              Welcome back
+            </h1>
+            <p className="text-gray-300 text-lg">
+              Sign in to your account to continue
+            </p>
           </div>
           
           <div className="mt-10">
