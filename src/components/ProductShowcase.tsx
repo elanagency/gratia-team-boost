@@ -20,9 +20,9 @@ const ProductShowcase = () => {
           </p>
         </div>
         
-        <div className="relative min-h-[500px] flex items-center justify-center">
-          {/* Recognition Cards - Left Side */}
-          <div className="absolute left-0 md:left-10 top-10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <div className="relative min-h-[500px] md:min-h-[600px] flex flex-col md:flex-row items-center justify-center">
+          {/* Recognition Cards - Mobile: First in column, Desktop: Left Side */}
+          <div className="relative md:absolute md:left-0 md:left-10 md:top-10 mb-8 md:mb-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 max-w-xs transform hover:scale-105 transition-transform duration-300">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-grattia-pink rounded-full flex items-center justify-center">
@@ -48,7 +48,7 @@ const ProductShowcase = () => {
             </div>
           </div>
 
-          <div className="absolute left-8 md:left-24 top-64 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="relative md:absolute md:left-8 md:left-24 md:top-64 mb-8 md:mb-0 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 max-w-xs transform hover:scale-105 transition-transform duration-300">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-grattia-purple-light rounded-full flex items-center justify-center">
@@ -74,8 +74,8 @@ const ProductShowcase = () => {
             </div>
           </div>
 
-          {/* Reward Catalog - Center */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          {/* Reward Catalog - Mobile: Second in column, Desktop: Center */}
+          <div className="relative md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:top-8 mb-8 md:mb-0 animate-fade-in" style={{ animationDelay: '0.6s' }}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 w-80">
               <div className="flex items-center gap-2 mb-4">
                 <Gift className="h-5 w-5 text-grattia-pink" />
@@ -122,8 +122,8 @@ const ProductShowcase = () => {
             </div>
           </div>
 
-          {/* Points Dashboard - Right Side */}
-          <div className="absolute right-0 md:right-10 top-16 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+          {/* Points Dashboard - Mobile: Third in column, Desktop: Right Side */}
+          <div className="relative md:absolute md:right-0 md:right-10 md:top-16 mb-8 md:mb-0 animate-fade-in" style={{ animationDelay: '0.8s' }}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 max-w-xs transform hover:scale-105 transition-transform duration-300">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-grattia-pink" />
@@ -158,7 +158,7 @@ const ProductShowcase = () => {
             </div>
           </div>
 
-          <div className="absolute right-8 md:right-24 top-80 animate-fade-in" style={{ animationDelay: '1s' }}>
+          <div className="relative md:absolute md:right-8 md:right-24 md:top-80 animate-fade-in" style={{ animationDelay: '1s' }}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 max-w-xs">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
