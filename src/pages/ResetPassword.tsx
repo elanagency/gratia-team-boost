@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -6,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -28,13 +27,34 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Function to parse hash fragments from URL
+const parseHashParams = (hash: string): Record<string, string> => {
+  const params: Record<string, string> = {};
+  
+  // Remove the # symbol if present
+  const hashString = hash.replace(/^#/, '');
+  
+  if (!hashString) return params;
+  
+  // Split by & to get individual parameters
+  const pairs = hashString.split('&');
+  
+  pairs.forEach(pair => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      params[key] = decodeURIComponent(value);
+    }
+  });
+  
+  return params;
+};
+
 const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -45,18 +65,25 @@ const ResetPassword = () => {
   });
 
   useEffect(() => {
-    // Check if we have the necessary tokens in the URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const type = searchParams.get('type');
+    console.log("Current URL:", window.location.href);
+    console.log("Hash:", window.location.hash);
+    
+    // Parse hash fragments instead of query parameters
+    const hashParams = parseHashParams(window.location.hash);
+    console.log("Parsed hash params:", hashParams);
+    
+    const accessToken = hashParams.access_token;
+    const refreshToken = hashParams.refresh_token;
+    const type = hashParams.type;
 
     if (!accessToken || !refreshToken || type !== 'recovery') {
+      console.log("Missing required tokens or invalid type");
       setIsValidToken(false);
       toast.error("Invalid or expired password reset link");
       return;
     }
 
-    // Set the session with the tokens from the URL
+    // Set the session with the tokens from the URL hash
     const setSession = async () => {
       try {
         const { error } = await supabase.auth.setSession({
@@ -65,19 +92,22 @@ const ResetPassword = () => {
         });
         
         if (error) {
+          console.error("Session error:", error);
           setIsValidToken(false);
           toast.error("Invalid or expired password reset link");
         } else {
+          console.log("Session set successfully");
           setIsValidToken(true);
         }
       } catch (error) {
+        console.error("Exception setting session:", error);
         setIsValidToken(false);
         toast.error("Invalid or expired password reset link");
       }
     };
 
     setSession();
-  }, [searchParams]);
+  }, []);
 
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);

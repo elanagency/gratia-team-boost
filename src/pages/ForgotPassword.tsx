@@ -12,33 +12,56 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import AuthHeader from "@/components/auth/AuthHeader";
+
 const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address."
   })
 });
+
 type FormValues = z.infer<typeof formSchema>;
+
+// Function to get the correct redirect URL
+const getRedirectUrl = () => {
+  const currentOrigin = window.location.origin;
+  const currentHost = window.location.host;
+  
+  console.log("Current origin:", currentOrigin);
+  console.log("Current host:", currentHost);
+  console.log("Current href:", window.location.href);
+  
+  // Use the current origin directly - this should work for all environments
+  const redirectUrl = `${currentOrigin}/reset-password`;
+  console.log("Redirect URL will be:", redirectUrl);
+  
+  return redirectUrl;
+};
+
 const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
   const navigate = useNavigate();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: ""
     }
   });
+
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      const {
-        error
-      } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`
+      const redirectUrl = getRedirectUrl();
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: redirectUrl
       });
+
       if (error) {
         throw error;
       }
+
       setIsEmailSent(true);
       toast.success("Password reset email sent! Check your inbox.");
     } catch (error: any) {
@@ -48,6 +71,7 @@ const ForgotPassword = () => {
       setIsLoading(false);
     }
   };
+
   if (isEmailSent) {
     return <div className="min-h-screen text-white flex flex-col" style={{
       backgroundColor: '#0F0533'
@@ -80,6 +104,7 @@ const ForgotPassword = () => {
         <Footer />
       </div>;
   }
+
   return <div className="min-h-screen text-white flex flex-col" style={{
     backgroundColor: '#0F0533'
   }}>
@@ -129,4 +154,5 @@ const ForgotPassword = () => {
       <Footer />
     </div>;
 };
+
 export default ForgotPassword;
