@@ -7,81 +7,63 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-
-interface PasswordInfo {
-  isNewUser: boolean;
-  password: string;
-  email: string;
-  name: string;
-}
+import { Copy, CheckCircle } from "lucide-react";
+import { useState } from "react";
 
 interface PasswordDisplayDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  passwordInfo: PasswordInfo;
+  passwordInfo: {
+    isNewUser: boolean;
+    password: string;
+    email: string;
+    name: string;
+  };
   onClose: () => void;
 }
 
-const PasswordDisplayDialog = ({
-  open,
-  onOpenChange,
-  passwordInfo,
-  onClose,
+const PasswordDisplayDialog = ({ 
+  open, 
+  onOpenChange, 
+  passwordInfo, 
+  onClose 
 }: PasswordDisplayDialogProps) => {
-  const copyPasswordToClipboard = () => {
-    navigator.clipboard.writeText(passwordInfo.password)
-      .then(() => {
-        toast.success("Password copied to clipboard");
-      })
-      .catch(() => {
-        toast.error("Failed to copy password");
-      });
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
+  // This component is deprecated but kept for backward compatibility
+  // New invitations use email-based credential delivery
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>New Team Member Created</DialogTitle>
+          <DialogTitle>Team Member Added Successfully!</DialogTitle>
           <DialogDescription>
-            A new account has been created for {passwordInfo.name}. Share these temporary credentials with them.
+            <strong>Note:</strong> This dialog is deprecated. New team members now receive their login credentials via email automatically.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Email</Label>
-            <div className="col-span-3 bg-gray-100 p-2 rounded text-sm">
-              {passwordInfo.email}
-            </div>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Password</Label>
-            <div className="col-span-3 bg-gray-100 p-2 rounded text-sm font-mono flex items-center justify-between">
-              {passwordInfo.password}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={copyPasswordToClipboard} 
-                className="ml-2"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="text-sm text-amber-600 mt-2">
-            <strong>Important:</strong> This password will only be shown once. Make sure to copy it before closing this dialog.
-          </div>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>{passwordInfo.name}</strong> has been added to your team and should have received an email with login instructions.
+          </p>
         </div>
-        <Button 
-          onClick={onClose} 
-          className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
-        >
-          Done
-        </Button>
+        
+        <div className="flex justify-end">
+          <Button onClick={onClose} className="bg-[#F572FF] hover:bg-[#E061EE] text-white">
+            Close
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
