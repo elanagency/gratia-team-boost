@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,36 +12,33 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import AuthHeader from "@/components/auth/AuthHeader";
-
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
+  email: z.string().email({
+    message: "Please enter a valid email address."
+  })
 });
-
 type FormValues = z.infer<typeof formSchema>;
-
 const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
   const navigate = useNavigate();
-  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-    },
+      email: ""
+    }
   });
-
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const {
+        error
+      } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
-      
       if (error) {
         throw error;
       }
-      
       setIsEmailSent(true);
       toast.success("Password reset email sent! Check your inbox.");
     } catch (error: any) {
@@ -52,10 +48,10 @@ const ForgotPassword = () => {
       setIsLoading(false);
     }
   };
-
   if (isEmailSent) {
-    return (
-      <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
+    return <div className="min-h-screen text-white flex flex-col" style={{
+      backgroundColor: '#0F0533'
+    }}>
         <Navbar />
         
         <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
@@ -71,17 +67,8 @@ const ForgotPassword = () => {
                   Didn't receive the email? Check your spam folder or try again.
                 </p>
                 <div className="space-y-4">
-                  <Button 
-                    onClick={() => setIsEmailSent(false)}
-                    variant="outline"
-                    className="w-full border-grattia-purple-light/20 text-white hover:bg-grattia-purple-dark/40"
-                  >
-                    Try Again
-                  </Button>
-                  <Button
-                    onClick={() => navigate("/login")}
-                    className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-                  >
+                  
+                  <Button onClick={() => navigate("/login")} className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white">
                     Back to Login
                   </Button>
                 </div>
@@ -91,12 +78,11 @@ const ForgotPassword = () => {
         </div>
         
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
+  return <div className="min-h-screen text-white flex flex-col" style={{
+    backgroundColor: '#0F0533'
+  }}>
       <Navbar />
       
       <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
@@ -114,39 +100,22 @@ const ForgotPassword = () => {
           <div className="mt-10">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="email" render={({
+                field
+              }) => <FormItem>
                       <FormLabel className="text-white">Email Address</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="john@example.com" 
-                          className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" 
-                          {...field} 
-                        />
+                        <Input type="email" placeholder="john@example.com" className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
                 
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-                >
+                <Button type="submit" disabled={isLoading} className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white">
                   {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
                 
                 <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/login")}
-                    className="inline-flex items-center text-sm text-gray-400 hover:text-white"
-                  >
+                  <button type="button" onClick={() => navigate("/login")} className="inline-flex items-center text-sm text-gray-400 hover:text-white">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Login
                   </button>
@@ -158,8 +127,6 @@ const ForgotPassword = () => {
       </div>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default ForgotPassword;
