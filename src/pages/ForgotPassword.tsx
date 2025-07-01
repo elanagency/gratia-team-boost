@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -11,7 +12,6 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import AuthHeader from "@/components/auth/AuthHeader";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -73,7 +73,13 @@ const ForgotPassword = () => {
         <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center">
-              <AuthHeader />
+              <div className="mb-6">
+                <img 
+                  alt="Grattia Logo" 
+                  className="h-12 w-auto mx-auto mb-4" 
+                  src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
+                />
+              </div>
               <div className="mt-8">
                 <h2 className="text-2xl font-bold text-white mb-4">Check Your Email</h2>
                 <p className="text-gray-300 mb-6">
@@ -105,9 +111,15 @@ const ForgotPassword = () => {
       <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <AuthHeader />
+            <div className="mb-6">
+              <img 
+                alt="Grattia Logo" 
+                className="h-12 w-auto mx-auto mb-4" 
+                src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
+              />
+            </div>
             <div className="mt-8">
-              <h2 className="text-2xl font-bold text-white mb-2">Reset Your Password</h2>
+              <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Roboto' }}>Reset Your Password</h2>
               <p className="text-gray-300">
                 Enter your email address and we'll send you a link to reset your password.
               </p>
