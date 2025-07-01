@@ -21,17 +21,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Function to get the correct redirect URL
+// Function to get the correct redirect URL - hardcoded to grattia.com
 const getRedirectUrl = () => {
-  const currentOrigin = window.location.origin;
-  const currentHost = window.location.host;
-  
-  console.log("Current origin:", currentOrigin);
-  console.log("Current host:", currentHost);
-  console.log("Current href:", window.location.href);
-  
-  // Use the current origin directly - this should work for all environments
-  const redirectUrl = `${currentOrigin}/reset-password`;
+  const redirectUrl = "https://grattia.com/reset-password";
   console.log("Redirect URL will be:", redirectUrl);
   
   return redirectUrl;
