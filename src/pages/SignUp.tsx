@@ -1,7 +1,6 @@
 
 import React from "react";
 import SignUpForm from "@/components/auth/SignUpForm";
-import AuthHeader from "@/components/auth/AuthHeader";
 import { Link } from "react-router-dom";
 
 const SignUp = () => {
@@ -21,7 +20,6 @@ const SignUp = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md space-y-6">
-          <AuthHeader />
           <SignUpForm />
         </div>
       </div>
