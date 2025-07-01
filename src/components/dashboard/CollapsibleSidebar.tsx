@@ -80,13 +80,12 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
   return (
     <Sidebar className="dark-sidebar border-r-0">
       <SidebarHeader className="p-4 border-b border-white/10">
-        <Link to={isTeamView ? "/dashboard-team" : "/dashboard"} className="flex items-center">
+        <Link to={isTeamView ? "/dashboard-team" : "/dashboard"} className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
             alt="Grattia Logo" 
             className="h-8 w-auto" 
           />
-          {!isCollapsed && <span className="ml-2 text-white font-semibold">Grattia</span>}
         </Link>
       </SidebarHeader>
       
