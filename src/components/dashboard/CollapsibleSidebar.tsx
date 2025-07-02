@@ -118,35 +118,40 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
       </SidebarContent>
 
       <SidebarFooter className="border-t border-white/10 p-6">
-        <div className="flex items-center gap-3">
+        <Link 
+          to={isTeamView ? "/dashboard-team/profile" : "/dashboard/profile"}
+          className="flex items-center gap-3 hover:bg-white/10 p-2 rounded-md transition-colors group"
+        >
           <div className="w-8 h-8 bg-[#F572FF] rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
             {firstName ? firstName.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{displayName}</p>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-white/70 truncate">{user?.email}</p>
-                <button 
-                  onClick={handleLogout} 
-                  className="ml-2 text-white/70 hover:text-white transition-colors"
-                  title="Sign out"
-                >
-                  <LogOut size={16} />
-                </button>
-              </div>
+              <p className="text-sm font-medium text-white truncate group-hover:text-white/90">{displayName}</p>
+              <p className="text-xs text-white/70 truncate group-hover:text-white/80">{user?.email}</p>
             </div>
           )}
-          {isCollapsed && (
-            <button 
-              onClick={handleLogout} 
-              className="text-white/70 hover:text-white transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={18} />
-            </button>
-          )}
-        </div>
+        </Link>
+        
+        {!isCollapsed && (
+          <button 
+            onClick={handleLogout} 
+            className="mt-2 w-full flex items-center gap-3 px-2 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+          >
+            <LogOut size={16} />
+            <span>Sign out</span>
+          </button>
+        )}
+        
+        {isCollapsed && (
+          <button 
+            onClick={handleLogout} 
+            className="mt-2 flex items-center justify-center p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={18} />
+          </button>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
