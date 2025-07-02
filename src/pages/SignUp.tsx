@@ -1,30 +1,23 @@
 
 import React from "react";
 import SignUpForm from "@/components/auth/SignUpForm";
-import AuthHeader from "@/components/auth/AuthHeader";
 import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const SignUp = () => {
   return (
     <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
-      {/* Centered logo */}
-      <div className="flex justify-center pt-8 pb-4">
-        <Link to="/">
-          <img 
-            src="/lovable-uploads/a81380be-c852-4afc-a6f8-7b72de94f671.png" 
-            alt="Grattia Logo" 
-            className="h-12 w-auto cursor-pointer"
-          />
-        </Link>
-      </div>
+      <Navbar />
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+      <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 sm:px-8">
         <div className="w-full max-w-md space-y-6">
-          <AuthHeader />
           <SignUpForm />
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

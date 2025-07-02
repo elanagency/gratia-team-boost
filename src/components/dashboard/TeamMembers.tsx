@@ -14,13 +14,13 @@ export const TeamMembers = () => {
 
   return (
     <Card className="dashboard-card h-full">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800">Your team</h2>
-        <Link to="/dashboard/team" className="text-sm text-[#F572FF] flex items-center">
-          View All <ChevronRight size={16} />
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-800">Your team</h2>
+        <Link to="/dashboard/team" className="text-xs sm:text-sm text-[#F572FF] flex items-center whitespace-nowrap">
+          View All <ChevronRight size={16} className="ml-1" />
         </Link>
       </div>
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-24">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#F572FF]"></div>
@@ -28,22 +28,22 @@ export const TeamMembers = () => {
         ) : displayMembers.length > 0 ? (
           displayMembers.map((member) => (
             <div key={member.id} className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF] font-medium">
+              <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF] font-medium flex-shrink-0">
                 {member.name.charAt(0)}
               </div>
-              <div className="ml-3 flex-1">
-                <p className="font-medium text-gray-800">{member.name}</p>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{member.name}</p>
                 <p className="text-xs text-gray-500">Team Member</p>
               </div>
-              <div className="ml-auto flex items-center">
+              <div className="ml-auto flex items-center flex-shrink-0">
                 <span className="text-sm font-medium mr-1 text-[#F572FF]">{member.points}</span>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">points</span>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">points</span>
               </div>
             </div>
           ))
         ) : (
           <div className="text-center py-6 text-gray-500">
-            No team members found
+            <p className="text-sm">No team members found</p>
           </div>
         )}
       </div>

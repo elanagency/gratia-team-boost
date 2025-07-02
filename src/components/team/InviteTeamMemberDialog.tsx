@@ -9,12 +9,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
-import PasswordDisplayDialog from "./PasswordDisplayDialog";
 import InviteForm from "./InviteForm";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -24,14 +23,6 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
-  
-  const [passwordInfo, setPasswordInfo] = useState({ 
-    isNewUser: false, 
-    password: "", 
-    email: "",
-    name: ""
-  });
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +65,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setName('');
         setOpen(false);
         
-        toast.success("Redirecting to team slots purchase. Complete payment to add the team member.");
+        toast.success("Team Slots Required - Redirecting to team slots purchase. Complete payment to add the team member.");
         
         setTimeout(() => {
           window.location.href = data.checkoutUrl;
@@ -89,42 +80,29 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         toast.error(data.error || "All team slots are in use. Please upgrade your subscription.");
         return;
       }
+
+      // Check if user was already a member
+      if (data.alreadyMember) {
+        console.log("User is already a member");
+        toast.info(`${name} is already a member of this company.`);
+        return;
+      }
       
-      // Normal flow - member was created successfully
-      if (data.isNewUser && data.password) {
-        console.log("New user created, showing password dialog");
-        
-        // Store the current form data for the password dialog
-        const currentEmail = email;
-        const currentName = name;
-        
-        // Clear form first
-        setEmail('');
-        setName('');
-        
-        // Set password info with the stored data
-        setPasswordInfo({
-          isNewUser: true,
-          password: data.password,
-          email: currentEmail,
-          name: currentName
-        });
-        
-        // Show password dialog
-        setShowPasswordDialog(true);
-        console.log("Password dialog state set to:", true);
+      // Success - member was created
+      setOpen(false);
+      setEmail('');
+      setName('');
+      
+      // Show appropriate success message based on email status
+      if (data.emailSent) {
+        toast.success(`${name} has been added to the team and an invitation email has been sent with login details.`);
       } else {
-        console.log("Existing user invited");
-        setOpen(false);
-        
-        setEmail('');
-        setName('');
-        
-        toast.success(`${name} has been invited to join the team!`);
-        
-        if (onSuccess) {
-          onSuccess();
-        }
+        // Show warning if email failed but member was still created
+        toast.warning(`${name} has been added to the team, but the invitation email could not be sent. Please contact them directly with their login details.`);
+      }
+      
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       console.error("Error inviting team member:", error);
@@ -134,98 +112,76 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   };
   
-  const closePasswordDialog = () => {
-    console.log("Closing password dialog");
-    setShowPasswordDialog(false);
-    setOpen(false);
-    
-    if (onSuccess) {
-      console.log("Calling onSuccess callback");
-      onSuccess();
-    }
-    
-    toast.success(`${passwordInfo.name} has been added to the team!`);
-  };
-  
   const handleOpenChange = (newOpen: boolean) => {
-    // Don't allow closing the main dialog if password dialog is open
-    if (showPasswordDialog && !newOpen) {
-      return;
-    }
     setOpen(newOpen);
   };
 
   const canAddMembers = teamSlots.total > 0 && teamSlots.available > 0;
   
   return (
-    <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="default" 
-            className="bg-[#F572FF] hover:bg-[#E061EE] text-white"
-            disabled={!canAddMembers}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Invite Team Member
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Invite a team member</DialogTitle>
-            <DialogDescription>
-              Add a new team member to your company. All members will be added as team members.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {teamSlots.total === 0 ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
-              <p className="text-sm text-amber-700 mb-3">
-                You need to purchase team slots before adding members. 
-                The first member will trigger the billing setup process.
-              </p>
-              <p className="text-xs text-amber-600">
-                • $2.99 per team slot per month<br/>
-                • Choose any number of slots you need<br/>
-                • Add members up to your slot limit
-              </p>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="default" 
+          className="bg-[#F572FF] hover:bg-[#E061EE] text-white"
+          disabled={!canAddMembers}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Invite Team Member
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Invite a team member</DialogTitle>
+          <DialogDescription>
+            Add a new team member to your company. They will receive an email with login details and a link to access the platform.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {teamSlots.total === 0 ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
+            <p className="text-sm text-amber-700 mb-3">
+              You need to purchase team slots before adding members. 
+              The first member will trigger the billing setup process.
+            </p>
+            <p className="text-xs text-amber-600">
+              • $2.99 per team slot per month<br/>
+              • Choose any number of slots you need<br/>
+              • Add members up to your slot limit
+            </p>
+          </div>
+        ) : teamSlots.available === 0 ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="font-medium text-red-800 mb-2">No Available Slots</h4>
+            <p className="text-sm text-red-700 mb-3">
+              All {teamSlots.total} team slots are in use. Upgrade your subscription to add more members.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 className="font-medium text-green-800 mb-2">Team Slots Available</h4>
+            <p className="text-sm text-green-700 mb-2">
+              {teamSlots.available} of {teamSlots.total} slots available for new team members.
+            </p>
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Mail className="h-4 w-4" />
+              <span>Invitation emails will be sent automatically</span>
             </div>
-          ) : teamSlots.available === 0 ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="font-medium text-red-800 mb-2">No Available Slots</h4>
-              <p className="text-sm text-red-700 mb-3">
-                All {teamSlots.total} team slots are in use. Upgrade your subscription to add more members.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="font-medium text-green-800 mb-2">Team Slots Available</h4>
-              <p className="text-sm text-green-700">
-                {teamSlots.available} of {teamSlots.total} slots available for new team members.
-              </p>
-            </div>
-          )}
-          
-          <InviteForm
-            email={email}
-            setEmail={setEmail}
-            name={name}
-            setName={setName}
-            isSubmitting={isSubmitting}
-            isFirstMember={teamSlots.total === 0}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <PasswordDisplayDialog
-        open={showPasswordDialog}
-        onOpenChange={setShowPasswordDialog}
-        passwordInfo={passwordInfo}
-        onClose={closePasswordDialog}
-      />
-    </>
+          </div>
+        )}
+        
+        <InviteForm
+          email={email}
+          setEmail={setEmail}
+          name={name}
+          setName={setName}
+          isSubmitting={isSubmitting}
+          isFirstMember={teamSlots.total === 0}
+          onSubmit={handleSubmit}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
 

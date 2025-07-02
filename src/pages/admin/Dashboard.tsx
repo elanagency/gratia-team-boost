@@ -60,11 +60,11 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-0">
       {/* Header with Give Points button */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+        <div className="flex-shrink-0">
           <GivePointsDialog />
         </div>
       </div>
@@ -76,11 +76,11 @@ const Dashboard = () => {
         companyPoints={companyPoints}
       />
 
-      {/* Leaderboard */}
-      <LeaderboardCard />
-
-      {/* Team section */}
-      <TeamMembers />
+      {/* Leaderboard and Team section - Stack on mobile, side by side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <LeaderboardCard />
+        <TeamMembers />
+      </div>
 
       {/* Points History */}
       <PointsHistory />

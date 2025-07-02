@@ -7,6 +7,8 @@ import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -27,6 +29,7 @@ import RewardShop from "./pages/team/RewardShop";
 import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import CompaniesManagement from "./pages/platform/CompaniesManagement";
+import PlatformRewardsCatalog from "./pages/platform/PlatformRewardsCatalog";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
 
@@ -72,6 +75,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               
               {/* Add redirect from old admin routes to new dashboard routes */}
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
@@ -81,6 +86,7 @@ const App = () => (
               <Route path="/platform-admin" element={<PlatformAdminLayout />}>
                 <Route index element={<PlatformDashboard />} />
                 <Route path="companies" element={<CompaniesManagement />} />
+                <Route path="rewards" element={<PlatformRewardsCatalog />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
               </Route>

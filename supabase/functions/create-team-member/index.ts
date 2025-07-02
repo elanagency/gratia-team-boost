@@ -50,6 +50,43 @@ function parseFullName(fullName: string): { firstName: string; lastName: string 
   return { firstName, lastName };
 }
 
+// Send invitation email
+async function sendInvitationEmail(emailData: {
+  email: string;
+  name: string;
+  companyName: string;
+  isNewUser: boolean;
+  password?: string;
+  origin: string;
+}, authHeader: string) {
+  try {
+    console.log("[CREATE-TEAM-MEMBER] Sending invitation email to:", emailData.email);
+    
+    const emailResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-invitation-email`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+        'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
+      },
+      body: JSON.stringify(emailData)
+    });
+    
+    if (!emailResponse.ok) {
+      const errorData = await emailResponse.text();
+      console.error("[CREATE-TEAM-MEMBER] Email sending failed:", errorData);
+      throw new Error(`Failed to send invitation email: ${emailResponse.status}`);
+    }
+    
+    const emailResult = await emailResponse.json();
+    console.log("[CREATE-TEAM-MEMBER] Invitation email sent successfully:", emailResult);
+    return emailResult;
+  } catch (error) {
+    console.error("[CREATE-TEAM-MEMBER] Error sending invitation email:", error);
+    throw error;
+  }
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -89,10 +126,10 @@ serve(async (req: Request) => {
       }
     );
     
-    // Check company's team slots availability
+    // Check company's team slots availability and get company name
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
-      .select('team_slots, subscription_status, stripe_subscription_id')
+      .select('team_slots, subscription_status, stripe_subscription_id, name')
       .eq('id', companyId)
       .single();
 
@@ -335,6 +372,29 @@ serve(async (req: Request) => {
     }
     
     console.log("[CREATE-TEAM-MEMBER] Added user to company successfully");
+
+    // Send invitation email
+    let emailSent = false;
+    let emailError = null;
+    
+    if (authHeader && origin) {
+      try {
+        await sendInvitationEmail({
+          email,
+          name,
+          companyName: company.name,
+          isNewUser,
+          password: isNewUser ? password : undefined,
+          origin
+        }, authHeader);
+        emailSent = true;
+        console.log("[CREATE-TEAM-MEMBER] Invitation email sent successfully");
+      } catch (error) {
+        console.error("[CREATE-TEAM-MEMBER] Failed to send invitation email:", error);
+        emailError = error.message;
+        // Don't fail the entire operation if email fails
+      }
+    }
     
     // Get updated slot usage
     const { data: newUsedSlots } = await supabaseAdmin
@@ -351,12 +411,14 @@ serve(async (req: Request) => {
       usedSlots: finalUsedSlots,
       availableSlots: availableSlots,
       needsBillingSetup: false,
-      ...(isNewUser && password ? { password } : {}),
+      emailSent,
+      emailError,
+      // Don't include password in response since it's sent via email
     };
 
     console.log("[CREATE-TEAM-MEMBER] Final response:", {
       ...response,
-      password: password ? "[REDACTED]" : undefined
+      password: password ? "[SENT_VIA_EMAIL]" : undefined
     });
     
     return new Response(

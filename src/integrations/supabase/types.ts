@@ -82,6 +82,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
+          team_member_monthly_limit: number | null
           team_slots: number | null
           updated_at: string
           website: string | null
@@ -98,6 +99,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          team_member_monthly_limit?: number | null
           team_slots?: number | null
           updated_at?: string
           website?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          team_member_monthly_limit?: number | null
           team_slots?: number | null
           updated_at?: string
           website?: string | null
@@ -213,6 +216,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      member_monthly_spending: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          month_year: string
+          points_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          month_year: string
+          points_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          month_year?: string
+          points_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       platform_payment_methods: {
         Row: {
@@ -480,12 +513,13 @@ export type Database = {
       }
       rewards: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string
           description: string | null
           external_id: string | null
           id: string
           image_url: string | null
+          is_global: boolean
           name: string
           points_cost: number
           rye_product_url: string | null
@@ -493,12 +527,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           external_id?: string | null
           id?: string
           image_url?: string | null
+          is_global?: boolean
           name: string
           points_cost: number
           rye_product_url?: string | null
@@ -506,12 +541,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           external_id?: string | null
           id?: string
           image_url?: string | null
+          is_global?: boolean
           name?: string
           points_cost?: number
           rye_product_url?: string | null
@@ -592,6 +628,10 @@ export type Database = {
         }
         Returns: number
       }
+      can_user_spend_points: {
+        Args: { user_id: string; company_id: string; points_to_spend: number }
+        Returns: boolean
+      }
       check_company_membership: {
         Args: { user_id: string; company_id: string }
         Returns: boolean
@@ -610,6 +650,10 @@ export type Database = {
       }
       get_used_team_slots: {
         Args: { company_id: string }
+        Returns: number
+      }
+      get_user_monthly_spending: {
+        Args: { user_id: string; company_id: string }
         Returns: number
       }
       has_available_team_slots: {

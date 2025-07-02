@@ -113,33 +113,33 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
 
   return (
     <Card className="dashboard-card">
-      <CardHeader>
-        <CardTitle>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-lg">
           {personalView ? "My Point Transactions" : "Recent Point Transactions"}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs sm:text-sm">
           {personalView ? "Points you've sent and received" : "Recent recognitions across your team"}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 sm:p-6 pt-0">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[#F572FF]" />
           </div>
         ) : transactions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {transactions.map((transaction) => (
-              <div key={transaction.id} className="border-b border-gray-100 pb-4 last:border-0">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-medium">
-                      <span className="text-[#F572FF]">{transaction.sender_name}</span> gave{' '}
+              <div key={transaction.id} className="border-b border-gray-100 pb-3 sm:pb-4 last:border-0">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs sm:text-sm">
+                      <span className="text-[#F572FF] truncate">{transaction.sender_name}</span> gave{' '}
                       <span className="text-[#F572FF]">{transaction.points} points</span> to{' '}
-                      <span className="text-[#F572FF]">{transaction.recipient_name}</span>
+                      <span className="text-[#F572FF] truncate">{transaction.recipient_name}</span>
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">{transaction.description}</p>
+                    <p className="mt-1 text-xs text-gray-600 line-clamp-2">{transaction.description}</p>
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 flex-shrink-0">
                     {format(new Date(transaction.created_at), 'MMM d, yyyy')}
                   </div>
                 </div>
@@ -148,8 +148,8 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <p>{personalView ? "No personal point transactions yet" : "No point transactions yet"}</p>
-            <p className="text-sm mt-2">
+            <p className="text-sm">{personalView ? "No personal point transactions yet" : "No point transactions yet"}</p>
+            <p className="text-xs sm:text-sm mt-2">
               {personalView ? "When you send or receive points, they will appear here" : "Start giving points to recognize team members"}
             </p>
           </div>

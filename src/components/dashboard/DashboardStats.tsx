@@ -94,17 +94,17 @@ export const DashboardStats = ({ teamCount, isLoading, companyPoints }: Dashboar
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {stats.map((stat, index) => (
-        <Card key={index} className="dashboard-card p-6">
+        <Card key={index} className="dashboard-card p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">{stat.title}</p>
-              <h3 className="text-2xl font-semibold mt-1">{stat.value}</h3>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-gray-500 text-xs sm:text-sm truncate">{stat.title}</p>
+              <h3 className="text-lg sm:text-2xl font-semibold mt-1 truncate">{stat.value}</h3>
+              <p className="text-xs text-gray-500 mt-1 truncate">{stat.description}</p>
             </div>
-            <div className={`h-12 w-12 rounded-full flex items-center justify-center bg-[#F572FF]/10`}>
-              <stat.icon className="h-6 w-6 text-[#F572FF]" />
+            <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center bg-[#F572FF]/10 flex-shrink-0 ml-2`}>
+              <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 text-[#F572FF]" />
             </div>
           </div>
         </Card>

@@ -11,6 +11,7 @@ interface Reward {
   points_cost: number;
   image_url: string;
   stock?: number;
+  company_id?: string | null;
 }
 
 interface RewardCardProps {

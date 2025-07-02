@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Dialog, DialogContent, DialogDescription, 
@@ -12,10 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useMonthlySpending } from "@/hooks/useMonthlySpending";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
-export function GivePointsDialog() {
+interface GivePointsDialogProps {
+  isTeamMember?: boolean;
+}
+
+export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -28,13 +33,17 @@ export function GivePointsDialog() {
   const [companyPoints, setCompanyPoints] = useState(0);
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
   
-  const { user, companyId } = useAuth();
+  const { user, companyId, isAdmin } = useAuth();
+  const { monthlySpent, monthlyLimit, monthlyRemaining } = useMonthlySpending();
+  const queryClient = useQueryClient();
 
   // Fetch team members when dialog opens
   useEffect(() => {
     if (open && companyId) {
       fetchTeamMembers();
-      fetchCompanyPoints();
+      if (isAdmin) {
+        fetchCompanyPoints();
+      }
     } else {
       // Reset state when dialog closes
       setSearchQuery("");
@@ -43,7 +52,16 @@ export function GivePointsDialog() {
       setPoints(1);
       setShowInsufficientPoints(false);
     }
-  }, [open, companyId]);
+  }, [open, companyId, isAdmin]);
+
+  // Check spending limits when points change
+  useEffect(() => {
+    if (isTeamMember && !isAdmin) {
+      setShowInsufficientPoints(points > monthlyRemaining);
+    } else if (isAdmin) {
+      setShowInsufficientPoints(points > companyPoints);
+    }
+  }, [points, monthlyRemaining, companyPoints, isTeamMember, isAdmin]);
 
   // Filter members based on search query
   useEffect(() => {
@@ -60,7 +78,7 @@ export function GivePointsDialog() {
     }
   }, [searchQuery, teamMembers]);
 
-  // Fetch company points balance
+  // Fetch company points balance (only for admins)
   const fetchCompanyPoints = async () => {
     if (!companyId) return;
 
@@ -159,10 +177,19 @@ export function GivePointsDialog() {
       return;
     }
 
-    // Check if company has enough points
-    if (points > companyPoints) {
-      setShowInsufficientPoints(true);
-      return;
+    // Check limits based on user type
+    if (isAdmin) {
+      // Admins check company balance
+      if (points > companyPoints) {
+        setShowInsufficientPoints(true);
+        return;
+      }
+    } else {
+      // Team members check personal monthly limit
+      if (points > monthlyRemaining) {
+        setShowInsufficientPoints(true);
+        return;
+      }
     }
 
     try {
@@ -182,7 +209,15 @@ export function GivePointsDialog() {
       if (error) throw error;
 
       toast.success(`Successfully gave ${points} points to ${selectedMember.name}`);
-      await fetchCompanyPoints(); // Refresh company points balance
+      
+      // Invalidate relevant queries to refresh the data
+      await queryClient.invalidateQueries({ queryKey: ['monthlySpending'] });
+      
+      // Refresh data based on user type
+      if (isAdmin) {
+        await fetchCompanyPoints();
+      }
+      
       setOpen(false);
     } catch (error) {
       console.error("Error giving points:", error);
@@ -191,6 +226,9 @@ export function GivePointsDialog() {
       setIsSubmitting(false);
     }
   };
+
+  const availablePoints = isAdmin ? companyPoints : monthlyRemaining;
+  const balanceLabel = isAdmin ? "Company Points Balance" : "Monthly Remaining";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -208,21 +246,31 @@ export function GivePointsDialog() {
           </DialogDescription>
         </DialogHeader>
         
-        {/* Company points balance info */}
+        {/* Points balance info */}
         <div className="bg-gray-50 p-3 rounded-md mb-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Company Points Balance:</span>
-            <span className="font-semibold">{companyPoints} points</span>
+            <span className="text-sm font-medium">{balanceLabel}:</span>
+            <span className="font-semibold">{availablePoints} points</span>
           </div>
+          {!isAdmin && monthlyLimit > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              Used this month: {monthlySpent} / {monthlyLimit} points
+            </div>
+          )}
         </div>
         
         {showInsufficientPoints && (
           <div className="bg-red-50 border border-red-200 p-3 rounded-md mb-4 flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-600">Insufficient points balance</p>
+              <p className="text-sm font-medium text-red-600">
+                {isAdmin ? "Insufficient points balance" : "Monthly limit exceeded"}
+              </p>
               <p className="text-xs text-red-500">
-                Your company doesn't have enough points. Please top up your points balance in the Settings page.
+                {isAdmin 
+                  ? "Your company doesn't have enough points. Please top up your points balance in the Settings page."
+                  : `You can only give ${monthlyRemaining} more points this month. Your monthly limit is ${monthlyLimit} points.`
+                }
               </p>
             </div>
           </div>
@@ -300,16 +348,15 @@ export function GivePointsDialog() {
                 id="points" 
                 type="number" 
                 min="1" 
-                max={companyPoints}
+                max={availablePoints}
                 value={points}
                 onChange={(e) => {
                   const value = parseInt(e.target.value) || 1;
                   setPoints(value);
-                  setShowInsufficientPoints(value > companyPoints);
                 }}
               />
-              {companyPoints > 0 && (
-                <p className="text-xs text-gray-500">Maximum: {companyPoints} points</p>
+              {availablePoints > 0 && (
+                <p className="text-xs text-gray-500">Maximum: {availablePoints} points</p>
               )}
             </div>
             
@@ -330,7 +377,7 @@ export function GivePointsDialog() {
           {selectedMember && (
             <Button 
               onClick={handleSubmit} 
-              disabled={!selectedMember || !description || points < 1 || isSubmitting || points > companyPoints}
+              disabled={!selectedMember || !description || points < 1 || isSubmitting || points > availablePoints}
               className="bg-[#F572FF] hover:bg-[#E061EE]"
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
