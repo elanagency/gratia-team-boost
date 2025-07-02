@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Award, Gift, CreditCard, Settings, LogOut, UserCircle } from "lucide-react";
 import {
@@ -15,6 +14,17 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type CollapsibleSidebarProps = {
   user: any;
@@ -28,6 +38,7 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
   const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
   // Menu items for admin sidebar
   const adminMenuItems = [{
@@ -76,6 +87,11 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
   
   // Display name to show in user profile
   const displayName = firstName ? `${firstName} ${lastName || ''}` : (user?.email || "User");
+  
+  const handleLogoutConfirm = async () => {
+    setShowLogoutDialog(false);
+    await handleLogout();
+  };
   
   return (
     <Sidebar className="dark-sidebar border-r-0">
@@ -133,25 +149,37 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
           )}
         </Link>
         
-        {!isCollapsed && (
-          <button 
-            onClick={handleLogout} 
-            className="mt-2 w-full flex items-center gap-3 px-2 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-          >
-            <LogOut size={16} />
-            <span>Sign out</span>
-          </button>
-        )}
-        
-        {isCollapsed && (
-          <button 
-            onClick={handleLogout} 
-            className="mt-2 flex items-center justify-center p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-            title="Sign out"
-          >
-            <LogOut size={18} />
-          </button>
-        )}
+        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <AlertDialogTrigger asChild>
+            {!isCollapsed ? (
+              <button 
+                className="mt-2 w-full flex items-center gap-3 px-2 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+              >
+                <LogOut size={16} />
+                <span>Sign out</span>
+              </button>
+            ) : (
+              <button 
+                className="mt-2 flex items-center justify-center p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                title="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            )}
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Sign out</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to sign out of your account?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogoutConfirm}>Sign out</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SidebarFooter>
     </Sidebar>
   );
