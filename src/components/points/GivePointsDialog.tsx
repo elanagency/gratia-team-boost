@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Dialog, DialogContent, DialogDescription, 
@@ -13,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMonthlySpending } from "@/hooks/useMonthlySpending";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
@@ -35,6 +35,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   
   const { user, companyId, isAdmin } = useAuth();
   const { monthlySpent, monthlyLimit, monthlyRemaining } = useMonthlySpending();
+  const queryClient = useQueryClient();
 
   // Fetch team members when dialog opens
   useEffect(() => {
@@ -208,6 +209,9 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       if (error) throw error;
 
       toast.success(`Successfully gave ${points} points to ${selectedMember.name}`);
+      
+      // Invalidate relevant queries to refresh the data
+      await queryClient.invalidateQueries({ queryKey: ['monthlySpending'] });
       
       // Refresh data based on user type
       if (isAdmin) {
