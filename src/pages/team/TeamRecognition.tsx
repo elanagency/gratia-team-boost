@@ -2,6 +2,7 @@
 import React from "react";
 import { PointsHistory } from "@/components/points/PointsHistory";
 import { GivePointsDialog } from "@/components/points/GivePointsDialog";
+import { MonthlyLeaderboardCard } from "@/components/team/MonthlyLeaderboardCard";
 
 const TeamRecognition = () => {
   return (
@@ -12,6 +13,9 @@ const TeamRecognition = () => {
           <GivePointsDialog isTeamMember={true} />
         </div>
       </div>
+      
+      {/* Monthly Leaderboard Card */}
+      <MonthlyLeaderboardCard />
       
       <PointsHistory personalView={true} />
     </div>
