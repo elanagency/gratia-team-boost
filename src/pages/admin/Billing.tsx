@@ -65,17 +65,34 @@ const Billing = () => {
 
       // Add subscription events
       subscriptionEvents?.forEach(event => {
-        if (event.amount_charged && event.amount_charged > 0) {
-          combinedHistory.push({
-            id: event.id,
-            date: new Date(event.created_at).toLocaleDateString(),
-            amount: `$${event.amount_charged / 100}`,
-            status: 'Paid',
-            type: 'Subscription',
-            description: event.event_type === 'created' ? `Subscription created - ${event.new_quantity} members` : event.event_type === 'quantity_updated' ? `Subscription updated - ${event.previous_quantity} to ${event.new_quantity} members` : `Subscription ${event.event_type}`,
-            stripe_session_id: event.stripe_invoice_id
-          });
+        let description = '';
+        let amount = '$0.00';
+        
+        // Handle different event types
+        if (event.event_type === 'slots_purchased') {
+          description = `Team slots purchased - ${event.new_slots} slots`;
+        } else if (event.event_type === 'created') {
+          description = `Subscription created - ${event.new_quantity} members`;
+        } else if (event.event_type === 'quantity_updated') {
+          description = `Subscription updated - ${event.previous_quantity} to ${event.new_quantity} members`;
+        } else {
+          description = `Subscription ${event.event_type}`;
         }
+        
+        // Show amount if available
+        if (event.amount_charged && event.amount_charged > 0) {
+          amount = `$${event.amount_charged / 100}`;
+        }
+        
+        combinedHistory.push({
+          id: event.id,
+          date: new Date(event.created_at).toLocaleDateString(),
+          amount: amount,
+          status: event.amount_charged && event.amount_charged > 0 ? 'Paid' : 'Completed',
+          type: 'Subscription',
+          description: description,
+          stripe_session_id: event.stripe_invoice_id
+        });
       });
 
       // Sort by date (most recent first)
