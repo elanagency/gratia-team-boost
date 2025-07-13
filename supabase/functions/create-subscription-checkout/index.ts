@@ -85,8 +85,9 @@ serve(async (req: Request) => {
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {
-      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer");
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer with email:", user.email);
       const customer = await stripe.customers.create({
+        email: user.email, // Include email when creating customer
         metadata: {
           company_id: companyId,
           company_name: company.name,
@@ -94,12 +95,15 @@ serve(async (req: Request) => {
       });
 
       customerId = customer.id;
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Created Stripe customer:", customerId);
 
       // Update company with customer ID
       await supabaseAdmin
         .from("companies")
         .update({ stripe_customer_id: customerId })
         .eq("id", companyId);
+    } else {
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Using existing Stripe customer:", customerId);
     }
 
     // Check if company already has an active subscription
@@ -181,9 +185,10 @@ serve(async (req: Request) => {
 
     // Create new checkout session for new subscriptions
     const baseUrl = origin || "http://localhost:3000";
-    const session = await stripe.checkout.sessions.create({
+    
+    // Prepare checkout session configuration
+    const checkoutConfig: any = {
       customer: customerId,
-      customer_email: user.email, // Prepopulate email in checkout form
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [
@@ -211,7 +216,16 @@ serve(async (req: Request) => {
       cancel_url: `${baseUrl}/dashboard/team?setup=cancelled`,
       billing_address_collection: "required",
       allow_promotion_codes: true,
+    };
+
+    console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating checkout session with config:", {
+      customer: customerId,
+      email_will_be_prepopulated: true,
+      teamSlots,
+      unitPrice
     });
+
+    const session = await stripe.checkout.sessions.create(checkoutConfig);
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Checkout session created:", session.id);
 
@@ -227,8 +241,24 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("[CREATE-SUBSCRIPTION-CHECKOUT] Error:", error);
+    
+    // Provide more specific error messages for common Stripe issues
+    let errorMessage = "Internal server error";
+    if (error instanceof Error) {
+      if (error.message.includes("customer_email")) {
+        errorMessage = "Customer email configuration error. Please try again.";
+      } else if (error.message.includes("subscription")) {
+        errorMessage = "Subscription configuration error. Please contact support.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : String(error)
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
