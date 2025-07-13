@@ -2,17 +2,31 @@
 import { useState } from 'react';
 import { Menu, X, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, userName, isAdmin, isPlatformAdmin } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Determine correct dashboard route based on admin status
   const dashboardRoute = isPlatformAdmin ? "/platform-admin" : 
                         isAdmin ? "/dashboard" : 
                         "/dashboard-team";
+
+  // Handle navigation to sections - go to index first if not already there
+  const handleSectionNavigation = (sectionId: string) => {
+    if (location.pathname === '/') {
+      // Already on index page, just scroll to section
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Navigate to index page with hash
+      navigate(`/#${sectionId}`);
+    }
+    setIsMenuOpen(false); // Close mobile menu if open
+  };
 
   return (
     <nav className="w-full py-4 px-4 md:px-8 lg:px-16 absolute top-0 left-0 z-50">
@@ -25,9 +39,9 @@ const Navbar = () => {
         
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center space-x-6">
-          <a href="#features" className="text-gray-200 hover:text-white">Features</a>
-          <a href="#how-it-works" className="text-gray-200 hover:text-white">How It Works</a>
-          <a href="#pricing" className="text-gray-200 hover:text-white">Pricing</a>
+          <button onClick={() => handleSectionNavigation('features')} className="text-gray-200 hover:text-white">Features</button>
+          <button onClick={() => handleSectionNavigation('how-it-works')} className="text-gray-200 hover:text-white">How It Works</button>
+          <button onClick={() => handleSectionNavigation('pricing')} className="text-gray-200 hover:text-white">Pricing</button>
           <div className="flex items-center space-x-4 ml-6">
             {user ? (
               <div className="flex items-center">
@@ -65,9 +79,9 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="lg:hidden absolute top-16 left-0 right-0 bg-grattia-purple-dark/95 backdrop-blur-md p-4 border-t border-grattia-purple-light/20">
           <div className="flex flex-col space-y-4">
-            <a href="#features" className="text-gray-200 hover:text-white py-2">Features</a>
-            <a href="#how-it-works" className="text-gray-200 hover:text-white py-2">How It Works</a>
-            <a href="#pricing" className="text-gray-200 hover:text-white py-2">Pricing</a>
+            <button onClick={() => handleSectionNavigation('features')} className="text-gray-200 hover:text-white py-2 text-left">Features</button>
+            <button onClick={() => handleSectionNavigation('how-it-works')} className="text-gray-200 hover:text-white py-2 text-left">How It Works</button>
+            <button onClick={() => handleSectionNavigation('pricing')} className="text-gray-200 hover:text-white py-2 text-left">Pricing</button>
             <hr className="border-grattia-purple-light/20" />
             {user ? (
               <>
