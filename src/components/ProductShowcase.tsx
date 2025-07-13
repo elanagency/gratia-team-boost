@@ -1,5 +1,6 @@
 
-import { Star, Gift, TrendingUp, Users, Award, Coffee } from 'lucide-react';
+import { Star, Gift, TrendingUp, Users, Award, Coffee, Heart, Target, ShoppingBag, Trophy } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 const ProductShowcase = () => {
   return (
@@ -20,150 +21,193 @@ const ProductShowcase = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          {/* Recognition Card 1 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 transform hover:scale-105 transition-transform duration-300 animate-fade-in flex flex-col" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-grattia-pink rounded-full flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {/* Recognition Example Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-grattia-teal to-grattia-purple flex items-center justify-center">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Sarah Martinez</h3>
+                  <p className="text-sm text-white/70">Marketing Team</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium">Sarah M.</p>
-                <p className="text-gray-300 text-sm">Product Manager</p>
+              <div className="bg-white/10 rounded-lg p-4 mb-4">
+                <p className="text-white/90 text-sm italic">
+                  "Amazing work on the Q3 campaign! Your creative approach increased engagement by 45%."
+                </p>
               </div>
-            </div>
-            <p className="text-white text-sm mb-3 flex-grow">
-              "Amazing work on the new feature launch! Your attention to detail made all the difference."
-            </p>
-            <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                <span className="text-white text-sm">Recognition</span>
+              <div className="flex justify-between items-center">
+                <span className="text-grattia-teal font-medium">+150 points</span>
+                <span className="text-white/60 text-xs">2 hours ago</span>
               </div>
-              <div className="bg-grattia-pink px-3 py-1 rounded-full">
-                <span className="text-white font-bold text-sm">+25 pts</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Recognition Card 2 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 transform hover:scale-105 transition-transform duration-300 animate-fade-in flex flex-col" style={{ animationDelay: '0.4s' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-grattia-purple-light rounded-full flex items-center justify-center">
-                <Award className="h-5 w-5 text-white" />
+          {/* Another Recognition Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in [animation-delay:200ms]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-grattia-purple to-grattia-teal flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Alex Thompson</h3>
+                  <p className="text-sm text-white/70">Development Team</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium">Mike R.</p>
-                <p className="text-gray-300 text-sm">Team Lead</p>
+              <div className="bg-white/10 rounded-lg p-4 mb-4">
+                <p className="text-white/90 text-sm italic">
+                  "Outstanding debugging skills! Fixed the critical issue in record time."
+                </p>
               </div>
-            </div>
-            <p className="text-white text-sm mb-3 flex-grow">
-              "Thanks for staying late to help with the deployment. True team player!"
-            </p>
-            <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                <span className="text-white text-sm">Teamwork</span>
+              <div className="flex justify-between items-center">
+                <span className="text-grattia-purple font-medium">+200 points</span>
+                <span className="text-white/60 text-xs">5 hours ago</span>
               </div>
-              <div className="bg-grattia-pink px-3 py-1 rounded-full">
-                <span className="text-white font-bold text-sm">+15 pts</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Reward Store */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 animate-fade-in flex flex-col md:col-span-2 lg:col-span-1" style={{ animationDelay: '0.6s' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <Gift className="h-5 w-5 text-grattia-pink" />
-              <h3 className="text-white font-semibold">Reward Store</h3>
-            </div>
-            <div className="space-y-3 flex-grow">
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <Coffee className="h-8 w-8 text-amber-500" />
-                  <div>
-                    <p className="text-white font-medium text-sm">Coffee Gift Card</p>
-                    <p className="text-gray-300 text-xs">$10 Starbucks</p>
+          {/* Reward Store Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in [animation-delay:400ms]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <ShoppingBag className="w-8 h-8 text-grattia-teal" />
+                <h3 className="text-lg font-semibold text-white">Reward Store</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded"></div>
+                    <span className="text-white text-sm">Coffee Voucher</span>
+                  </div>
+                  <span className="text-grattia-teal font-medium">50 pts</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded"></div>
+                    <span className="text-white text-sm">Extra PTO Day</span>
+                  </div>
+                  <span className="text-grattia-purple font-medium">500 pts</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded"></div>
+                    <span className="text-white text-sm">Team Lunch</span>
+                  </div>
+                  <span className="text-grattia-teal font-medium">200 pts</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Points Dashboard Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in [animation-delay:600ms]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <Target className="w-8 h-8 text-grattia-purple" />
+                <h3 className="text-lg font-semibold text-white">Your Points</h3>
+              </div>
+              <div className="text-center mb-6">
+                <div className="text-3xl font-bold text-white mb-2">1,247</div>
+                <p className="text-white/70 text-sm">Total Points Earned</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-white/70 text-sm">This Month</span>
+                  <span className="text-grattia-teal font-medium">+320</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70 text-sm">Available</span>
+                  <span className="text-white font-medium">892</span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-grattia-teal to-grattia-purple h-2 rounded-full" style={{width: '71%'}}></div>
+                </div>
+                <p className="text-xs text-white/60 text-center">71% towards next milestone</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Team Engagement Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in [animation-delay:800ms]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Users className="w-8 h-8 text-grattia-teal" />
+                <h3 className="text-lg font-semibold text-white">Team Engagement</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-grattia-teal mb-1">87%</div>
+                  <p className="text-white/70 text-xs">Participation</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-grattia-purple mb-1">4.8</div>
+                  <p className="text-white/70 text-xs">Avg Recognition</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-sm">Recognition Given</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 bg-white/20 rounded-full h-1.5">
+                      <div className="bg-grattia-purple h-1.5 rounded-full" style={{width: '92%'}}></div>
+                    </div>
+                    <span className="text-white text-sm font-medium">92%</span>
                   </div>
                 </div>
-                <div className="bg-grattia-pink px-2 py-1 rounded text-white text-xs font-bold">
-                  50 pts
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <Gift className="h-8 w-8 text-green-500" />
-                  <div>
-                    <p className="text-white font-medium text-sm">Amazon Gift Card</p>
-                    <p className="text-gray-300 text-xs">$25 Amazon</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-sm">Team Satisfaction</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 bg-white/20 rounded-full h-1.5">
+                      <div className="bg-grattia-teal h-1.5 rounded-full" style={{width: '85%'}}></div>
+                    </div>
+                    <span className="text-white text-sm font-medium">85%</span>
                   </div>
                 </div>
-                <div className="bg-grattia-pink px-2 py-1 rounded text-white text-xs font-bold">
-                  100 pts
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-sm">Active Members</span>
+                  <span className="text-white text-sm font-medium">23/27</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <Award className="h-8 w-8 text-purple-500" />
+            </CardContent>
+          </Card>
+
+          {/* New Monthly Highlights Card */}
+          <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 animate-fade-in [animation-delay:1000ms]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <TrendingUp className="w-8 h-8 text-grattia-purple" />
+                <h3 className="text-lg font-semibold text-white">Monthly Highlights</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-grattia-teal to-grattia-purple flex items-center justify-center">
+                    <Star className="w-4 h-4 text-white" />
+                  </div>
                   <div>
-                    <p className="text-white font-medium text-sm">Team Lunch</p>
-                    <p className="text-gray-300 text-xs">Group Experience</p>
+                    <p className="text-white text-sm font-medium">Recognition Sent</p>
+                    <p className="text-grattia-teal text-lg font-bold">142</p>
                   </div>
                 </div>
-                <div className="bg-grattia-pink px-2 py-1 rounded text-white text-xs font-bold">
-                  200 pts
+                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-grattia-purple to-grattia-teal flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-medium">Points Distributed</p>
+                    <p className="text-grattia-purple text-lg font-bold">8,450</p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-grattia-teal/20 to-grattia-purple/20 rounded-lg p-3">
+                  <p className="text-white/90 text-sm font-medium mb-1">Top Achievement</p>
+                  <p className="text-grattia-teal text-xs">Marketing team exceeded Q4 goals by 28%</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Points Dashboard */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 transform hover:scale-105 transition-transform duration-300 animate-fade-in flex flex-col" style={{ animationDelay: '0.8s' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-grattia-pink" />
-              <h3 className="text-white font-semibold">Your Points</h3>
-            </div>
-            <div className="text-center mb-4">
-              <div className="text-3xl font-bold text-white mb-1">247</div>
-              <div className="text-gray-300 text-sm">Total Points</div>
-            </div>
-            <div className="space-y-3 flex-grow">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">This month</span>
-                <span className="text-grattia-pink font-medium">+85 pts</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">Recognition given</span>
-                <span className="text-white">12</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">Recognition received</span>
-                <span className="text-white">8</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-white/20">
-                <div className="text-xs text-gray-300 mb-2">Recent Activity</div>
-                <div className="space-y-2">
-                  <div className="text-xs text-white">+25 from Sarah for "Great work"</div>
-                  <div className="text-xs text-white">+15 from Mike for "Team player"</div>
-                  <div className="text-xs text-gray-400">-50 Coffee gift card redeemed</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Team Engagement */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 animate-fade-in flex flex-col justify-center" style={{ animationDelay: '1s' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-3 w-3 text-white" />
-              </div>
-              <span className="text-white text-sm font-medium">Team Engagement</span>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white mb-1">94%</div>
-              <div className="text-gray-300 text-xs">↑ 12% from last month</div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
