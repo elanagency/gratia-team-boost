@@ -67,28 +67,44 @@ const Billing = () => {
       subscriptionEvents?.forEach(event => {
         let description = '';
         let amount = '$0.00';
+        let status = 'Completed';
         
-        // Handle different event types
+        // Handle different event types with better descriptions
         if (event.event_type === 'slots_purchased') {
           description = `Team slots purchased - ${event.new_slots} slots`;
         } else if (event.event_type === 'created') {
           description = `Subscription created - ${event.new_quantity} members`;
         } else if (event.event_type === 'quantity_updated') {
-          description = `Subscription updated - ${event.previous_quantity} to ${event.new_quantity} members`;
+          const isUpgrade = event.new_quantity > event.previous_quantity;
+          const changeType = isUpgrade ? 'upgraded' : 'downgraded';
+          description = `Subscription ${changeType} - ${event.previous_quantity} to ${event.new_quantity} members`;
+          
+          // For subscription updates, if no amount_charged, it was handled via proration
+          if (!event.amount_charged || event.amount_charged === 0) {
+            amount = 'Processed via Stripe proration';
+            status = 'Processed';
+            if (isUpgrade) {
+              description += ' (prorated charge applied)';
+            }
+          }
+        } else if (event.event_type === 'cancelled') {
+          description = `Subscription cancelled`;
+          status = 'Cancelled';
         } else {
           description = `Subscription ${event.event_type}`;
         }
         
-        // Show amount if available
-        if (event.amount_charged && event.amount_charged > 0) {
-          amount = `$${event.amount_charged / 100}`;
+        // Show amount if available and not already set to proration message
+        if (event.amount_charged && event.amount_charged > 0 && amount === '$0.00') {
+          amount = `$${(event.amount_charged / 100).toFixed(2)}`;
+          status = 'Paid';
         }
         
         combinedHistory.push({
           id: event.id,
           date: new Date(event.created_at).toLocaleDateString(),
           amount: amount,
-          status: event.amount_charged && event.amount_charged > 0 ? 'Paid' : 'Completed',
+          status: status,
           type: 'Subscription',
           description: description,
           stripe_session_id: event.stripe_invoice_id
@@ -119,6 +135,10 @@ const Billing = () => {
         return `${baseClasses} bg-yellow-100 text-yellow-700`;
       case 'failed':
         return `${baseClasses} bg-red-100 text-red-700`;
+      case 'processed':
+        return `${baseClasses} bg-blue-100 text-blue-700`;
+      case 'cancelled':
+        return `${baseClasses} bg-gray-100 text-gray-700`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-700`;
     }
