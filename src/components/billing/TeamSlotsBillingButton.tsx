@@ -93,15 +93,21 @@ export const TeamSlotsBillingButton = ({
       
       if (error) throw error;
       
-      console.log("Checkout session created:", data);
+      console.log("Checkout response:", data);
       
-      // Close dialog and redirect to Stripe checkout
+      // Close dialog
       setDialogOpen(false);
       
-      if (data.url) {
+      // Handle different response types
+      if (data.success && data.redirect_url) {
+        // Subscription was updated directly
+        toast.success("Team slots updated successfully!");
+        window.location.href = data.redirect_url;
+      } else if (data.url) {
+        // New subscription - redirect to Stripe checkout
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL received");
+        throw new Error("No checkout URL or success response received");
       }
     } catch (error) {
       console.error("Error creating team slots checkout:", error);

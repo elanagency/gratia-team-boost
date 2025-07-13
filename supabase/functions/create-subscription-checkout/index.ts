@@ -77,17 +77,84 @@ serve(async (req: Request) => {
         .eq("id", companyId);
     }
 
+    // Check if company already has an active subscription
+    let existingSubscription = null;
+    if (company.stripe_subscription_id) {
+      try {
+        existingSubscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Found existing subscription:", existingSubscription.id, "Status:", existingSubscription.status);
+      } catch (error) {
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Existing subscription not found or inactive:", error);
+      }
+    }
+
     // Calculate pricing - $2.99 per slot per month
     const unitPrice = 299; // $2.99 in cents
-    const totalAmount = unitPrice * teamSlots;
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Pricing calculation:", {
       teamSlots,
       unitPrice,
-      totalAmount
+      hasExistingSubscription: !!existingSubscription
     });
 
-    // Create checkout session
+    // If we have an active subscription, update it instead of creating a new one
+    if (existingSubscription && existingSubscription.status === 'active') {
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Updating existing subscription quantity to:", teamSlots);
+      
+      // Update the subscription quantity
+      const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
+        items: [{
+          id: existingSubscription.items.data[0].id,
+          quantity: teamSlots,
+        }],
+        proration_behavior: 'always_invoice',
+      });
+
+      // Update company with new team slots
+      await supabaseAdmin
+        .from("companies")
+        .update({ team_slots: teamSlots })
+        .eq("id", companyId);
+
+      // Log the subscription update
+      await supabaseAdmin
+        .from("subscription_events")
+        .insert({
+          company_id: companyId,
+          event_type: "quantity_updated",
+          previous_slots: company.team_slots || 0,
+          new_slots: teamSlots,
+          previous_quantity: existingSubscription.items.data[0].quantity,
+          new_quantity: teamSlots,
+          metadata: {
+            subscription_id: updatedSubscription.id,
+            updated_via: "direct_subscription_update"
+          }
+        });
+
+      // Create pending member if provided
+      if (memberData) {
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating pending member after subscription update");
+        await supabaseAdmin.functions.invoke('create-team-member', {
+          body: memberData
+        });
+      }
+
+      const baseUrl = origin || "http://localhost:3000";
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Subscription updated successfully",
+          redirect_url: `${baseUrl}/dashboard/team?setup=success&updated=true`
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create new checkout session for new subscriptions
     const baseUrl = origin || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
