@@ -26,6 +26,31 @@ serve(async (req: Request) => {
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating checkout for:", { companyId, teamSlots, origin });
 
+    // Get authenticated user for email prepopulation
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization header required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_ANON_KEY") || ""
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
@@ -158,6 +183,7 @@ serve(async (req: Request) => {
     const baseUrl = origin || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: user.email, // Prepopulate email in checkout form
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [
