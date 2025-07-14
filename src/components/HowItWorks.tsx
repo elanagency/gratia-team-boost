@@ -32,18 +32,18 @@ const HowItWorks = () => {
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {steps.map((step, index) => (
             <div 
               key={step.number} 
-              className="flex flex-col items-center border border-grattia-purple-light/20 rounded-2xl p-6 relative overflow-hidden animate-scale-in"
+              className="flex flex-col items-center justify-between border border-grattia-purple-light/20 rounded-2xl p-8 relative overflow-hidden animate-scale-in min-h-[240px] h-full"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="w-12 h-12 rounded-full bg-grattia-pink flex items-center justify-center text-white font-semibold text-lg mb-4">
                 {step.number}
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-white">{step.title}</h3>
-              <p className="text-gray-300 text-center">{step.description}</p>
+              <h3 className="text-xl font-semibold mb-2 text-white text-center">{step.title}</h3>
+              <p className="text-gray-300 text-center flex-1">{step.description}</p>
             </div>
           ))}
         </div>

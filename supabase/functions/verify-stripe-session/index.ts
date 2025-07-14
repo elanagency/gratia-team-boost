@@ -67,6 +67,10 @@ serve(async (req: Request) => {
     // Get the subscription from the session
     const subscriptionId = session.subscription as string;
     
+    // Get the amount charged from the session
+    const amountTotal = session.amount_total || 0; // in cents
+    console.log("[VERIFY-STRIPE-SESSION] Amount charged:", amountTotal);
+    
     // Update company with subscription information and team slots
     const { error: updateError } = await supabaseAdmin
       .from("companies")
@@ -92,6 +96,7 @@ serve(async (req: Request) => {
         company_id: companyId,
         event_type: "slots_purchased",
         new_slots: teamSlots,
+        amount_charged: amountTotal,
         metadata: {
           subscription_id: subscriptionId,
           session_id: sessionId,

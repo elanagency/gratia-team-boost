@@ -101,13 +101,18 @@ serve(async (req) => {
       }
     );
 
+    // Wait a moment for Stripe to process the invoice
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // Get the latest invoice for amount charged
     const latestInvoice = await stripe.invoices.list({
       customer: subscription.customer as string,
       limit: 1,
     });
 
-    const amountCharged = latestInvoice.data[0]?.amount_paid || 0;
+    const amountCharged = latestInvoice.data[0]?.amount_paid || null;
+    
+    console.log(`Subscription update - Previous: ${currentQuantity}, New: ${newQuantity}, Amount charged: ${amountCharged}`);
 
     // Create subscription event record
     await supabaseService

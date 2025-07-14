@@ -26,6 +26,31 @@ serve(async (req: Request) => {
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating checkout for:", { companyId, teamSlots, origin });
 
+    // Get authenticated user for email prepopulation
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization header required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_ANON_KEY") || ""
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
@@ -60,8 +85,9 @@ serve(async (req: Request) => {
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {
-      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer");
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer with email:", user.email);
       const customer = await stripe.customers.create({
+        email: user.email, // Include email when creating customer
         metadata: {
           company_id: companyId,
           company_name: company.name,
@@ -69,27 +95,99 @@ serve(async (req: Request) => {
       });
 
       customerId = customer.id;
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Created Stripe customer:", customerId);
 
       // Update company with customer ID
       await supabaseAdmin
         .from("companies")
         .update({ stripe_customer_id: customerId })
         .eq("id", companyId);
+    } else {
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Using existing Stripe customer:", customerId);
+    }
+
+    // Check if company already has an active subscription
+    let existingSubscription = null;
+    if (company.stripe_subscription_id) {
+      try {
+        existingSubscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Found existing subscription:", existingSubscription.id, "Status:", existingSubscription.status);
+      } catch (error) {
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Existing subscription not found or inactive:", error);
+      }
     }
 
     // Calculate pricing - $2.99 per slot per month
     const unitPrice = 299; // $2.99 in cents
-    const totalAmount = unitPrice * teamSlots;
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Pricing calculation:", {
       teamSlots,
       unitPrice,
-      totalAmount
+      hasExistingSubscription: !!existingSubscription
     });
 
-    // Create checkout session
+    // If we have an active subscription, update it instead of creating a new one
+    if (existingSubscription && existingSubscription.status === 'active') {
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Updating existing subscription quantity to:", teamSlots);
+      
+      // Update the subscription quantity
+      const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
+        items: [{
+          id: existingSubscription.items.data[0].id,
+          quantity: teamSlots,
+        }],
+        proration_behavior: 'always_invoice',
+      });
+
+      // Update company with new team slots
+      await supabaseAdmin
+        .from("companies")
+        .update({ team_slots: teamSlots })
+        .eq("id", companyId);
+
+      // Log the subscription update
+      await supabaseAdmin
+        .from("subscription_events")
+        .insert({
+          company_id: companyId,
+          event_type: "quantity_updated",
+          previous_slots: company.team_slots || 0,
+          new_slots: teamSlots,
+          previous_quantity: existingSubscription.items.data[0].quantity,
+          new_quantity: teamSlots,
+          metadata: {
+            subscription_id: updatedSubscription.id,
+            updated_via: "direct_subscription_update"
+          }
+        });
+
+      // Create pending member if provided
+      if (memberData) {
+        console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating pending member after subscription update");
+        await supabaseAdmin.functions.invoke('create-team-member', {
+          body: memberData
+        });
+      }
+
+      const baseUrl = origin || "http://localhost:3000";
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Subscription updated successfully",
+          redirect_url: `${baseUrl}/dashboard/team?setup=success&updated=true`
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create new checkout session for new subscriptions
     const baseUrl = origin || "http://localhost:3000";
-    const session = await stripe.checkout.sessions.create({
+    
+    // Prepare checkout session configuration
+    const checkoutConfig: any = {
       customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
@@ -118,7 +216,16 @@ serve(async (req: Request) => {
       cancel_url: `${baseUrl}/dashboard/team?setup=cancelled`,
       billing_address_collection: "required",
       allow_promotion_codes: true,
+    };
+
+    console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating checkout session with config:", {
+      customer: customerId,
+      email_will_be_prepopulated: true,
+      teamSlots,
+      unitPrice
     });
+
+    const session = await stripe.checkout.sessions.create(checkoutConfig);
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Checkout session created:", session.id);
 
@@ -134,8 +241,24 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("[CREATE-SUBSCRIPTION-CHECKOUT] Error:", error);
+    
+    // Provide more specific error messages for common Stripe issues
+    let errorMessage = "Internal server error";
+    if (error instanceof Error) {
+      if (error.message.includes("customer_email")) {
+        errorMessage = "Customer email configuration error. Please try again.";
+      } else if (error.message.includes("subscription")) {
+        errorMessage = "Subscription configuration error. Please contact support.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : String(error)
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
