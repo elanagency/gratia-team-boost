@@ -45,7 +45,7 @@ async function makeRyeRequest(query: string, variables: any = {}, headers: any) 
   });
 
   try {
-    const response = await fetch('https://staging.graphql.api.rye.com/v1/query', {
+    const response = await fetch('https://graphql.api.rye.com/v1/query', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -331,25 +331,25 @@ serve(async (req) => {
           const { url } = reqData;
           console.log(`Request to fetch Amazon product from URL: ${url}`);
           
-          // Get staging RYE API headers from environment variable
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            throw new Error('Staging RYE API headers not configured');
+          // Get production RYE API headers from environment variable
+          const productionHeadersJson = Deno.env.get('Production_RYE_API_Key_Headers');
+          if (!productionHeadersJson) {
+            throw new Error('Production RYE API headers not configured');
           }
           
           let ryeHeaders;
           try {
-            ryeHeaders = JSON.parse(stagingHeadersJson);
+            ryeHeaders = JSON.parse(productionHeadersJson);
           } catch (parseError) {
-            console.error('Error parsing staging headers JSON:', parseError);
-            throw new Error('Invalid staging headers configuration');
+            console.error('Error parsing production headers JSON:', parseError);
+            throw new Error('Invalid production headers configuration');
           }
           
           if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
-            throw new Error('Missing required headers in staging configuration');
+            throw new Error('Missing required headers in production configuration');
           }
           
-          console.log('Using staging RYE headers for API calls');
+          console.log('Using production RYE headers for API calls');
           
           // Step 1: Call the Rye GraphQL API to request the product by URL
           // This returns a productId we can use to fetch details
@@ -361,7 +361,7 @@ serve(async (req) => {
             }
           `;
           
-          const requestResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
+          const requestResponse = await fetch('https://graphql.api.rye.com/v1/query', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -400,7 +400,7 @@ serve(async (req) => {
             }
           `;
           
-          const detailResponse = await fetch('https://staging.graphql.api.rye.com/v1/query', {
+          const detailResponse = await fetch('https://graphql.api.rye.com/v1/query', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -516,23 +516,23 @@ serve(async (req) => {
           }
           
           // Get RYE API headers from environment variable
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            console.error('❌ Missing Staging_RYE_API_Key_Headers environment variable');
-            throw new Error('Staging RYE API headers not configured');
+          const productionHeadersJson = Deno.env.get('Production_RYE_API_Key_Headers');
+          if (!productionHeadersJson) {
+            console.error('❌ Missing Production_RYE_API_Key_Headers environment variable');
+            throw new Error('Production RYE API headers not configured');
           }
           
           let ryeHeaders;
           try {
-            ryeHeaders = JSON.parse(stagingHeadersJson);
+            ryeHeaders = JSON.parse(productionHeadersJson);
           } catch (parseError) {
-            console.error('❌ Error parsing staging headers JSON:', parseError);
-            throw new Error('Invalid staging headers configuration');
+            console.error('❌ Error parsing production headers JSON:', parseError);
+            throw new Error('Invalid production headers configuration');
           }
           
           if (!ryeHeaders.Authorization || !ryeHeaders['Rye-Shopper-IP']) {
-            console.error('❌ Missing required headers in staging configuration');
-            throw new Error('Missing required headers in staging configuration');
+            console.error('❌ Missing required headers in production configuration');
+            throw new Error('Missing required headers in production configuration');
           }
           
           console.log('✅ RYE Headers validated successfully');
@@ -827,12 +827,12 @@ serve(async (req) => {
           }
 
           // Get RYE API headers
-          const stagingHeadersJson = Deno.env.get('Staging_RYE_API_Key_Headers');
-          if (!stagingHeadersJson) {
-            throw new Error('Staging RYE API headers not configured');
+          const productionHeadersJson = Deno.env.get('Production_RYE_API_Key_Headers');
+          if (!productionHeadersJson) {
+            throw new Error('Production RYE API headers not configured');
           }
           
-          const ryeHeaders = JSON.parse(stagingHeadersJson);
+          const ryeHeaders = JSON.parse(productionHeadersJson);
           
           const orderQuery = `
             query OrderById($id: ID!) {
