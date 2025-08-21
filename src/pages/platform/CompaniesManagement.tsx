@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Users, Calendar, CreditCard } from "lucide-react";
+import { Search, Eye, Users, Calendar, CreditCard, Gift } from "lucide-react";
+import { PointManagementDialog } from "@/components/platform/PointManagementDialog";
 import {
   Table,
   TableBody,
@@ -18,8 +19,15 @@ import {
 
 const CompaniesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [pointDialog, setPointDialog] = useState<{
+    isOpen: boolean;
+    company: any;
+  }>({
+    isOpen: false,
+    company: null,
+  });
 
-  const { data: companies, isLoading } = useQuery({
+  const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ['platform-companies'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,6 +59,24 @@ const CompaniesManagement = () => {
         {status}
       </Badge>
     );
+  };
+
+  const handleGivePoints = (company: any) => {
+    setPointDialog({
+      isOpen: true,
+      company,
+    });
+  };
+
+  const handlePointDialogClose = () => {
+    setPointDialog({
+      isOpen: false,
+      company: null,
+    });
+  };
+
+  const handlePointSuccess = () => {
+    refetch();
   };
 
   return (
@@ -155,9 +181,19 @@ const CompaniesManagement = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleGivePoints(company)}
+                        >
+                          <Gift className="h-4 w-4 mr-1" />
+                          Give Points
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -166,6 +202,14 @@ const CompaniesManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Point Management Dialog */}
+      <PointManagementDialog
+        isOpen={pointDialog.isOpen}
+        onClose={handlePointDialogClose}
+        company={pointDialog.company}
+        onSuccess={handlePointSuccess}
+      />
     </div>
   );
 };
