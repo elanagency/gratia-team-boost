@@ -44,11 +44,18 @@ export const PointManagementDialog = ({
   const icon = isGrant ? Plus : Minus;
   const IconComponent = icon;
 
+  // Add null checks to prevent errors when company is null
+  const currentBalance = company?.points_balance ?? 0;
   const newBalance = isGrant 
-    ? company.points_balance + amount 
-    : company.points_balance - amount;
+    ? currentBalance + amount 
+    : currentBalance - amount;
 
-  const canRemove = operation === 'remove' ? company.points_balance >= amount : true;
+  const canRemove = operation === 'remove' ? currentBalance >= amount : true;
+
+  // Don't render if company is null
+  if (!company) {
+    return null;
+  }
 
   const handleSubmit = async () => {
     if (!amount || amount <= 0) {
@@ -127,7 +134,7 @@ export const PointManagementDialog = ({
               id="amount"
               type="number" 
               min={1}
-              max={operation === 'remove' ? company.points_balance : undefined}
+              max={operation === 'remove' ? currentBalance : undefined}
               value={amount}
               onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
             />
@@ -149,7 +156,7 @@ export const PointManagementDialog = ({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Current Balance</span>
-                <span className="font-medium">{company.points_balance.toLocaleString()}</span>
+                <span className="font-medium">{currentBalance.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Points to {actionLabel}</span>
