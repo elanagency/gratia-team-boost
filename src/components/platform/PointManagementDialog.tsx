@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { 
   Dialog, 
   DialogContent, 
@@ -11,7 +12,7 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
-import { Loader2, AlertTriangle, Plus, Minus } from "lucide-react";
+import { Loader2, AlertTriangle, Plus, Minus, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -22,8 +23,7 @@ interface PointManagementDialogProps {
     id: string;
     name: string;
     points_balance: number;
-  };
-  operation: 'grant' | 'remove';
+  } | null;
   onSuccess: () => void;
 }
 
@@ -31,16 +31,15 @@ export const PointManagementDialog = ({
   isOpen, 
   onClose, 
   company, 
-  operation,
   onSuccess 
 }: PointManagementDialogProps) => {
   const [amount, setAmount] = useState<number>(100);
   const [description, setDescription] = useState("");
+  const [operation, setOperation] = useState<'grant' | 'remove'>('grant');
   const [isLoading, setIsLoading] = useState(false);
 
   const isGrant = operation === 'grant';
-  const title = isGrant ? 'Grant Points' : 'Remove Points';
-  const actionLabel = isGrant ? 'Grant' : 'Remove';
+  const actionLabel = isGrant ? 'Add' : 'Remove';
   const icon = isGrant ? Plus : Minus;
   const IconComponent = icon;
 
@@ -109,6 +108,7 @@ export const PointManagementDialog = ({
     onClose();
     setAmount(100);
     setDescription("");
+    setOperation('grant');
   };
 
   return (
@@ -116,18 +116,34 @@ export const PointManagementDialog = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <IconComponent className="h-5 w-5" />
-            {title}
+            <Gift className="h-5 w-5" />
+            Give Points
           </DialogTitle>
           <DialogDescription>
-            {isGrant 
-              ? `Grant points to ${company.name} without payment processing.`
-              : `Remove points from ${company.name}'s balance.`
-            }
+            Manage points for {company.name}. You can add or remove points from their balance.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Operation</Label>
+            <ToggleGroup
+              type="single"
+              value={operation}
+              onValueChange={(value) => value && setOperation(value as 'grant' | 'remove')}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="grant" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Points
+              </ToggleGroupItem>
+              <ToggleGroupItem value="remove" className="flex items-center gap-2">
+                <Minus className="h-4 w-4" />
+                Remove Points
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="amount">Points to {actionLabel}</Label>
             <Input

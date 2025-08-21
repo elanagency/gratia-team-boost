@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Users, Calendar, CreditCard, Plus, Minus } from "lucide-react";
+import { Search, Eye, Users, Calendar, CreditCard, Gift } from "lucide-react";
 import { PointManagementDialog } from "@/components/platform/PointManagementDialog";
 import {
   Table,
@@ -22,11 +22,9 @@ const CompaniesManagement = () => {
   const [pointDialog, setPointDialog] = useState<{
     isOpen: boolean;
     company: any;
-    operation: 'grant' | 'remove';
   }>({
     isOpen: false,
     company: null,
-    operation: 'grant'
   });
 
   const { data: companies, isLoading, refetch } = useQuery({
@@ -63,19 +61,10 @@ const CompaniesManagement = () => {
     );
   };
 
-  const handleGrantPoints = (company: any) => {
+  const handleGivePoints = (company: any) => {
     setPointDialog({
       isOpen: true,
       company,
-      operation: 'grant'
-    });
-  };
-
-  const handleRemovePoints = (company: any) => {
-    setPointDialog({
-      isOpen: true,
-      company,
-      operation: 'remove'
     });
   };
 
@@ -83,7 +72,6 @@ const CompaniesManagement = () => {
     setPointDialog({
       isOpen: false,
       company: null,
-      operation: 'grant'
     });
   };
 
@@ -197,18 +185,10 @@ const CompaniesManagement = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleGrantPoints(company)}
-                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                          onClick={() => handleGivePoints(company)}
                         >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleRemovePoints(company)}
-                          className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                        >
-                          <Minus className="h-4 w-4" />
+                          <Gift className="h-4 w-4 mr-1" />
+                          Give Points
                         </Button>
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
@@ -228,7 +208,6 @@ const CompaniesManagement = () => {
         isOpen={pointDialog.isOpen}
         onClose={handlePointDialogClose}
         company={pointDialog.company}
-        operation={pointDialog.operation}
         onSuccess={handlePointSuccess}
       />
     </div>
