@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,10 +45,10 @@ const TeamManagement = () => {
       }).then(({ data, error }) => {
         if (error) {
           console.error("Error verifying payment:", error);
-          toast.error("Failed to process payment and setup team slots. Please contact support.");
+          toast.error("Failed to process subscription setup. Please contact support.");
         } else {
           console.log("Payment verification successful:", data);
-          toast.success(`Payment successful! You now have ${data.teamSlots} team slots available.`);
+          toast.success("Subscription setup successful! You can now add team members.");
           fetchTeamMembers();
         }
       }).catch((err) => {
@@ -60,7 +59,7 @@ const TeamManagement = () => {
         window.history.replaceState({}, '', '/dashboard/team');
       });
     } else if (setupStatus === 'cancelled') {
-      toast.error("Team slots purchase was cancelled.");
+      toast.error("Subscription setup was cancelled.");
       window.history.replaceState({}, '', '/dashboard/team');
     }
   }, [searchParams, fetchTeamMembers, isVerifying]);
@@ -82,53 +81,20 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
-  const shouldShowUpgradeWarning = teamSlots.total > 0 && teamSlots.available <= 1;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">Team Management</h1>
         
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          {/* Available Slots Display */}
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-            <Users className="h-4 w-4 text-[#F572FF]" />
-            <span className="text-sm font-medium text-gray-700">
-              Available Slots: <span className="text-[#F572FF]">{teamSlots.available}</span>
-            </span>
-          </div>
-          
           <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
         </div>
       </div>
-
-      {shouldShowUpgradeWarning && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium text-amber-800">Running low on team slots</p>
-            <p className="text-amber-700">
-              You have only {teamSlots.available} slot{teamSlots.available !== 1 ? 's' : ''} remaining. 
-              Consider upgrading in the billing section to add more team members.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {teamSlots.total === 0 && (
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="font-medium text-gray-800 mb-1">No Team Slots Purchased</p>
-          <p className="text-sm text-gray-600 mb-3">
-            Purchase team slots in the billing section to start adding members to your organization.
-          </p>
-        </div>
-      )}
       
       <Card className="dashboard-card">
         {isLoading || isVerifying ? (
           <div className="p-8 text-center">
-            {isVerifying ? "Processing payment and setting up team slots..." : "Loading team members..."}
+            {isVerifying ? "Processing subscription setup..." : "Loading team members..."}
           </div>
         ) : (
           <TeamMemberTable teamMembers={teamMembers} onRemoveMember={handleDeleteClick} />
