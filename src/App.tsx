@@ -15,7 +15,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
 import RecognitionHistory from "./pages/admin/RecognitionHistory";
 import RewardsCatalog from "./pages/admin/RewardsCatalog";
-import Billing from "./pages/admin/Billing";
+
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 
@@ -97,7 +97,7 @@ const App = () => (
                 <Route path="team" element={<TeamManagement />} />
                 <Route path="recognition" element={<RecognitionHistory />} />
                 <Route path="rewards" element={<RewardsCatalog />} />
-                <Route path="billing" element={<Billing />} />
+                <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />
               </Route>

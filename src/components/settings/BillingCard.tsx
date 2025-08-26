@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SubscriptionStatusCard } from "@/components/settings/SubscriptionStatusCard";
+import { SubscriptionStatusCard } from "./SubscriptionStatusCard";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ interface BillingHistoryItem {
   stripe_payment_intent_id?: string;
 }
 
-const Billing = () => {
+export const BillingCard = () => {
   const { companyId } = useAuth();
   const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -162,8 +162,6 @@ const Billing = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-800">Billing & Subscription</h1>
-      
       {/* Team Slots & Billing Section */}
       <SubscriptionStatusCard />
       
@@ -243,5 +241,3 @@ const Billing = () => {
     </div>
   );
 };
-
-export default Billing;

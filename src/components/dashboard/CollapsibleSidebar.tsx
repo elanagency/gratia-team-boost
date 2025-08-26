@@ -54,10 +54,6 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
     icon: Gift,
     path: "/dashboard/rewards"
   }, {
-    name: "Billing",
-    icon: CreditCard,
-    path: "/dashboard/billing"
-  }, {
     name: "Settings",
     icon: Settings,
     path: "/dashboard/settings"

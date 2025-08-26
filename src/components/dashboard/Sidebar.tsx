@@ -27,10 +27,6 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }:
     icon: Gift,
     path: "/dashboard/rewards"
   }, {
-    name: "Billing",
-    icon: CreditCard,
-    path: "/dashboard/billing"
-  }, {
     name: "Settings",
     icon: Settings,
     path: "/dashboard/settings"
