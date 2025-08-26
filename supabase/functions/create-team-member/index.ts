@@ -126,10 +126,10 @@ serve(async (req: Request) => {
       }
     );
     
-    // Check company's team slots availability and get company name
+    // Get company info and check current team member count
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
-      .select('team_slots, subscription_status, stripe_subscription_id, name')
+      .select('subscription_status, stripe_subscription_id, name')
       .eq('id', companyId)
       .single();
 
@@ -144,14 +144,14 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get current used slots
-    const { data: usedSlots, error: slotsError } = await supabaseAdmin
+    // Get current team member count (non-admin members)
+    const { data: currentMembers, error: membersError } = await supabaseAdmin
       .rpc('get_used_team_slots', { company_id: companyId });
 
-    if (slotsError) {
-      console.error("[CREATE-TEAM-MEMBER] Error getting used slots:", slotsError);
+    if (membersError) {
+      console.error("[CREATE-TEAM-MEMBER] Error getting current team members:", membersError);
       return new Response(
-        JSON.stringify({ error: "Failed to check team slot availability" }),
+        JSON.stringify({ error: "Failed to check current team members" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -159,23 +159,22 @@ serve(async (req: Request) => {
       );
     }
 
-    const currentUsedSlots = usedSlots || 0;
-    const availableSlots = company.team_slots || 0;
+    const currentMemberCount = currentMembers || 0;
+    const isFirstMember = currentMemberCount === 0;
 
-    console.log("[CREATE-TEAM-MEMBER] Slot check:", {
-      availableSlots,
-      currentUsedSlots,
-      hasSlots: availableSlots > 0,
-      canAddMember: currentUsedSlots < availableSlots
+    console.log("[CREATE-TEAM-MEMBER] Team member check:", {
+      currentMemberCount,
+      isFirstMember,
+      hasSubscription: !!company.stripe_subscription_id
     });
 
-    // Check if company has any slots purchased
-    if (availableSlots === 0) {
-      console.log("[CREATE-TEAM-MEMBER] No team slots purchased - redirecting to billing setup");
+    // If this is the first member and no subscription exists, create one
+    if (isFirstMember && !company.stripe_subscription_id) {
+      console.log("[CREATE-TEAM-MEMBER] First team member - creating subscription");
       
       if (authHeader) {
         try {
-          // Create checkout session for initial slot purchase
+          // Store member data for creation after payment
           const memberData = { name, email, companyId, role, invitedBy };
           
           const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
@@ -187,7 +186,7 @@ serve(async (req: Request) => {
             },
             body: JSON.stringify({ 
               companyId,
-              teamSlots: 5, // Default suggestion
+              teamSlots: 1, // Start with 1 for usage-based billing
               memberData,
               origin
             })
@@ -195,13 +194,13 @@ serve(async (req: Request) => {
           
           if (checkoutResponse.ok) {
             const checkoutData = await checkoutResponse.json();
-            console.log("[CREATE-TEAM-MEMBER] Checkout URL created successfully:", checkoutData?.url);
+            console.log("[CREATE-TEAM-MEMBER] Subscription checkout URL created:", checkoutData?.url);
             
             return new Response(
               JSON.stringify({
                 needsBillingSetup: true,
                 checkoutUrl: checkoutData?.url,
-                message: "Please purchase team slots before adding members"
+                message: "Setting up your subscription for the first team member"
               }),
               {
                 status: 200,
@@ -209,13 +208,13 @@ serve(async (req: Request) => {
               }
             );
           } else {
-            throw new Error("Failed to create checkout session");
+            throw new Error("Failed to create subscription checkout session");
           }
         } catch (checkoutErr) {
-          console.error("[CREATE-TEAM-MEMBER] Failed to create checkout session:", checkoutErr);
+          console.error("[CREATE-TEAM-MEMBER] Failed to create subscription checkout:", checkoutErr);
           return new Response(
             JSON.stringify({ 
-              error: "No team slots available. Please purchase team slots in billing settings.",
+              error: "Failed to setup subscription. Please try again.",
               needsBillingSetup: true 
             }),
             {
@@ -225,23 +224,6 @@ serve(async (req: Request) => {
           );
         }
       }
-    }
-
-    // Check if all slots are used
-    if (currentUsedSlots >= availableSlots) {
-      console.log("[CREATE-TEAM-MEMBER] All team slots are used");
-      return new Response(
-        JSON.stringify({
-          error: `All ${availableSlots} team slots are in use. Please upgrade your subscription to add more members.`,
-          slotsExhausted: true,
-          usedSlots: currentUsedSlots,
-          availableSlots: availableSlots
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     }
     
     // Continue with normal member creation (slots are available)
@@ -396,11 +378,11 @@ serve(async (req: Request) => {
       }
     }
     
-    // Get updated slot usage
-    const { data: newUsedSlots } = await supabaseAdmin
+    // Get updated member count
+    const { data: newMemberCount } = await supabaseAdmin
       .rpc('get_used_team_slots', { company_id: companyId });
 
-    const finalUsedSlots = newUsedSlots || (currentUsedSlots + 1);
+    const finalMemberCount = newMemberCount || (currentMemberCount + 1);
     
     // Return success response
     const response = {
@@ -408,8 +390,7 @@ serve(async (req: Request) => {
       userId,
       membership,
       isNewUser,
-      usedSlots: finalUsedSlots,
-      availableSlots: availableSlots,
+      memberCount: finalMemberCount,
       needsBillingSetup: false,
       emailSent,
       emailError,

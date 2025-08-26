@@ -74,10 +74,10 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         return;
       }
 
-      // Check if all slots are exhausted
-      if (data.slotsExhausted) {
-        console.log("All team slots are used");
-        toast.error(data.error || "All team slots are in use. Please upgrade your subscription.");
+      // Handle any other errors
+      if (data.error && !data.needsBillingSetup) {
+        console.log("Error adding team member:", data.error);
+        toast.error(data.error);
         return;
       }
 
@@ -116,7 +116,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setOpen(newOpen);
   };
 
-  const canAddMembers = teamSlots.total > 0 && teamSlots.available > 0;
+  const canAddMembers = true; // Always allow adding members with usage-based billing
   
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -138,31 +138,23 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           </DialogDescription>
         </DialogHeader>
         
-        {teamSlots.total === 0 ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="font-medium text-amber-800 mb-2">Team Slots Required</h4>
-            <p className="text-sm text-amber-700 mb-3">
-              You need to purchase team slots before adding members. 
-              The first member will trigger the billing setup process.
+        {teamSlots.used === 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">First Team Member</h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Adding your first team member will start your subscription at $2.99/month per team member.
             </p>
-            <p className="text-xs text-amber-600">
-              • $2.99 per team slot per month<br/>
-              • Choose any number of slots you need<br/>
-              • Add members up to your slot limit
-            </p>
-          </div>
-        ) : teamSlots.available === 0 ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="font-medium text-red-800 mb-2">No Available Slots</h4>
-            <p className="text-sm text-red-700 mb-3">
-              All {teamSlots.total} team slots are in use. Upgrade your subscription to add more members.
+            <p className="text-xs text-blue-600">
+              • Pay only for active team members<br/>
+              • Add members instantly after first subscription<br/>
+              • Billing adjusts automatically each month
             </p>
           </div>
         ) : (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-medium text-green-800 mb-2">Team Slots Available</h4>
+            <h4 className="font-medium text-green-800 mb-2">Add Team Member</h4>
             <p className="text-sm text-green-700 mb-2">
-              {teamSlots.available} of {teamSlots.total} slots available for new team members.
+              Current team: {teamSlots.used} members at $2.99/month each
             </p>
             <div className="flex items-center gap-2 text-sm text-green-600">
               <Mail className="h-4 w-4" />
@@ -177,7 +169,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           name={name}
           setName={setName}
           isSubmitting={isSubmitting}
-          isFirstMember={teamSlots.total === 0}
+          isFirstMember={teamSlots.used === 0}
           onSubmit={handleSubmit}
         />
       </DialogContent>

@@ -31,10 +31,10 @@ export const useTeamMembers = () => {
     try {
       console.log("Fetching team members for company:", companyId);
       
-      // Get company info with team slots
+      // Get company info
       const { data: company, error: companyError } = await supabase
         .from('companies')
-        .select('team_slots')
+        .select('stripe_subscription_id')
         .eq('id', companyId)
         .single();
 
@@ -60,14 +60,13 @@ export const useTeamMembers = () => {
       
       console.log(`Found ${members?.length || 0} team members (excluding admins)`);
       
-      const totalSlots = company?.team_slots || 0;
-      const usedSlots = members?.length || 0;
-      const availableSlots = Math.max(0, totalSlots - usedSlots);
+      const usedMembers = members?.length || 0;
+      const hasSubscription = !!company?.stripe_subscription_id;
       
       setTeamSlots({
-        used: usedSlots,
-        available: availableSlots,
-        total: totalSlots
+        used: usedMembers,
+        available: hasSubscription ? 999 : 0, // Unlimited after subscription
+        total: hasSubscription ? usedMembers : 0
       });
       
       if (!members?.length) {
