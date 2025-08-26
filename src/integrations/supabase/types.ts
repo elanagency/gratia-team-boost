@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -627,22 +627,22 @@ export type Database = {
       calculate_prorated_amount: {
         Args: {
           base_amount: number
-          employee_count: number
           days_remaining: number
+          employee_count: number
           total_days_in_month: number
         }
         Returns: number
       }
       can_user_spend_points: {
-        Args: { user_id: string; company_id: string; points_to_spend: number }
+        Args: { company_id: string; points_to_spend: number; user_id: string }
         Returns: boolean
       }
       check_company_membership: {
-        Args: { user_id: string; company_id: string }
+        Args: { company_id: string; user_id: string }
         Returns: boolean
       }
       check_user_company_membership: {
-        Args: { user_id: string; company_id: string }
+        Args: { company_id: string; user_id: string }
         Returns: boolean
       }
       get_company_member_count: {
@@ -658,7 +658,7 @@ export type Database = {
         Returns: number
       }
       get_user_monthly_spending: {
-        Args: { user_id: string; company_id: string }
+        Args: { company_id: string; user_id: string }
         Returns: number
       }
       has_available_team_slots: {

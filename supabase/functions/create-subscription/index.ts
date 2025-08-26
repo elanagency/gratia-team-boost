@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MONTHLY_PRICE_PER_EMPLOYEE = 299; // $2.99 in cents
+// Will be fetched from platform settings
 
 // Helper logging function
 const logStep = (step: string, details?: any) => {
@@ -104,6 +104,16 @@ serve(async (req) => {
 
     const adminEmail = emailsResponse.emails[adminMember.user_id];
     logStep("Admin email retrieved", { adminEmail });
+
+    // Get pricing from platform settings
+    const { data: pricingSetting } = await supabaseService
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'member_monthly_price_cents')
+      .single();
+    
+    const MONTHLY_PRICE_PER_EMPLOYEE = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
+    logStep("Pricing retrieved", { MONTHLY_PRICE_PER_EMPLOYEE });
 
     // Create or get Stripe customer
     let customerId = company.stripe_customer_id;

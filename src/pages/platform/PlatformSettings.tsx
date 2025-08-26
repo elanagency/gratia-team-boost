@@ -45,6 +45,7 @@ interface PlatformConfigForm {
   minPurchase: string;
   maxPurchase: string;
   defaultSlots: string;
+  memberPrice: string;
 }
 
 const PlatformSettings = () => {
@@ -93,6 +94,7 @@ const PlatformSettings = () => {
       minPurchase: "",
       maxPurchase: "",
       defaultSlots: "",
+      memberPrice: "",
     },
   });
 
@@ -105,6 +107,7 @@ const PlatformSettings = () => {
       minPurchase: getSetting('min_point_purchase'),
       maxPurchase: getSetting('max_point_purchase'),
       defaultSlots: getSetting('default_team_slots'),
+      memberPrice: (parseInt(getSetting('member_monthly_price_cents') || '299') / 100).toFixed(2),
     };
   }, [settings, getSetting]);
 
@@ -164,6 +167,7 @@ const PlatformSettings = () => {
     updateSetting({ key: 'min_point_purchase', value: data.minPurchase });
     updateSetting({ key: 'max_point_purchase', value: data.maxPurchase });
     updateSetting({ key: 'default_team_slots', value: data.defaultSlots });
+    updateSetting({ key: 'member_monthly_price_cents', value: (parseFloat(data.memberPrice) * 100).toString() });
   };
 
   const handleAddAdmin = () => {
@@ -259,6 +263,19 @@ const PlatformSettings = () => {
                       <FormLabel>Default Team Slots</FormLabel>
                       <FormControl>
                         <Input placeholder="5" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={configForm.control}
+                  name="memberPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly Price per Member (USD)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="2.99" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

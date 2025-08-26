@@ -109,7 +109,7 @@ serve(async (req: Request) => {
           used_slots: currentUsedSlots,
           available_slots: 0,
           next_billing_date: null,
-          amount_per_slot: 299,
+      amount_per_slot: 299, // Will be updated below
           slot_utilization: 0,
         }),
         {
@@ -146,7 +146,7 @@ serve(async (req: Request) => {
           used_slots: currentUsedSlots,
           available_slots: 0,
           next_billing_date: null,
-          amount_per_slot: 299,
+      amount_per_slot: 299, // Will be updated below
           slot_utilization: 0,
         }),
         {
@@ -213,6 +213,15 @@ serve(async (req: Request) => {
       }
     }
 
+    // Get pricing from platform settings
+    const { data: pricingSetting } = await supabaseAdmin
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'member_monthly_price_cents')
+      .single();
+    
+    const unitPrice = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
+
     const response = {
       has_subscription: !!company.stripe_subscription_id,
       status: subscriptionDetails?.status || company.subscription_status || 'inactive',
@@ -222,7 +231,7 @@ serve(async (req: Request) => {
       next_billing_date: subscriptionDetails?.current_period_end 
         ? new Date(subscriptionDetails.current_period_end * 1000).toISOString()
         : null,
-      amount_per_slot: 299, // $2.99 in cents
+      amount_per_slot: unitPrice,
       slot_utilization: availableSlots > 0 ? Math.round((currentUsedSlots / availableSlots) * 100) : 0,
     };
 

@@ -117,8 +117,14 @@ serve(async (req: Request) => {
       }
     }
 
-    // Calculate pricing - $2.99 per slot per month
-    const unitPrice = 299; // $2.99 in cents
+    // Get pricing from platform settings
+    const { data: pricingSetting } = await supabaseAdmin
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'member_monthly_price_cents')
+      .single();
+    
+    const unitPrice = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Pricing calculation:", {
       teamSlots,

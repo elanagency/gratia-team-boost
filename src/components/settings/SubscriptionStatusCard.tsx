@@ -74,7 +74,17 @@ export const SubscriptionStatusCard = () => {
         .rpc('get_used_team_slots', { company_id: companyId });
 
       const teamMembers = memberCount || 0;
-      const amountPerMember = 299; // $2.99 in cents
+      
+      // Get pricing from platform settings or fallback to default
+      let amountPerMember = 299; // Default $2.99 in cents
+      try {
+        const { data: checkResult } = await supabase.functions.invoke('check-subscription-status');
+        if (checkResult?.amount_per_slot) {
+          amountPerMember = checkResult.amount_per_slot;
+        }
+      } catch (error) {
+        console.log("Could not fetch dynamic pricing, using default");
+      }
       
       if (company?.stripe_subscription_id) {
         // Try to get subscription details from check-subscription-status
@@ -178,7 +188,7 @@ export const SubscriptionStatusCard = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-800 mb-2">Get Started</h4>
             <p className="text-sm text-blue-700 mb-4">
-              Add your first team member to start your subscription at $2.99/month per member.
+              Add your first team member to start your subscription.
             </p>
             <div className="text-sm text-blue-600">
               <p>• Pay only for active team members</p>
@@ -310,7 +320,7 @@ export const SubscriptionStatusCard = () => {
               Add your first team member to automatically start your subscription.
             </p>
             <div className="text-sm text-blue-600">
-              <p>• $2.99 per team member per month</p>
+              <p>• ${((subscriptionStatus?.amount_per_member || 299) / 100).toFixed(2)} per team member per month</p>
               <p>• Billing starts with your first team member</p>
               <p>• Add members instantly after subscription</p>
               <p>• No setup fees or commitments</p>
