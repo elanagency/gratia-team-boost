@@ -144,9 +144,12 @@ export function RecognitionFeed() {
       }
     });
     
+    console.log('Main posts:', mainPosts);
+    console.log('Comments:', comments);
+    
     // Create threads for main posts
     mainPosts.forEach(post => {
-      const threadKey = `${post.recipient_id}-${post.description}`;
+      const threadKey = `${post.recipient_id}-${post.description.trim()}`;
       threads.set(threadKey, {
         mainPost: post,
         comments: [],
@@ -154,10 +157,14 @@ export function RecognitionFeed() {
       });
     });
     
+    console.log('Initial threads:', Array.from(threads.keys()));
+    
     // Add comments to their respective threads
     comments.forEach(comment => {
-      const originalDescription = comment.description.replace('Quick appreciation: ', '');
+      const originalDescription = comment.description.replace('Quick appreciation: ', '').trim();
       const threadKey = `${comment.recipient_id}-${originalDescription}`;
+      console.log(`Looking for thread: ${threadKey} for comment: ${comment.description}`);
+      
       const thread = threads.get(threadKey);
       
       if (thread) {
@@ -166,13 +173,19 @@ export function RecognitionFeed() {
         if (new Date(comment.created_at) > new Date(thread.lastActivity)) {
           thread.lastActivity = comment.created_at;
         }
+        console.log(`Added comment to thread: ${threadKey}`);
+      } else {
+        console.log(`No matching thread found for: ${threadKey}`);
+        console.log('Available threads:', Array.from(threads.keys()));
       }
     });
     
-    // Convert to array and sort by last activity
-    return Array.from(threads.values()).sort((a, b) => 
+    const result = Array.from(threads.values()).sort((a, b) => 
       new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
     );
+    
+    console.log('Final threaded recognitions:', result);
+    return result;
   };
 
   const handleQuickPoints = async (recipientId: string, points: number, originalDescription: string) => {
