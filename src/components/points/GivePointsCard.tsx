@@ -3,20 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, Star, Award, Zap, Send } from "lucide-react";
+import { Heart, Send } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const pointPresets = [
-  { value: 10, label: "10", icon: Heart, color: "bg-accent/10 text-accent hover:bg-accent/20" },
-  { value: 20, label: "20", icon: Star, color: "bg-accent/10 text-accent hover:bg-accent/20" },
-  { value: 25, label: "25", icon: Award, color: "bg-accent/10 text-accent hover:bg-accent/20" },
-  { value: 50, label: "50", icon: Zap, color: "bg-accent/10 text-accent hover:bg-accent/20" },
-  { value: 100, label: "100", icon: Award, color: "bg-accent/10 text-accent hover:bg-accent/20" },
-];
+import { Input } from "@/components/ui/input";
 
 interface Mention {
   id: string;
@@ -26,7 +19,7 @@ interface Mention {
 
 export function GivePointsCard() {
   const [text, setText] = useState("");
-  const [selectedPoints, setSelectedPoints] = useState<number>(10);
+  const [selectedPoints, setSelectedPoints] = useState<number>(1);
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -98,6 +91,16 @@ export function GivePointsCard() {
       return;
     }
 
+    if (selectedPoints <= 0) {
+      toast.error("Please enter a valid number of points");
+      return;
+    }
+
+    if (selectedPoints > userPoints) {
+      toast.error("You don't have enough points to give");
+      return;
+    }
+
     if (!user || !companyId) {
       toast.error("User not authenticated");
       return;
@@ -127,7 +130,7 @@ export function GivePointsCard() {
       // Reset form
       setText("");
       setMentions([]);
-      setSelectedPoints(10);
+      setSelectedPoints(1);
       
     } catch (error) {
       console.error("Error giving points:", error);
@@ -209,30 +212,24 @@ export function GivePointsCard() {
 
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-              {/* Point Selection */}
-              <div className="flex items-center gap-1">
-                {pointPresets.map((preset) => {
-                  const Icon = preset.icon;
-                  const isSelected = selectedPoints === preset.value;
-                  return (
-                    <Button
-                      key={preset.value}
-                      variant={isSelected ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setSelectedPoints(preset.value)}
-                      className="h-7 px-2 gap-1 text-xs"
-                    >
-                      <Icon className="h-3 w-3" />
-                      {preset.label}
-                    </Button>
-                  );
-                })}
+              {/* Points Input */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Points:</span>
+                <Input
+                  type="number"
+                  value={selectedPoints}
+                  onChange={(e) => setSelectedPoints(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  max={userPoints}
+                  className="w-20 h-7 text-xs"
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Send Button */}
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !text.trim() || mentions.length === 0}
+                disabled={isSubmitting || !text.trim() || mentions.length === 0 || selectedPoints <= 0 || selectedPoints > userPoints}
                 size="sm"
                 className="gap-1 bg-accent hover:bg-accent/90"
               >
