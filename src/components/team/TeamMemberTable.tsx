@@ -2,7 +2,7 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
 interface TeamMemberTableProps {
@@ -20,7 +20,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
         <TableRow className="border-gray-100">
           <TableHead className="text-gray-500">Name</TableHead>
           <TableHead className="text-gray-500">Email</TableHead>
-          <TableHead className="text-gray-500">Recognitions</TableHead>
+          <TableHead className="text-gray-500">Department</TableHead>
           <TableHead className="text-gray-500">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -37,14 +37,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                 )}
               </TableCell>
               <TableCell className="text-gray-600">{member.email}</TableCell>
-              <TableCell className="text-gray-600">
-                <div className="flex items-center">
-                  <Trophy className="h-4 w-4 text-amber-500 mr-1" />
-                  <span>{member.recognitionsReceived} received</span>
-                  <span className="mx-2">|</span>
-                  <span>{member.recognitionsGiven} given</span>
-                </div>
-              </TableCell>
+              <TableCell className="text-gray-600">{member.department || 'Not specified'}</TableCell>
               <TableCell>
                 <div className="flex items-center">
                   <Button 

@@ -7,6 +7,7 @@ import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
+import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
 import { toast } from "@/components/ui/use-toast";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,7 @@ export const TeamManagementCard = () => {
           
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
+            <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>
         </div>
 

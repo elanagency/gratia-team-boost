@@ -10,8 +10,7 @@ export interface TeamMember {
   email: string;
   user_id: string;
   points: number;
-  recognitionsReceived: number;
-  recognitionsGiven: number;
+  department?: string;
   isPending?: boolean;
 }
 
@@ -49,7 +48,8 @@ export const useTeamMembers = () => {
           id,
           is_admin,
           user_id,
-          points
+          points,
+          department
         `)
         .eq('company_id', companyId)
         .eq('is_admin', false); // Only get non-admin members
@@ -104,51 +104,10 @@ export const useTeamMembers = () => {
       
       const emailsMap = emailsResponse?.emails || {};
       
-      // Fetch recognition statistics for all members
-      const recognitionStats = await Promise.all(
-        userIds.map(async (userId) => {
-          // Count recognitions received
-          const { data: received, error: receivedError } = await supabase
-            .from('point_transactions')
-            .select('id', { count: 'exact' })
-            .eq('recipient_id', userId)
-            .eq('company_id', companyId);
-          
-          if (receivedError) {
-            console.error(`Error fetching received recognitions for user ${userId}:`, receivedError);
-            return { userId, received: 0, given: 0 };
-          }
-          
-          // Count recognitions given
-          const { data: given, error: givenError } = await supabase
-            .from('point_transactions')
-            .select('id', { count: 'exact' })
-            .eq('sender_id', userId)
-            .eq('company_id', companyId);
-          
-          if (givenError) {
-            console.error(`Error fetching given recognitions for user ${userId}:`, givenError);
-            return { userId, received: received?.length || 0, given: 0 };
-          }
-          
-          return { 
-            userId, 
-            received: received?.length || 0, 
-            given: given?.length || 0 
-          };
-        })
-      );
       
-      // Create a map for easy recognition stats lookup
-      const statsMap = new Map();
-      recognitionStats.forEach(stat => {
-        statsMap.set(stat.userId, stat);
-      });
-      
-      // Format team members with profile data and recognition stats
+      // Format team members with profile data
       const formattedMembers: TeamMember[] = members.map(member => {
         const profile = profileMap.get(member.user_id);
-        const stats = statsMap.get(member.user_id) || { received: 0, given: 0 };
         const memberName = profile ? 
           `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
           'No Name';
@@ -159,8 +118,7 @@ export const useTeamMembers = () => {
           email: emailsMap[member.user_id] || '',
           user_id: member.user_id,
           points: member.points || 0,
-          recognitionsReceived: stats.received,
-          recognitionsGiven: stats.given
+          department: member.department || ''
         };
       });
       

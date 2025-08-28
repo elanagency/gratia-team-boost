@@ -195,7 +195,7 @@ serve(async (req: Request) => {
     let failureCount = 0;
     
     for (const member of members) {
-      const { name, email, role = "member" } = member;
+      const { name, email, department, role = "member" } = member;
       const lowerEmail = email.toLowerCase();
       
       try {
@@ -277,6 +277,7 @@ serve(async (req: Request) => {
             user_id: userId,
             is_admin: false,
             role: role.toLowerCase(),
+            department: department || null,
           })
           .select()
           .single();
