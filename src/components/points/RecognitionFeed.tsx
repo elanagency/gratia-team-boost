@@ -26,14 +26,34 @@ export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [givingPoints, setGivingPoints] = useState<{ [key: string]: boolean }>({});
+  const [userPoints, setUserPoints] = useState<number>(0);
   
   const { user, companyId } = useAuth();
 
   useEffect(() => {
-    if (companyId) {
+    if (companyId && user?.id) {
       fetchRecognitionFeed();
+      fetchUserPoints();
     }
-  }, [companyId]);
+  }, [companyId, user?.id]);
+
+  const fetchUserPoints = async () => {
+    if (!user?.id || !companyId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('company_members')
+        .select('points')
+        .eq('user_id', user.id)
+        .eq('company_id', companyId)
+        .single();
+      
+      if (error) throw error;
+      setUserPoints(data?.points || 0);
+    } catch (error) {
+      console.error("Error fetching user points:", error);
+    }
+  };
 
   const fetchRecognitionFeed = async () => {
     if (!companyId) return;
@@ -101,28 +121,41 @@ export function RecognitionFeed() {
   const handleQuickPoints = async (recipientId: string, points: number, originalDescription: string) => {
     if (!user || !companyId) return;
     
+    // Check if user has enough points
+    if (userPoints < points) {
+      toast.error(`Insufficient points. You have ${userPoints} points, need ${points}.`);
+      return;
+    }
+    
     const transactionId = `${recipientId}-${points}`;
     setGivingPoints(prev => ({ ...prev, [transactionId]: true }));
     
     try {
-      const { error } = await supabase
-        .from('point_transactions')
-        .insert({
-          company_id: companyId,
-          sender_id: user.id,
-          recipient_id: recipientId,
-          points: points,
-          description: `Quick appreciation: ${originalDescription}`
-        });
+      // Use the new transfer function for atomic point transfer
+      const { data, error } = await supabase.rpc('transfer_points_between_users', {
+        sender_user_id: user.id,
+        recipient_user_id: recipientId,
+        transfer_company_id: companyId,
+        points_amount: points,
+        transfer_description: `Quick appreciation: ${originalDescription}`
+      });
 
       if (error) throw error;
       
+      // Type the response data properly
+      const result = data as { success: boolean; error?: string; message?: string };
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Transfer failed');
+      }
+      
       toast.success(`Gave ${points} additional points!`);
       fetchRecognitionFeed(); // Refresh feed
+      fetchUserPoints(); // Refresh user points
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error giving quick points:", error);
-      toast.error("Failed to give points");
+      toast.error(error.message || "Failed to give points");
     } finally {
       setGivingPoints(prev => ({ ...prev, [transactionId]: false }));
     }
@@ -222,6 +255,7 @@ export function RecognitionFeed() {
                             {quickPoints.map((points) => {
                               const transactionId = `${transaction.recipient_id}-${points}`;
                               const isGiving = givingPoints[transactionId];
+                              const hasEnoughPoints = userPoints >= points;
                               
                               return (
                                 <Button
@@ -229,8 +263,11 @@ export function RecognitionFeed() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleQuickPoints(transaction.recipient_id, points, cleanDescription)}
-                                  disabled={isGiving}
-                                  className="h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF]"
+                                  disabled={isGiving || !hasEnoughPoints}
+                                  className={`h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF] ${
+                                    !hasEnoughPoints ? 'opacity-50 cursor-not-allowed' : ''
+                                  }`}
+                                  title={!hasEnoughPoints ? `You need ${points} points (you have ${userPoints})` : `Give ${points} additional points`}
                                 >
                                   {isGiving ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />

@@ -722,6 +722,16 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: boolean
       }
+      transfer_points_between_users: {
+        Args: {
+          points_amount: number
+          recipient_user_id: string
+          sender_user_id: string
+          transfer_company_id: string
+          transfer_description: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
