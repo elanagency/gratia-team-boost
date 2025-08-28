@@ -361,9 +361,9 @@ export function RecognitionFeed() {
                   {thread.comments.length > 0 && (
                     <div className="mt-4 ml-11 space-y-3">
                       {/* Appreciations Title */}
-                      <div className="text-xs text-muted-foreground font-medium border-t border-border/30 pt-2">
-                        Appreciations
-                      </div>
+                       <div className="text-xs text-muted-foreground font-medium border-t border-border/30 pt-2">
+                         Appreciations ({thread.comments.length})
+                       </div>
                       
                       {thread.comments
                         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
