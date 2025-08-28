@@ -94,7 +94,7 @@ serve(async (req: Request) => {
   }
   
   try {
-    const { name, email, companyId, role = "member", invitedBy, origin } = await req.json();
+    const { name, email, department, companyId, role = "member", invitedBy, origin } = await req.json();
     
     // Validate required inputs
     if (!name || !email || !companyId || !invitedBy) {
@@ -175,7 +175,7 @@ serve(async (req: Request) => {
       if (authHeader) {
         try {
           // Store member data for creation after payment
-          const memberData = { name, email, companyId, role, invitedBy };
+          const memberData = { name, email, department, companyId, role, invitedBy };
           
           const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
             method: 'POST',
@@ -338,6 +338,7 @@ serve(async (req: Request) => {
         user_id: userId,
         is_admin: false,
         role: role.toLowerCase(),
+        department: department || null,
       })
       .select()
       .single();

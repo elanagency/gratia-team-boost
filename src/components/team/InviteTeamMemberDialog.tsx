@@ -20,6 +20,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [department, setDepartment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
@@ -43,6 +44,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         body: { 
           email, 
           name, 
+          department,
           companyId,
           role: 'member',
           invitedBy: user?.id,
@@ -63,6 +65,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         
         setEmail('');
         setName('');
+        setDepartment('');
         setOpen(false);
         
         toast.success("Team Slots Required - Redirecting to team slots purchase. Complete payment to add the team member.");
@@ -92,6 +95,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       setOpen(false);
       setEmail('');
       setName('');
+      setDepartment('');
       
       // Show appropriate success message based on email status
       if (data.emailSent) {
@@ -154,7 +158,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 className="font-medium text-green-800 mb-2">Add Team Member</h4>
             <p className="text-sm text-green-700 mb-2">
-              Current team: {teamSlots.used} members at $2.99/month each
+              Current team: {teamSlots.used} members
             </p>
             <div className="flex items-center gap-2 text-sm text-green-600">
               <Mail className="h-4 w-4" />
@@ -168,6 +172,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           setEmail={setEmail}
           name={name}
           setName={setName}
+          department={department}
+          setDepartment={setDepartment}
           isSubmitting={isSubmitting}
           isFirstMember={teamSlots.used === 0}
           onSubmit={handleSubmit}
