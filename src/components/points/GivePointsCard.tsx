@@ -151,44 +151,48 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="dashboard-card h-fit min-h-[500px]">
-      <CardContent className="p-4 sm:p-6 space-y-4">{/* Header */}
+    <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-2xl shadow-accent/10 hover:shadow-accent/20 transition-all duration-500">
+      <CardContent className="p-6 space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-accent" />
-            <span className="text-lg sm:text-xl font-semibold">Give Recognition</span>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent/20 to-accent/30 flex items-center justify-center">
+              <Heart className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Give Recognition</h2>
+              <p className="text-sm text-muted-foreground">Share appreciation with your team</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points
-            </span>
-          </div>
+          <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+            {userPoints} points
+          </Badge>
         </div>
 
         {/* Composer */}
         <div className="relative">
-          <div className="border rounded-lg bg-card">
+          <div className="border border-border/50 rounded-xl bg-background/50 backdrop-blur-sm transition-all focus-within:border-accent/50 focus-within:shadow-lg focus-within:shadow-accent/10">
             <textarea
               ref={textareaRef}
               value={text}
               onChange={handleTextChange}
-              placeholder="Give recognition... Type @ to mention someone"
-              className="w-full min-h-[100px] p-3 bg-transparent border-0 resize-none focus:outline-none text-sm placeholder:text-muted-foreground"
+              placeholder="🎉 Give recognition... Type @ to mention someone"
+              className="w-full min-h-[120px] p-4 bg-transparent border-0 resize-none focus:outline-none text-sm placeholder:text-muted-foreground rounded-t-xl"
               disabled={isSubmitting}
             />
             
             {/* Mention Dropdown */}
             {showMentionDropdown && filteredMembers.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                 {filteredMembers.slice(0, 5).map((member) => (
                   <button
                     key={member.user_id}
                     onClick={() => selectMention(member)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                    className="w-full px-4 py-3 text-left hover:bg-accent/10 hover:text-accent-foreground flex items-center gap-3 transition-colors first:rounded-t-lg last:rounded-b-lg"
                   >
-                    <Avatar className="h-6 w-6">
+                    <Avatar className="h-8 w-8">
                       <AvatarImage src="" />
-                      <AvatarFallback className="text-xs">{getInitials(member.name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs bg-accent/20 text-accent">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="text-sm font-medium">{member.name}</div>
@@ -203,10 +207,10 @@ export function GivePointsCard() {
 
             {/* Mentioned People */}
             {mentions.length > 0 && (
-              <div className="px-3 pb-2">
-                <div className="flex flex-wrap gap-1">
+              <div className="px-4 pb-3">
+                <div className="flex flex-wrap gap-2">
                   {mentions.map((mention, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                    <Badge key={index} variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                       @{mention.name}
                     </Badge>
                   ))}
@@ -215,9 +219,9 @@ export function GivePointsCard() {
             )}
 
             {/* Bottom Bar */}
-            <div className="flex items-center justify-between p-3 border-t bg-muted/20">
+            <div className="flex items-center justify-between p-4 border-t border-border/30 bg-muted/30 rounded-b-xl">
               {/* Point Selection */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 {pointPresets.map((preset) => {
                   const Icon = preset.icon;
                   const isSelected = selectedPoints === preset.value && !customPoints;
@@ -230,17 +234,21 @@ export function GivePointsCard() {
                         setSelectedPoints(preset.value);
                         setCustomPoints("");
                       }}
-                      className="h-7 px-2 gap-1 text-xs"
+                      className={`h-8 px-3 gap-1.5 text-sm transition-all ${
+                        isSelected 
+                          ? "bg-accent text-accent-foreground shadow-md" 
+                          : "hover:bg-accent/10 hover:text-accent"
+                      }`}
                     >
-                      <Icon className="h-3 w-3" />
+                      <Icon className="h-4 w-4" />
                       {preset.label}
                     </Button>
                   );
                 })}
                 
                 {/* Custom Points Input */}
-                <div className="flex items-center gap-2 ml-2">
-                  <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex items-center gap-2 ml-3">
+                  <span className="text-sm text-muted-foreground">or</span>
                   <input
                     type="number"
                     value={customPoints}
@@ -249,7 +257,7 @@ export function GivePointsCard() {
                       setSelectedPoints(0);
                     }}
                     placeholder="Custom"
-                    className="w-16 h-7 px-2 text-xs border rounded text-center bg-background"
+                    className="w-20 h-8 px-3 text-sm border border-border/50 rounded-md text-center bg-background/80 focus:outline-none focus:border-accent/50 focus:bg-background transition-colors"
                     min="1"
                     max={userPoints}
                   />
@@ -261,13 +269,16 @@ export function GivePointsCard() {
                 onClick={handleSubmit}
                 disabled={isSubmitting || !text.trim() || mentions.length === 0}
                 size="sm"
-                className="gap-1 bg-accent hover:bg-accent/90"
+                className="gap-2 bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-md hover:shadow-lg transition-all duration-200 px-6"
               >
                 {isSubmitting ? (
-                  "Posting..."
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+                    Posting...
+                  </>
                 ) : (
                   <>
-                    <Send className="h-3 w-3" />
+                    <Send className="h-4 w-4" />
                     Give {getPointsToGive()} pts
                   </>
                 )}
