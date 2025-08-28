@@ -1,11 +1,9 @@
 
 import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { CollapsibleSidebar } from "@/components/dashboard/CollapsibleSidebar";
-import { MemoizedHeader } from "@/components/dashboard/MemoizedHeader";
+import { TopNavigation } from "@/components/team/TopNavigation";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 const TeamDashboardLayout = () => {
   const { 
@@ -45,36 +43,22 @@ const TeamDashboardLayout = () => {
   }
   
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full bg-[#f7f8fa]">
-        {/* Collapsible Sidebar */}
-        <CollapsibleSidebar 
-          user={user}
-          firstName={firstName}
-          lastName={lastName}
-          handleLogout={signOut}
-          isTeamView={true}
-        />
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top Header with Sidebar Trigger */}
-          <header className="h-16 border-b bg-white flex items-center px-4 lg:px-6">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex-1">
-              <MemoizedHeader displayName={userName} isTeamView={true} />
-            </div>
-          </header>
-          
-          {/* Content Area with Scrolling and Transition */}
-          <main className="flex-1 overflow-auto p-4 lg:p-6 w-full transition-all duration-200 ease-in-out">
-            <div className="animate-in fade-in-50 duration-200">
-              <Outlet />
-            </div>
-          </main>
+    <div className="min-h-screen bg-[#f7f8fa]">
+      {/* Top Navigation */}
+      <TopNavigation 
+        user={user}
+        firstName={firstName}
+        lastName={lastName}
+        handleLogout={signOut}
+      />
+      
+      {/* Main Content */}
+      <main className="p-4 lg:p-6 w-full transition-all duration-200 ease-in-out">
+        <div className="animate-in fade-in-50 duration-200">
+          <Outlet />
         </div>
-      </div>
-    </SidebarProvider>
+      </main>
+    </div>
   );
 };
 
