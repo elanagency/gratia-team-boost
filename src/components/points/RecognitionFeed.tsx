@@ -145,7 +145,7 @@ export function RecognitionFeed() {
 
   if (isLoading) {
     return (
-      <Card className="dashboard-card h-fit">
+    <Card className="dashboard-card h-full">
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-[#F572FF]" />
@@ -162,7 +162,7 @@ export function RecognitionFeed() {
   }
 
   return (
-    <Card className="dashboard-card h-fit">
+    <Card className="dashboard-card h-full">
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#F572FF]" />

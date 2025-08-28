@@ -13,14 +13,14 @@ const TeamDashboard = () => {
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-fit">
         {/* Left Column - Give Points Card */}
-        <div>
+        <div className="h-full">
           <GivePointsCard />
         </div>
         
         {/* Right Column - Recognition Feed */}
-        <div>
+        <div className="h-full">
           <RecognitionFeed />
         </div>
       </div>

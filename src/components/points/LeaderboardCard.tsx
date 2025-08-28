@@ -110,8 +110,11 @@ export function LeaderboardCard() {
   return (
     <Card className="dashboard-card">
       <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="text-base sm:text-lg">Team Leaderboard</CardTitle>
-        <CardDescription className="text-xs sm:text-sm">Top performers by recognition points</CardDescription>
+        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-[#F572FF]" />
+          Team Leaderboard
+        </CardTitle>
+        <CardDescription className="text-sm">Top performers by recognition points</CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 pt-0">
         {isLoading ? (

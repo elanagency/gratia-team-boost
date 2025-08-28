@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -138,12 +138,20 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="border-0 shadow-none bg-background">
-      <CardContent className="p-4 space-y-4">
+    <Card className="dashboard-card h-full">
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+          <Heart className="h-5 w-5 text-[#F572FF]" />
+          Give Recognition
+        </CardTitle>
+        <CardDescription className="text-sm">
+          Recognize team members with points
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
         {/* Available Points */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-accent" />
             <span className="text-sm text-muted-foreground">
               You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points to give
             </span>
