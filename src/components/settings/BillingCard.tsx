@@ -1,16 +1,158 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
-import { SubscriptionStatusCard } from "./SubscriptionStatusCard";
+import { ExternalLink, Users, CreditCard, Calendar, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { usePricing } from "@/hooks/usePricing";
+
+interface SubscriptionStatus {
+  has_subscription: boolean;
+  status: string;
+  team_members: number;
+  next_billing_date: string | null;
+  amount_per_member: number;
+  monthly_cost: number;
+}
+
+interface CompanyData {
+  id: string;
+  name: string;
+  team_slots: number;
+  subscription_status: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+}
 
 export const BillingCard = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPortalLoading, setIsPortalLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const { user, companyId } = useAuth();
+  const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
+
+  const fetchCompanyData = async () => {
+    if (!companyId) return null;
+    
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select(`
+        id,
+        name,
+        team_slots,
+        subscription_status,
+        stripe_customer_id,
+        stripe_subscription_id
+      `)
+      .eq('id', companyId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching company data:', error);
+      return null;
+    }
+
+    return company;
+  };
+
+  const fetchSubscriptionStatus = useCallback(async () => {
+    if (!user || !companyId) return;
+
+    setIsLoading(true);
+    try {
+      const company = await fetchCompanyData();
+      if (!company) {
+        throw new Error('Company not found');
+      }
+      
+      setCompanyData(company);
+
+      // Get member count
+      const { count: memberCount } = await supabase
+        .from('company_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('is_admin', false);
+
+      const teamMembers = memberCount || 0;
+      
+      // Use pricing from the dedicated hook (always up-to-date from platform settings)
+      const amountPerMember = pricePerMemberCents;
+      
+      if (company?.stripe_subscription_id) {
+        // Try to get subscription details from check-subscription-status
+        try {
+          const { data: checkResult, error: checkError } = await supabase.functions.invoke('check-subscription-status');
+          
+          if (!checkError && checkResult) {
+            setSubscriptionStatus({
+              has_subscription: checkResult.has_subscription,
+              status: checkResult.status,
+              team_members: checkResult.team_slots || teamMembers,
+              next_billing_date: checkResult.next_billing_date,
+              amount_per_member: checkResult.amount_per_slot || amountPerMember,
+              monthly_cost: (checkResult.amount_per_slot || amountPerMember) * (checkResult.team_slots || teamMembers)
+            });
+            setHasExistingSubscription(true);
+            return;
+          }
+        } catch (error) {
+          console.log("check-subscription-status failed, using fallback data");
+        }
+
+        // Fallback: construct status from database
+        setSubscriptionStatus({
+          has_subscription: true,
+          status: company.subscription_status || 'active',
+          team_members: company.team_slots || teamMembers,
+          next_billing_date: null,
+          amount_per_member: amountPerMember,
+          monthly_cost: amountPerMember * (company.team_slots || teamMembers)
+        });
+        setHasExistingSubscription(true);
+      } else {
+        // No subscription
+        setSubscriptionStatus({
+          has_subscription: false,
+          status: 'inactive',
+          team_members: 0,
+          next_billing_date: null,
+          amount_per_member: pricePerMemberCents,
+          monthly_cost: 0
+        });
+
+        setHasExistingSubscription(false);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      toast.error('Failed to fetch subscription status');
+      
+      // Set fallback state
+      setSubscriptionStatus({
+        has_subscription: false,
+        status: 'inactive',
+        team_members: 0,
+        next_billing_date: null,
+        amount_per_member: pricePerMemberCents,
+        monthly_cost: 0
+      });
+      setHasExistingSubscription(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, companyId, pricePerMemberCents]);
+
+  useEffect(() => {
+    if (!isPricingLoading) {
+      fetchSubscriptionStatus();
+    }
+  }, [fetchSubscriptionStatus, isPricingLoading]);
 
   const handleManageBilling = async () => {
-    setIsLoading(true);
+    setIsPortalLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       
@@ -27,64 +169,108 @@ export const BillingCard = () => {
       console.error('Error opening customer portal:', error);
       toast.error('Failed to open billing portal. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsPortalLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Team Slots & Billing Section */}
-      <SubscriptionStatusCard />
-      
-      {/* Billing Management Section */}
+  if (isLoading || isPricingLoading) {
+    return (
       <Card className="dashboard-card">
         <div className="card-header">
-          <h2 className="card-title">Billing Management</h2>
+          <h2 className="card-title">Billing Overview</h2>
         </div>
-        
-        <div className="p-6">
-          <div className="text-center space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium">Manage Your Subscription</h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Access your complete billing portal to view invoices, update payment methods, 
-                change your subscription plan, or cancel your subscription.
+        <div className="p-6 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="dashboard-card">
+      <div className="card-header">
+        <h2 className="card-title">Billing Overview</h2>
+      </div>
+      
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Your Plan */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              Your plan
+            </div>
+            <div className="font-semibold">
+              {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              ${(pricePerMemberCents / 100).toFixed(2)} per member/month
+            </div>
+          </div>
+
+          {/* Team Members */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              Team members
+            </div>
+            <div className="font-semibold">
+              {subscriptionStatus?.team_members || 0} active
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {hasExistingSubscription ? 'Subscription active' : 'Add members to start'}
+            </div>
+          </div>
+
+          {/* Monthly Cost */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <DollarSign className="h-4 w-4" />
+              Monthly cost
+            </div>
+            <div className="font-semibold">
+              ${((subscriptionStatus?.monthly_cost || 0) / 100).toFixed(2)}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {hasExistingSubscription ? 'Current billing' : 'No charges yet'}
+            </div>
+          </div>
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CreditCard className="h-4 w-4" />
+              Payment method
+            </div>
+            <div className="font-semibold">
+              {hasExistingSubscription ? 'Card ending in ****' : 'Not set'}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {hasExistingSubscription ? 'Managed via Stripe' : 'Set up billing to view'}
+            </div>
+          </div>
+        </div>
+
+        {/* Manage Button */}
+        <div className="border-t pt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-medium">Manage Your Subscription</h3>
+              <p className="text-sm text-muted-foreground">
+                View invoices, update payment methods, or cancel your subscription
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6 text-sm text-muted-foreground">
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  📄
-                </div>
-                <span>View & Download Invoices</span>
-              </div>
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  💳
-                </div>
-                <span>Update Payment Methods</span>
-              </div>
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  ⚙️
-                </div>
-                <span>Manage Subscription</span>
-              </div>
-            </div>
-            
             <Button 
               onClick={handleManageBilling}
-              disabled={isLoading}
-              size="lg"
+              disabled={isPortalLoading}
               className="gap-2"
             >
               <ExternalLink className="h-4 w-4" />
-              {isLoading ? 'Opening Portal...' : 'Manage Billing & Subscriptions'}
+              {isPortalLoading ? 'Opening Portal...' : 'Manage Billing'}
             </Button>
           </div>
         </div>
-      </Card>
-    </div>
+      </div>
+    </Card>
   );
 };
