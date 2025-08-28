@@ -6,6 +6,7 @@ import { Users, Calendar, CreditCard, AlertTriangle, CheckCircle, Clock, DollarS
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { usePricing } from "@/hooks/usePricing";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -28,6 +29,7 @@ export const SubscriptionStatusCard = () => {
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const { user, companyId } = useAuth();
+  const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
 
   const fetchCompanyData = async () => {
     if (!companyId) return null;
@@ -75,16 +77,8 @@ export const SubscriptionStatusCard = () => {
 
       const teamMembers = memberCount || 0;
       
-      // Get pricing from platform settings or fallback to default
-      let amountPerMember = 299; // Default $2.99 in cents
-      try {
-        const { data: checkResult } = await supabase.functions.invoke('check-subscription-status');
-        if (checkResult?.amount_per_slot) {
-          amountPerMember = checkResult.amount_per_slot;
-        }
-      } catch (error) {
-        console.log("Could not fetch dynamic pricing, using default");
-      }
+      // Use pricing from the dedicated hook (always up-to-date from platform settings)
+      const amountPerMember = pricePerMemberCents;
       
       if (company?.stripe_subscription_id) {
         // Try to get subscription details from check-subscription-status
@@ -132,7 +126,7 @@ export const SubscriptionStatusCard = () => {
         status: 'inactive',
         team_members: 0,
         next_billing_date: null,
-        amount_per_member: 299,
+        amount_per_member: pricePerMemberCents,
         monthly_cost: 0
       });
 
@@ -165,7 +159,7 @@ export const SubscriptionStatusCard = () => {
     }
   }, []);
 
-  if (isLoading) {
+  if (isLoading || isPricingLoading) {
     return (
       <Card className="dashboard-card">
         <div className="card-header">
@@ -320,7 +314,7 @@ export const SubscriptionStatusCard = () => {
               Add your first team member to automatically start your subscription.
             </p>
             <div className="text-sm text-blue-600">
-              <p>• ${((subscriptionStatus?.amount_per_member || 299) / 100).toFixed(2)} per team member per month</p>
+              <p>• ${(pricePerMemberCents / 100).toFixed(2)} per team member per month</p>
               <p>• Billing starts with your first team member</p>
               <p>• Add members instantly after subscription</p>
               <p>• No setup fees or commitments</p>

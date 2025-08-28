@@ -56,7 +56,11 @@ serve(async (req: Request) => {
 
     // Get the user from the authorization header
     console.log("[CHECK-SUBSCRIPTION-STATUS] Getting user from auth header");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    // Extract the JWT token from the Authorization header
+    const token = authHeader.replace("Bearer ", "");
+    
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] User auth error:", userError);
       return new Response(
