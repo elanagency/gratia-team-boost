@@ -18,11 +18,17 @@ interface Company {
   company_members?: Array<{ count: number }>;
 }
 
-interface CompanyDetailsCardProps {
-  company: Company;
+interface Member {
+  user_id: string;
+  points: number;
 }
 
-const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company }) => {
+interface CompanyDetailsCardProps {
+  company: Company;
+  members?: Member[];
+}
+
+const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, members = [] }) => {
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800",
@@ -38,8 +44,7 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company }) => {
   };
 
   const teamMemberCount = company.company_members?.[0]?.count || 0;
-  const usedSlots = teamMemberCount;
-  const availableSlots = company.team_slots - usedSlots;
+  const totalUserPoints = members.reduce((sum, member) => sum + (member.points || 0), 0);
 
   return (
     <Card>
@@ -97,20 +102,17 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company }) => {
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Points Balance</span>
+              <span className="text-sm font-medium">Total Points</span>
             </div>
-            <p className="text-2xl font-bold">{company.points_balance.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{totalUserPoints.toLocaleString()}</p>
           </div>
 
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Team Slots</span>
+              <span className="text-sm font-medium">Total Users</span>
             </div>
-            <p className="text-2xl font-bold">{usedSlots}/{company.team_slots}</p>
-            <p className="text-xs text-muted-foreground">
-              {availableSlots} available
-            </p>
+            <p className="text-2xl font-bold">{teamMemberCount}</p>
           </div>
 
           <div className="p-4 bg-muted/50 rounded-lg">

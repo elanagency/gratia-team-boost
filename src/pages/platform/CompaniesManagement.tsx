@@ -264,7 +264,7 @@ const CompaniesManagement = () => {
                       <TableRow>
                         <TableCell colSpan={6} className="p-0">
                           <div className="p-6 bg-muted/20 space-y-6">
-                            <CompanyDetailsCard company={company} />
+                            <CompanyDetailsCard company={company} members={expandedCompanyMembers || []} />
                             {isMembersLoading ? (
                               <Card>
                                 <CardContent className="p-6">
