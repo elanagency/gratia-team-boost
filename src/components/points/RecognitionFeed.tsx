@@ -20,10 +20,17 @@ type PointTransaction = {
   recipient_name: string;
 };
 
+type ThreadedRecognition = {
+  mainPost: PointTransaction;
+  comments: PointTransaction[];
+  lastActivity: string;
+};
+
 const quickPoints = [5, 10, 25];
 
 export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
+  const [threadedRecognitions, setThreadedRecognitions] = useState<ThreadedRecognition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [givingPoints, setGivingPoints] = useState<{ [key: string]: boolean }>({});
   const [userPoints, setUserPoints] = useState<number>(0);
@@ -110,12 +117,62 @@ export function RecognitionFeed() {
       
       setTransactions(formattedTransactions);
       
+      // Group transactions into threaded recognitions
+      const threaded = groupTransactionsIntoThreads(formattedTransactions);
+      setThreadedRecognitions(threaded);
+      
     } catch (error) {
       console.error("Error fetching recognition feed:", error);
       toast.error("Failed to load recognition feed");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const groupTransactionsIntoThreads = (transactions: PointTransaction[]): ThreadedRecognition[] => {
+    const threads = new Map<string, ThreadedRecognition>();
+    
+    // Separate main posts from comments
+    const mainPosts: PointTransaction[] = [];
+    const comments: PointTransaction[] = [];
+    
+    transactions.forEach(transaction => {
+      if (transaction.description.startsWith('Quick appreciation: ')) {
+        comments.push(transaction);
+      } else {
+        mainPosts.push(transaction);
+      }
+    });
+    
+    // Create threads for main posts
+    mainPosts.forEach(post => {
+      const threadKey = `${post.recipient_id}-${post.description}`;
+      threads.set(threadKey, {
+        mainPost: post,
+        comments: [],
+        lastActivity: post.created_at
+      });
+    });
+    
+    // Add comments to their respective threads
+    comments.forEach(comment => {
+      const originalDescription = comment.description.replace('Quick appreciation: ', '');
+      const threadKey = `${comment.recipient_id}-${originalDescription}`;
+      const thread = threads.get(threadKey);
+      
+      if (thread) {
+        thread.comments.push(comment);
+        // Update last activity if this comment is newer
+        if (new Date(comment.created_at) > new Date(thread.lastActivity)) {
+          thread.lastActivity = comment.created_at;
+        }
+      }
+    });
+    
+    // Convert to array and sort by last activity
+    return Array.from(threads.values()).sort((a, b) => 
+      new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+    );
   };
 
   const handleQuickPoints = async (recipientId: string, points: number, originalDescription: string) => {
@@ -206,30 +263,31 @@ export function RecognitionFeed() {
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 pt-0">
-        {transactions.length > 0 ? (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {transactions.map((transaction) => {
-              const { cleanDescription, hashtags } = extractHashtags(transaction.description);
-              const canGivePoints = user?.id !== transaction.recipient_id && user?.id !== transaction.sender_id;
+        {threadedRecognitions.length > 0 ? (
+          <div className="space-y-6 max-h-96 overflow-y-auto">
+            {threadedRecognitions.map((thread) => {
+              const { cleanDescription, hashtags } = extractHashtags(thread.mainPost.description);
+              const canGivePoints = user?.id !== thread.mainPost.recipient_id && user?.id !== thread.mainPost.sender_id;
               
               return (
-                <div key={transaction.id} className="border-b border-border/50 pb-4 last:border-b-0">
+                <div key={thread.mainPost.id} className="border-b border-border/50 pb-6 last:border-b-0">
+                  {/* Main Post */}
                   <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarFallback className="text-xs bg-[#F572FF]/10 text-[#F572FF]">
-                        {getInitials(transaction.sender_name)}
+                        {getInitials(thread.mainPost.sender_name)}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{transaction.sender_name}</span>
+                        <span className="font-medium text-sm">{thread.mainPost.sender_name}</span>
                         <span className="text-xs text-muted-foreground">gave</span>
                         <span className="text-xs">
-                          {transaction.points} <span className="text-xs text-muted-foreground">points</span>
+                          {thread.mainPost.points} <span className="text-xs text-muted-foreground">points</span>
                         </span>
                         <span className="text-xs text-muted-foreground">to</span>
-                        <span className="font-medium text-sm">{transaction.recipient_name}</span>
+                        <span className="font-medium text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
                       <p className="text-sm text-muted-foreground">{cleanDescription}</p>
@@ -247,13 +305,18 @@ export function RecognitionFeed() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
+                          {thread.comments.length > 0 && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              • {thread.comments.length} appreciation{thread.comments.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                         
                         {canGivePoints && (
                           <div className="flex gap-1">
                             {quickPoints.map((points) => {
-                              const transactionId = `${transaction.recipient_id}-${points}`;
+                              const transactionId = `${thread.mainPost.recipient_id}-${points}`;
                               const isGiving = givingPoints[transactionId];
                               const hasEnoughPoints = userPoints >= points;
                               
@@ -262,7 +325,7 @@ export function RecognitionFeed() {
                                   key={points}
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleQuickPoints(transaction.recipient_id, points, cleanDescription)}
+                                  onClick={() => handleQuickPoints(thread.mainPost.recipient_id, points, cleanDescription)}
                                   disabled={isGiving || !hasEnoughPoints}
                                   className={`h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF] ${
                                     !hasEnoughPoints ? 'opacity-50 cursor-not-allowed' : ''
@@ -285,6 +348,36 @@ export function RecognitionFeed() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Comments/Appreciations */}
+                  {thread.comments.length > 0 && (
+                    <div className="mt-3 ml-11 space-y-2">
+                      {thread.comments
+                        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                        .map((comment) => (
+                        <div key={comment.id} className="flex gap-2 items-start">
+                          <div className="w-px bg-border h-6 mt-1"></div>
+                          <Avatar className="h-6 w-6 flex-shrink-0">
+                            <AvatarFallback className="text-xs bg-muted text-muted-foreground">
+                              {getInitials(comment.sender_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-xs">{comment.sender_name}</span>
+                              <span className="text-xs text-muted-foreground">gave</span>
+                              <span className="text-xs text-[#F572FF] font-medium">
+                                +{comment.points} points
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
