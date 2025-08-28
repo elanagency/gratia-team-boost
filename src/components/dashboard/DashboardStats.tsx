@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Award, Gift, CreditCard } from "lucide-react";
+import { Users, Award, Gift, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 type StatItem = {
   title: string;
@@ -15,14 +16,14 @@ type StatItem = {
 type DashboardStatsProps = {
   teamCount: number;
   isLoading: boolean;
-  companyPoints: number;
 };
 
-export const DashboardStats = ({ teamCount, isLoading, companyPoints }: DashboardStatsProps) => {
+export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) => {
   const [recognitionCount, setRecognitionCount] = useState<number>(0);
   const [rewardsCount, setRewardsCount] = useState<number>(0);
   const [isLoadingRecognitions, setIsLoadingRecognitions] = useState<boolean>(true);
   const { companyId } = useAuth();
+  const { userPoints, isLoading: isLoadingUserPoints } = useUserPoints();
   
   useEffect(() => {
     const fetchRecognitionStats = async () => {
@@ -65,13 +66,13 @@ export const DashboardStats = ({ teamCount, isLoading, companyPoints }: Dashboar
     fetchRecognitionStats();
   }, [companyId]);
 
-  // Updated stats for the dashboard with company points as the first item
+  // Updated stats for the dashboard focused on user experience
   const stats: StatItem[] = [
     { 
-      title: "Company Balance", 
-      value: isLoading ? "..." : `${companyPoints} points`, 
-      icon: CreditCard, 
-      description: "Available points" 
+      title: "My Points", 
+      value: isLoadingUserPoints ? "..." : `${userPoints} points`, 
+      icon: Coins, 
+      description: "Your balance" 
     },
     { 
       title: "Team Members", 

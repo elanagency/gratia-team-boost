@@ -73,7 +73,6 @@ const Dashboard = () => {
       <DashboardStats 
         teamCount={teamCount} 
         isLoading={isLoading} 
-        companyPoints={companyPoints}
       />
 
       {/* Leaderboard and Team section - Stack on mobile, side by side on desktop */}
