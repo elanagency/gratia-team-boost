@@ -27,7 +27,6 @@ interface Mention {
 export function GivePointsCard() {
   const [text, setText] = useState("");
   const [selectedPoints, setSelectedPoints] = useState<number>(10);
-  const [customPoints, setCustomPoints] = useState("");
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -93,20 +92,9 @@ export function GivePointsCard() {
     member.name.toLowerCase().includes(mentionQuery)
   );
 
-  const getPointsToGive = () => {
-    return parseInt(customPoints) || selectedPoints;
-  };
-
   const handleSubmit = async () => {
-    const pointsToGive = getPointsToGive();
-    
     if (!text.trim() || mentions.length === 0) {
       toast.error("Please write a message and mention at least one person");
-      return;
-    }
-
-    if (pointsToGive <= 0) {
-      toast.error("Please select or enter valid points");
       return;
     }
 
@@ -123,7 +111,7 @@ export function GivePointsCard() {
         company_id: companyId,
         sender_id: user.id,
         recipient_id: mention.userId,
-        points: pointsToGive,
+        points: selectedPoints,
         description: text
       }));
 
@@ -133,14 +121,13 @@ export function GivePointsCard() {
 
       if (error) throw error;
 
-      const totalPoints = pointsToGive * mentions.length;
-      toast.success(`Successfully gave ${pointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
+      const totalPoints = selectedPoints * mentions.length;
+      toast.success(`Successfully gave ${selectedPoints} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
       
       // Reset form
       setText("");
       setMentions([]);
       setSelectedPoints(10);
-      setCustomPoints("");
       
     } catch (error) {
       console.error("Error giving points:", error);
@@ -151,48 +138,42 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-2xl shadow-accent/10 hover:shadow-accent/20 transition-all duration-500">
-      <CardContent className="p-6 space-y-6">
-        {/* Header */}
+    <Card className="border-0 shadow-none bg-background">
+      <CardContent className="p-4 space-y-4">
+        {/* Available Points */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent/20 to-accent/30 flex items-center justify-center">
-              <Heart className="h-5 w-5 text-accent" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Give Recognition</h2>
-              <p className="text-sm text-muted-foreground">Share appreciation with your team</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <Heart className="h-4 w-4 text-accent" />
+            <span className="text-sm text-muted-foreground">
+              You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points to give
+            </span>
           </div>
-          <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
-            {userPoints} points
-          </Badge>
         </div>
 
         {/* Composer */}
         <div className="relative">
-          <div className="border border-border/50 rounded-xl bg-background/50 backdrop-blur-sm transition-all focus-within:border-accent/50 focus-within:shadow-lg focus-within:shadow-accent/10">
+          <div className="border rounded-lg bg-card">
             <textarea
               ref={textareaRef}
               value={text}
               onChange={handleTextChange}
-              placeholder="🎉 Give recognition... Type @ to mention someone"
-              className="w-full min-h-[120px] p-4 bg-transparent border-0 resize-none focus:outline-none text-sm placeholder:text-muted-foreground rounded-t-xl"
+              placeholder="Give recognition... Type @ to mention someone"
+              className="w-full min-h-[100px] p-3 bg-transparent border-0 resize-none focus:outline-none text-sm placeholder:text-muted-foreground"
               disabled={isSubmitting}
             />
             
             {/* Mention Dropdown */}
             {showMentionDropdown && filteredMembers.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {filteredMembers.slice(0, 5).map((member) => (
                   <button
                     key={member.user_id}
                     onClick={() => selectMention(member)}
-                    className="w-full px-4 py-3 text-left hover:bg-accent/10 hover:text-accent-foreground flex items-center gap-3 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
                   >
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-6 w-6">
                       <AvatarImage src="" />
-                      <AvatarFallback className="text-xs bg-accent/20 text-accent">{getInitials(member.name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="text-sm font-medium">{member.name}</div>
@@ -207,10 +188,10 @@ export function GivePointsCard() {
 
             {/* Mentioned People */}
             {mentions.length > 0 && (
-              <div className="px-4 pb-3">
-                <div className="flex flex-wrap gap-2">
+              <div className="px-3 pb-2">
+                <div className="flex flex-wrap gap-1">
                   {mentions.map((mention, index) => (
-                    <Badge key={index} variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                    <Badge key={index} variant="secondary" className="text-xs">
                       @{mention.name}
                     </Badge>
                   ))}
@@ -219,49 +200,25 @@ export function GivePointsCard() {
             )}
 
             {/* Bottom Bar */}
-            <div className="flex items-center justify-between p-4 border-t border-border/30 bg-muted/30 rounded-b-xl">
+            <div className="flex items-center justify-between p-3 border-t bg-muted/20">
               {/* Point Selection */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {pointPresets.map((preset) => {
                   const Icon = preset.icon;
-                  const isSelected = selectedPoints === preset.value && !customPoints;
+                  const isSelected = selectedPoints === preset.value;
                   return (
                     <Button
                       key={preset.value}
                       variant={isSelected ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => {
-                        setSelectedPoints(preset.value);
-                        setCustomPoints("");
-                      }}
-                      className={`h-8 px-3 gap-1.5 text-sm transition-all ${
-                        isSelected 
-                          ? "bg-accent text-accent-foreground shadow-md" 
-                          : "hover:bg-accent/10 hover:text-accent"
-                      }`}
+                      onClick={() => setSelectedPoints(preset.value)}
+                      className="h-7 px-2 gap-1 text-xs"
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-3 w-3" />
                       {preset.label}
                     </Button>
                   );
                 })}
-                
-                {/* Custom Points Input */}
-                <div className="flex items-center gap-2 ml-3">
-                  <span className="text-sm text-muted-foreground">or</span>
-                  <input
-                    type="number"
-                    value={customPoints}
-                    onChange={(e) => {
-                      setCustomPoints(e.target.value);
-                      setSelectedPoints(0);
-                    }}
-                    placeholder="Custom"
-                    className="w-20 h-8 px-3 text-sm border border-border/50 rounded-md text-center bg-background/80 focus:outline-none focus:border-accent/50 focus:bg-background transition-colors"
-                    min="1"
-                    max={userPoints}
-                  />
-                </div>
               </div>
 
               {/* Send Button */}
@@ -269,17 +226,14 @@ export function GivePointsCard() {
                 onClick={handleSubmit}
                 disabled={isSubmitting || !text.trim() || mentions.length === 0}
                 size="sm"
-                className="gap-2 bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-md hover:shadow-lg transition-all duration-200 px-6"
+                className="gap-1 bg-accent hover:bg-accent/90"
               >
                 {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-                    Posting...
-                  </>
+                  "Posting..."
                 ) : (
                   <>
-                    <Send className="h-4 w-4" />
-                    Give {getPointsToGive()} pts
+                    <Send className="h-3 w-3" />
+                    Give {selectedPoints} pts
                   </>
                 )}
               </Button>

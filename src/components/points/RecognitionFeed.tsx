@@ -162,52 +162,50 @@ export function RecognitionFeed() {
   }
 
   return (
-    <Card className="backdrop-blur-sm bg-card/95 border-0 shadow-2xl shadow-accent/10 hover:shadow-accent/20 transition-all duration-500">
-      <CardHeader className="pb-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent/20 to-accent/30 flex items-center justify-center">
-            <MessageCircle className="h-5 w-5 text-accent" />
-          </div>
-          <div>
-            <CardTitle className="text-xl font-semibold">Recognition Feed</CardTitle>
-            <CardDescription className="text-sm">Recent team recognitions and celebrations</CardDescription>
-          </div>
-        </div>
+    <Card className="dashboard-card h-fit">
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-[#F572FF]" />
+          Recognition Feed
+        </CardTitle>
+        <CardDescription className="text-sm">
+          Recent team recognitions and celebrations
+        </CardDescription>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="p-4 sm:p-6 pt-0">
         {transactions.length > 0 ? (
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent">
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {transactions.map((transaction) => {
               const { cleanDescription, hashtags } = extractHashtags(transaction.description);
               const canGivePoints = user?.id !== transaction.recipient_id && user?.id !== transaction.sender_id;
               
               return (
-                <div key={transaction.id} className="group p-4 rounded-lg border border-border/30 bg-background/50 hover:bg-accent/5 transition-all duration-200 hover:border-accent/30">
+                <div key={transaction.id} className="border-b border-border/50 pb-4 last:border-b-0">
                   <div className="flex gap-3">
-                    <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-accent/20">
-                      <AvatarFallback className="text-sm bg-gradient-to-r from-accent/20 to-accent/30 text-accent font-medium">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarFallback className="text-xs bg-[#F572FF]/10 text-[#F572FF]">
                         {getInitials(transaction.sender_name)}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm">{transaction.sender_name}</span>
                         <span className="text-xs text-muted-foreground">gave</span>
-                        <Badge variant="secondary" className="text-xs bg-accent/10 text-accent border-accent/20">
+                        <Badge variant="secondary" className="text-xs">
                           <Heart className="h-3 w-3 mr-1" />
                           {transaction.points}
                         </Badge>
                         <span className="text-xs text-muted-foreground">to</span>
-                        <span className="font-medium text-sm text-accent">{transaction.recipient_name}</span>
+                        <span className="font-medium text-sm">{transaction.recipient_name}</span>
                       </div>
                       
-                      <p className="text-sm text-foreground/80 leading-relaxed">{cleanDescription}</p>
+                      <p className="text-sm text-muted-foreground">{cleanDescription}</p>
                       
                       {hashtags.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-1 flex-wrap">
                           {hashtags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs bg-accent/5 text-accent border-accent/30 hover:bg-accent/10 transition-colors">
+                            <Badge key={index} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
                           ))}
@@ -215,13 +213,13 @@ export function RecognitionFeed() {
                       )}
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true })}
                         </div>
                         
                         {canGivePoints && (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1">
                             {quickPoints.map((points) => {
                               const transactionId = `${transaction.recipient_id}-${points}`;
                               const isGiving = givingPoints[transactionId];
@@ -233,7 +231,7 @@ export function RecognitionFeed() {
                                   size="sm"
                                   onClick={() => handleQuickPoints(transaction.recipient_id, points, cleanDescription)}
                                   disabled={isGiving}
-                                  className="h-7 px-3 text-xs hover:bg-accent/10 hover:text-accent transition-all duration-200 border border-transparent hover:border-accent/20"
+                                  className="h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF]"
                                 >
                                   {isGiving ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
@@ -256,12 +254,10 @@ export function RecognitionFeed() {
             })}
           </div>
         ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-accent/10 to-accent/20 flex items-center justify-center">
-              <MessageCircle className="h-8 w-8 text-accent/60" />
-            </div>
-            <p className="text-lg font-medium mb-2">No recognitions yet</p>
-            <p className="text-sm">Be the first to recognize a teammate!</p>
+          <div className="text-center py-8 text-muted-foreground">
+            <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm">No recognitions yet</p>
+            <p className="text-xs mt-2">Be the first to recognize a teammate!</p>
           </div>
         )}
       </CardContent>
