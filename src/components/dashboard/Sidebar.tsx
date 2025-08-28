@@ -38,10 +38,6 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }:
     icon: LayoutDashboard,
     path: "/dashboard-team"
   }, {
-    name: "Recognition",
-    icon: Award,
-    path: "/dashboard-team/recognition"
-  }, {
     name: "Rewards Shop",
     icon: Gift,
     path: "/dashboard-team/rewards"

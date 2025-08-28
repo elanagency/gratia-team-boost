@@ -22,7 +22,7 @@ import ProfileSettings from "./pages/admin/ProfileSettings";
 // Import Team Dashboard components
 import TeamDashboardLayout from "./pages/team/TeamDashboardLayout";
 import TeamDashboard from "./pages/team/TeamDashboard";
-import TeamRecognition from "./pages/team/TeamRecognition";
+
 import RewardShop from "./pages/team/RewardShop";
 
 // Import Platform Admin components
@@ -107,7 +107,7 @@ const App = () => (
               {/* Team Dashboard routes for regular team members */}
               <Route path="/dashboard-team" element={<TeamDashboardLayout />}>
                 <Route index element={<TeamDashboard />} />
-                <Route path="recognition" element={<TeamRecognition />} />
+                
                 <Route path="rewards" element={<RewardShop />} />
                 <Route path="profile" element={<ProfileSettings />} />
               </Route>
