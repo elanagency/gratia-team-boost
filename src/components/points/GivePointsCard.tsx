@@ -27,6 +27,7 @@ interface Mention {
 export function GivePointsCard() {
   const [text, setText] = useState("");
   const [selectedPoints, setSelectedPoints] = useState<number>(10);
+  const [customPoints, setCustomPoints] = useState("");
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -92,9 +93,20 @@ export function GivePointsCard() {
     member.name.toLowerCase().includes(mentionQuery)
   );
 
+  const getPointsToGive = () => {
+    return parseInt(customPoints) || selectedPoints;
+  };
+
   const handleSubmit = async () => {
+    const pointsToGive = getPointsToGive();
+    
     if (!text.trim() || mentions.length === 0) {
       toast.error("Please write a message and mention at least one person");
+      return;
+    }
+
+    if (pointsToGive <= 0) {
+      toast.error("Please select or enter valid points");
       return;
     }
 
@@ -111,7 +123,7 @@ export function GivePointsCard() {
         company_id: companyId,
         sender_id: user.id,
         recipient_id: mention.userId,
-        points: selectedPoints,
+        points: pointsToGive,
         description: text
       }));
 
@@ -121,13 +133,14 @@ export function GivePointsCard() {
 
       if (error) throw error;
 
-      const totalPoints = selectedPoints * mentions.length;
-      toast.success(`Successfully gave ${selectedPoints} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
+      const totalPoints = pointsToGive * mentions.length;
+      toast.success(`Successfully gave ${pointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
       
       // Reset form
       setText("");
       setMentions([]);
       setSelectedPoints(10);
+      setCustomPoints("");
       
     } catch (error) {
       console.error("Error giving points:", error);
@@ -138,14 +151,16 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="border-0 shadow-none bg-background">
-      <CardContent className="p-4 space-y-4">
-        {/* Available Points */}
+    <Card className="dashboard-card h-fit min-h-[500px]">
+      <CardContent className="p-4 sm:p-6 space-y-4">{/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-accent" />
+            <Heart className="h-5 w-5 text-accent" />
+            <span className="text-lg sm:text-xl font-semibold">Give Recognition</span>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points to give
+              You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points
             </span>
           </div>
         </div>
@@ -205,13 +220,16 @@ export function GivePointsCard() {
               <div className="flex items-center gap-1">
                 {pointPresets.map((preset) => {
                   const Icon = preset.icon;
-                  const isSelected = selectedPoints === preset.value;
+                  const isSelected = selectedPoints === preset.value && !customPoints;
                   return (
                     <Button
                       key={preset.value}
                       variant={isSelected ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setSelectedPoints(preset.value)}
+                      onClick={() => {
+                        setSelectedPoints(preset.value);
+                        setCustomPoints("");
+                      }}
                       className="h-7 px-2 gap-1 text-xs"
                     >
                       <Icon className="h-3 w-3" />
@@ -219,6 +237,23 @@ export function GivePointsCard() {
                     </Button>
                   );
                 })}
+                
+                {/* Custom Points Input */}
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <input
+                    type="number"
+                    value={customPoints}
+                    onChange={(e) => {
+                      setCustomPoints(e.target.value);
+                      setSelectedPoints(0);
+                    }}
+                    placeholder="Custom"
+                    className="w-16 h-7 px-2 text-xs border rounded text-center bg-background"
+                    min="1"
+                    max={userPoints}
+                  />
+                </div>
               </div>
 
               {/* Send Button */}
@@ -233,7 +268,7 @@ export function GivePointsCard() {
                 ) : (
                   <>
                     <Send className="h-3 w-3" />
-                    Give {selectedPoints} pts
+                    Give {getPointsToGive()} pts
                   </>
                 )}
               </Button>
