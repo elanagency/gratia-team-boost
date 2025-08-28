@@ -330,7 +330,7 @@ serve(async (req: Request) => {
       );
     }
     
-    // Add user as a NON-ADMIN member of the company
+    // Add user as a NON-ADMIN member of the company with 100 initial points
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from("company_members")
       .insert({
@@ -339,6 +339,7 @@ serve(async (req: Request) => {
         is_admin: false,
         role: role.toLowerCase(),
         department: department || null,
+        points: 100, // Give new team members 100 initial points
       })
       .select()
       .single();

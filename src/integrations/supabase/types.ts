@@ -255,6 +255,36 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_points_allocations: {
+        Row: {
+          allocation_date: string
+          allocation_month: string
+          company_id: string
+          created_at: string
+          id: string
+          points_allocated: number
+          user_id: string
+        }
+        Insert: {
+          allocation_date?: string
+          allocation_month: string
+          company_id: string
+          created_at?: string
+          id?: string
+          points_allocated?: number
+          user_id: string
+        }
+        Update: {
+          allocation_date?: string
+          allocation_month?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          points_allocated?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_payment_methods: {
         Row: {
           card_last_four: string
@@ -627,6 +657,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allocate_monthly_points: {
+        Args: { target_company_id: string }
+        Returns: number
+      }
       calculate_prorated_amount: {
         Args: {
           base_amount: number
@@ -682,6 +716,10 @@ export type Database = {
       }
       is_platform_admin: {
         Args: { user_id?: string }
+        Returns: boolean
+      }
+      should_allocate_monthly_points: {
+        Args: { target_company_id: string }
         Returns: boolean
       }
     }
