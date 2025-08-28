@@ -32,6 +32,7 @@ import CompaniesManagement from "./pages/platform/CompaniesManagement";
 import PlatformRewardsCatalog from "./pages/platform/PlatformRewardsCatalog";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
+import SubscriptionMigration from "./pages/platform/SubscriptionMigration";
 
 // Create a client with better caching defaults
 const queryClient = new QueryClient({
@@ -89,6 +90,7 @@ const App = () => (
                 <Route path="rewards" element={<PlatformRewardsCatalog />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
+                <Route path="migration" element={<SubscriptionMigration />} />
               </Route>
               
               {/* Dashboard routes for administrators */}
