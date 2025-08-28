@@ -145,8 +145,18 @@ export const useOptimizedAuth = () => {
 
   const signOut = async () => {
     console.log('Signing out user');
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      // If logout fails (e.g., session already expired), we still want to clear local state
+      console.warn('Logout failed, but clearing local state:', error);
+    }
+    
+    // Always clear local state and queries regardless of server response
+    setUser(null);
+    setSession(null);
     queryClient.removeQueries({ queryKey: ['user-profile'] });
+    queryClient.clear(); // Clear all cached data
   };
 
   return {
