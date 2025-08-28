@@ -46,10 +46,6 @@ export const CollapsibleSidebar = ({ user, firstName, lastName, handleLogout, is
     icon: LayoutDashboard,
     path: "/dashboard"
   }, {
-    name: "Recognition",
-    icon: Award,
-    path: "/dashboard/recognition"
-  }, {
     name: "Rewards",
     icon: Gift,
     path: "/dashboard/rewards"

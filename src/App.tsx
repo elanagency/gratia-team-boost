@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
-import RecognitionHistory from "./pages/admin/RecognitionHistory";
+
 import RewardsCatalog from "./pages/admin/RewardsCatalog";
 
 import Settings from "./pages/admin/Settings";
@@ -97,7 +97,7 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="team" element={<TeamManagement />} />
-                <Route path="recognition" element={<RecognitionHistory />} />
+                
                 <Route path="rewards" element={<RewardsCatalog />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
