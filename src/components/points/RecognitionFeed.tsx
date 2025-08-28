@@ -319,11 +319,6 @@ export function RecognitionFeed() {
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
-                          {thread.comments.length > 0 && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              • {thread.comments.length} appreciation{thread.comments.length !== 1 ? 's' : ''}
-                            </span>
-                          )}
                         </div>
                         
                         {canGivePoints && (
