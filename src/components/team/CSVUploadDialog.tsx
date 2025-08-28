@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -32,6 +32,29 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<any[]>([]);
   const { user, companyId } = useAuth();
+
+  const downloadSampleCSV = () => {
+    const sampleData = [
+      ["Name", "Email", "Department"],
+      ["John Doe", "john@example.com", "Engineering"],
+      ["Jane Smith", "jane@example.com", "Marketing"],
+      ["Mike Johnson", "mike@example.com", "Sales"]
+    ];
+    
+    const csvContent = sampleData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "team_members_sample.csv");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -154,14 +177,26 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
             </div>
           )}
 
-          <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
-            <strong>CSV Format:</strong>
-            <br />
-            Name, Email, Department
-            <br />
-            John Doe, john@example.com, Engineering
-            <br />
-            Jane Smith, jane@example.com, Marketing
+          <div className="text-xs text-muted-foreground bg-muted p-3 rounded space-y-3">
+            <div>
+              <strong>CSV Format:</strong>
+              <br />
+              Name, Email, Department
+              <br />
+              John Doe, john@example.com, Engineering
+              <br />
+              Jane Smith, jane@example.com, Marketing
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={downloadSampleCSV}
+              className="gap-2 h-8"
+            >
+              <Download className="h-3 w-3" />
+              Download Sample
+            </Button>
           </div>
 
           {uploadResults.length > 0 && (
