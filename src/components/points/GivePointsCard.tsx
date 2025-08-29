@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,7 @@ import { useUserPoints } from "@/hooks/useUserPoints";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-
-interface Mention {
-  id: string;
-  name: string;
-  userId: string;
-}
+import { RichTextEditor, type RichTextEditorRef, type Mention } from "@/components/ui/rich-text-editor";
 
 export function GivePointsCard() {
   const [text, setText] = useState("");
@@ -23,9 +18,8 @@ export function GivePointsCard() {
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   const { user, companyId } = useAuth();
   const { teamMembers } = useTeamMembers();
@@ -37,47 +31,34 @@ export function GivePointsCard() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    const cursorPos = e.target.selectionStart;
+  const handleTextChange = (value: string, newMentions: Mention[]) => {
     setText(value);
-    setCursorPosition(cursorPos);
+    setMentions(newMentions);
+  };
 
-    // Check for @ mentions
-    const textUpToCursor = value.slice(0, cursorPos);
-    const atIndex = textUpToCursor.lastIndexOf('@');
-    
-    if (atIndex !== -1 && (atIndex === 0 || value[atIndex - 1] === ' ')) {
-      const query = textUpToCursor.slice(atIndex + 1);
-      if (!query.includes(' ')) {
-        setMentionQuery(query.toLowerCase());
-        setShowMentionDropdown(true);
-        return;
-      }
+  const handleMentionTrigger = (query: string, position: number) => {
+    if (query === '' && position === -1) {
+      setShowMentionDropdown(false);
+      return;
     }
     
-    setShowMentionDropdown(false);
+    setMentionQuery(query);
+    setShowMentionDropdown(true);
   };
 
   const selectMention = (member: any) => {
-    const textUpToCursor = text.slice(0, cursorPosition);
-    const atIndex = textUpToCursor.lastIndexOf('@');
-    const textAfterCursor = text.slice(cursorPosition);
+    const mention: Mention = {
+      id: member.id,
+      name: member.name,
+      userId: member.user_id
+    };
     
-    const beforeMention = text.slice(0, atIndex);
-    const newText = beforeMention + `@${member.name} ` + textAfterCursor;
-    
-    setText(newText);
-    setMentions([...mentions, { id: member.id, name: member.name, userId: member.user_id }]);
+    editorRef.current?.insertMention(mention);
     setShowMentionDropdown(false);
     
-    // Focus back to textarea
+    // Focus back to editor
     setTimeout(() => {
-      if (textareaRef.current) {
-        const newCursorPos = atIndex + member.name.length + 2;
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-      }
+      editorRef.current?.focus();
     }, 0);
   };
 
@@ -164,13 +145,14 @@ export function GivePointsCard() {
         {/* Composer */}
         <div className="relative">
           <div className="border rounded-lg bg-card">
-            <textarea
-              ref={textareaRef}
+            <RichTextEditor
+              ref={editorRef}
               value={text}
               onChange={handleTextChange}
+              onMentionTrigger={handleMentionTrigger}
               placeholder="Give recognition... Type @ to mention someone"
-              className="w-full min-h-[100px] p-3 bg-transparent border-0 resize-none focus:outline-none text-sm placeholder:text-muted-foreground"
               disabled={isSubmitting}
+              mentions={mentions}
             />
             
             {/* Mention Dropdown */}
@@ -194,19 +176,6 @@ export function GivePointsCard() {
                     </div>
                   </button>
                 ))}
-              </div>
-            )}
-
-            {/* Mentioned People */}
-            {mentions.length > 0 && (
-              <div className="px-3 pb-2">
-                <div className="flex flex-wrap gap-1">
-                  {mentions.map((mention, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      @{mention.name}
-                    </Badge>
-                  ))}
-                </div>
               </div>
             )}
 
