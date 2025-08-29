@@ -309,13 +309,13 @@ export function RecognitionFeed() {
                     
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{thread.mainPost.sender_name}</span>
-                        <span className="text-xs text-muted-foreground">gave</span>
-                        <span className="text-xs">
-                          {thread.mainPost.points} <span className="text-xs text-muted-foreground">points</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground">to</span>
-                        <span className="font-medium text-sm">{thread.mainPost.recipient_name}</span>
+                         <span className="font-bold text-sm">{thread.mainPost.sender_name}</span>
+                         <span className="text-xs text-muted-foreground">gave</span>
+                         <span className="text-xs">
+                           {thread.mainPost.points} <span className="text-xs text-muted-foreground">points</span>
+                         </span>
+                         <span className="text-xs text-muted-foreground">to</span>
+                         <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
                       <p className="text-sm text-muted-foreground">{cleanDescription}</p>
@@ -392,7 +392,7 @@ export function RecognitionFeed() {
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-xs">{comment.sender_name}</span>
+                              <span className="font-bold text-xs">{comment.sender_name}</span>
                               <span className="text-xs text-muted-foreground">gave</span>
                               <span className="text-xs text-[#F572FF] font-medium">
                                 +{comment.points} points
