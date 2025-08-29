@@ -3,17 +3,20 @@ import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
 interface TeamMemberTableProps {
   teamMembers: TeamMember[];
   onRemoveMember: (member: TeamMember) => void;
+  onEditMember?: (member: TeamMember) => void;
 }
 
 const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   teamMembers,
-  onRemoveMember
+  onRemoveMember,
+  onEditMember
 }) => {
   return (
     <Table>
@@ -47,16 +50,36 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="flex items-center">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-gray-500 hover:text-red-500" 
-                    onClick={() => onRemoveMember(member)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 bg-background border shadow-md">
+                    {onEditMember && (
+                      <DropdownMenuItem 
+                        onClick={() => onEditMember(member)}
+                        className="cursor-pointer"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem 
+                      onClick={() => onRemoveMember(member)}
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))
