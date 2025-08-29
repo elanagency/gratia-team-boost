@@ -4,6 +4,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { useLoginStatusUpdate } from "@/hooks/useLoginStatusUpdate";
 
 // Define expanded auth context type that includes profile and company data
 type AuthContextType = {
@@ -26,6 +27,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const authData = useOptimizedAuth();
+  
+  // Update login status for invited users
+  useLoginStatusUpdate();
 
   // Enhanced signOut with navigation
   const signOut = async () => {

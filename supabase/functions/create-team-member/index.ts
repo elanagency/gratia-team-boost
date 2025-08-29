@@ -340,6 +340,7 @@ serve(async (req: Request) => {
         role: role.toLowerCase(),
         department: department || null,
         points: 100, // Give new team members 100 initial points
+        invitation_status: 'invited', // Set initial status as invited
       })
       .select()
       .single();

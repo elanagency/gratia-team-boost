@@ -113,7 +113,10 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           id,
           is_admin,
           user_id,
-          points
+          points,
+          department,
+          invitation_status,
+          first_login_at
         `)
         .eq('company_id', companyId)
         .neq('user_id', user.id);
@@ -155,8 +158,9 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           email: '', // We don't have email in the profiles table
           user_id: member.user_id,
           points: member.points || 0,
-          recognitionsReceived: 0,
-          recognitionsGiven: 0
+          department: member.department || '',
+          invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',
+          first_login_at: member.first_login_at
         };
       });
       

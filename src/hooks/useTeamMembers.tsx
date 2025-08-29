@@ -11,7 +11,8 @@ export interface TeamMember {
   user_id: string;
   points: number;
   department?: string;
-  isPending?: boolean;
+  invitation_status: 'invited' | 'active';
+  first_login_at?: string;
 }
 
 export const useTeamMembers = () => {
@@ -49,7 +50,9 @@ export const useTeamMembers = () => {
           is_admin,
           user_id,
           points,
-          department
+          department,
+          invitation_status,
+          first_login_at
         `)
         .eq('company_id', companyId)
         .eq('is_admin', false); // Only get non-admin members
@@ -118,7 +121,9 @@ export const useTeamMembers = () => {
           email: emailsMap[member.user_id] || '',
           user_id: member.user_id,
           points: member.points || 0,
-          department: member.department || ''
+          department: member.department || '',
+          invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',
+          first_login_at: member.first_login_at
         };
       });
       

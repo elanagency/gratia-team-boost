@@ -133,7 +133,9 @@ export type Database = {
           company_id: string
           created_at: string
           department: string | null
+          first_login_at: string | null
           id: string
+          invitation_status: string
           is_admin: boolean
           points: number
           role: string
@@ -144,7 +146,9 @@ export type Database = {
           company_id: string
           created_at?: string
           department?: string | null
+          first_login_at?: string | null
           id?: string
+          invitation_status?: string
           is_admin?: boolean
           points?: number
           role?: string
@@ -155,7 +159,9 @@ export type Database = {
           company_id?: string
           created_at?: string
           department?: string | null
+          first_login_at?: string | null
           id?: string
+          invitation_status?: string
           is_admin?: boolean
           points?: number
           role?: string
