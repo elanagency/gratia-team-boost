@@ -2,7 +2,6 @@
 import React from "react";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
 import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
-import { MonthlyLimitsCard } from "@/components/settings/MonthlyLimitsCard";
 import { BillingCard } from "@/components/settings/BillingCard";
 
 const Settings = () => {
@@ -13,7 +12,6 @@ const Settings = () => {
       <div className="space-y-6">
         <CompanyInformationCard />
         <TeamManagementCard />
-        <MonthlyLimitsCard />
         <BillingCard />
       </div>
     </div>
