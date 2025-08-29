@@ -274,9 +274,12 @@ export function RecognitionFeed() {
         parts.push(description.slice(lastIndex, match.index));
       }
       
-      // Add the mention with bold formatting
+      // Add the mention as a balloon tag
       parts.push(
-        <span key={match.index} className="font-bold text-foreground">
+        <span 
+          key={match.index} 
+          className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium mx-1"
+        >
           @{match[1]}
         </span>
       );
