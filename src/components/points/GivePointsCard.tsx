@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, Send } from "lucide-react";
+import { Heart, Send, AtSign, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useUserPoints } from "@/hooks/useUserPoints";
@@ -90,6 +90,20 @@ export function GivePointsCard() {
     setTimeout(() => {
       editorRef.current?.focus();
     }, 0);
+  };
+
+  const handleMentionButtonClick = () => {
+    editorRef.current?.focus();
+    setShowMentionDropdown(true);
+    setShowPointDropdown(false);
+    setMentionQuery("");
+  };
+
+  const handleAmountButtonClick = () => {
+    editorRef.current?.focus();
+    setShowPointDropdown(true);
+    setShowMentionDropdown(false);
+    setPointQuery("");
   };
 
   const filteredMembers = availableRecipients.filter(member =>
@@ -182,6 +196,31 @@ export function GivePointsCard() {
         {/* Composer */}
         <div className="relative">
           <div className="border rounded-lg bg-card">
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleMentionButtonClick}
+                disabled={isSubmitting}
+                className={`gap-1 ${showMentionDropdown ? 'bg-accent' : ''}`}
+              >
+                <AtSign className="h-3 w-3" />
+                Mention
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAmountButtonClick}
+                disabled={isSubmitting}
+                className={`gap-1 ${showPointDropdown ? 'bg-accent' : ''}`}
+              >
+                <Plus className="h-3 w-3" />
+                Amount
+              </Button>
+            </div>
             <RichTextEditor
               ref={editorRef}
               value={text}
