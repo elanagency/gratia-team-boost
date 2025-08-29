@@ -97,20 +97,63 @@ export function RecognitionFeed() {
         setTransactions([]);
         return;
       }
+
+      // Filter out platform admin and system transactions
+      const filteredTransactions = transactionsData.filter(transaction => {
+        // Filter out system/cron job transactions by description patterns
+        const systemDescriptionPatterns = [
+          /monthly allocation/i,
+          /system grant/i,
+          /platform admin granted/i,
+          /automated allocation/i,
+          /scheduled points/i
+        ];
+        
+        const isSystemTransaction = systemDescriptionPatterns.some(pattern => 
+          pattern.test(transaction.description)
+        );
+        
+        return !isSystemTransaction;
+      });
+
+      if (!filteredTransactions?.length) {
+        setTransactions([]);
+        return;
+      }
       
-      // Get unique user IDs
+      // Get unique user IDs from filtered transactions
       const userIds = [...new Set([
-        ...transactionsData.map(t => t.sender_id),
-        ...transactionsData.map(t => t.recipient_id)
+        ...filteredTransactions.map(t => t.sender_id),
+        ...filteredTransactions.map(t => t.recipient_id)
       ])];
       
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
+      // Fetch profiles and platform admin status
+      const [{ data: profiles, error: profilesError }, { data: platformAdmins, error: adminError }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds),
+        supabase
+          .from('profiles')
+          .select('id, is_platform_admin')
+          .in('id', userIds)
+          .eq('is_platform_admin', true)
+      ]);
       
       if (profilesError) throw profilesError;
+      
+      // Get platform admin IDs for additional filtering
+      const platformAdminIds = new Set(platformAdmins?.map(admin => admin.id) || []);
+      
+      // Final filter to remove platform admin transactions
+      const finalFilteredTransactions = filteredTransactions.filter(transaction => 
+        !platformAdminIds.has(transaction.sender_id)
+      );
+
+      if (!finalFilteredTransactions?.length) {
+        setTransactions([]);
+        return;
+      }
       
       // Create profile map
       const profileMap = new Map();
@@ -118,8 +161,8 @@ export function RecognitionFeed() {
         profileMap.set(profile.id, `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User');
       });
       
-      // Format transactions
-      const formattedTransactions: PointTransaction[] = transactionsData.map(transaction => ({
+      // Format transactions using final filtered data
+      const formattedTransactions: PointTransaction[] = finalFilteredTransactions.map(transaction => ({
         id: transaction.id,
         sender_id: transaction.sender_id,
         recipient_id: transaction.recipient_id,
