@@ -349,7 +349,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
           className={cn(
-            "w-full min-h-[100px] p-3 bg-transparent border-0 resize-none focus:outline-none text-sm",
+            "w-full min-h-[200px] p-3 bg-transparent border-0 resize-none focus:outline-none text-sm flex-1",
             "placeholder:text-muted-foreground",
             disabled && "opacity-50 cursor-not-allowed",
             className

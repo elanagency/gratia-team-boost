@@ -182,8 +182,8 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="dashboard-card h-full">
-      <CardHeader className="p-4 sm:p-6">
+    <Card className="dashboard-card h-full flex flex-col">
+      <CardHeader className="p-4 sm:p-6 flex-shrink-0">
         <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
           <Heart className="h-5 w-5 text-[#F572FF]" />
           Give Recognition
@@ -192,7 +192,7 @@ export function GivePointsCard() {
           Recognize team members with points
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+      <CardContent className="p-4 sm:p-6 pt-0 space-y-4 flex-1 flex flex-col">
         {/* Available Points */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -203,8 +203,8 @@ export function GivePointsCard() {
         </div>
 
         {/* Composer */}
-        <div className="relative">
-          <div className="border rounded-lg bg-card">
+        <div className="relative flex-1 flex flex-col">
+          <div className="border rounded-lg bg-card flex flex-col flex-1">
             {/* Toolbar */}
             <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
               <Button
