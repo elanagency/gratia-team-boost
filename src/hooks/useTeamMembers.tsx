@@ -136,6 +136,48 @@ export const useTeamMembers = () => {
     }
   }, [user, companyId]);
 
+  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department: string | null }) => {
+    try {
+      if (!companyId) throw new Error("Company ID not found");
+      
+      // Parse name into first and last name
+      const nameParts = updateData.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Get the member to find user_id
+      const member = teamMembers.find(m => m.id === memberId);
+      if (!member) throw new Error("Member not found");
+      
+      // Update profile (name)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name: lastName
+        })
+        .eq('id', member.user_id);
+        
+      if (profileError) throw profileError;
+      
+      // Update company member (department)
+      const { error: memberError } = await supabase
+        .from('company_members')
+        .update({
+          department: updateData.department
+        })
+        .eq('id', memberId);
+        
+      if (memberError) throw memberError;
+      
+      toast.success("Team member updated successfully.");
+      fetchTeamMembers();
+    } catch (error) {
+      console.error("Error in updateMember:", error);
+      toast.error("Failed to update team member");
+    }
+  }, [companyId, teamMembers, fetchTeamMembers]);
+
   const removeMember = useCallback(async (member: TeamMember) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
@@ -202,6 +244,7 @@ export const useTeamMembers = () => {
     teamMembers,
     isLoading,
     fetchTeamMembers,
+    updateMember,
     removeMember,
     companyId,
     teamSlots

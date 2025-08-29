@@ -7,6 +7,7 @@ import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
+import EditTeamMemberDialog from "@/components/team/EditTeamMemberDialog";
 import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
 import { toast } from "@/components/ui/use-toast";
 import { useSearchParams } from "react-router-dom";
@@ -15,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const TeamManagementCard = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
   const processedSessionIds = useRef(new Set<string>());
@@ -82,6 +85,17 @@ export const TeamManagementCard = () => {
     setMemberToDelete(null);
   };
 
+  const handleEditClick = (member: TeamMember) => {
+    setMemberToEdit(member);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    fetchTeamMembers();
+    setEditDialogOpen(false);
+    setMemberToEdit(null);
+  };
+
   return (
     <>
       <Card className="dashboard-card">
@@ -100,7 +114,11 @@ export const TeamManagementCard = () => {
               {isVerifying ? "Processing subscription setup..." : "Loading team members..."}
             </div>
           ) : (
-            <TeamMemberTable teamMembers={teamMembers} onRemoveMember={handleDeleteClick} />
+            <TeamMemberTable 
+              teamMembers={teamMembers} 
+              onRemoveMember={handleDeleteClick}
+              onEditMember={handleEditClick}
+            />
           )}
         </div>
       </Card>
@@ -111,6 +129,13 @@ export const TeamManagementCard = () => {
         member={memberToDelete} 
         onDelete={handleRemoveMember} 
         onCancel={handleCancelDelete} 
+      />
+      
+      <EditTeamMemberDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        member={memberToEdit}
+        onSuccess={handleEditSuccess}
       />
     </>
   );
