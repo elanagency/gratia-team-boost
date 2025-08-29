@@ -44,6 +44,21 @@ export function RecognitionFeed() {
     }
   }, [companyId, user?.id]);
 
+  // Listen for refresh events from other components
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (companyId && user?.id) {
+        fetchRecognitionFeed();
+        fetchUserPoints();
+      }
+    };
+
+    window.addEventListener('refreshRecognitionFeed', handleRefresh);
+    return () => {
+      window.removeEventListener('refreshRecognitionFeed', handleRefresh);
+    };
+  }, [companyId, user?.id]);
+
   const fetchUserPoints = async () => {
     if (!user?.id || !companyId) return;
     

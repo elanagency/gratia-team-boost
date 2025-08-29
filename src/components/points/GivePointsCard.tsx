@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ export function GivePointsCard() {
   const [pointQuery, setPointQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
+  const queryClient = useQueryClient();
 
   const { user, companyId } = useAuth();
   const { teamMembers } = useTeamMembers();
@@ -163,6 +165,13 @@ export function GivePointsCard() {
       setText("");
       setMentions([]);
       setPoints([]);
+      
+      // Invalidate queries to refresh feeds and points
+      queryClient.invalidateQueries({ queryKey: ['userPoints'] });
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      
+      // Trigger refresh for any components using point transactions
+      window.dispatchEvent(new CustomEvent('refreshRecognitionFeed'));
       
     } catch (error) {
       console.error("Error giving points:", error);
