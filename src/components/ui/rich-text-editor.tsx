@@ -155,7 +155,11 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       if (!editorRef.current) return;
 
       const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
+      if (!selection || selection.rangeCount === 0) {
+        // If no selection, append to the end
+        insertBalloonAtEnd(displayText, className, attributes);
+        return;
+      }
 
       const range = selection.getRangeAt(0);
       const textNode = range.startContainer;
@@ -216,8 +220,88 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           
           // Trigger input event to update state
           setTimeout(() => handleInput(), 0);
+        } else {
+          // No trigger found, insert at cursor position
+          insertBalloonDirectlyAtCursor(displayText, className, attributes);
         }
+      } else {
+        // Not in text node, insert at cursor
+        insertBalloonDirectlyAtCursor(displayText, className, attributes);
       }
+    };
+
+    const insertBalloonDirectlyAtCursor = (displayText: string, className: string, attributes: Record<string, string>) => {
+      if (!editorRef.current) return;
+
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        insertBalloonAtEnd(displayText, className, attributes);
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      
+      // Create balloon span
+      const balloonSpan = document.createElement('span');
+      balloonSpan.className = className;
+      balloonSpan.setAttribute('contenteditable', 'false');
+      balloonSpan.textContent = displayText;
+      
+      // Set custom attributes
+      Object.entries(attributes).forEach(([key, value]) => {
+        balloonSpan.setAttribute(key, value);
+      });
+      
+      // Insert balloon at cursor
+      range.deleteContents();
+      range.insertNode(balloonSpan);
+      
+      // Add space after balloon
+      const spaceNode = document.createTextNode(' ');
+      range.setStartAfter(balloonSpan);
+      range.insertNode(spaceNode);
+      
+      // Set cursor after the space
+      range.setStartAfter(spaceNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Trigger input event to update state
+      setTimeout(() => handleInput(), 0);
+    };
+
+    const insertBalloonAtEnd = (displayText: string, className: string, attributes: Record<string, string>) => {
+      if (!editorRef.current) return;
+
+      // Create balloon span
+      const balloonSpan = document.createElement('span');
+      balloonSpan.className = className;
+      balloonSpan.setAttribute('contenteditable', 'false');
+      balloonSpan.textContent = displayText;
+      
+      // Set custom attributes
+      Object.entries(attributes).forEach(([key, value]) => {
+        balloonSpan.setAttribute(key, value);
+      });
+      
+      // Append to editor
+      editorRef.current.appendChild(balloonSpan);
+      
+      // Add space after balloon
+      const spaceNode = document.createTextNode(' ');
+      editorRef.current.appendChild(spaceNode);
+      
+      // Set cursor after the space
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.setStartAfter(spaceNode);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      
+      // Trigger input event to update state
+      setTimeout(() => handleInput(), 0);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
