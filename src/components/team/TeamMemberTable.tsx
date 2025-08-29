@@ -4,19 +4,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Mail } from "lucide-react";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
 interface TeamMemberTableProps {
   teamMembers: TeamMember[];
   onRemoveMember: (member: TeamMember) => void;
   onEditMember?: (member: TeamMember) => void;
+  onResendInvite?: (member: TeamMember) => void;
 }
 
 const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   teamMembers,
   onRemoveMember,
-  onEditMember
+  onEditMember,
+  onResendInvite
 }) => {
   return (
     <Table>
@@ -69,6 +71,15 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                       >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
+                      </DropdownMenuItem>
+                    )}
+                    {onResendInvite && member.invitation_status === 'invited' && (
+                      <DropdownMenuItem 
+                        onClick={() => onResendInvite(member)}
+                        className="cursor-pointer text-blue-600 focus:text-blue-600"
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        Re-send Invite
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem 

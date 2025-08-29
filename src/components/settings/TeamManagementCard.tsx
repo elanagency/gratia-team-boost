@@ -26,7 +26,8 @@ export const TeamManagementCard = () => {
     fetchTeamMembers,
     removeMember,
     isLoading,
-    teamSlots
+    teamSlots,
+    companyId
   } = useTeamMembers();
 
   // Handle billing setup success/cancellation from URL params
@@ -96,6 +97,41 @@ export const TeamManagementCard = () => {
     setMemberToEdit(null);
   };
 
+  const handleResendInvite = async (member: TeamMember) => {
+    try {
+      if (!companyId) throw new Error("Company ID not found");
+      
+      // Get company info for company name
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('name')
+        .eq('id', companyId)
+        .single();
+        
+      if (companyError) throw companyError;
+      
+      const origin = window.location.origin;
+      
+      // Call the send invitation email function
+      const { error } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: member.email,
+          name: member.name,
+          companyName: company.name,
+          isNewUser: false, // This is a re-send, so user already exists
+          origin
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`Invitation email sent to ${member.name}`);
+    } catch (error) {
+      console.error("Error resending invitation:", error);
+      toast.error("Failed to resend invitation email");
+    }
+  };
+
   return (
     <>
       <Card className="dashboard-card">
@@ -118,6 +154,7 @@ export const TeamManagementCard = () => {
               teamMembers={teamMembers} 
               onRemoveMember={handleDeleteClick}
               onEditMember={handleEditClick}
+              onResendInvite={handleResendInvite}
             />
           )}
         </div>
