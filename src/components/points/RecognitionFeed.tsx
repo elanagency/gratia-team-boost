@@ -261,6 +261,37 @@ export function RecognitionFeed() {
     return { cleanDescription, hashtags };
   };
 
+  const formatMessageWithBoldNames = (description: string) => {
+    // Pattern to match @mentions in the format @[Name]
+    const mentionPattern = /@\[([^\]]+)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionPattern.exec(description)) !== null) {
+      // Add text before the mention
+      if (match.index > lastIndex) {
+        parts.push(description.slice(lastIndex, match.index));
+      }
+      
+      // Add the mention with bold formatting
+      parts.push(
+        <span key={match.index} className="font-bold text-foreground">
+          @{match[1]}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < description.length) {
+      parts.push(description.slice(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : description;
+  };
+
   if (isLoading) {
     return (
     <Card className="dashboard-card h-full">
@@ -318,7 +349,7 @@ export function RecognitionFeed() {
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
-                      <p className="text-sm text-muted-foreground">{cleanDescription}</p>
+                      <div className="text-sm text-muted-foreground">{formatMessageWithBoldNames(cleanDescription)}</div>
                       
                       {hashtags.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
