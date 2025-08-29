@@ -31,35 +31,57 @@ export function LeaderboardCard() {
     try {
       setIsLoading(true);
       
-      // Fetch members with their points, excluding admins
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
-        .select(`
-          user_id,
-          role,
-          is_admin,
-          points
-        `)
-        .eq('company_id', companyId)
-        .eq('is_admin', false)
-        .order('points', { ascending: false })
-        .limit(10);
+      // Fetch all point transactions for this company
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('point_transactions')
+        .select('recipient_id, points')
+        .eq('company_id', companyId);
       
-      if (membersError) throw membersError;
+      if (transactionsError) throw transactionsError;
       
-      if (!members?.length) {
+      if (!transactions?.length) {
         setLeaderboard([]);
         return;
       }
       
-      // Get user IDs for batch profile query
-      const userIds = members.map(m => m.user_id);
+      // Calculate total recognition points received for each user
+      const pointsMap = new Map<string, number>();
+      transactions.forEach(transaction => {
+        const currentPoints = pointsMap.get(transaction.recipient_id) || 0;
+        pointsMap.set(transaction.recipient_id, currentPoints + transaction.points);
+      });
       
-      // Fetch profiles in batch
+      // Get unique recipient IDs
+      const recipientIds = Array.from(pointsMap.keys());
+      
+      if (!recipientIds.length) {
+        setLeaderboard([]);
+        return;
+      }
+      
+      // Fetch company members to filter out admins and get roles
+      const { data: members, error: membersError } = await supabase
+        .from('company_members')
+        .select('user_id, role, is_admin')
+        .eq('company_id', companyId)
+        .in('user_id', recipientIds);
+      
+      if (membersError) throw membersError;
+      
+      // Filter out admins and get non-admin members with their recognition points
+      const nonAdminMembers = members?.filter(member => !member.is_admin) || [];
+      
+      if (!nonAdminMembers.length) {
+        setLeaderboard([]);
+        return;
+      }
+      
+      // Fetch profiles for non-admin members
+      const nonAdminUserIds = nonAdminMembers.map(m => m.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
-        .in('id', userIds);
+        .in('id', nonAdminUserIds);
       
       if (profilesError) throw profilesError;
       
@@ -69,21 +91,28 @@ export function LeaderboardCard() {
         profileMap.set(profile.id, profile);
       });
       
-      // Format leaderboard with profile data and ranks
-      const formattedLeaderboard: LeaderboardMember[] = members.map((member, index) => {
-        const profile = profileMap.get(member.user_id);
-        const memberName = profile ? 
-          `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-          'No Name';
-        
-        return {
-          userId: member.user_id,
-          name: memberName || 'No Name',
-          role: member.role || 'Member',
-          points: member.points || 0,
+      // Format leaderboard with profile data and ranks, sorted by recognition points
+      const formattedLeaderboard: LeaderboardMember[] = nonAdminMembers
+        .map(member => {
+          const profile = profileMap.get(member.user_id);
+          const memberName = profile ? 
+            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
+            'No Name';
+          
+          return {
+            userId: member.user_id,
+            name: memberName || 'No Name',
+            role: member.role || 'Member',
+            points: pointsMap.get(member.user_id) || 0,
+            rank: 0 // Will be set after sorting
+          };
+        })
+        .sort((a, b) => b.points - a.points) // Sort by points descending
+        .slice(0, 10) // Limit to top 10
+        .map((member, index) => ({
+          ...member,
           rank: index + 1
-        };
-      });
+        }));
       
       setLeaderboard(formattedLeaderboard);
       
