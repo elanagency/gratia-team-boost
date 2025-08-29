@@ -7,26 +7,35 @@ export interface Mention {
   userId: string;
 }
 
+export interface PointBalloon {
+  id: string;
+  value: number;
+}
+
 export interface RichTextEditorProps {
   value: string;
-  onChange: (value: string, mentions: Mention[]) => void;
+  onChange: (value: string, mentions: Mention[], points: PointBalloon[]) => void;
   onMentionTrigger?: (query: string, position: number) => void;
+  onPointTrigger?: (query: string, position: number) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   mentions?: Mention[];
+  points?: PointBalloon[];
 }
 
 export interface RichTextEditorRef {
   focus: () => void;
   insertMention: (mention: Mention) => void;
+  insertPoint: (point: PointBalloon) => void;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
-  ({ value, onChange, onMentionTrigger, placeholder, className, disabled, mentions = [] }, ref) => {
+  ({ value, onChange, onMentionTrigger, onPointTrigger, placeholder, className, disabled, mentions = [], points = [] }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isComposing, setIsComposing] = useState(false);
     const [currentMentions, setCurrentMentions] = useState<Mention[]>(mentions);
+    const [currentPoints, setCurrentPoints] = useState<PointBalloon[]>(points);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -36,6 +45,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       },
       insertMention: (mention: Mention) => {
         insertMentionAtCursor(mention);
+      },
+      insertPoint: (point: PointBalloon) => {
+        insertPointAtCursor(point);
       }
     }));
 
@@ -47,6 +59,10 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
     const createMentionSpan = (mention: Mention): string => {
       return `<span class="mention-balloon" data-mention-id="${mention.id}" data-mention-user-id="${mention.userId}" contenteditable="false">${mention.name}</span>`;
+    };
+
+    const createPointSpan = (point: PointBalloon): string => {
+      return `<span class="point-balloon" data-point-id="${point.id}" data-point-value="${point.value}" contenteditable="false">+${point.value}</span>`;
     };
 
     const extractMentionsFromHTML = (html: string): Mention[] => {
@@ -61,17 +77,30 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       }));
     };
 
+    const extractPointsFromHTML = (html: string): PointBalloon[] => {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const pointElements = temp.querySelectorAll('.point-balloon');
+      
+      return Array.from(pointElements).map(el => ({
+        id: el.getAttribute('data-point-id') || '',
+        value: parseInt(el.getAttribute('data-point-value') || '0', 10)
+      }));
+    };
+
     const handleInput = () => {
       if (!editorRef.current || isComposing) return;
 
       const html = editorRef.current.innerHTML;
       const plainText = getPlainText(html);
       const extractedMentions = extractMentionsFromHTML(html);
+      const extractedPoints = extractPointsFromHTML(html);
       
       setCurrentMentions(extractedMentions);
-      onChange(plainText, extractedMentions);
+      setCurrentPoints(extractedPoints);
+      onChange(plainText, extractedMentions, extractedPoints);
 
-      // Check for @ trigger
+      // Check for @ and + triggers
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
@@ -81,8 +110,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           const textContent = textNode.textContent || '';
           const cursorPos = range.startOffset;
           const textUpToCursor = textContent.slice(0, cursorPos);
-          const atIndex = textUpToCursor.lastIndexOf('@');
           
+          // Check for @ trigger (mentions)
+          const atIndex = textUpToCursor.lastIndexOf('@');
           if (atIndex !== -1 && (atIndex === 0 || textContent[atIndex - 1] === ' ')) {
             const query = textUpToCursor.slice(atIndex + 1);
             if (!query.includes(' ')) {
@@ -90,13 +120,38 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
               return;
             }
           }
+          
+          // Check for + trigger (points)
+          const plusIndex = textUpToCursor.lastIndexOf('+');
+          if (plusIndex !== -1 && (plusIndex === 0 || textContent[plusIndex - 1] === ' ')) {
+            const query = textUpToCursor.slice(plusIndex + 1);
+            if (!query.includes(' ')) {
+              onPointTrigger?.(query, plusIndex);
+              return;
+            }
+          }
         }
       }
       
       onMentionTrigger?.('', -1);
+      onPointTrigger?.('', -1);
     };
 
     const insertMentionAtCursor = (mention: Mention) => {
+      insertBalloonAtCursor('@', mention.name, 'mention-balloon', {
+        'data-mention-id': mention.id,
+        'data-mention-user-id': mention.userId
+      });
+    };
+
+    const insertPointAtCursor = (point: PointBalloon) => {
+      insertBalloonAtCursor('+', `+${point.value}`, 'point-balloon', {
+        'data-point-id': point.id,
+        'data-point-value': point.value.toString()
+      });
+    };
+
+    const insertBalloonAtCursor = (trigger: string, displayText: string, className: string, attributes: Record<string, string>) => {
       if (!editorRef.current) return;
 
       const selection = window.getSelection();
@@ -109,39 +164,42 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         const textContent = textNode.textContent || '';
         const cursorPos = range.startOffset;
         const textUpToCursor = textContent.slice(0, cursorPos);
-        const atIndex = textUpToCursor.lastIndexOf('@');
+        const triggerIndex = textUpToCursor.lastIndexOf(trigger);
         
-        if (atIndex !== -1) {
-          // Remove the @ and query text
-          const beforeAt = textContent.slice(0, atIndex);
+        if (triggerIndex !== -1) {
+          // Remove the trigger and query text
+          const beforeTrigger = textContent.slice(0, triggerIndex);
           const afterCursor = textContent.slice(cursorPos);
           
-          // Create new text node with the text before @
-          if (beforeAt) {
-            textNode.textContent = beforeAt;
+          // Create new text node with the text before trigger
+          if (beforeTrigger) {
+            textNode.textContent = beforeTrigger;
           } else {
             textNode.parentNode?.removeChild(textNode);
           }
           
-          // Create mention span
-          const mentionSpan = document.createElement('span');
-          mentionSpan.className = 'mention-balloon';
-          mentionSpan.setAttribute('data-mention-id', mention.id);
-          mentionSpan.setAttribute('data-mention-user-id', mention.userId);
-          mentionSpan.setAttribute('contenteditable', 'false');
-          mentionSpan.textContent = mention.name;
+          // Create balloon span
+          const balloonSpan = document.createElement('span');
+          balloonSpan.className = className;
+          balloonSpan.setAttribute('contenteditable', 'false');
+          balloonSpan.textContent = displayText;
           
-          // Insert mention span
+          // Set custom attributes
+          Object.entries(attributes).forEach(([key, value]) => {
+            balloonSpan.setAttribute(key, value);
+          });
+          
+          // Insert balloon span
           const parentNode = textNode.parentNode || editorRef.current;
-          if (beforeAt) {
-            parentNode.insertBefore(mentionSpan, textNode.nextSibling);
+          if (beforeTrigger) {
+            parentNode.insertBefore(balloonSpan, textNode.nextSibling);
           } else {
-            parentNode.appendChild(mentionSpan);
+            parentNode.appendChild(balloonSpan);
           }
           
-          // Add space after mention
+          // Add space after balloon
           const spaceNode = document.createTextNode(' ');
-          parentNode.insertBefore(spaceNode, mentionSpan.nextSibling);
+          parentNode.insertBefore(spaceNode, balloonSpan.nextSibling);
           
           // Add remaining text if any
           if (afterCursor) {
@@ -163,19 +221,19 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-      // Handle backspace on mention balloons
+      // Handle backspace on mention and point balloons
       if (e.key === 'Backspace') {
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           const startContainer = range.startContainer;
           
-          // If cursor is right after a mention balloon, delete the entire balloon
+          // If cursor is right after a balloon, delete the entire balloon
           if (startContainer.nodeType === Node.TEXT_NODE && range.startOffset === 0) {
             const prevSibling = startContainer.previousSibling;
             if (prevSibling && prevSibling.nodeType === Node.ELEMENT_NODE) {
               const element = prevSibling as Element;
-              if (element.classList.contains('mention-balloon')) {
+              if (element.classList.contains('mention-balloon') || element.classList.contains('point-balloon')) {
                 e.preventDefault();
                 element.remove();
                 setTimeout(() => handleInput(), 0);
@@ -243,6 +301,23 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             
             .mention-balloon:hover {
               background: hsl(var(--accent) / 0.8);
+            }
+
+            .point-balloon {
+              background: hsl(142 76% 36%);
+              color: hsl(355 7% 97%);
+              padding: 2px 8px;
+              border-radius: 12px;
+              font-size: 0.875rem;
+              font-weight: 600;
+              display: inline-block;
+              margin: 0 2px;
+              cursor: default;
+              user-select: none;
+            }
+            
+            .point-balloon:hover {
+              background: hsl(142 76% 30%);
             }
           `
         }} />

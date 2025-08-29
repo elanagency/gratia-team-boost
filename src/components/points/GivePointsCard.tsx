@@ -10,14 +10,16 @@ import { useUserPoints } from "@/hooks/useUserPoints";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor, type RichTextEditorRef, type Mention } from "@/components/ui/rich-text-editor";
+import { RichTextEditor, type RichTextEditorRef, type Mention, type PointBalloon } from "@/components/ui/rich-text-editor";
 
 export function GivePointsCard() {
   const [text, setText] = useState("");
-  const [selectedPoints, setSelectedPoints] = useState<number>(1);
   const [mentions, setMentions] = useState<Mention[]>([]);
+  const [points, setPoints] = useState<PointBalloon[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [showPointDropdown, setShowPointDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
+  const [pointQuery, setPointQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
 
@@ -31,9 +33,10 @@ export function GivePointsCard() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const handleTextChange = (value: string, newMentions: Mention[]) => {
+  const handleTextChange = (value: string, newMentions: Mention[], newPoints: PointBalloon[]) => {
     setText(value);
     setMentions(newMentions);
+    setPoints(newPoints);
   };
 
   const handleMentionTrigger = (query: string, position: number) => {
@@ -44,6 +47,18 @@ export function GivePointsCard() {
     
     setMentionQuery(query);
     setShowMentionDropdown(true);
+    setShowPointDropdown(false);
+  };
+
+  const handlePointTrigger = (query: string, position: number) => {
+    if (query === '' && position === -1) {
+      setShowPointDropdown(false);
+      return;
+    }
+    
+    setPointQuery(query);
+    setShowPointDropdown(true);
+    setShowMentionDropdown(false);
   };
 
   const selectMention = (member: any) => {
@@ -62,9 +77,29 @@ export function GivePointsCard() {
     }, 0);
   };
 
+  const selectPoint = (value: number) => {
+    const point: PointBalloon = {
+      id: `point-${Date.now()}-${Math.random()}`,
+      value
+    };
+    
+    editorRef.current?.insertPoint(point);
+    setShowPointDropdown(false);
+    
+    // Focus back to editor
+    setTimeout(() => {
+      editorRef.current?.focus();
+    }, 0);
+  };
+
   const filteredMembers = availableRecipients.filter(member =>
     member.name.toLowerCase().includes(mentionQuery)
   );
+
+  const commonPointValues = [10, 20, 25, 50, 100];
+  const filteredPointValues = pointQuery 
+    ? commonPointValues.filter(value => value.toString().includes(pointQuery))
+    : commonPointValues;
 
   const handleSubmit = async () => {
     if (!text.trim() || mentions.length === 0) {
@@ -72,12 +107,15 @@ export function GivePointsCard() {
       return;
     }
 
-    if (selectedPoints <= 0) {
-      toast.error("Please enter a valid number of points");
+    if (points.length === 0) {
+      toast.error("Please add points using + (e.g., +25)");
       return;
     }
 
-    if (selectedPoints > userPoints) {
+    const totalPointsToGive = points.reduce((sum, point) => sum + point.value, 0);
+    const totalPointsRequired = totalPointsToGive * mentions.length;
+
+    if (totalPointsRequired > userPoints) {
       toast.error("You don't have enough points to give");
       return;
     }
@@ -90,12 +128,12 @@ export function GivePointsCard() {
     setIsSubmitting(true);
 
     try {
-      // Create a transaction for each mentioned person
+      // Create a transaction for each mentioned person with the total points
       const transactions = mentions.map(mention => ({
         company_id: companyId,
         sender_id: user.id,
         recipient_id: mention.userId,
-        points: selectedPoints,
+        points: totalPointsToGive,
         description: text
       }));
 
@@ -105,13 +143,12 @@ export function GivePointsCard() {
 
       if (error) throw error;
 
-      const totalPoints = selectedPoints * mentions.length;
-      toast.success(`Successfully gave ${selectedPoints} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
+      toast.success(`Successfully gave ${totalPointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
       
       // Reset form
       setText("");
       setMentions([]);
-      setSelectedPoints(1);
+      setPoints([]);
       
     } catch (error) {
       console.error("Error giving points:", error);
@@ -150,9 +187,11 @@ export function GivePointsCard() {
               value={text}
               onChange={handleTextChange}
               onMentionTrigger={handleMentionTrigger}
-              placeholder="Give recognition... Type @ to mention someone"
+              onPointTrigger={handlePointTrigger}
+              placeholder="Give recognition... Type @ to mention someone and + to add points"
               disabled={isSubmitting}
               mentions={mentions}
+              points={points}
             />
             
             {/* Mention Dropdown */}
@@ -179,26 +218,57 @@ export function GivePointsCard() {
               </div>
             )}
 
+            {/* Point Dropdown */}
+            {showPointDropdown && (
+              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                  Quick point values (Available: {userPoints})
+                </div>
+                {filteredPointValues.filter(value => value <= userPoints).map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => selectPoint(value)}
+                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                        +
+                      </span>
+                      <span className="text-sm font-medium">{value} points</span>
+                    </div>
+                  </button>
+                ))}
+                {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= userPoints && (
+                  <button
+                    onClick={() => selectPoint(Number(pointQuery))}
+                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-t"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                        +
+                      </span>
+                      <span className="text-sm font-medium">{pointQuery} points (custom)</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-              {/* Points Input */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Points:</span>
-                <Input
-                  type="number"
-                  value={selectedPoints}
-                  onChange={(e) => setSelectedPoints(Math.max(1, parseInt(e.target.value) || 1))}
-                  min="1"
-                  max={userPoints}
-                  className="w-20 h-7 text-xs"
-                  disabled={isSubmitting}
-                />
+              {/* Summary */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {mentions.length > 0 && points.length > 0 && (
+                  <span>
+                    {points.reduce((sum, point) => sum + point.value, 0)} pts × {mentions.length} {mentions.length === 1 ? 'person' : 'people'} = {points.reduce((sum, point) => sum + point.value, 0) * mentions.length} total
+                  </span>
+                )}
               </div>
 
               {/* Send Button */}
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !text.trim() || mentions.length === 0 || selectedPoints <= 0 || selectedPoints > userPoints}
+                disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
                 size="sm"
                 className="gap-1 bg-accent hover:bg-accent/90"
               >
@@ -207,7 +277,7 @@ export function GivePointsCard() {
                 ) : (
                   <>
                     <Send className="h-3 w-3" />
-                    Give {selectedPoints} pts
+                    Send Recognition
                   </>
                 )}
               </Button>
