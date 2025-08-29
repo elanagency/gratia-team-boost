@@ -262,37 +262,84 @@ export function RecognitionFeed() {
   };
 
   const formatMessageWithBoldNames = (description: string) => {
-    // Pattern to match @mentions in the format @[Name]
+    // Pattern to match @mentions in the format @[Name] and +points in the format +[number]
     const mentionPattern = /@\[([^\]]+)\]/g;
+    const pointPattern = /\+\[(\d+)\]/g;
+    
+    // Combine both patterns to find all occurrences
+    const allMatches = [];
+    let match;
+    
+    // Find all mentions
+    while ((match = mentionPattern.exec(description)) !== null) {
+      allMatches.push({
+        type: 'mention',
+        start: match.index,
+        end: match.index + match[0].length,
+        value: match[1],
+        fullMatch: match[0]
+      });
+    }
+    
+    // Reset regex lastIndex and find all points
+    pointPattern.lastIndex = 0;
+    while ((match = pointPattern.exec(description)) !== null) {
+      allMatches.push({
+        type: 'point',
+        start: match.index,
+        end: match.index + match[0].length,
+        value: match[1],
+        fullMatch: match[0]
+      });
+    }
+    
+    // Sort matches by position
+    allMatches.sort((a, b) => a.start - b.start);
+    
+    if (allMatches.length === 0) {
+      return description;
+    }
+    
     const parts = [];
     let lastIndex = 0;
-    let match;
-
-    while ((match = mentionPattern.exec(description)) !== null) {
-      // Add text before the mention
-      if (match.index > lastIndex) {
-        parts.push(description.slice(lastIndex, match.index));
+    
+    allMatches.forEach((match, index) => {
+      // Add text before this match
+      if (match.start > lastIndex) {
+        parts.push(description.slice(lastIndex, match.start));
       }
       
-      // Add the mention as a balloon tag
-      parts.push(
-        <span 
-          key={match.index} 
-          className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium mx-1"
-        >
-          @{match[1]}
-        </span>
-      );
+      if (match.type === 'mention') {
+        // Add the mention as a balloon tag
+        parts.push(
+          <span 
+            key={`mention-${index}`} 
+            className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium mx-1"
+          >
+            @{match.value}
+          </span>
+        );
+      } else if (match.type === 'point') {
+        // Add the point as a balloon tag
+        parts.push(
+          <span 
+            key={`point-${index}`} 
+            className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold mx-1"
+          >
+            +{match.value}
+          </span>
+        );
+      }
       
-      lastIndex = match.index + match[0].length;
-    }
+      lastIndex = match.end;
+    });
     
     // Add remaining text
     if (lastIndex < description.length) {
       parts.push(description.slice(lastIndex));
     }
     
-    return parts.length > 0 ? parts : description;
+    return parts;
   };
 
   if (isLoading) {
