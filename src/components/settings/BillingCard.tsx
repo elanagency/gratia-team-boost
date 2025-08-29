@@ -70,12 +70,13 @@ export const BillingCard = () => {
       
       setCompanyData(company);
 
-      // Get member count
+      // Get active member count (only active members for billing)
       const { count: memberCount } = await supabase
         .from('company_members')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('is_admin', false);
+        .eq('is_admin', false)
+        .eq('invitation_status', 'active');
 
       const teamMembers = memberCount || 0;
       
@@ -208,17 +209,17 @@ export const BillingCard = () => {
             </div>
           </div>
 
-          {/* Team Members */}
+          {/* Active Members */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
-              Team members
+              Active members
             </div>
             <div className="font-semibold">
-              {subscriptionStatus?.team_members || 0} active
+              {subscriptionStatus?.team_members || 0}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Subscription active' : 'Add members to start'}
+              {hasExistingSubscription ? 'Only active members billed' : 'Add members to start'}
             </div>
           </div>
 
@@ -257,7 +258,7 @@ export const BillingCard = () => {
             <div>
               <h3 className="font-medium">Manage Your Subscription</h3>
               <p className="text-sm text-muted-foreground">
-                View invoices, update payment methods, or cancel your subscription
+                View invoices, update payment methods, or cancel your subscription. Billing is based on active members only.
               </p>
             </div>
             <Button 
