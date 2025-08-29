@@ -376,7 +376,7 @@ export function RecognitionFeed() {
           <div className="space-y-6 flex-1 overflow-y-auto">
             {threadedRecognitions.map((thread) => {
               const { cleanDescription, hashtags } = extractHashtags(thread.mainPost.description);
-              const canGivePoints = user?.id !== thread.mainPost.recipient_id && user?.id !== thread.mainPost.sender_id;
+              const canGivePoints = user?.id !== thread.mainPost.recipient_id;
               
               return (
                 <div key={thread.mainPost.id} className="border-b border-border/50 pb-6 last:border-b-0">
