@@ -10,6 +10,7 @@ type LeaderboardMember = {
   userId: string;
   name: string;
   role: string;
+  department: string | null;
   points: number;
   rank: number;
 };
@@ -59,10 +60,10 @@ export function LeaderboardCard() {
         return;
       }
       
-      // Fetch company members to filter out admins and get roles
+      // Fetch company members to filter out admins and get roles and departments
       const { data: members, error: membersError } = await supabase
         .from('company_members')
-        .select('user_id, role, is_admin')
+        .select('user_id, role, is_admin, department')
         .eq('company_id', companyId)
         .in('user_id', recipientIds);
       
@@ -103,6 +104,7 @@ export function LeaderboardCard() {
             userId: member.user_id,
             name: memberName || 'No Name',
             role: member.role || 'Member',
+            department: member.department || null,
             points: pointsMap.get(member.user_id) || 0,
             rank: 0 // Will be set after sorting
           };
@@ -158,6 +160,7 @@ export function LeaderboardCard() {
                   <TableHead className="text-xs sm:text-sm">Rank</TableHead>
                   <TableHead className="text-xs sm:text-sm">Name</TableHead>
                   <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Role</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs sm:text-sm">Department</TableHead>
                   <TableHead className="text-right text-xs sm:text-sm">Points</TableHead>
                 </TableRow>
               </TableHeader>
@@ -172,6 +175,7 @@ export function LeaderboardCard() {
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{member.name}</TableCell>
                     <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{member.role}</TableCell>
+                    <TableCell className="hidden md:table-cell text-xs sm:text-sm">{member.department || '-'}</TableCell>
                     <TableCell className="text-right font-semibold text-xs sm:text-sm">{member.points}</TableCell>
                   </TableRow>
                 ))}
