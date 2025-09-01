@@ -69,14 +69,25 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.pathname.split('/').pop();
 
-    if (req.method === 'GET' && action === 'catalog') {
-      const page = url.searchParams.get('page') || '1';
-      const perPage = url.searchParams.get('per_page') || '50';
+    if (req.method === 'GET') {
+      let pageNum = 1;
+      let perPage = 50;
       
-      console.log(`Fetching Goody catalog - page: ${page}, per_page: ${perPage}`);
+      try {
+        const body = await req.json();
+        pageNum = body.page || 1;
+        perPage = body.per_page || 50;
+      } catch {
+        // Use defaults if no body or invalid JSON
+        const url = new URL(req.url);
+        pageNum = parseInt(url.searchParams.get('page') || '1');
+        perPage = parseInt(url.searchParams.get('per_page') || '50');
+      }
+      
+      console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
 
       const goodyResponse = await fetch(
-        `https://api.sandbox.ongoody.com/v1/products?page=${page}&per_page=${perPage}`,
+        `https://api.sandbox.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
         {
           headers: {
             'Authorization': `Bearer ${goodyApiKey}`,
@@ -103,7 +114,7 @@ serve(async (req) => {
       );
     }
 
-    if (req.method === 'POST' && action === 'add-products') {
+    if (req.method === 'POST') {
       const { productIds, pointsMultiplier = 1 } = await req.json();
       
       if (!Array.isArray(productIds) || productIds.length === 0) {

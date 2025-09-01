@@ -1,36 +1,28 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import RewardCard from "@/components/rewards/RewardCard";
-import AddProductDialog from "@/components/rewards/AddProductDialog";
-import { usePlatformRewardCatalog } from "@/hooks/usePlatformRewardCatalog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Search, Loader2 } from "lucide-react";
+import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
+import { useGoodyProducts } from "@/hooks/useGoodyProducts";
+import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 
 const PlatformRewardsCatalog = () => {
-  const { 
-    rewards, 
-    isLoadingRewards, 
-    isAddProductOpen, 
-    setIsAddProductOpen, 
-    handleAddProducts, 
-    isLoading,
-    handleDeleteProduct,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
-    rewardToDelete,
-    confirmDeleteProduct,
-    isDeleting
-  } = usePlatformRewardCatalog();
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const { products, totalCount, isLoading } = useGoodyProducts(page, true);
+  const { enabledProducts } = usePlatformRewardSettings();
+
+  // Filter products based on search term
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const enabledCount = Object.keys(enabledProducts).length;
 
   return (
     <div className="space-y-6">
@@ -38,68 +30,58 @@ const PlatformRewardsCatalog = () => {
         <div>
           <h2 className="text-xl font-semibold">Global Rewards Catalog</h2>
           <p className="text-gray-500 text-sm mt-1">
-            Manage rewards that will be available to all companies
+            Browse and enable Goody products for all companies
           </p>
         </div>
-        <Button 
-          onClick={() => setIsAddProductOpen(true)}
-          className="bg-[#F572FF] hover:bg-[#F572FF]/90"
-        >
-          Add Product
-        </Button>
+        <Badge variant="outline" className="text-sm">
+          {enabledCount} products enabled
+        </Badge>
       </div>
 
-      {isLoadingRewards ? (
-        <div className="flex justify-center my-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F572FF]"></div>
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
-      ) : rewards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rewards.map((reward) => (
-            <RewardCard 
-              key={reward.id} 
-              reward={reward} 
-              onDelete={handleDeleteProduct}
+        <div className="text-sm text-gray-500">
+          Showing {filteredProducts.length} of {totalCount} products
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center my-12">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading Goody catalog...</span>
+          </div>
+        </div>
+      ) : filteredProducts.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredProducts.map((product) => (
+            <GoodyProductCard 
+              key={product.id} 
+              product={product}
             />
           ))}
         </div>
       ) : (
         <Card className="p-12 text-center">
-          <h3 className="text-lg font-medium text-gray-800">No products in global catalog</h3>
+          <h3 className="text-lg font-medium text-gray-800">
+            {searchTerm ? "No products found" : "No products available"}
+          </h3>
           <p className="text-gray-500 mt-2">
-            Add products that will be available to all companies
+            {searchTerm 
+              ? "Try adjusting your search terms" 
+              : "Unable to load Goody catalog at this time"
+            }
           </p>
         </Card>
       )}
-
-      <AddProductDialog
-        open={isAddProductOpen}
-        onOpenChange={setIsAddProductOpen}
-        onAddProducts={handleAddProducts}
-        isLoading={isLoading}
-      />
-
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the product "{rewardToDelete?.name}" from the global rewards catalog.
-              This action cannot be undone and will affect all companies.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteProduct}
-              disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
