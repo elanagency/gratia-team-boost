@@ -13,7 +13,7 @@ const PlatformRewardsCatalog = () => {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   
-  const { products, totalCount, isLoading } = useGoodyProducts(page, true);
+  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true);
   const { enabledProducts } = usePlatformRewardSettings();
 
   // Filter products based on search term
@@ -60,6 +60,19 @@ const PlatformRewardsCatalog = () => {
             <span>Loading Goody catalog...</span>
           </div>
         </div>
+      ) : error ? (
+        <Card className="p-12 text-center">
+          <h3 className="text-lg font-medium text-red-600">Unable to load Goody catalog</h3>
+          <p className="text-gray-500 mt-2">
+            {error instanceof Error ? error.message : 'There was an error loading the product catalog. Please check your API configuration and try again.'}
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-[#F572FF] text-white rounded hover:bg-[#E551E8] transition-colors"
+          >
+            Retry
+          </button>
+        </Card>
       ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => (

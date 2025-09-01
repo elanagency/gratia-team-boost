@@ -46,10 +46,15 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true) => {
     queryKey: ['goody-products', page],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
-        method: 'GET'
+        body: { 
+          method: 'GET',
+          page: page,
+          per_page: 50 
+        }
       });
 
       if (error) {
+        console.error('Goody products fetch error:', error);
         throw new Error(error.message || 'Failed to fetch Goody products');
       }
 
@@ -57,6 +62,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true) => {
     },
     enabled,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 2, // Retry failed requests twice
   });
 
   return {

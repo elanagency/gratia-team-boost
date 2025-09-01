@@ -63,60 +63,67 @@ serve(async (req) => {
 
     const goodyApiKey = Deno.env.get('GOODY_API_KEY');
     if (!goodyApiKey) {
+      console.error('GOODY_API_KEY environment variable not found');
       throw new Error('GOODY_API_KEY not configured');
     }
 
-    const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
+    console.log('GOODY_API_KEY is configured:', goodyApiKey ? 'Yes' : 'No');
 
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const pageNum = parseInt(url.searchParams.get('page') || '1');
-      const perPage = parseInt(url.searchParams.get('per_page') || '50');
+    // Handle GET and POST requests for fetching products
+    if (req.method === 'GET' || req.method === 'POST') {
+      let pageNum = 1;
+      let perPage = 50;
+      let isProductFetch = true;
       
-      console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
+      if (req.method === 'GET') {
+        const url = new URL(req.url);
+        pageNum = parseInt(url.searchParams.get('page') || '1');
+        perPage = parseInt(url.searchParams.get('per_page') || '50');
+      } else if (req.method === 'POST') {
+        try {
+          const body = await req.json();
+          
+          // Check if this is a product fetch request or add products request
+          if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier)) {
+            // This is a product fetch request
+            pageNum = body.page || 1;
+            perPage = body.per_page || 50;
+          } else {
+            // This is an add products request
+            isProductFetch = false;
+            const { productIds, pointsMultiplier = 1 } = body;
+            
+            if (!Array.isArray(productIds) || productIds.length === 0) {
+              throw new Error('Product IDs are required');
+            }
 
-      const goodyResponse = await fetch(
-        `https://api.sandbox.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${goodyApiKey}`,
-            'Content-Type': 'application/json',
-          },
+            console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
+
+            // For now, return success since we're not storing products in DB anymore
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                message: `Product settings will be managed through platform settings`,
+                productIds: productIds 
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200 
+              }
+            );
+          }
+        } catch (parseError) {
+          console.error('Error parsing request body:', parseError);
+          throw new Error('Invalid request body');
         }
-      );
-
-      if (!goodyResponse.ok) {
-        const errorText = await goodyResponse.text();
-        console.error('Goody API error:', errorText);
-        throw new Error(`Goody API error: ${goodyResponse.status} ${errorText}`);
       }
 
-      const goodyData: GoodyApiResponse = await goodyResponse.json();
-      console.log(`Successfully fetched ${goodyData.data.length} products from Goody`);
+      if (isProductFetch) {
+        console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
+        console.log(`Using API key starting with: ${goodyApiKey.substring(0, 10)}...`);
 
-      return new Response(
-        JSON.stringify(goodyData),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      );
-    }
-
-    if (req.method === 'POST') {
-      const { productIds, pointsMultiplier = 1 } = await req.json();
-      
-      if (!Array.isArray(productIds) || productIds.length === 0) {
-        throw new Error('Product IDs are required');
-      }
-
-      console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
-
-      // Fetch product details from Goody
-      const productPromises = productIds.map(async (productId: string) => {
-        const response = await fetch(
-          `https://api.sandbox.ongoody.com/v1/products?page=1&per_page=100`,
+        const goodyResponse = await fetch(
+          `https://api.sandbox.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
           {
             headers: {
               'Authorization': `Bearer ${goodyApiKey}`,
@@ -125,67 +132,30 @@ serve(async (req) => {
           }
         );
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch product ${productId}`);
+        console.log(`Goody API response status: ${goodyResponse.status}`);
+
+        if (!goodyResponse.ok) {
+          const errorText = await goodyResponse.text();
+          console.error('Goody API error response:', errorText);
+          
+          if (goodyResponse.status === 401) {
+            throw new Error(`Goody API authentication failed. Please check your API key. Status: ${goodyResponse.status}`);
+          }
+          
+          throw new Error(`Goody API error: ${goodyResponse.status} ${errorText}`);
         }
 
-        const data: GoodyApiResponse = await response.json();
-        return data.data.find(p => p.id === productId);
-      });
+        const goodyData: GoodyApiResponse = await goodyResponse.json();
+        console.log(`Successfully fetched ${goodyData.data.length} products from Goody`);
 
-      const products = await Promise.all(productPromises);
-      const validProducts = products.filter(Boolean) as GoodyProduct[];
-
-      // Transform and insert products as rewards
-      const rewardInserts = validProducts.map(product => {
-        const imageUrl = product.images[0]?.image_large?.url || '';
-        const pointsCost = Math.round(product.price * pointsMultiplier);
-        
-        // Create description with brand and variant info
-        let description = product.recipient_description || '';
-        if (product.brand.name) {
-          description = `${product.brand.name} - ${description}`;
-        }
-        if (product.variants.length > 0) {
-          description += `\n\nAvailable variants: ${product.variants.map(v => v.name).join(', ')}`;
-        }
-
-        return {
-          name: product.name,
-          description: description.trim(),
-          points_cost: pointsCost,
-          image_url: imageUrl,
-          external_id: product.id,
-          product_url: null, // Goody handles fulfillment
-          is_global: true,
-          company_id: null,
-          stock: 100, // Default stock for Goody products
-        };
-      });
-
-      const { data: insertedRewards, error } = await supabase
-        .from('rewards')
-        .insert(rewardInserts)
-        .select();
-
-      if (error) {
-        console.error('Database insert error:', error);
-        throw new Error(`Failed to save rewards: ${error.message}`);
+        return new Response(
+          JSON.stringify(goodyData),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        );
       }
-
-      console.log(`Successfully added ${insertedRewards.length} rewards to catalog`);
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Added ${insertedRewards.length} products to global rewards catalog`,
-          rewards: insertedRewards 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      );
     }
 
     return new Response(
