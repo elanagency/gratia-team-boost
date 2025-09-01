@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { useGoodyProducts } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
@@ -12,8 +13,9 @@ import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 const PlatformRewardsCatalog = () => {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterGiftCards, setFilterGiftCards] = useState(false);
   
-  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true);
+  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, filterGiftCards);
   const { enabledProducts } = usePlatformRewardSettings();
 
   // Filter products based on search term
@@ -34,7 +36,7 @@ const PlatformRewardsCatalog = () => {
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
-          {enabledCount} products enabled
+          {enabledCount} {filterGiftCards ? 'gift cards' : 'products'} enabled
         </Badge>
       </div>
 
@@ -48,8 +50,18 @@ const PlatformRewardsCatalog = () => {
             className="pl-10"
           />
         </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="gift-cards-filter"
+            checked={filterGiftCards}
+            onCheckedChange={(checked) => setFilterGiftCards(checked === true)}
+          />
+          <Label htmlFor="gift-cards-filter" className="text-sm font-medium">
+            Gift Cards Only
+          </Label>
+        </div>
         <div className="text-sm text-gray-500">
-          Showing {filteredProducts.length} of {totalCount} products
+          Showing {filteredProducts.length} of {totalCount} {filterGiftCards ? 'gift cards' : 'products'}
         </div>
       </div>
 

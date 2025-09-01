@@ -41,7 +41,22 @@ interface GoodyApiResponse {
   };
 }
 
-export const useGoodyProducts = (page: number = 1, enabled: boolean = true) => {
+// Utility function to check if a product is a gift card
+const isGiftCard = (product: GoodyProduct): boolean => {
+  const searchTerms = ['gift card', 'gift certificate', 'egift'];
+  const searchFields = [
+    product.name,
+    product.subtitle || '',
+    product.recipient_description,
+    product.brand.name
+  ].map(field => field.toLowerCase());
+
+  return searchTerms.some(term => 
+    searchFields.some(field => field.includes(term))
+  );
+};
+
+export const useGoodyProducts = (page: number = 1, enabled: boolean = true, filterGiftCards: boolean = false) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['goody-products', page],
     queryFn: async () => {
@@ -65,9 +80,14 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true) => {
     retry: 2, // Retry failed requests twice
   });
 
+  const products = data?.data || [];
+  const filteredProducts = filterGiftCards 
+    ? products.filter(isGiftCard)
+    : products;
+
   return {
-    products: data?.data || [],
-    totalCount: data?.list_meta?.total_count || 0,
+    products: filteredProducts,
+    totalCount: filterGiftCards ? filteredProducts.length : (data?.list_meta?.total_count || 0),
     isLoading,
     error
   };
