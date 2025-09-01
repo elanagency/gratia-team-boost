@@ -22,7 +22,7 @@ const PlatformRewardsCatalog = () => {
     isLoadingRewards, 
     isAddProductOpen, 
     setIsAddProductOpen, 
-    handleAddProduct, 
+    handleAddProducts, 
     isLoading,
     handleDeleteProduct,
     deleteConfirmOpen,
@@ -75,7 +75,7 @@ const PlatformRewardsCatalog = () => {
       <AddProductDialog
         open={isAddProductOpen}
         onOpenChange={setIsAddProductOpen}
-        onAddProduct={handleAddProduct}
+        onAddProducts={handleAddProducts}
         isLoading={isLoading}
       />
 

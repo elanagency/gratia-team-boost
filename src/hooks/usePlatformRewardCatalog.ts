@@ -52,29 +52,32 @@ export const usePlatformRewardCatalog = () => {
     }
   });
 
-  // Mutation to add a new global product
+  // Mutation to add Goody products to global catalog
   const addProductMutation = useMutation({
-    mutationFn: async ({ url, pointsMultiplier }: { url: string, pointsMultiplier: number }) => {
+    mutationFn: async ({ productIds, pointsMultiplier }: { productIds: string[], pointsMultiplier: number }) => {
       setIsLoading(true);
       try {
-        // Determine if it's an Amazon or Shopify URL
-        const isAmazon = url.includes('amazon.com') || url.includes('amzn.to');
-        const action = isAmazon ? 'requestAmazonProductByURL' : 'requestShopifyProductByURL';
+        const { data, error } = await supabase.functions.invoke('goody-product-service', {
+          body: { productIds, pointsMultiplier }
+        });
 
-        // Product service will be implemented later
-        throw new Error('Product service is currently unavailable');
+        if (error) {
+          throw new Error(error.message || 'Failed to add products');
+        }
+
+        return data;
       } finally {
         setIsLoading(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['platform-rewards'] });
       setIsAddProductOpen(false);
-      toast.success("Product added to global rewards catalog");
+      toast.success(data?.message || "Products added to global rewards catalog");
     },
     onError: (error: Error) => {
-      console.error("Error adding product:", error);
-      toast.error(error.message || "An error occurred while adding the product");
+      console.error("Error adding products:", error);
+      toast.error(error.message || "An error occurred while adding the products");
     }
   });
 
@@ -104,8 +107,8 @@ export const usePlatformRewardCatalog = () => {
     }
   });
 
-  const handleAddProduct = (url: string, pointsMultiplier: number) => {
-    addProductMutation.mutate({ url, pointsMultiplier });
+  const handleAddProducts = (productIds: string[], pointsMultiplier: number) => {
+    addProductMutation.mutate({ productIds, pointsMultiplier });
   };
 
   const handleDeleteProduct = (reward: Reward) => {
@@ -124,7 +127,7 @@ export const usePlatformRewardCatalog = () => {
     isLoadingRewards,
     isAddProductOpen,
     setIsAddProductOpen,
-    handleAddProduct,
+    handleAddProducts,
     isLoading,
     handleDeleteProduct,
     deleteConfirmOpen,
