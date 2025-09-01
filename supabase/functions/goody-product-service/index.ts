@@ -123,7 +123,7 @@ serve(async (req) => {
         console.log(`Using API key starting with: ${goodyApiKey.substring(0, 10)}...`);
 
         const goodyResponse = await fetch(
-          `https://api.sandbox.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
+          `https://api.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
           {
             headers: {
               'Authorization': `Bearer ${goodyApiKey}`,
