@@ -13,7 +13,7 @@ export interface Reward {
   stock: number | null;
   company_id: string | null;
   external_id: string | null;
-  rye_product_url: string | null;
+  product_url: string | null;
   created_at: string;
   is_global?: boolean;
 }
@@ -84,34 +84,15 @@ export const useRewards = (categoryId?: string) => {
       console.log('👤 User ID:', user.id);
       console.log('📦 Shipping Address:', JSON.stringify(shippingAddress, null, 2));
 
-      const { data, error } = await supabase.functions.invoke('rye-cart-service', {
-        body: {
-          action: 'redeem',
-          rewardId: rewardId,
-          userId: user.id,
-          shippingAddress: shippingAddress
-        }
-      });
-
-      if (error) {
-        console.error('❌ Edge function error:', error);
-        throw new Error(error.message || 'Failed to process redemption');
-      }
-
-      if (!data || !data.success) {
-        console.error('❌ Redemption failed:', data);
-        throw new Error(data?.error || 'Redemption failed');
-      }
-
-      console.log('✅ Redemption successful:', data);
-      return data.redemption;
+      // Reward redemption service will be implemented later
+      throw new Error('Reward redemption service is currently unavailable');
     },
     onSuccess: (data) => {
       console.log('🎉 Redemption mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
       queryClient.invalidateQueries({ queryKey: ['redemptions'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-      toast.success(`Reward redeemed successfully! Order ID: ${data.rye_order_id}`);
+      toast.success('Reward redeemed successfully!');
     },
     onError: (error) => {
       console.error('❌ Redemption mutation error:', error);

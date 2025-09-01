@@ -20,11 +20,11 @@ export type Database = {
           cart_cost: Json | null
           company_id: string
           created_at: string
+          external_cart_id: string | null
           id: string
           product_id: string
           quantity: number
           reward_id: string
-          rye_cart_id: string
           status: string
           updated_at: string
           user_id: string
@@ -34,11 +34,11 @@ export type Database = {
           cart_cost?: Json | null
           company_id: string
           created_at?: string
+          external_cart_id?: string | null
           id?: string
           product_id: string
           quantity?: number
           reward_id: string
-          rye_cart_id: string
           status?: string
           updated_at?: string
           user_id: string
@@ -48,11 +48,11 @@ export type Database = {
           cart_cost?: Json | null
           company_id?: string
           created_at?: string
+          external_cart_id?: string | null
           id?: string
           product_id?: string
           quantity?: number
           reward_id?: string
-          rye_cart_id?: string
           status?: string
           updated_at?: string
           user_id?: string
@@ -510,36 +510,36 @@ export type Database = {
       }
       reward_redemptions: {
         Row: {
+          external_cart_id: string | null
+          external_order_id: string | null
           id: string
           points_spent: number
           redemption_date: string
           reward_id: string
-          rye_cart_id: string | null
-          rye_order_id: string | null
           shipping_address: Json | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          external_cart_id?: string | null
+          external_order_id?: string | null
           id?: string
           points_spent: number
           redemption_date?: string
           reward_id: string
-          rye_cart_id?: string | null
-          rye_order_id?: string | null
           shipping_address?: Json | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          external_cart_id?: string | null
+          external_order_id?: string | null
           id?: string
           points_spent?: number
           redemption_date?: string
           reward_id?: string
-          rye_cart_id?: string | null
-          rye_order_id?: string | null
           shipping_address?: Json | null
           status?: string
           updated_at?: string
@@ -566,7 +566,7 @@ export type Database = {
           is_global: boolean
           name: string
           points_cost: number
-          rye_product_url: string | null
+          product_url: string | null
           stock: number | null
           updated_at: string
         }
@@ -580,7 +580,7 @@ export type Database = {
           is_global?: boolean
           name: string
           points_cost: number
-          rye_product_url?: string | null
+          product_url?: string | null
           stock?: number | null
           updated_at?: string
         }
@@ -594,7 +594,7 @@ export type Database = {
           is_global?: boolean
           name?: string
           points_cost?: number
-          rye_product_url?: string | null
+          product_url?: string | null
           stock?: number | null
           updated_at?: string
         }

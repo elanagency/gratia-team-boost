@@ -22,7 +22,7 @@ export interface Reward {
   stock?: number;
   company_id: string | null;
   external_id: string;
-  rye_product_url: string;
+  product_url: string;
   is_global: boolean;
 }
 
@@ -61,44 +61,8 @@ export const usePlatformRewardCatalog = () => {
         const isAmazon = url.includes('amazon.com') || url.includes('amzn.to');
         const action = isAmazon ? 'requestAmazonProductByURL' : 'requestShopifyProductByURL';
 
-        // Call the product service
-        const response = await supabase.functions.invoke('rye-product-service', {
-          body: { action, url }
-        });
-
-        if (response.error) {
-          throw new Error(response.error.message || 'Failed to fetch product');
-        }
-
-        if (!response.data || !response.data.product) {
-          throw new Error('No product data returned from API');
-        }
-
-        const product = response.data.product as Product;
-        const priceInDollars = product.price;
-        const pointsCost = Math.round(priceInDollars * pointsMultiplier);
-
-        // Store as global reward (company_id = null, is_global = true)
-        const { data, error } = await supabase
-          .from('rewards')
-          .insert({
-            name: product.title,
-            description: product.description || 'No description available',
-            image_url: product.imageUrl,
-            points_cost: pointsCost,
-            external_id: product.id,
-            rye_product_url: product.url,
-            company_id: null, // Global rewards have no company
-            is_global: true,
-            stock: 10
-          })
-          .select();
-
-        if (error) {
-          throw error;
-        }
-
-        return data[0];
+        // Product service will be implemented later
+        throw new Error('Product service is currently unavailable');
       } finally {
         setIsLoading(false);
       }

@@ -11,7 +11,7 @@ export interface Reward {
   stock?: number;
   company_id: string | null;
   external_id: string;
-  rye_product_url: string;
+  product_url: string;
   is_global: boolean;
 }
 

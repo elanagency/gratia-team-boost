@@ -10,8 +10,8 @@ export interface Redemption {
   points_spent: number;
   status: string;
   shipping_address: any;
-  rye_cart_id: string | null;
-  rye_order_id: string | null;
+  external_cart_id: string | null;
+  external_order_id: string | null;
   redemption_date: string;
   updated_at: string;
   reward?: {
