@@ -19,7 +19,7 @@ export const usePlatformRewardSettings = () => {
         .from('platform_settings')
         .select('*')
         .eq('key', 'enabled_goody_products')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // Not found is OK
         console.error('Error fetching platform reward settings:', error);

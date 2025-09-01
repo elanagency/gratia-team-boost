@@ -46,7 +46,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true) => {
     queryKey: ['goody-products', page],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
-        body: { page, per_page: 50 }
+        method: 'GET'
       });
 
       if (error) {

@@ -70,19 +70,9 @@ serve(async (req) => {
     const action = url.pathname.split('/').pop();
 
     if (req.method === 'GET') {
-      let pageNum = 1;
-      let perPage = 50;
-      
-      try {
-        const body = await req.json();
-        pageNum = body.page || 1;
-        perPage = body.per_page || 50;
-      } catch {
-        // Use defaults if no body or invalid JSON
-        const url = new URL(req.url);
-        pageNum = parseInt(url.searchParams.get('page') || '1');
-        perPage = parseInt(url.searchParams.get('per_page') || '50');
-      }
+      const url = new URL(req.url);
+      const pageNum = parseInt(url.searchParams.get('page') || '1');
+      const perPage = parseInt(url.searchParams.get('per_page') || '50');
       
       console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
 
