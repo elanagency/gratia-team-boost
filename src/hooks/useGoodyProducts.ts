@@ -49,13 +49,19 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
         body: { 
           method: useSavedIds ? 'LOAD_FROM_DATABASE' : 'GET',
           page: page,
-          perPage: 50
+          perPage: 20
         }
       });
 
       if (error) {
         console.error('Goody gift cards fetch error:', error);
+        console.error('Full error details:', JSON.stringify(error, null, 2));
         throw new Error(error.message || 'Failed to fetch Goody gift cards');
+      }
+
+      if (!data) {
+        console.error('No data received from edge function');
+        throw new Error('No data received from gift cards service');
       }
 
       return data as GoodyApiResponse;

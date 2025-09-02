@@ -494,20 +494,44 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number, perPage
       throw fetchError;
     }
 
-    // Extract products from stored JSON data
+    // Extract and optimize products from stored JSON data
     const products = giftCards
-      .map(card => card.product_data)
+      .map(card => {
+        const product = card.product_data;
+        if (!product) return null;
+        
+        // Optimize product data by keeping only essential fields
+        return {
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          subtitle: product.subtitle,
+          recipient_description: product.recipient_description,
+          price: product.price,
+          price_is_variable: product.price_is_variable,
+          // Keep only the first image and variant to reduce size
+          images: product.images ? [product.images[0]].filter(Boolean) : [],
+          variants: product.variants ? [product.variants[0]].filter(Boolean) : []
+        };
+      })
       .filter(product => product !== null);
 
     console.log(`Loaded ${products.length} products from database for page ${page}`);
+    
+    const response = {
+      data: products,
+      list_meta: { total_count: count || 0 }
+    };
+    
+    const responseStr = JSON.stringify(response);
+    console.log(`Response size: ${responseStr.length} characters`);
+    
+    // Check if response is too large (>6MB is typical edge function limit)
+    if (responseStr.length > 6000000) {
+      console.warn(`Response size (${responseStr.length}) may be too large`);
+    }
 
-    return new Response(
-      JSON.stringify({
-        data: products,
-        list_meta: { total_count: count || 0 }
-      }),
-      { headers: corsHeaders }
-    );
+    return new Response(responseStr, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error in handleLoadFromDatabase:', error);
