@@ -5,7 +5,7 @@ import { Loader2, Download, Clock } from "lucide-react";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
 
 export const SyncGiftCardsDialog = () => {
-  const { isOpen, setIsOpen, syncStatus, syncMutation, isLoading } = useSyncGiftCards();
+  const { isOpen, setIsOpen, syncStatus, syncMutation, refreshCatalog, isLoading } = useSyncGiftCards();
 
   const handleSync = () => {
     syncMutation.mutate();

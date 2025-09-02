@@ -38,8 +38,10 @@ export const useSyncGiftCards = () => {
     },
     onSuccess: (data) => {
       toast.success(`Sync completed! Found ${data.total_found} gift cards`);
+      // Force refresh all related data
       queryClient.invalidateQueries({ queryKey: ['gift-card-sync-status'] });
       queryClient.invalidateQueries({ queryKey: ['goody-gift-cards'] });
+      queryClient.refetchQueries({ queryKey: ['goody-gift-cards'] });
       setIsOpen(false);
     },
     onError: (error) => {
@@ -48,11 +50,19 @@ export const useSyncGiftCards = () => {
     }
   });
 
+  // Manual refresh function
+  const refreshCatalog = () => {
+    queryClient.invalidateQueries({ queryKey: ['goody-gift-cards'] });
+    queryClient.refetchQueries({ queryKey: ['goody-gift-cards'] });
+    toast.success('Catalog refreshed');
+  };
+
   return {
     isOpen,
     setIsOpen,
     syncStatus,
     syncMutation,
+    refreshCatalog,
     isLoading: syncMutation.isPending
   };
 };

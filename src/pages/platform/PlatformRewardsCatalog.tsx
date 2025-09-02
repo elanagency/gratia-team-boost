@@ -8,6 +8,9 @@ import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { useGoodyProducts } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 import { SyncGiftCardsDialog } from "@/components/platform/SyncGiftCardsDialog";
+import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const PlatformRewardsCatalog = () => {
   const [page, setPage] = useState(1);
@@ -15,6 +18,7 @@ const PlatformRewardsCatalog = () => {
   
   const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, true);
   const { enabledProducts } = usePlatformRewardSettings();
+  const { refreshCatalog, syncStatus } = useSyncGiftCards();
 
   // Filter products based on search term
   const filteredProducts = products.filter(product =>
@@ -34,6 +38,15 @@ const PlatformRewardsCatalog = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshCatalog}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
           <SyncGiftCardsDialog />
           <Badge variant="outline" className="text-sm">
             {enabledCount} gift cards enabled
@@ -53,6 +66,11 @@ const PlatformRewardsCatalog = () => {
         </div>
         <div className="text-sm text-gray-500">
           Showing {filteredProducts.length} of {totalCount} gift cards
+          {syncStatus?.lastSynced && (
+            <div className="text-xs text-gray-400 mt-1">
+              Last synced: {new Date(syncStatus.lastSynced).toLocaleString()}
+            </div>
+          )}
         </div>
       </div>
 
