@@ -42,6 +42,14 @@ interface GoodyProduct {
   restricted_states: string[];
 }
 
+// Utility function to check if a product is a gift card
+const isGiftCard = (product: GoodyProduct): boolean => {
+  const searchTerms = ['gift card', 'gift certificate', 'egift'];
+  const subtitle = (product.subtitle || '').toLowerCase();
+
+  return searchTerms.some(term => subtitle.includes(term));
+};
+
 interface GoodyApiResponse {
   data: GoodyProduct[];
   list_meta: {
@@ -153,7 +161,9 @@ serve(async (req) => {
             }
 
             const pageData: GoodyApiResponse = await goodyResponse.json();
-            allProducts.push(...pageData.data);
+            // Filter for gift cards only
+            const giftCards = pageData.data.filter(isGiftCard);
+            allProducts.push(...giftCards);
             totalCount = pageData.list_meta.total_count;
             
             console.log(`Fetched ${pageData.data.length} products from page ${currentPage}. Total so far: ${allProducts.length}`);
@@ -208,10 +218,17 @@ serve(async (req) => {
           }
 
           const goodyData: GoodyApiResponse = await goodyResponse.json();
-          console.log(`Successfully fetched ${goodyData.data.length} products from Goody`);
+          // Filter for gift cards only
+          const giftCards = goodyData.data.filter(isGiftCard);
+          console.log(`Successfully fetched ${giftCards.length} gift cards from ${goodyData.data.length} total products`);
 
           return new Response(
-            JSON.stringify(goodyData),
+            JSON.stringify({
+              data: giftCards,
+              list_meta: {
+                total_count: giftCards.length
+              }
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 200 
