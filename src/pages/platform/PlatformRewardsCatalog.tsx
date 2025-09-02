@@ -60,7 +60,7 @@ const PlatformRewardsCatalog = () => {
         <div className="flex justify-center my-12">
           <div className="flex items-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Fetching all gift cards across all pages...</span>
+            <span>Loading saved gift cards...</span>
           </div>
         </div>
       ) : error ? (
