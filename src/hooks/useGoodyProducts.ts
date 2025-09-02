@@ -44,16 +44,9 @@ interface GoodyApiResponse {
 // Utility function to check if a product is a gift card
 const isGiftCard = (product: GoodyProduct): boolean => {
   const searchTerms = ['gift card', 'gift certificate', 'egift'];
-  const searchFields = [
-    product.name,
-    product.subtitle || '',
-    product.recipient_description,
-    product.brand.name
-  ].map(field => field.toLowerCase());
+  const subtitle = (product.subtitle || '').toLowerCase();
 
-  return searchTerms.some(term => 
-    searchFields.some(field => field.includes(term))
-  );
+  return searchTerms.some(term => subtitle.includes(term));
 };
 
 export const useGoodyProducts = (page: number = 1, enabled: boolean = true, filterGiftCards: boolean = false) => {
