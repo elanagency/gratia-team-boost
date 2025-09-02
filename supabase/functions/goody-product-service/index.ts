@@ -74,11 +74,13 @@ serve(async (req) => {
       let pageNum = 1;
       let perPage = 50;
       let isProductFetch = true;
+      let fetchAll = false;
       
       if (req.method === 'GET') {
         const url = new URL(req.url);
         pageNum = parseInt(url.searchParams.get('page') || '1');
         perPage = parseInt(url.searchParams.get('per_page') || '50');
+        fetchAll = url.searchParams.get('fetch_all') === 'true';
       } else if (req.method === 'POST') {
         try {
           const body = await req.json();
@@ -88,6 +90,7 @@ serve(async (req) => {
             // This is a product fetch request
             pageNum = body.page || 1;
             perPage = body.per_page || 50;
+            fetchAll = body.fetch_all || false;
           } else {
             // This is an add products request
             isProductFetch = false;
@@ -119,42 +122,102 @@ serve(async (req) => {
       }
 
       if (isProductFetch) {
-        console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
-        console.log(`Using API key starting with: ${goodyApiKey.substring(0, 10)}...`);
-
-        const goodyResponse = await fetch(
-          `https://api.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${goodyApiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        console.log(`Goody API response status: ${goodyResponse.status}`);
-
-        if (!goodyResponse.ok) {
-          const errorText = await goodyResponse.text();
-          console.error('Goody API error response:', errorText);
+        if (fetchAll) {
+          console.log('Fetching all Goody products across all pages...');
+          const allProducts: GoodyProduct[] = [];
+          let currentPage = 1;
+          let totalCount = 0;
           
-          if (goodyResponse.status === 401) {
-            throw new Error(`Goody API authentication failed. Please check your API key. Status: ${goodyResponse.status}`);
+          while (true) {
+            console.log(`Fetching page ${currentPage}...`);
+            
+            const goodyResponse = await fetch(
+              `https://api.ongoody.com/v1/products?page=${currentPage}&per_page=${perPage}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${goodyApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            if (!goodyResponse.ok) {
+              const errorText = await goodyResponse.text();
+              console.error('Goody API error response:', errorText);
+              
+              if (goodyResponse.status === 401) {
+                throw new Error(`Goody API authentication failed. Please check your API key. Status: ${goodyResponse.status}`);
+              }
+              
+              throw new Error(`Goody API error: ${goodyResponse.status} ${errorText}`);
+            }
+
+            const pageData: GoodyApiResponse = await goodyResponse.json();
+            allProducts.push(...pageData.data);
+            totalCount = pageData.list_meta.total_count;
+            
+            console.log(`Fetched ${pageData.data.length} products from page ${currentPage}. Total so far: ${allProducts.length}`);
+            
+            // Break if we've fetched all products or this page was empty
+            if (pageData.data.length === 0 || allProducts.length >= totalCount) {
+              break;
+            }
+            
+            currentPage++;
           }
           
-          throw new Error(`Goody API error: ${goodyResponse.status} ${errorText}`);
+          console.log(`Successfully fetched all ${allProducts.length} products from Goody across ${currentPage} pages`);
+
+          return new Response(
+            JSON.stringify({
+              data: allProducts,
+              list_meta: {
+                total_count: totalCount
+              }
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200 
+            }
+          );
+        } else {
+          console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
+          console.log(`Using API key starting with: ${goodyApiKey.substring(0, 10)}...`);
+
+          const goodyResponse = await fetch(
+            `https://api.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${goodyApiKey}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          console.log(`Goody API response status: ${goodyResponse.status}`);
+
+          if (!goodyResponse.ok) {
+            const errorText = await goodyResponse.text();
+            console.error('Goody API error response:', errorText);
+            
+            if (goodyResponse.status === 401) {
+              throw new Error(`Goody API authentication failed. Please check your API key. Status: ${goodyResponse.status}`);
+            }
+            
+            throw new Error(`Goody API error: ${goodyResponse.status} ${errorText}`);
+          }
+
+          const goodyData: GoodyApiResponse = await goodyResponse.json();
+          console.log(`Successfully fetched ${goodyData.data.length} products from Goody`);
+
+          return new Response(
+            JSON.stringify(goodyData),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200 
+            }
+          );
         }
-
-        const goodyData: GoodyApiResponse = await goodyResponse.json();
-        console.log(`Successfully fetched ${goodyData.data.length} products from Goody`);
-
-        return new Response(
-          JSON.stringify(goodyData),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200 
-          }
-        );
       }
     }
 

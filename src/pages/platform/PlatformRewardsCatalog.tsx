@@ -15,7 +15,7 @@ const PlatformRewardsCatalog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGiftCards, setFilterGiftCards] = useState(false);
   
-  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, filterGiftCards);
+  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, filterGiftCards, filterGiftCards);
   const { enabledProducts } = usePlatformRewardSettings();
 
   // Filter products based on search term
@@ -57,7 +57,7 @@ const PlatformRewardsCatalog = () => {
             onCheckedChange={(checked) => setFilterGiftCards(checked === true)}
           />
           <Label htmlFor="gift-cards-filter" className="text-sm font-medium">
-            Gift Cards Only
+            Gift Cards Only {filterGiftCards && "(Fetching all pages...)"}
           </Label>
         </div>
         <div className="text-sm text-gray-500">
@@ -69,7 +69,12 @@ const PlatformRewardsCatalog = () => {
         <div className="flex justify-center my-12">
           <div className="flex items-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading Goody catalog...</span>
+            <span>
+              {filterGiftCards 
+                ? "Fetching all gift cards across all pages..." 
+                : "Loading Goody catalog..."
+              }
+            </span>
           </div>
         </div>
       ) : error ? (

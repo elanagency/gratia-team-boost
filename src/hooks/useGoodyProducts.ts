@@ -49,15 +49,16 @@ const isGiftCard = (product: GoodyProduct): boolean => {
   return searchTerms.some(term => subtitle.includes(term));
 };
 
-export const useGoodyProducts = (page: number = 1, enabled: boolean = true, filterGiftCards: boolean = false) => {
+export const useGoodyProducts = (page: number = 1, enabled: boolean = true, filterGiftCards: boolean = false, fetchAllGiftCards: boolean = false) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['goody-products', page],
+    queryKey: ['goody-products', page, filterGiftCards, fetchAllGiftCards],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
         body: { 
           method: 'GET',
           page: page,
-          per_page: 50 
+          per_page: 50,
+          fetch_all: fetchAllGiftCards && filterGiftCards
         }
       });
 
@@ -69,7 +70,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, filt
       return data as GoodyApiResponse;
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: fetchAllGiftCards ? 15 * 60 * 1000 : 5 * 60 * 1000, // Cache longer for all products
     retry: 2, // Retry failed requests twice
   });
 
