@@ -7,6 +7,7 @@ import { Search, Loader2 } from "lucide-react";
 import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { useGoodyProducts } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
+import { SyncGiftCardsDialog } from "@/components/platform/SyncGiftCardsDialog";
 
 const PlatformRewardsCatalog = () => {
   const [page, setPage] = useState(1);
@@ -32,9 +33,12 @@ const PlatformRewardsCatalog = () => {
             Browse and enable Goody gift cards for all companies
           </p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          {enabledCount} gift cards enabled
-        </Badge>
+        <div className="flex items-center gap-3">
+          <SyncGiftCardsDialog />
+          <Badge variant="outline" className="text-sm">
+            {enabledCount} gift cards enabled
+          </Badge>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

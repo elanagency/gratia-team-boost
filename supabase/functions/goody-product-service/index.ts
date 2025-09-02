@@ -89,40 +89,51 @@ serve(async (req) => {
         pageNum = parseInt(url.searchParams.get('page') || '1');
         perPage = parseInt(url.searchParams.get('per_page') || '50');
         fetchAll = url.searchParams.get('fetch_all') === 'true';
-      } else if (req.method === 'POST') {
-        try {
-          const body = await req.json();
-          
-          // Check if this is a product fetch request or add products request
-          if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier)) {
-            // This is a product fetch request
-            pageNum = body.page || 1;
-            perPage = body.per_page || 50;
-            fetchAll = body.fetch_all || false;
-          } else {
-            // This is an add products request
-            isProductFetch = false;
-            const { productIds, pointsMultiplier = 1 } = body;
+        } else if (req.method === 'POST') {
+          try {
+            const body = await req.json();
             
-            if (!Array.isArray(productIds) || productIds.length === 0) {
-              throw new Error('Product IDs are required');
+            // Handle SYNC method
+            if (body.method === 'SYNC') {
+              return await handleSyncGiftCards(goodyApiKey, supabase);
             }
-
-            console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
-
-            // For now, return success since we're not storing products in DB anymore
-            return new Response(
-              JSON.stringify({ 
-                success: true, 
-                message: `Product settings will be managed through platform settings`,
-                productIds: productIds 
-              }),
-              { 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200 
+            
+            // Handle LOAD_FROM_SAVED_IDS method  
+            if (body.method === 'LOAD_FROM_SAVED_IDS') {
+              const { page = 1, perPage: requestPerPage = 50 } = body;
+              return await handleLoadFromSavedIds(goodyApiKey, supabase, page, requestPerPage);
+            }
+            
+            // Check if this is a product fetch request or add products request
+            if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier && !body.method)) {
+              // This is a product fetch request
+              pageNum = body.page || 1;
+              perPage = body.per_page || 50;
+              fetchAll = body.fetch_all || false;
+            } else {
+              // This is an add products request
+              isProductFetch = false;
+              const { productIds, pointsMultiplier = 1 } = body;
+              
+              if (!Array.isArray(productIds) || productIds.length === 0) {
+                throw new Error('Product IDs are required');
               }
-            );
-          }
+
+              console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
+
+              // For now, return success since we're not storing products in DB anymore
+              return new Response(
+                JSON.stringify({ 
+                  success: true, 
+                  message: `Product settings will be managed through platform settings`,
+                  productIds: productIds 
+                }),
+                { 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200 
+                }
+              );
+            }
         } catch (parseError) {
           console.error('Error parsing request body:', parseError);
           throw new Error('Invalid request body');
@@ -260,3 +271,185 @@ serve(async (req) => {
     );
   }
 });
+
+// New function to sync all gift cards and save their IDs
+async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
+  console.log('Starting gift card sync process...');
+  
+  const allGiftCards = [];
+  let page = 1;
+  let hasMorePages = true;
+  let totalFetched = 0;
+
+  try {
+    while (hasMorePages) {
+      console.log(`Fetching page ${page}...`);
+      
+      const response = await fetch(`https://api.ongoody.com/v1/products?page=${page}&per_page=50`, {
+        headers: {
+          'Authorization': `Bearer ${goodyApiKey}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to fetch page ${page}: ${response.status} ${response.statusText}`);
+        break;
+      }
+
+      const data = await response.json() as GoodyApiResponse;
+      const giftCards = data.data.filter(isGiftCard);
+      
+      allGiftCards.push(...giftCards);
+      totalFetched += data.data.length;
+      
+      console.log(`Fetched ${data.data.length} products from page ${page}. Found ${giftCards.length} gift cards. Total gift cards so far: ${allGiftCards.length}`);
+      
+      if (data.data.length < 50) {
+        hasMorePages = false;
+      } else {
+        page++;
+      }
+
+      // Add a small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    console.log(`Sync complete. Found ${allGiftCards.length} gift cards out of ${totalFetched} total products.`);
+
+    // Prepare gift card records for database
+    const giftCardRecords = allGiftCards.map(product => ({
+      goody_product_id: product.id,
+      name: product.name,
+      brand_name: product.brand.name,
+      last_synced_at: new Date().toISOString(),
+      is_active: true
+    }));
+
+    // Clear existing records and insert new ones
+    const { error: deleteError } = await supabaseClient
+      .from('goody_gift_cards')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+    if (deleteError) {
+      console.error('Error clearing existing gift card records:', deleteError);
+    }
+
+    // Insert new records in batches
+    const batchSize = 100;
+    let insertedCount = 0;
+    
+    for (let i = 0; i < giftCardRecords.length; i += batchSize) {
+      const batch = giftCardRecords.slice(i, i + batchSize);
+      
+      const { error: insertError } = await supabaseClient
+        .from('goody_gift_cards')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`Error inserting batch ${i / batchSize + 1}:`, insertError);
+      } else {
+        insertedCount += batch.length;
+        console.log(`Inserted batch ${i / batchSize + 1}: ${batch.length} records`);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Gift card sync completed',
+        total_found: allGiftCards.length,
+        total_saved: insertedCount,
+        sync_timestamp: new Date().toISOString()
+      }),
+      { headers: corsHeaders }
+    );
+
+  } catch (error) {
+    console.error('Error during gift card sync:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Sync failed', 
+        details: error.message,
+        total_found: allGiftCards.length
+      }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+// New function to load products from saved IDs
+async function handleLoadFromSavedIds(goodyApiKey: string, supabaseClient: any, page: number, perPage: number) {
+  try {
+    // Get saved gift card IDs with pagination
+    const { data: savedGiftCards, error: fetchError, count } = await supabaseClient
+      .from('goody_gift_cards')
+      .select('goody_product_id', { count: 'exact' })
+      .eq('is_active', true)
+      .order('name')
+      .range((page - 1) * perPage, page * perPage - 1);
+
+    if (fetchError) {
+      console.error('Error fetching saved gift card IDs:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch saved gift card IDs' }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!savedGiftCards || savedGiftCards.length === 0) {
+      return new Response(
+        JSON.stringify({
+          data: [],
+          list_meta: { total_count: 0 },
+          message: 'No synced gift cards found. Please sync first.'
+        }),
+        { headers: corsHeaders }
+      );
+    }
+
+    // Fetch product details for each saved ID
+    const products = [];
+    
+    for (const savedCard of savedGiftCards) {
+      try {
+        const response = await fetch(`https://api.ongoody.com/v1/products/${savedCard.goody_product_id}`, {
+          headers: {
+            'Authorization': `Bearer ${goodyApiKey}`,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const product = await response.json();
+          products.push(product);
+        } else {
+          console.error(`Failed to fetch product ${savedCard.goody_product_id}: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`Error fetching product ${savedCard.goody_product_id}:`, error);
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    console.log(`Loaded ${products.length} products from saved IDs for page ${page}`);
+
+    return new Response(
+      JSON.stringify({
+        data: products,
+        list_meta: { total_count: count || 0 }
+      }),
+      { headers: corsHeaders }
+    );
+
+  } catch (error) {
+    console.error('Error loading from saved IDs:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to load from saved IDs' }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}

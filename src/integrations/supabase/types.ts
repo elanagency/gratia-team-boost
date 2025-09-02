@@ -231,6 +231,39 @@ export type Database = {
           },
         ]
       }
+      goody_gift_cards: {
+        Row: {
+          brand_name: string
+          created_at: string
+          goody_product_id: string
+          id: string
+          is_active: boolean
+          last_synced_at: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          goody_product_id: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          goody_product_id?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_monthly_spending: {
         Row: {
           company_id: string
