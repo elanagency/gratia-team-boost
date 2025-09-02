@@ -47,7 +47,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
         body: { 
-          method: useSavedIds ? 'LOAD_FROM_SAVED_IDS' : 'GET',
+          method: useSavedIds ? 'LOAD_FROM_DATABASE' : 'GET',
           page: page,
           perPage: 50
         }
@@ -61,7 +61,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
       return data as GoodyApiResponse;
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // 5 minute cache
+    staleTime: 30 * 60 * 1000, // 30 minute cache since it's from database
     retry: 2, // Retry failed requests twice
   });
 

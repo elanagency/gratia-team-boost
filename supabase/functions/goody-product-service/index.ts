@@ -104,6 +104,12 @@ serve(async (req) => {
               return await handleLoadFromSavedIds(goodyApiKey, supabase, page, requestPerPage);
             }
             
+            // Handle LOAD_FROM_DATABASE method  
+            if (body.method === 'LOAD_FROM_DATABASE') {
+              const { page = 1, perPage: requestPerPage = 50 } = body;
+              return await handleLoadFromDatabase(supabase, page, requestPerPage);
+            }
+            
             // Check if this is a product fetch request or add products request
             if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier && !body.method)) {
               // This is a product fetch request
@@ -317,11 +323,16 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
 
     console.log(`Sync complete. Found ${allGiftCards.length} gift cards out of ${totalFetched} total products.`);
 
-    // Prepare gift card records for database
+    // Prepare gift card records for database with full product data
     const giftCardRecords = allGiftCards.map(product => ({
       goody_product_id: product.id,
       name: product.name,
       brand_name: product.brand.name,
+      price: product.price,
+      image_url: product.images?.[0]?.image_large?.url || product.variants?.[0]?.image_large?.url,
+      description: product.recipient_description,
+      subtitle: product.subtitle,
+      product_data: product, // Store full product JSON
       last_synced_at: new Date().toISOString(),
       is_active: true
     }));
@@ -449,6 +460,59 @@ async function handleLoadFromSavedIds(goodyApiKey: string, supabaseClient: any, 
     console.error('Error loading from saved IDs:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to load from saved IDs' }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+// New function to load products directly from database
+async function handleLoadFromDatabase(supabaseClient: any, page: number, perPage: number) {
+  try {
+    const offset = (page - 1) * perPage;
+    
+    // Get total count
+    const { count, error: countError } = await supabaseClient
+      .from('goody_gift_cards')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    if (countError) {
+      console.error('Error counting gift cards:', countError);
+      throw countError;
+    }
+
+    // Get paginated products from database
+    const { data: giftCards, error: fetchError } = await supabaseClient
+      .from('goody_gift_cards')
+      .select('product_data')
+      .eq('is_active', true)
+      .range(offset, offset + perPage - 1)
+      .order('created_at', { ascending: true });
+
+    if (fetchError) {
+      console.error('Error fetching gift cards from database:', fetchError);
+      throw fetchError;
+    }
+
+    // Extract products from stored JSON data
+    const products = giftCards
+      .map(card => card.product_data)
+      .filter(product => product !== null);
+
+    console.log(`Loaded ${products.length} products from database for page ${page}`);
+
+    return new Response(
+      JSON.stringify({
+        data: products,
+        list_meta: { total_count: count || 0 }
+      }),
+      { headers: corsHeaders }
+    );
+
+  } catch (error) {
+    console.error('Error in handleLoadFromDatabase:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to load products from database' }),
       { status: 500, headers: corsHeaders }
     );
   }

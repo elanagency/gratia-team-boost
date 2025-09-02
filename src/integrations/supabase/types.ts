@@ -235,31 +235,46 @@ export type Database = {
         Row: {
           brand_name: string
           created_at: string
+          description: string | null
           goody_product_id: string
           id: string
+          image_url: string | null
           is_active: boolean
           last_synced_at: string
           name: string
+          price: number | null
+          product_data: Json | null
+          subtitle: string | null
           updated_at: string
         }
         Insert: {
           brand_name: string
           created_at?: string
+          description?: string | null
           goody_product_id: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           last_synced_at?: string
           name: string
+          price?: number | null
+          product_data?: Json | null
+          subtitle?: string | null
           updated_at?: string
         }
         Update: {
           brand_name?: string
           created_at?: string
+          description?: string | null
           goody_product_id?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           last_synced_at?: string
           name?: string
+          price?: number | null
+          product_data?: Json | null
+          subtitle?: string | null
           updated_at?: string
         }
         Relationships: []
