@@ -67,10 +67,11 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
   });
 
   const products = data?.data || [];
+  const totalCount = data?.list_meta?.total_count ?? products.length;
 
   return {
     products,
-    totalCount: data?.list_meta?.total_count || 0,
+    totalCount,
     isLoading,
     error
   };
