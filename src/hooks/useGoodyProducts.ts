@@ -61,8 +61,9 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
       return data as GoodyApiResponse;
     },
     enabled,
-    staleTime: 30 * 60 * 1000, // 30 minute cache since it's from database
+    staleTime: 5 * 60 * 1000, // 5 minute cache to allow quicker refreshes
     retry: 2, // Retry failed requests twice
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   const products = data?.data || [];

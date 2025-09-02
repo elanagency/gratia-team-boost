@@ -37,11 +37,28 @@ export const useSyncGiftCards = () => {
       return data;
     },
     onSuccess: (data) => {
+      console.log('Sync completed, invalidating cache for all gift card queries...');
       toast.success(`Sync completed! Found ${data.total_found} gift cards`);
-      // Force refresh all related data
+      
+      // Invalidate sync status
       queryClient.invalidateQueries({ queryKey: ['gift-card-sync-status'] });
-      queryClient.invalidateQueries({ queryKey: ['goody-gift-cards'] });
-      queryClient.refetchQueries({ queryKey: ['goody-gift-cards'] });
+      
+      // Invalidate ALL possible goody-gift-cards query combinations
+      queryClient.invalidateQueries({ 
+        queryKey: ['goody-gift-cards'],
+        exact: false // This will match all queries starting with 'goody-gift-cards'
+      });
+      
+      // Force immediate refetch of the most common query pattern
+      queryClient.refetchQueries({ 
+        queryKey: ['goody-gift-cards', 1, true], // page 1, useSavedIds true
+        exact: true
+      });
+      
+      // Set shorter stale time to ensure fresh data
+      queryClient.setQueryData(['goody-gift-cards', 1, true], undefined);
+      
+      console.log('Cache invalidation completed');
       setIsOpen(false);
     },
     onError: (error) => {
@@ -52,8 +69,27 @@ export const useSyncGiftCards = () => {
 
   // Manual refresh function
   const refreshCatalog = () => {
-    queryClient.invalidateQueries({ queryKey: ['goody-gift-cards'] });
-    queryClient.refetchQueries({ queryKey: ['goody-gift-cards'] });
+    console.log('Manual refresh triggered...');
+    
+    // Clear all goody-gift-cards related cache
+    queryClient.invalidateQueries({ 
+      queryKey: ['goody-gift-cards'],
+      exact: false 
+    });
+    
+    // Remove cached data to force fresh fetch
+    queryClient.removeQueries({ 
+      queryKey: ['goody-gift-cards'],
+      exact: false 
+    });
+    
+    // Immediately refetch current page
+    queryClient.refetchQueries({ 
+      queryKey: ['goody-gift-cards', 1, true],
+      exact: true 
+    });
+    
+    console.log('Manual refresh completed');
     toast.success('Catalog refreshed');
   };
 
