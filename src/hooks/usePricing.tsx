@@ -9,7 +9,7 @@ export const usePricing = () => {
         .from('platform_settings')
         .select('value')
         .eq('key', 'member_monthly_price_cents')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching pricing:', error);
