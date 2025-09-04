@@ -13,7 +13,10 @@ export const usePricing = () => {
 
       if (error) {
         console.error('Error fetching pricing:', error);
-        return 299; // Default fallback
+        console.error('Error code:', error.code);
+        console.error('Error details:', error.details);
+        // Return default fallback for permission errors or missing data
+        return 299; // Default fallback ($2.99)
       }
 
       return data?.value ? parseInt(JSON.parse(data.value.toString())) : 299;
