@@ -58,7 +58,15 @@ export const usePlatformSettings = () => {
 
   const getSetting = useCallback((key: string): string => {
     const setting = settings?.find(s => s.key === key);
-    return setting ? JSON.parse(setting.value) : '';
+    if (!setting) return '';
+    
+    try {
+      return JSON.parse(setting.value);
+    } catch (error) {
+      console.error(`Failed to parse platform setting ${key}:`, error);
+      // Return the raw value if JSON parsing fails
+      return setting.value || '';
+    }
   }, [settings]);
 
   return {
