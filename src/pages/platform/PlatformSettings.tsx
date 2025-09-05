@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Database, Users, Settings2, CreditCard, Star } from "lucide-react";
+import { Shield, Database, Users, Settings2, CreditCard, Star, TestTube, Globe, AlertTriangle } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -22,6 +22,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
@@ -51,6 +63,7 @@ interface PlatformConfigForm {
 const PlatformSettings = () => {
   const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [showLiveConfirmation, setShowLiveConfirmation] = useState(false);
   
   const { settings, isLoading, updateSetting, isUpdating, getSetting } = usePlatformSettings();
   const { 
@@ -186,6 +199,22 @@ const PlatformSettings = () => {
     removePaymentMethod(id);
   };
 
+  const currentEnvironment = getSetting('environment_mode') || 'test';
+  const isLiveMode = currentEnvironment === 'live';
+
+  const handleEnvironmentToggle = (checked: boolean) => {
+    if (checked) {
+      setShowLiveConfirmation(true);
+    } else {
+      updateSetting({ key: 'environment_mode', value: 'test' });
+    }
+  };
+
+  const confirmLiveMode = () => {
+    updateSetting({ key: 'environment_mode', value: 'live' });
+    setShowLiveConfirmation(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -203,6 +232,98 @@ const PlatformSettings = () => {
           <p className="text-gray-600">Configure platform-wide settings</p>
         </div>
       </div>
+
+      {/* Environment Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {isLiveMode ? (
+              <Globe className="h-5 w-5 text-green-600" />
+            ) : (
+              <TestTube className="h-5 w-5 text-orange-600" />
+            )}
+            Environment Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">
+                  Current Environment: {' '}
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+                    isLiveMode 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-orange-100 text-orange-800'
+                  }`}>
+                    {isLiveMode ? (
+                      <>
+                        <Globe className="h-3 w-3" />
+                        Live
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="h-3 w-3" />
+                        Test
+                      </>
+                    )}
+                  </span>
+                </h4>
+              </div>
+              <p className="text-sm text-gray-600">
+                {isLiveMode 
+                  ? 'Edge functions are using production APIs and live payment processing'
+                  : 'Edge functions are using test APIs and sandbox payment processing'
+                }
+              </p>
+              {isLiveMode && (
+                <div className="flex items-center gap-1 text-sm text-orange-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  Live mode processes real transactions
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700">Test</span>
+              <AlertDialog open={showLiveConfirmation} onOpenChange={setShowLiveConfirmation}>
+                <AlertDialogTrigger asChild>
+                  <div>
+                    <Switch
+                      checked={isLiveMode}
+                      onCheckedChange={handleEnvironmentToggle}
+                      disabled={isUpdating}
+                    />
+                  </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      Switch to Live Mode?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will switch all edge functions to use production APIs and live payment processing. 
+                      Real transactions will be processed and charges will be made to actual payment methods.
+                      <br /><br />
+                      Are you sure you want to continue?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={confirmLiveMode}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      Yes, Switch to Live
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <span className="text-sm font-medium text-gray-700">Live</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Platform Configuration */}
       <Card>
