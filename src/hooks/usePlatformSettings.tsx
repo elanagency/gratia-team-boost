@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 interface PlatformSetting {
   id: string;
   key: string;
-  value: string;
+  value: any; // Can be string, object, or any JSON value
   description: string | null;
 }
 
@@ -60,13 +60,27 @@ export const usePlatformSettings = () => {
     const setting = settings?.find(s => s.key === key);
     if (!setting) return '';
     
-    try {
-      return JSON.parse(setting.value);
-    } catch (error) {
-      console.error(`Failed to parse platform setting ${key}:`, error);
-      // Return the raw value if JSON parsing fails
-      return setting.value || '';
+    // Handle different value formats
+    if (typeof setting.value === 'string') {
+      // Try to parse as JSON first
+      try {
+        return JSON.parse(setting.value);
+      } catch (error) {
+        // If parsing fails, return the raw string value
+        return setting.value;
+      }
+    } else if (typeof setting.value === 'object' && setting.value !== null) {
+      // Handle object values (like from JSONB)
+      if ('data' in setting.value) {
+        return setting.value.data;
+      }
+      // Return the first value if it's a simple object
+      const values = Object.values(setting.value);
+      return values.length > 0 ? String(values[0]) : '';
     }
+    
+    // Fallback to string conversion
+    return String(setting.value || '');
   }, [settings]);
 
   return {
