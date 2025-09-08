@@ -238,8 +238,8 @@ serve(async (req: Request) => {
       }
     }
     
-    // Double-check: if we reach here, ensure we actually have available slots
-    if (!hasAvailableSlots && hasActiveSubscription) {
+    // Double-check: if we reach here and not in trial mode, ensure we have available slots
+    if (!company.trial_mode && !hasAvailableSlots && hasActiveSubscription) {
       return new Response(
         JSON.stringify({ 
           error: `No available team slots. Current usage: ${currentMemberCount}/${company.team_slots}. Please purchase additional slots.`,
@@ -357,17 +357,21 @@ serve(async (req: Request) => {
     }
     
     // Add user as a NON-ADMIN member of the company with 100 initial points
+    const memberData = {
+      company_id: companyId,
+      user_id: userId,
+      is_admin: false,
+      role: role.toLowerCase(),
+      department: department || null,
+      points: 100, // Give new team members 100 initial points
+      invitation_status: 'invited', // Set initial status as invited
+      is_trial_user: company.trial_mode || false, // Set trial status based on company mode
+    };
+    
+    console.log("[CREATE-TEAM-MEMBER] Creating company member with data:", memberData);
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from("company_members")
-      .insert({
-        company_id: companyId,
-        user_id: userId,
-        is_admin: false,
-        role: role.toLowerCase(),
-        department: department || null,
-        points: 100, // Give new team members 100 initial points
-        invitation_status: 'invited', // Set initial status as invited
-      })
+      .insert(memberData)
       .select()
       .single();
     
