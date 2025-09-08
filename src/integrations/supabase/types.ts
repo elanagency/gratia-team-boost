@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      backup_users: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          department: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          original_user_id: string
+          points: number | null
+          role: string | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          original_user_id: string
+          points?: number | null
+          role?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          original_user_id?: string
+          points?: number | null
+          role?: string | null
+        }
+        Relationships: []
+      }
       carts: {
         Row: {
           buyer_identity: Json
