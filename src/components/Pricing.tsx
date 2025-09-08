@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePricing } from "@/hooks/usePricing";
 const Pricing = () => {
+  const { pricePerMember } = usePricing();
+  
   return <section id="pricing" className="py-20 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">
@@ -15,7 +18,7 @@ const Pricing = () => {
             <h3 className="text-2xl font-bold text-white mb-6">One Simple Plan</h3>
             
             <div className="mb-8">
-              <div className="text-5xl font-bold text-grattia-pink mb-2">$2.99</div>
+              <div className="text-5xl font-bold text-grattia-pink mb-2">${pricePerMember}</div>
               <div className="text-gray-300 text-lg">per employee per month</div>
               
             </div>

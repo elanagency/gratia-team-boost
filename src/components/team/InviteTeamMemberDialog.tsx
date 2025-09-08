@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { usePricing } from "@/hooks/usePricing";
 import InviteForm from "./InviteForm";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -24,6 +25,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
+  const { pricePerMember } = usePricing();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +148,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-800 mb-2">First Team Member</h4>
             <p className="text-sm text-blue-700 mb-3">
-              Adding your first team member will start your subscription at $2.99/month per team member.
+              Adding your first team member will start your subscription at ${pricePerMember}/month per team member.
             </p>
             <p className="text-xs text-blue-600">
               • Pay only for active team members<br/>
