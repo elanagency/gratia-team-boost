@@ -129,7 +129,7 @@ serve(async (req: Request) => {
     // Get company info and check current team member count
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
-      .select('subscription_status, stripe_subscription_id, name')
+      .select('subscription_status, stripe_subscription_id, stripe_customer_id, name, team_slots')
       .eq('id', companyId)
       .single();
 
@@ -160,17 +160,25 @@ serve(async (req: Request) => {
     }
 
     const currentMemberCount = currentMembers || 0;
-    const isFirstMember = currentMemberCount === 0;
+    const hasActiveSubscription = company.subscription_status === 'active' && company.stripe_subscription_id;
+    const hasAvailableSlots = company.team_slots > currentMemberCount;
+    const needsSubscription = !hasActiveSubscription || !hasAvailableSlots;
 
     console.log("[CREATE-TEAM-MEMBER] Team member check:", {
       currentMemberCount,
-      isFirstMember,
-      hasSubscription: !!company.stripe_subscription_id
+      teamSlots: company.team_slots,
+      subscriptionStatus: company.subscription_status,
+      hasActiveSubscription,
+      hasAvailableSlots,
+      needsSubscription,
+      stripeCustomerId: company.stripe_customer_id,
+      stripeSubscriptionId: company.stripe_subscription_id
     });
 
-    // If this is the first member and no subscription exists, create one
-    if (isFirstMember && !company.stripe_subscription_id) {
-      console.log("[CREATE-TEAM-MEMBER] First team member - creating subscription");
+    // Check if we need to handle subscription setup
+    if (needsSubscription) {
+      const reason = !hasActiveSubscription ? "No active subscription" : "No available team slots";
+      console.log("[CREATE-TEAM-MEMBER] Subscription setup needed:", reason);
       
       if (authHeader) {
         try {
@@ -200,7 +208,9 @@ serve(async (req: Request) => {
               JSON.stringify({
                 needsBillingSetup: true,
                 checkoutUrl: checkoutData?.url,
-                message: "Setting up your subscription for the first team member"
+                message: hasActiveSubscription ? 
+                  "Need to purchase additional team slots" : 
+                  "Setting up your subscription to add team members"
               }),
               {
                 status: 200,
@@ -214,7 +224,9 @@ serve(async (req: Request) => {
           console.error("[CREATE-TEAM-MEMBER] Failed to create subscription checkout:", checkoutErr);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to setup subscription. Please try again.",
+              error: hasActiveSubscription ? 
+                "Failed to purchase additional team slots. Please try again." :
+                "Failed to setup subscription. Please try again.",
               needsBillingSetup: true 
             }),
             {
@@ -224,6 +236,20 @@ serve(async (req: Request) => {
           );
         }
       }
+    }
+    
+    // Double-check: if we reach here, ensure we actually have available slots
+    if (!hasAvailableSlots && hasActiveSubscription) {
+      return new Response(
+        JSON.stringify({ 
+          error: `No available team slots. Current usage: ${currentMemberCount}/${company.team_slots}. Please purchase additional slots.`,
+          needsBillingSetup: true 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
     
     // Continue with normal member creation (slots are available)
