@@ -124,7 +124,6 @@ export type Database = {
           address: string | null
           billing_cycle_anchor: number | null
           created_at: string
-          first_active_member_at: string | null
           handle: string | null
           id: string
           logo_url: string | null
@@ -135,8 +134,6 @@ export type Database = {
           subscription_status: string | null
           team_member_monthly_limit: number | null
           team_slots: number | null
-          trial_ends_at: string | null
-          trial_mode: boolean | null
           updated_at: string
           website: string | null
         }
@@ -144,7 +141,6 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          first_active_member_at?: string | null
           handle?: string | null
           id?: string
           logo_url?: string | null
@@ -155,8 +151,6 @@ export type Database = {
           subscription_status?: string | null
           team_member_monthly_limit?: number | null
           team_slots?: number | null
-          trial_ends_at?: string | null
-          trial_mode?: boolean | null
           updated_at?: string
           website?: string | null
         }
@@ -164,7 +158,6 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
-          first_active_member_at?: string | null
           handle?: string | null
           id?: string
           logo_url?: string | null
@@ -175,8 +168,6 @@ export type Database = {
           subscription_status?: string | null
           team_member_monthly_limit?: number | null
           team_slots?: number | null
-          trial_ends_at?: string | null
-          trial_mode?: boolean | null
           updated_at?: string
           website?: string | null
         }
@@ -191,7 +182,6 @@ export type Database = {
           id: string
           invitation_status: string
           is_admin: boolean
-          is_trial_user: boolean | null
           points: number
           role: string
           updated_at: string
@@ -205,7 +195,6 @@ export type Database = {
           id?: string
           invitation_status?: string
           is_admin?: boolean
-          is_trial_user?: boolean | null
           points?: number
           role?: string
           updated_at?: string
@@ -219,7 +208,6 @@ export type Database = {
           id?: string
           invitation_status?: string
           is_admin?: boolean
-          is_trial_user?: boolean | null
           points?: number
           role?: string
           updated_at?: string

@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const authData = useOptimizedAuth();
   
-  // Update login status for invited users and handle trial conversion
+  // Update login status for invited users directly here to avoid circular dependency
   useEffect(() => {
     const updateLoginStatus = async () => {
       if (!authData.user || !authData.session) return;
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if user has any company memberships with 'invited' status
         const { data: invitedMemberships, error } = await supabase
           .from('company_members')
-          .select('id, company_id, is_trial_user')
+          .select('id')
           .eq('user_id', authData.user.id)
           .eq('invitation_status', 'invited')
           .limit(1);
@@ -49,8 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // If user has invited memberships, update them to active on first login
         if (invitedMemberships && invitedMemberships.length > 0) {
-          const membership = invitedMemberships[0];
-          
           const { error: updateError } = await supabase
             .from('company_members')
             .update({
@@ -64,22 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error('Error updating login status:', updateError);
           } else {
             console.log('Updated user invitation status to active');
-            
-            // If this is a trial user becoming active, trigger trial conversion
-            if (membership.is_trial_user) {
-              console.log('Trial user activated - triggering trial conversion');
-              try {
-                await supabase.functions.invoke('convert-trial-to-paid', {
-                  body: {
-                    companyId: membership.company_id,
-                    activatedUserId: authData.user.id
-                  }
-                });
-                console.log('Trial conversion initiated');
-              } catch (conversionError) {
-                console.error('Error initiating trial conversion:', conversionError);
-              }
-            }
           }
         }
       } catch (error) {

@@ -224,9 +224,6 @@ serve(async (req: Request) => {
     // Create new checkout session for new subscriptions
     const baseUrl = origin || "http://localhost:3000";
     
-    // Check if this is a trial subscription (first time setup)
-    const isTrialSetup = !existingSubscription && company.trial_mode !== false;
-    
     // Prepare checkout session configuration
     const checkoutConfig: any = {
       customer: customerId,
@@ -236,31 +233,21 @@ serve(async (req: Request) => {
         {
           price_data: {
             currency: "usd",
-            unit_amount: isTrialSetup ? 0 : unitPrice, // $0 for trial, regular price for existing
+            unit_amount: unitPrice,
             recurring: {
               interval: "month",
             },
             product_data: {
               name: "Team Slots",
-              description: isTrialSetup ? 
-                `${teamSlots} team slots (trial) - Pay only when team members become active` :
-                `${teamSlots} team slots for your organization`,
+              description: `${teamSlots} team slots for your organization`,
             },
           },
           quantity: teamSlots,
         },
       ],
-      subscription_data: isTrialSetup ? {
-        trial_period_days: 30, // 30-day trial
-        metadata: {
-          is_trial: "true",
-          company_id: companyId,
-        }
-      } : undefined,
       metadata: {
         company_id: companyId,
         team_slots: teamSlots.toString(),
-        is_trial: isTrialSetup ? "true" : "false",
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
       },
       success_url: `${baseUrl}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,
