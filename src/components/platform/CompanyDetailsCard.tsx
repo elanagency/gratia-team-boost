@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Globe, MapPin, Calendar, CreditCard, Users, DollarSign } from "lucide-react";
+import { Building2, Globe, MapPin, Calendar, CreditCard, Users, Receipt } from "lucide-react";
 
 interface Company {
   id: string;
@@ -15,6 +15,7 @@ interface Company {
   points_balance: number;
   team_member_monthly_limit: number;
   billing_cycle_anchor?: number;
+  stripe_subscription_id?: string;
   company_members?: Array<{ count: number }>;
 }
 
@@ -117,11 +118,14 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
 
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Monthly Limit</span>
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Stripe Subscription</span>
             </div>
-            <p className="text-2xl font-bold">{company.team_member_monthly_limit}</p>
-            <p className="text-xs text-muted-foreground">per member</p>
+            {company.stripe_subscription_id ? (
+              <p className="text-sm font-mono break-all">{company.stripe_subscription_id}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">No subscription</p>
+            )}
           </div>
 
           <div className="p-4 bg-muted/50 rounded-lg">
