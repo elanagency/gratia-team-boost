@@ -54,6 +54,15 @@ serve(async (req) => {
     console.log('Deleting company:', companyId)
 
     // Delete in correct order to handle foreign key constraints
+    
+    // First, get reward IDs that belong to this company
+    const { data: companyRewards } = await supabase
+      .from('rewards')
+      .select('id')
+      .eq('company_id', companyId);
+    
+    const rewardIds = companyRewards?.map(r => r.id) || [];
+    
     const deletions = [
       // Delete cart items first
       supabase.from('carts').delete().eq('company_id', companyId),
@@ -64,10 +73,10 @@ serve(async (req) => {
       supabase.from('point_transactions').delete().eq('company_id', companyId),
       supabase.from('company_point_transactions').delete().eq('company_id', companyId),
       
-      // Delete reward-related records
-      supabase.from('reward_category_mappings').delete().in('reward_id', 
-        supabase.from('rewards').select('id').eq('company_id', companyId)
-      ),
+      // Delete reward-related records (only if there are rewards)
+      ...(rewardIds.length > 0 ? [
+        supabase.from('reward_category_mappings').delete().in('reward_id', rewardIds)
+      ] : []),
       supabase.from('reward_categories').delete().eq('company_id', companyId),
       supabase.from('rewards').delete().eq('company_id', companyId),
       
