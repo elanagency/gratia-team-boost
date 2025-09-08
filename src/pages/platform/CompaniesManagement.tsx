@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Users, Calendar, CreditCard, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Eye, Users, Calendar, CreditCard, ChevronDown, ChevronRight, Trash2, MoreHorizontal } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,12 +15,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CompanyDetailsCard from "@/components/platform/CompanyDetailsCard";
 import TeamMembersCard from "@/components/platform/TeamMembersCard";
+import DeleteCompanyDialog from "@/components/platform/DeleteCompanyDialog";
+import { toast } from "sonner";
 
 const CompaniesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
+  const [deleteCompany, setDeleteCompany] = useState<any | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: companies, isLoading, refetch: refetchCompanies } = useQuery({
     queryKey: ['platform-companies'],
@@ -117,6 +128,35 @@ const CompaniesManagement = () => {
   const handleMemberPointsUpdated = () => {
     refetchMembers();
     refetchCompanies();
+  };
+
+  const handleDeleteCompany = (company: any) => {
+    setDeleteCompany(company);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCompany) return;
+
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-company', {
+        body: { companyId: deleteCompany.id }
+      });
+
+      if (error) throw error;
+
+      toast.success('Company deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setDeleteCompany(null);
+      setExpandedCompany(null);
+      refetchCompanies();
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      toast.error('Failed to delete company');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -246,7 +286,7 @@ const CompaniesManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -257,6 +297,30 @@ const CompaniesManagement = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCompany(company);
+                                }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Company
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -278,8 +342,10 @@ const CompaniesManagement = () => {
                             ) : (
                               <TeamMembersCard
                                 companyId={company.id}
+                                companyName={company.name}
                                 members={expandedCompanyMembers || []}
                                 onMemberPointsUpdated={handleMemberPointsUpdated}
+                                onMemberDeleted={handleMemberPointsUpdated}
                               />
                             )}
                           </div>
@@ -293,6 +359,14 @@ const CompaniesManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <DeleteCompanyDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        company={deleteCompany}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

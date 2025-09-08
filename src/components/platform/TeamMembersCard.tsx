@@ -11,8 +11,17 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Plus, Crown, User } from "lucide-react";
+import { Users, Plus, Crown, User, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import MemberPointManagementDialog from "./MemberPointManagementDialog";
+import DeleteUserDialog from "./DeleteUserDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Member {
   user_id: string;
@@ -28,17 +37,24 @@ interface Member {
 
 interface TeamMembersCardProps {
   companyId: string;
+  companyName: string;
   members: Member[];
   onMemberPointsUpdated: () => void;
+  onMemberDeleted: () => void;
 }
 
 const TeamMembersCard: React.FC<TeamMembersCardProps> = ({ 
   companyId, 
+  companyName,
   members, 
-  onMemberPointsUpdated 
+  onMemberPointsUpdated,
+  onMemberDeleted
 }) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<Member | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleManagePoints = (member: Member) => {
     setSelectedMember(member);
@@ -52,6 +68,37 @@ const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
 
   const handleSuccess = () => {
     onMemberPointsUpdated();
+  };
+
+  const handleDeleteUser = (member: Member) => {
+    setDeleteUser(member);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteUser) return;
+
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-company-member', {
+        body: {
+          companyId,
+          userId: deleteUser.user_id,
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`${deleteUser.first_name} ${deleteUser.last_name} removed successfully`);
+      onMemberDeleted();
+      setIsDeleteDialogOpen(false);
+      setDeleteUser(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to remove user');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getInitials = (firstName: string, lastName: string) => {
@@ -136,15 +183,28 @@ const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleManagePoints(member)}
-                        className="flex items-center gap-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Manage Points
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleManagePoints(member)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Manage Points
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteUser(member)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -165,6 +225,15 @@ const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         member={selectedMember}
         companyId={companyId}
         onSuccess={handleSuccess}
+      />
+
+      <DeleteUserDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        user={deleteUser}
+        companyName={companyName}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
       />
     </>
   );

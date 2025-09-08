@@ -1,0 +1,171 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from "../_shared/cors.ts"
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    // Verify the user is a platform admin
+    const authHeader = req.headers.get('Authorization')!
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      console.error('Authentication error:', authError)
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user is platform admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_platform_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.is_platform_admin) {
+      console.error('Not a platform admin:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Platform admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { companyId, userId } = await req.json()
+
+    if (!companyId || !userId) {
+      return new Response(
+        JSON.stringify({ error: 'Company ID and User ID are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Deleting member from company:', { companyId, userId })
+
+    // Get member info before deletion to handle points
+    const { data: member, error: memberError } = await supabase
+      .from('company_members')
+      .select('points, is_admin')
+      .eq('company_id', companyId)
+      .eq('user_id', userId)
+      .single()
+
+    if (memberError) {
+      console.error('Error fetching member:', memberError)
+      return new Response(
+        JSON.stringify({ error: 'Member not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if this is the last admin
+    const { data: adminCount, error: adminCountError } = await supabase
+      .from('company_members')
+      .select('id', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('is_admin', true)
+
+    if (adminCountError) {
+      console.error('Error checking admin count:', adminCountError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify admin status' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (member.is_admin && (adminCount?.length || 0) <= 1) {
+      return new Response(
+        JSON.stringify({ error: 'Cannot delete the last admin of a company' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Return member's points to company if they have any
+    if (member.points > 0) {
+      const { error: pointsError } = await supabase
+        .from('companies')
+        .update({ points_balance: supabase.sql`points_balance + ${member.points}` })
+        .eq('id', companyId)
+
+      if (pointsError) {
+        console.error('Error returning points:', pointsError)
+        throw pointsError
+      }
+
+      // Log the point transaction
+      const { error: transactionError } = await supabase
+        .from('point_transactions')
+        .insert({
+          company_id: companyId,
+          sender_id: userId,
+          recipient_id: null, // null indicates points returned to company
+          points: member.points,
+          description: `Points returned to company after member removal`
+        })
+
+      if (transactionError) {
+        console.error('Error logging transaction:', transactionError)
+        // Don't fail the deletion for this, just log it
+      }
+    }
+
+    // Delete user-related records in correct order
+    const deletions = [
+      // Delete cart items
+      supabase.from('carts').delete().eq('company_id', companyId).eq('user_id', userId),
+      
+      // Delete spending records
+      supabase.from('member_monthly_spending').delete().eq('company_id', companyId).eq('user_id', userId),
+      
+      // Delete allocation records
+      supabase.from('monthly_points_allocations').delete().eq('company_id', companyId).eq('user_id', userId),
+      
+      // Delete point transactions (both as sender and recipient)
+      supabase.from('point_transactions').delete().eq('company_id', companyId).or(`sender_id.eq.${userId},recipient_id.eq.${userId}`),
+      
+      // Delete reward redemptions
+      supabase.from('reward_redemptions').delete().eq('user_id', userId),
+      
+      // Finally delete the company member record
+      supabase.from('company_members').delete().eq('company_id', companyId).eq('user_id', userId)
+    ]
+
+    // Execute all deletions
+    for (const deletion of deletions) {
+      const { error } = await deletion
+      if (error) {
+        console.error('Deletion error:', error)
+        throw error
+      }
+    }
+
+    console.log('Member deleted successfully:', { companyId, userId, pointsReturned: member.points })
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Member removed successfully',
+        pointsReturned: member.points
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error deleting member:', error)
+    return new Response(
+      JSON.stringify({ error: 'Failed to remove member', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
