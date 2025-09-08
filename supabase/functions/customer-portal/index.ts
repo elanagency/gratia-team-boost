@@ -7,6 +7,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to get the appropriate Stripe key based on environment mode
+const getStripeKey = async (supabaseClient: any): Promise<string> => {
+  try {
+    console.log("[CUSTOMER-PORTAL] Getting environment mode from platform settings");
+    const { data: envSetting } = await supabaseClient
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'environment_mode')
+      .single();
+    
+    const environment = envSetting?.value || 'test'; // Default to test for safety
+    console.log(`[CUSTOMER-PORTAL] Using Stripe environment: ${environment}`);
+    
+    if (environment === 'live') {
+      const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+      if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+      return liveKey;
+    } else {
+      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+      if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+      return testKey;
+    }
+  } catch (error) {
+    console.error(`[CUSTOMER-PORTAL] Error getting Stripe key, defaulting to test:`, error);
+    // Fallback to test key for safety
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+    return testKey;
+  }
+};
+
 // Helper logging function for debugging
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -21,16 +52,15 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
-
     // Initialize Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+
+    const stripeKey = await getStripeKey(supabaseClient);
+    logStep("Stripe key retrieved and verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");

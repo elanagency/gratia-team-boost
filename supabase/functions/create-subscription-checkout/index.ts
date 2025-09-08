@@ -9,6 +9,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to get the appropriate Stripe key based on environment mode
+const getStripeKey = async (supabaseAdmin: any): Promise<string> => {
+  try {
+    console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Getting environment mode from platform settings");
+    const { data: envSetting } = await supabaseAdmin
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'environment_mode')
+      .single();
+    
+    const environment = envSetting?.value || 'test'; // Default to test for safety
+    console.log(`[CREATE-SUBSCRIPTION-CHECKOUT] Using Stripe environment: ${environment}`);
+    
+    if (environment === 'live') {
+      const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+      if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+      return liveKey;
+    } else {
+      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+      if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+      return testKey;
+    }
+  } catch (error) {
+    console.error(`[CREATE-SUBSCRIPTION-CHECKOUT] Error getting Stripe key, defaulting to test:`, error);
+    // Fallback to test key for safety
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+    return testKey;
+  }
+};
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -62,7 +93,8 @@ serve(async (req: Request) => {
       }
     );
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = await getStripeKey(supabaseAdmin);
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
 

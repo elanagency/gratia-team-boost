@@ -9,6 +9,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to get the appropriate Stripe key based on environment mode
+const getStripeKey = async (supabaseAdmin: any): Promise<string> => {
+  try {
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Getting environment mode from platform settings");
+    const { data: envSetting } = await supabaseAdmin
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'environment_mode')
+      .single();
+    
+    const environment = envSetting?.value || 'test'; // Default to test for safety
+    console.log(`[CHECK-SUBSCRIPTION-STATUS] Using Stripe environment: ${environment}`);
+    
+    if (environment === 'live') {
+      const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+      if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+      return liveKey;
+    } else {
+      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+      if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+      return testKey;
+    }
+  } catch (error) {
+    console.error(`[CHECK-SUBSCRIPTION-STATUS] Error getting Stripe key, defaulting to test:`, error);
+    // Fallback to test key for safety
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+    return testKey;
+  }
+};
+
 serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -181,12 +212,7 @@ serve(async (req: Request) => {
     if (company.stripe_subscription_id) {
       try {
         console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching Stripe subscription details");
-        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-        if (!stripeKey) {
-          console.error("[CHECK-SUBSCRIPTION-STATUS] Missing Stripe secret key");
-          throw new Error("Stripe secret key not configured");
-        }
-
+        const stripeKey = await getStripeKey(supabaseAdmin);
         const stripe = new Stripe(stripeKey, {
           apiVersion: "2023-10-16",
         });
