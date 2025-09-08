@@ -94,7 +94,7 @@ const CompaniesManagement = () => {
           user_id: member.user_id,
           first_name: profile?.first_name || 'Unknown',
           last_name: profile?.last_name || 'User',
-          email: emailData?.userEmails?.[member.user_id] || 'No email',
+          email: emailData?.emails?.[member.user_id] || 'No email',
           points: member.points,
           is_admin: member.is_admin,
           role: member.role,
