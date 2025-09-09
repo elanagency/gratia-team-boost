@@ -49,9 +49,13 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   useEffect(() => {
     if (isOpen) {
       const loadAuthData = async () => {
-        const { useAuth } = await import("@/context/AuthContext");
-        const authHook = useAuth();
-        setAuthData({ user: authHook.user, companyId: authHook.companyId });
+        try {
+          const { useAuth } = await import("@/context/AuthContext");
+          const { user, companyId } = useAuth();
+          setAuthData({ user, companyId });
+        } catch (error) {
+          console.error('Failed to load auth data:', error);
+        }
       };
       loadAuthData();
     }
@@ -251,10 +255,8 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     setParsedMembers([]);
   }, []);
 
-  // Only show dialog content if auth data is loaded
-  if (isOpen && (!authData.user || !authData.companyId)) {
-    return null;
-  }
+  // Show loading state while auth data loads
+  const isAuthLoading = isOpen && (!authData.user || !authData.companyId);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -265,61 +267,72 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Invite Team Members
-          </DialogTitle>
-          <DialogDescription>
-            {currentStep === 'upload' && "Upload a CSV file with team member information"}
-            {currentStep === 'preview' && "Review and confirm the team members to invite"}
-            {currentStep === 'processing' && "Inviting team members with email notifications"}
-          </DialogDescription>
-        </DialogHeader>
-        
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center space-x-4 py-2">
-          <div className={`flex items-center gap-2 ${currentStep === 'upload' ? 'text-primary' : currentStep === 'preview' || currentStep === 'processing' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'upload' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>1</div>
-            <span className="text-sm">Upload</span>
+        {isAuthLoading ? (
+          <div className="flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
           </div>
-          <div className="h-px w-8 bg-border"></div>
-          <div className={`flex items-center gap-2 ${currentStep === 'preview' ? 'text-primary' : currentStep === 'processing' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'preview' ? 'bg-primary text-primary-foreground' : currentStep === 'processing' ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground'}`}>2</div>
-            <span className="text-sm">Preview</span>
-          </div>
-          <div className="h-px w-8 bg-border"></div>
-          <div className={`flex items-center gap-2 ${currentStep === 'processing' ? 'text-primary' : 'text-muted-foreground'}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'processing' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>3</div>
-            <span className="text-sm">Process</span>
-          </div>
-        </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Invite Team Members
+              </DialogTitle>
+              <DialogDescription>
+                {currentStep === 'upload' && "Upload a CSV file with team member information"}
+                {currentStep === 'preview' && "Review and confirm the team members to invite"}
+                {currentStep === 'processing' && "Inviting team members with email notifications"}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center space-x-4 py-2">
+              <div className={`flex items-center gap-2 ${currentStep === 'upload' ? 'text-primary' : currentStep === 'preview' || currentStep === 'processing' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'upload' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>1</div>
+                <span className="text-sm">Upload</span>
+              </div>
+              <div className="h-px w-8 bg-border"></div>
+              <div className={`flex items-center gap-2 ${currentStep === 'preview' ? 'text-primary' : currentStep === 'processing' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'preview' ? 'bg-primary text-primary-foreground' : currentStep === 'processing' ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground'}`}>2</div>
+                <span className="text-sm">Preview</span>
+              </div>
+              <div className="h-px w-8 bg-border"></div>
+              <div className={`flex items-center gap-2 ${currentStep === 'processing' ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'processing' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>3</div>
+                <span className="text-sm">Process</span>
+              </div>
+            </div>
 
-        <div className="space-y-4 overflow-y-auto">
-          {currentStep === 'upload' && (
-            <CSVUploadStep
-              onFileChange={handleFileChange}
-              onDownloadSample={downloadSampleCSV}
-            />
-          )}
+            <div className="space-y-4 overflow-y-auto">
+              {currentStep === 'upload' && (
+                <CSVUploadStep
+                  onFileChange={handleFileChange}
+                  onDownloadSample={downloadSampleCSV}
+                />
+              )}
 
-          {currentStep === 'preview' && (
-            <CSVPreviewStep
-              parsedMembers={parsedMembers}
-              onBack={goBackToUpload}
-              onStartProcessing={startProcessing}
-            />
-          )}
+              {currentStep === 'preview' && (
+                <CSVPreviewStep
+                  parsedMembers={parsedMembers}
+                  onBack={goBackToUpload}
+                  onStartProcessing={startProcessing}
+                />
+              )}
 
-          {currentStep === 'processing' && (
-            <CSVProcessingStep
-              processingResults={processingResults}
-              currentProcessingIndex={currentProcessingIndex}
-              isProcessing={isProcessing}
-              onClose={handleClose}
-            />
-          )}
-        </div>
+              {currentStep === 'processing' && (
+                <CSVProcessingStep
+                  processingResults={processingResults}
+                  currentProcessingIndex={currentProcessingIndex}
+                  isProcessing={isProcessing}
+                  onClose={handleClose}
+                />
+              )}
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
