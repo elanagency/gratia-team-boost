@@ -108,16 +108,51 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
+        transformHeader: (header: string) => {
+          // Normalize headers to handle common variations
+          const normalized = header.toLowerCase().trim();
+          if (normalized === 'name' || normalized === 'full name' || normalized === 'fullname') return 'name';
+          if (normalized === 'email' || normalized === 'email address' || normalized === 'emailaddress') return 'email';
+          if (normalized === 'department' || normalized === 'dept') return 'department';
+          return normalized;
+        },
         complete: (results) => {
-          const members = results.data as CSVMember[];
+          console.log('Papa parse results:', results);
+          console.log('Raw data:', results.data);
+          console.log('Fields detected:', results.meta?.fields);
+          
+          if (results.errors.length > 0) {
+            console.error('Papa parse errors:', results.errors);
+          }
+
+          const rawMembers = results.data as any[];
+          console.log('Raw members before mapping:', rawMembers);
+          
+          // Map raw data to CSVMember format
+          const members: CSVMember[] = rawMembers.map(row => {
+            console.log('Processing row:', row);
+            return {
+              name: (row.name || row.Name || row['full name'] || row['Full Name'] || '').toString().trim(),
+              email: (row.email || row.Email || row['email address'] || row['Email Address'] || '').toString().trim(),
+              department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim()
+            };
+          });
+          
+          console.log('Mapped members:', members);
+          
           // Basic filtering - full validation happens in preview
-          const basicFilteredMembers = members.filter(member => 
-            member.name && member.email && 
-            member.name.trim() !== '' && member.email.trim() !== ''
-          );
+          const basicFilteredMembers = members.filter(member => {
+            const isValid = member.name && member.email && 
+              member.name.trim() !== '' && member.email.trim() !== '';
+            console.log(`Member ${member.name} (${member.email}) is valid:`, isValid);
+            return isValid;
+          });
+          
+          console.log('Filtered members:', basicFilteredMembers);
           resolve(basicFilteredMembers);
         },
         error: (error) => {
+          console.error('Papa parse error:', error);
           reject(error);
         }
       });

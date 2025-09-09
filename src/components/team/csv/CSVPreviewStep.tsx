@@ -17,12 +17,29 @@ interface CSVPreviewStepProps {
 
 export const CSVPreviewStep = memo(({ parsedMembers, onBack, onStartProcessing }: CSVPreviewStepProps) => {
   const { validMembers, invalidMembers } = useMemo(() => {
-    const valid = parsedMembers.filter(member => 
-      member.name && member.email && 
-      member.name.trim() !== '' && member.email.trim() !== '' &&
-      /\S+@\S+\.\S+/.test(member.email)
-    );
+    console.log('CSVPreviewStep - Parsed members received:', parsedMembers);
+    
+    const valid = parsedMembers.filter(member => {
+      const hasName = member.name && member.name.trim() !== '';
+      const hasEmail = member.email && member.email.trim() !== '';
+      const isValidEmail = hasEmail && /\S+@\S+\.\S+/.test(member.email.trim());
+      
+      console.log(`Validating member:`, {
+        member,
+        hasName,
+        hasEmail,
+        isValidEmail,
+        isValid: hasName && hasEmail && isValidEmail
+      });
+      
+      return hasName && hasEmail && isValidEmail;
+    });
+    
     const invalid = parsedMembers.filter(member => !valid.includes(member));
+    
+    console.log('Valid members:', valid);
+    console.log('Invalid members:', invalid);
+    
     return { validMembers: valid, invalidMembers: invalid };
   }, [parsedMembers]);
 
