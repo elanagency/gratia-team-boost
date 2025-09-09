@@ -124,6 +124,7 @@ export type Database = {
           address: string | null
           billing_cycle_anchor: number | null
           created_at: string
+          environment: string
           first_active_member_at: string | null
           handle: string | null
           id: string
@@ -131,7 +132,6 @@ export type Database = {
           name: string
           points_balance: number
           stripe_customer_id: string | null
-          stripe_environment: string
           stripe_subscription_id: string | null
           subscription_status: string | null
           team_member_monthly_limit: number | null
@@ -145,6 +145,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
+          environment?: string
           first_active_member_at?: string | null
           handle?: string | null
           id?: string
@@ -152,7 +153,6 @@ export type Database = {
           name: string
           points_balance?: number
           stripe_customer_id?: string | null
-          stripe_environment?: string
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           team_member_monthly_limit?: number | null
@@ -166,6 +166,7 @@ export type Database = {
           address?: string | null
           billing_cycle_anchor?: number | null
           created_at?: string
+          environment?: string
           first_active_member_at?: string | null
           handle?: string | null
           id?: string
@@ -173,7 +174,6 @@ export type Database = {
           name?: string
           points_balance?: number
           stripe_customer_id?: string | null
-          stripe_environment?: string
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           team_member_monthly_limit?: number | null

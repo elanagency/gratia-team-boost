@@ -15,12 +15,12 @@ const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<stri
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Getting company environment mode");
     const { data: company } = await supabaseAdmin
       .from('companies')
-      .select('stripe_environment')
+      .select('environment')
       .eq('id', companyId)
       .single();
     
-    const environment = company?.stripe_environment || 'test'; // Default to test for safety
-    console.log(`[CREATE-SUBSCRIPTION-CHECKOUT] Using company Stripe environment: ${environment}`);
+    const environment = company?.environment || 'live'; // Default to live
+    console.log(`[CREATE-SUBSCRIPTION-CHECKOUT] Using company environment: ${environment}`);
     
     if (environment === 'live') {
       const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -32,11 +32,11 @@ const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<stri
       return testKey;
     }
   } catch (error) {
-    console.error(`[CREATE-SUBSCRIPTION-CHECKOUT] Error getting Stripe key, defaulting to test:`, error);
-    // Fallback to test key for safety
-    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
-    return testKey;
+    console.error(`[CREATE-SUBSCRIPTION-CHECKOUT] Error getting Stripe key, defaulting to live:`, error);
+    // Fallback to live key 
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+    return liveKey;
   }
 };
 

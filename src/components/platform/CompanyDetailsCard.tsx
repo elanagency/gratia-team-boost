@@ -30,7 +30,7 @@ interface Company {
   team_member_monthly_limit: number;
   billing_cycle_anchor?: number;
   stripe_subscription_id?: string;
-  stripe_environment?: string;
+  environment?: string;
   company_members?: Array<{ count: number }>;
 }
 
@@ -65,7 +65,7 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
   const teamMemberCount = company.company_members?.[0]?.count || 0;
   const totalUserPoints = members.reduce((sum, member) => sum + (member.points || 0), 0);
   
-  const currentEnvironment = company.stripe_environment || 'test';
+  const currentEnvironment = company.environment || 'live';
   const isLiveMode = currentEnvironment === 'live';
 
   const handleEnvironmentToggle = (checked: boolean) => {
@@ -81,15 +81,15 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
     try {
       const { error } = await supabase
         .from('companies')
-        .update({ stripe_environment: environment })
+        .update({ environment: environment })
         .eq('id', company.id);
 
       if (error) throw error;
 
-      toast.success(`Company environment updated to ${environment} mode`);
+      toast.success(`Environment updated to ${environment} mode`);
       onCompanyUpdated?.();
     } catch (error) {
-      console.error('Error updating company environment:', error);
+      console.error('Error updating environment:', error);
       toast.error('Failed to update environment');
     } finally {
       setIsUpdating(false);
@@ -152,13 +152,13 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
           </div>
         </div>
 
-        {/* Stripe Environment Control */}
+        {/* Environment Control */}
         <div className="border rounded-lg p-4 bg-muted/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium">
-                  Stripe Environment: {' '}
+                  Environment: {' '}
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
                     isLiveMode 
                       ? 'bg-green-100 text-green-800' 
@@ -180,8 +180,8 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
               </div>
               <p className="text-sm text-muted-foreground">
                 {isLiveMode 
-                  ? 'Company is using live Stripe environment for real payments'
-                  : 'Company is using test Stripe environment for testing'
+                  ? 'Company is using live environment for real transactions'
+                  : 'Company is using test environment for testing'
                 }
               </p>
               {isLiveMode && (
@@ -257,7 +257,7 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
                 Switch {company.name} to Live Mode?
               </AlertDialogTitle>
               <AlertDialogDescription>
-                This will switch this company's Stripe integration to use live payment processing. 
+                This will switch this company to use live environment settings for all integrations. 
                 Real transactions will be processed and charges will be made to actual payment methods for this company.
                 <br /><br />
                 Are you sure you want to continue?

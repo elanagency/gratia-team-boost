@@ -13,12 +13,12 @@ const getStripeKey = async (supabaseClient: any, companyId: string): Promise<str
     console.log("[CUSTOMER-PORTAL] Getting company environment mode");
     const { data: company } = await supabaseClient
       .from('companies')
-      .select('stripe_environment')
+      .select('environment')
       .eq('id', companyId)
       .single();
     
-    const environment = company?.stripe_environment || 'test'; // Default to test for safety
-    console.log(`[CUSTOMER-PORTAL] Using company Stripe environment: ${environment}`);
+    const environment = company?.environment || 'live'; // Default to live
+    console.log(`[CUSTOMER-PORTAL] Using company environment: ${environment}`);
     
     if (environment === 'live') {
       const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -30,11 +30,11 @@ const getStripeKey = async (supabaseClient: any, companyId: string): Promise<str
       return testKey;
     }
   } catch (error) {
-    console.error(`[CUSTOMER-PORTAL] Error getting Stripe key, defaulting to test:`, error);
-    // Fallback to test key for safety
-    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
-    return testKey;
+    console.error(`[CUSTOMER-PORTAL] Error getting Stripe key, defaulting to live:`, error);
+    // Fallback to live key 
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+    return liveKey;
   }
 };
 

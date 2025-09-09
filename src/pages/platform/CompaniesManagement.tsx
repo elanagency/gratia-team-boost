@@ -266,11 +266,11 @@ const CompaniesManagement = () => {
                         <div className="flex flex-col gap-1">
                           {getStatusBadge(company.subscription_status)}
                           <Badge variant="outline" className={
-                            company.stripe_environment === 'live' 
+                            company.environment === 'live' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-orange-100 text-orange-800'
                           }>
-                            {company.stripe_environment === 'live' ? 'Live' : 'Test'}
+                            {company.environment === 'live' ? 'Live' : 'Test'}
                           </Badge>
                         </div>
                       </TableCell>
