@@ -23,7 +23,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { redeemReward } = useRewards();
   const { user } = useAuth();
   const { hasDefaultPaymentMethod, isLoading: isLoadingPaymentMethod } = useDefaultPaymentMethod();
-  const { userPoints, isLoading: isLoadingPoints } = useUserPoints();
+  const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
@@ -36,7 +36,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   });
 
   // Check if user has enough points
-  const hasEnoughPoints = userPoints >= reward.points_cost;
+  const hasEnoughPoints = recognitionPoints >= reward.points_cost;
 
   // Fetch saved shipping info when dialog opens
   React.useEffect(() => {
@@ -84,7 +84,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     
     if (!hasEnoughPoints) {
       console.log('❌ Not enough points');
-      toast.error(`You need ${reward.points_cost} points to redeem this reward. You currently have ${userPoints} points.`);
+      toast.error(`You need ${reward.points_cost} points to redeem this reward. You currently have ${recognitionPoints} points.`);
       return;
     }
     
@@ -171,7 +171,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
             onRedeem={handleConfirmRedeem}
             isRedeemDisabled={isRedeemDisabled}
             isProcessing={redeemReward.isPending}
-            userPoints={userPoints}
+            userPoints={recognitionPoints}
             hasEnoughPoints={hasEnoughPoints}
             isLoadingPoints={isLoadingPoints}
           />

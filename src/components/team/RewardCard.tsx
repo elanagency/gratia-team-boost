@@ -19,8 +19,8 @@ interface RewardCardProps {
 }
 
 export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
-  const { userPoints, isLoading: isLoadingPoints } = useUserPoints();
-  const hasEnoughPoints = userPoints >= reward.points_cost;
+  const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
+  const hasEnoughPoints = recognitionPoints >= reward.points_cost;
 
   return (
     <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>

@@ -27,7 +27,7 @@ export function GivePointsCard() {
 
   const { user, companyId } = useAuth();
   const { teamMembers } = useTeamMembers();
-  const { userPoints } = useUserPoints();
+  const { monthlyPoints } = useUserPoints();
 
   const availableRecipients = teamMembers?.filter(member => member.user_id !== user?.id) || [];
 
@@ -131,8 +131,8 @@ export function GivePointsCard() {
     const totalPointsToGive = points.reduce((sum, point) => sum + point.value, 0);
     const totalPointsRequired = totalPointsToGive * mentions.length;
 
-    if (totalPointsRequired > userPoints) {
-      toast.error("You don't have enough points to give");
+    if (totalPointsRequired > monthlyPoints) {
+      toast.error("You don't have enough monthly points to give");
       return;
     }
 
@@ -197,7 +197,7 @@ export function GivePointsCard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              You have <Badge variant="secondary" className="mx-1">{userPoints}</Badge> points to give
+              You have <Badge variant="secondary" className="mx-1">{monthlyPoints}</Badge> points to give
             </span>
           </div>
         </div>
@@ -270,9 +270,9 @@ export function GivePointsCard() {
             {showPointDropdown && (
               <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 <div className="px-3 py-2 text-xs text-muted-foreground border-b">
-                  Quick point values (Available: {userPoints})
+                  Quick point values (Available: {monthlyPoints})
                 </div>
-                {filteredPointValues.filter(value => value <= userPoints).map((value) => (
+                {filteredPointValues.filter(value => value <= monthlyPoints).map((value) => (
                   <button
                     key={value}
                     onClick={() => selectPoint(value)}
@@ -286,7 +286,7 @@ export function GivePointsCard() {
                     </div>
                   </button>
                 ))}
-                {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= userPoints && (
+                {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
                   <button
                     onClick={() => selectPoint(Number(pointQuery))}
                     className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-t"

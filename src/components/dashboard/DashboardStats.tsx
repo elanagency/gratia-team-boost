@@ -23,7 +23,7 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
   const [rewardsCount, setRewardsCount] = useState<number>(0);
   const [isLoadingRecognitions, setIsLoadingRecognitions] = useState<boolean>(true);
   const { companyId } = useAuth();
-  const { userPoints, isLoading: isLoadingUserPoints } = useUserPoints();
+  const { recognitionPoints, monthlyPoints, isLoading: isLoadingUserPoints } = useUserPoints();
   
   useEffect(() => {
     const fetchRecognitionStats = async () => {
@@ -69,10 +69,10 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
   // Updated stats for the dashboard focused on user experience
   const stats: StatItem[] = [
     { 
-      title: "My Points", 
-      value: isLoadingUserPoints ? "..." : `${userPoints} points`, 
+      title: "Recognition Points", 
+      value: isLoadingUserPoints ? "..." : `${recognitionPoints} points`, 
       icon: Coins, 
-      description: "Your balance" 
+      description: "Available to redeem" 
     },
     { 
       title: "Team Members", 

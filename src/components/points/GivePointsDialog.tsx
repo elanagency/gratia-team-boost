@@ -41,9 +41,6 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   useEffect(() => {
     if (open && companyId) {
       fetchTeamMembers();
-      if (isAdmin) {
-        fetchCompanyPoints();
-      }
     } else {
       // Reset state when dialog closes
       setSearchQuery("");
@@ -52,16 +49,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       setPoints(1);
       setShowInsufficientPoints(false);
     }
-  }, [open, companyId, isAdmin]);
+  }, [open, companyId]);
 
   // Check spending limits when points change
   useEffect(() => {
-    if (isTeamMember && !isAdmin) {
-      setShowInsufficientPoints(points > monthlyRemaining);
-    } else if (isAdmin) {
-      setShowInsufficientPoints(points > companyPoints);
-    }
-  }, [points, monthlyRemaining, companyPoints, isTeamMember, isAdmin]);
+    setShowInsufficientPoints(points > monthlyRemaining);
+  }, [points, monthlyRemaining]);
 
   // Filter members based on search query
   useEffect(() => {
@@ -78,27 +71,6 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     }
   }, [searchQuery, teamMembers]);
 
-  // Fetch company points balance (only for admins)
-  const fetchCompanyPoints = async () => {
-    if (!companyId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('points_balance')
-        .eq('id', companyId)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setCompanyPoints(data.points_balance || 0);
-      }
-    } catch (error) {
-      console.error("Error fetching company points:", error);
-      toast.error("Failed to fetch company points balance");
-    }
-  };
 
   const fetchTeamMembers = async () => {
     if (!companyId || !user) return;
@@ -181,19 +153,10 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       return;
     }
 
-    // Check limits based on user type
-    if (isAdmin) {
-      // Admins check company balance
-      if (points > companyPoints) {
-        setShowInsufficientPoints(true);
-        return;
-      }
-    } else {
-      // Team members check personal monthly limit
-      if (points > monthlyRemaining) {
-        setShowInsufficientPoints(true);
-        return;
-      }
+    // Check monthly limit for all users
+    if (points > monthlyRemaining) {
+      setShowInsufficientPoints(true);
+      return;
     }
 
     try {
@@ -216,11 +179,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       
       // Invalidate relevant queries to refresh the data
       await queryClient.invalidateQueries({ queryKey: ['monthlySpending'] });
-      
-      // Refresh data based on user type
-      if (isAdmin) {
-        await fetchCompanyPoints();
-      }
+      await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
       
       setOpen(false);
     } catch (error) {
@@ -231,8 +190,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     }
   };
 
-  const availablePoints = isAdmin ? companyPoints : monthlyRemaining;
-  const balanceLabel = isAdmin ? "Company Points Balance" : "Monthly Remaining";
+  const availablePoints = monthlyRemaining;
+  const balanceLabel = "Monthly Points to Give";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -256,7 +215,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
             <span className="text-sm font-medium">{balanceLabel}:</span>
             <span className="font-semibold">{availablePoints} points</span>
           </div>
-          {!isAdmin && monthlyLimit > 0 && (
+          {monthlyLimit > 0 && (
             <div className="text-xs text-gray-500 mt-1">
               Used this month: {monthlySpent} / {monthlyLimit} points
             </div>
@@ -268,13 +227,10 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-600">
-                {isAdmin ? "Insufficient points balance" : "Monthly limit exceeded"}
+                Monthly limit exceeded
               </p>
               <p className="text-xs text-red-500">
-                {isAdmin 
-                  ? "Your company doesn't have enough points. Please top up your points balance in the Settings page."
-                  : `You can only give ${monthlyRemaining} more points this month. Your monthly limit is ${monthlyLimit} points.`
-                }
+                You can only give {monthlyRemaining} more points this month. Your monthly limit is {monthlyLimit} points.
               </p>
             </div>
           </div>

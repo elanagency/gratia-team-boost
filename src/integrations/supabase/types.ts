@@ -195,6 +195,7 @@ export type Database = {
           invitation_status: string
           is_admin: boolean
           is_trial_user: boolean | null
+          monthly_points: number
           points: number
           role: string
           updated_at: string
@@ -209,6 +210,7 @@ export type Database = {
           invitation_status?: string
           is_admin?: boolean
           is_trial_user?: boolean | null
+          monthly_points?: number
           points?: number
           role?: string
           updated_at?: string
@@ -223,6 +225,7 @@ export type Database = {
           invitation_status?: string
           is_admin?: boolean
           is_trial_user?: boolean | null
+          monthly_points?: number
           points?: number
           role?: string
           updated_at?: string
