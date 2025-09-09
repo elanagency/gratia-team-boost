@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,15 +8,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, CheckCircle, AlertCircle, Download, Eye, Users } from "lucide-react";
+import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { CSVUploadStep } from "./csv/CSVUploadStep";
+import { CSVPreviewStep } from "./csv/CSVPreviewStep";
+import { CSVProcessingStep } from "./csv/CSVProcessingStep";
 
 interface CSVUploadDialogProps {
   onUploadComplete: () => void;
@@ -45,9 +43,21 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
-  const { user, companyId } = useAuth();
+  const [authData, setAuthData] = useState<{ user: any; companyId: string | null }>({ user: null, companyId: null });
 
-  const downloadSampleCSV = () => {
+  // Lazy load auth data only when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadAuthData = async () => {
+        const { useAuth } = await import("@/context/AuthContext");
+        const authHook = useAuth();
+        setAuthData({ user: authHook.user, companyId: authHook.companyId });
+      };
+      loadAuthData();
+    }
+  }, [isOpen]);
+
+  const downloadSampleCSV = useCallback(() => {
     const sampleData = [
       ["Name", "Email", "Department"],
       ["John Doe", "john@example.com", "Engineering"],
@@ -68,10 +78,17 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
       link.click();
       document.body.removeChild(link);
     }
-  };
+  }, []);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
+    
+    // File size validation (5MB limit)
+    if (selectedFile && selectedFile.size > 5 * 1024 * 1024) {
+      toast.error("File too large. Please use a file smaller than 5MB.");
+      return;
+    }
+    
     if (selectedFile && selectedFile.type === "text/csv") {
       setFile(selectedFile);
       try {
@@ -84,30 +101,37 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     } else {
       toast.error("Please select a valid CSV file");
     }
-  };
+  }, []);
 
-  const parseCSV = (file: File): Promise<CSVMember[]> => {
+  const parseCSV = useCallback((file: File): Promise<CSVMember[]> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
           const members = results.data as CSVMember[];
-          const validMembers = members.filter(member => 
+          // Basic filtering - full validation happens in preview
+          const basicFilteredMembers = members.filter(member => 
             member.name && member.email && 
             member.name.trim() !== '' && member.email.trim() !== ''
           );
-          resolve(validMembers);
+          resolve(basicFilteredMembers);
         },
         error: (error) => {
           reject(error);
         }
       });
     });
-  };
+  }, []);
 
-  const startProcessing = () => {
-    const results: ProcessingResult[] = parsedMembers.map(member => ({
+  const startProcessing = useCallback(() => {
+    const validMembers = parsedMembers.filter(member => 
+      member.name && member.email && 
+      member.name.trim() !== '' && member.email.trim() !== '' &&
+      /\S+@\S+\.\S+/.test(member.email)
+    );
+    
+    const results: ProcessingResult[] = validMembers.map(member => ({
       member,
       status: 'pending'
     }));
@@ -115,7 +139,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     setCurrentStep('processing');
     setCurrentProcessingIndex(0);
     processNextMember(results, 0);
-  };
+  }, [parsedMembers]);
 
   const processNextMember = async (results: ProcessingResult[], index: number) => {
     if (index >= results.length) {
@@ -148,9 +172,9 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           name: member.name,
           email: member.email,
           department: member.department || null,
-          companyId: companyId,
+          companyId: authData.companyId,
           role: "member",
-          invitedBy: user?.id,
+          invitedBy: authData.user?.id,
           origin: window.location.origin
         }
       });
@@ -186,24 +210,16 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     setCurrentProcessingIndex(0);
   };
 
-  const goBackToUpload = () => {
+  const goBackToUpload = useCallback(() => {
     setCurrentStep('upload');
     setFile(null);
     setParsedMembers([]);
-  };
+  }, []);
 
-  const validateMembers = (members: CSVMember[]) => {
-    return members.filter(member => 
-      member.name && member.email && 
-      member.name.trim() !== '' && member.email.trim() !== '' &&
-      /\S+@\S+\.\S+/.test(member.email)
-    );
-  };
-
-  const validMembers = validateMembers(parsedMembers);
-  const invalidMembers = parsedMembers.filter(member => !validMembers.includes(member));
-  const progressPercentage = processingResults.length > 0 ? 
-    (processingResults.filter(r => r.status !== 'pending').length / processingResults.length) * 100 : 0;
+  // Only show dialog content if auth data is loaded
+  if (isOpen && (!authData.user || !authData.companyId)) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -245,156 +261,28 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
         </div>
 
         <div className="space-y-4 overflow-y-auto">
-          {/* Upload Step */}
           {currentStep === 'upload' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="csv-file">CSV File</Label>
-                <Input
-                  id="csv-file"
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                />
-              </div>
-
-              <div className="text-xs text-muted-foreground bg-muted p-3 rounded space-y-3">
-                <div>
-                  <strong>CSV Format:</strong>
-                  <br />
-                  Name, Email, Department
-                  <br />
-                  John Doe, john@example.com, Engineering
-                  <br />
-                  Jane Smith, jane@example.com, Marketing
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={downloadSampleCSV}
-                  className="gap-2 h-8"
-                >
-                  <Download className="h-3 w-3" />
-                  Download Sample
-                </Button>
-              </div>
-            </>
+            <CSVUploadStep
+              onFileChange={handleFileChange}
+              onDownloadSample={downloadSampleCSV}
+            />
           )}
 
-          {/* Preview Step */}
           {currentStep === 'preview' && (
-            <>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    <span className="font-medium">Preview Members</span>
-                  </div>
-                  <Badge variant="outline" className="gap-1">
-                    <Users className="h-3 w-3" />
-                    {validMembers.length} valid
-                  </Badge>
-                </div>
-
-                {invalidMembers.length > 0 && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded">
-                    <div className="flex items-center gap-2 text-destructive font-medium mb-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {invalidMembers.length} Invalid Entries
-                    </div>
-                    <div className="text-sm text-destructive/80">
-                      These entries will be skipped due to missing or invalid data.
-                    </div>
-                  </div>
-                )}
-
-                <div className="border rounded max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr>
-                        <th className="text-left p-2 font-medium">Name</th>
-                        <th className="text-left p-2 font-medium">Email</th>
-                        <th className="text-left p-2 font-medium">Department</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {validMembers.map((member, index) => (
-                        <tr key={index} className="border-t">
-                          <td className="p-2">{member.name}</td>
-                          <td className="p-2">{member.email}</td>
-                          <td className="p-2">{member.department || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={goBackToUpload} variant="outline">
-                    Back
-                  </Button>
-                  <Button onClick={startProcessing} className="flex-1" disabled={validMembers.length === 0}>
-                    Invite {validMembers.length} Members
-                  </Button>
-                </div>
-              </div>
-            </>
+            <CSVPreviewStep
+              parsedMembers={parsedMembers}
+              onBack={goBackToUpload}
+              onStartProcessing={startProcessing}
+            />
           )}
 
-          {/* Processing Step */}
           {currentStep === 'processing' && (
-            <>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Progress</span>
-                    <span className="text-sm text-muted-foreground">
-                      {Math.round(progressPercentage)}% complete
-                    </span>
-                  </div>
-                  <Progress value={progressPercentage} className="h-2" />
-                  {isProcessing && (
-                    <div className="text-sm text-muted-foreground">
-                      Processing {processingResults[currentProcessingIndex]?.member.name}...
-                    </div>
-                  )}
-                </div>
-
-                <div className="border rounded max-h-64 overflow-y-auto">
-                  <div className="space-y-1 p-2">
-                    {processingResults.map((result, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm p-2 rounded">
-                        {result.status === 'pending' && (
-                          <div className="w-4 h-4 rounded-full bg-muted"></div>
-                        )}
-                        {result.status === 'processing' && (
-                          <div className="w-4 h-4 rounded-full bg-primary animate-pulse"></div>
-                        )}
-                        {result.status === 'success' && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        )}
-                        {result.status === 'error' && (
-                          <AlertCircle className="h-4 w-4 text-destructive" />
-                        )}
-                        <span className="flex-1">{result.member.name} ({result.member.email})</span>
-                        {result.message && (
-                          <span className={`text-xs ${result.status === 'success' ? 'text-green-600' : result.status === 'error' ? 'text-destructive' : ''}`}>
-                            {result.message}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {!isProcessing && (
-                  <Button onClick={handleClose} className="w-full">
-                    Done
-                  </Button>
-                )}
-              </div>
-            </>
+            <CSVProcessingStep
+              processingResults={processingResults}
+              currentProcessingIndex={currentProcessingIndex}
+              isProcessing={isProcessing}
+              onClose={handleClose}
+            />
           )}
         </div>
       </DialogContent>
