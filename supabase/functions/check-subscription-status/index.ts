@@ -9,18 +9,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to get the appropriate Stripe key based on environment mode
-const getStripeKey = async (supabaseAdmin: any): Promise<string> => {
+// Helper function to get the appropriate Stripe key based on company environment
+const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<string> => {
   try {
-    console.log("[CHECK-SUBSCRIPTION-STATUS] Getting environment mode from platform settings");
-    const { data: envSetting } = await supabaseAdmin
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'environment_mode')
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Getting company environment mode");
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('stripe_environment')
+      .eq('id', companyId)
       .single();
     
-    const environment = envSetting?.value || 'test'; // Default to test for safety
-    console.log(`[CHECK-SUBSCRIPTION-STATUS] Using Stripe environment: ${environment}`);
+    const environment = company?.stripe_environment || 'test'; // Default to test for safety
+    console.log(`[CHECK-SUBSCRIPTION-STATUS] Using company Stripe environment: ${environment}`);
     
     if (environment === 'live') {
       const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -212,7 +212,7 @@ serve(async (req: Request) => {
     if (company.stripe_subscription_id) {
       try {
         console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching Stripe subscription details");
-        const stripeKey = await getStripeKey(supabaseAdmin);
+        const stripeKey = await getStripeKey(supabaseAdmin, companyId);
         const stripe = new Stripe(stripeKey, {
           apiVersion: "2023-10-16",
         });

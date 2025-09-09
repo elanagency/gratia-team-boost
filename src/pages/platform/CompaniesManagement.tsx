@@ -263,7 +263,16 @@ const CompaniesManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getStatusBadge(company.subscription_status)}
+                        <div className="flex flex-col gap-1">
+                          {getStatusBadge(company.subscription_status)}
+                          <Badge variant="outline" className={
+                            company.stripe_environment === 'live' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-orange-100 text-orange-800'
+                          }>
+                            {company.stripe_environment === 'live' ? 'Live' : 'Test'}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
@@ -328,7 +337,11 @@ const CompaniesManagement = () => {
                       <TableRow>
                         <TableCell colSpan={6} className="p-0">
                           <div className="p-6 bg-muted/20 space-y-6">
-                            <CompanyDetailsCard company={company} members={expandedCompanyMembers || []} />
+                            <CompanyDetailsCard 
+                              company={company} 
+                              members={expandedCompanyMembers || []} 
+                              onCompanyUpdated={refetchCompanies}
+                            />
                             {isMembersLoading ? (
                               <Card>
                                 <CardContent className="p-6">

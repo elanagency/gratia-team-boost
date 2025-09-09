@@ -7,18 +7,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to get the appropriate Stripe key based on environment mode
-const getStripeKey = async (supabaseClient: any): Promise<string> => {
+// Helper function to get the appropriate Stripe key based on company environment
+const getStripeKey = async (supabaseClient: any, companyId: string): Promise<string> => {
   try {
-    console.log("[CUSTOMER-PORTAL] Getting environment mode from platform settings");
-    const { data: envSetting } = await supabaseClient
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'environment_mode')
+    console.log("[CUSTOMER-PORTAL] Getting company environment mode");
+    const { data: company } = await supabaseClient
+      .from('companies')
+      .select('stripe_environment')
+      .eq('id', companyId)
       .single();
     
-    const environment = envSetting?.value || 'test'; // Default to test for safety
-    console.log(`[CUSTOMER-PORTAL] Using Stripe environment: ${environment}`);
+    const environment = company?.stripe_environment || 'test'; // Default to test for safety
+    console.log(`[CUSTOMER-PORTAL] Using company Stripe environment: ${environment}`);
     
     if (environment === 'live') {
       const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -59,9 +59,6 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const stripeKey = await getStripeKey(supabaseClient);
-    logStep("Stripe key retrieved and verified");
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
@@ -101,6 +98,9 @@ serve(async (req) => {
       companyName: company.name, 
       customerId: company.stripe_customer_id 
     });
+
+    const stripeKey = await getStripeKey(supabaseClient, membership.company_id);
+    logStep("Stripe key retrieved and verified");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const origin = req.headers.get("origin") || "https://kbjcjtycmfdjfnduxiud.supabase.co";

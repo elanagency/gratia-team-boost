@@ -1,7 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Globe, MapPin, Calendar, CreditCard, Users, Receipt } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Building2, Globe, MapPin, Calendar, CreditCard, Users, Receipt, TestTube, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Company {
   id: string;
@@ -16,6 +30,7 @@ interface Company {
   team_member_monthly_limit: number;
   billing_cycle_anchor?: number;
   stripe_subscription_id?: string;
+  stripe_environment?: string;
   company_members?: Array<{ count: number }>;
 }
 
@@ -27,9 +42,12 @@ interface Member {
 interface CompanyDetailsCardProps {
   company: Company;
   members?: Member[];
+  onCompanyUpdated?: () => void;
 }
 
-const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, members = [] }) => {
+const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, members = [], onCompanyUpdated }) => {
+  const [showLiveConfirmation, setShowLiveConfirmation] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800",
@@ -46,6 +64,42 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
 
   const teamMemberCount = company.company_members?.[0]?.count || 0;
   const totalUserPoints = members.reduce((sum, member) => sum + (member.points || 0), 0);
+  
+  const currentEnvironment = company.stripe_environment || 'test';
+  const isLiveMode = currentEnvironment === 'live';
+
+  const handleEnvironmentToggle = (checked: boolean) => {
+    if (checked) {
+      setShowLiveConfirmation(true);
+    } else {
+      updateEnvironment('test');
+    }
+  };
+
+  const updateEnvironment = async (environment: string) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ stripe_environment: environment })
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      toast.success(`Company environment updated to ${environment} mode`);
+      onCompanyUpdated?.();
+    } catch (error) {
+      console.error('Error updating company environment:', error);
+      toast.error('Failed to update environment');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const confirmLiveMode = () => {
+    updateEnvironment('live');
+    setShowLiveConfirmation(false);
+  };
 
   return (
     <Card>
@@ -98,6 +152,57 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
           </div>
         </div>
 
+        {/* Stripe Environment Control */}
+        <div className="border rounded-lg p-4 bg-muted/20">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">
+                  Stripe Environment: {' '}
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+                    isLiveMode 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-orange-100 text-orange-800'
+                  }`}>
+                    {isLiveMode ? (
+                      <>
+                        <Globe className="h-3 w-3" />
+                        Live
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="h-3 w-3" />
+                        Test
+                      </>
+                    )}
+                  </span>
+                </h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isLiveMode 
+                  ? 'Company is using live Stripe environment for real payments'
+                  : 'Company is using test Stripe environment for testing'
+                }
+              </p>
+              {isLiveMode && (
+                <div className="flex items-center gap-1 text-sm text-orange-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  Live mode processes real transactions
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Test</span>
+              <Switch
+                checked={isLiveMode}
+                onCheckedChange={handleEnvironmentToggle}
+                disabled={isUpdating}
+              />
+              <span className="text-sm font-medium text-muted-foreground">Live</span>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-muted/50 rounded-lg">
@@ -143,6 +248,33 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
             )}
           </div>
         </div>
+
+        <AlertDialog open={showLiveConfirmation} onOpenChange={setShowLiveConfirmation}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Switch {company.name} to Live Mode?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will switch this company's Stripe integration to use live payment processing. 
+                Real transactions will be processed and charges will be made to actual payment methods for this company.
+                <br /><br />
+                Are you sure you want to continue?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmLiveMode}
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={isUpdating}
+              >
+                {isUpdating ? 'Updating...' : 'Yes, Switch to Live'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
