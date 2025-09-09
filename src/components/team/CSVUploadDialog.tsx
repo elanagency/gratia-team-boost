@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { useAuth } from "@/context/AuthContext";
 import { CSVUploadStep } from "./csv/CSVUploadStep";
 import { CSVPreviewStep } from "./csv/CSVPreviewStep";
 import { CSVProcessingStep } from "./csv/CSVProcessingStep";
@@ -36,6 +37,7 @@ interface ProcessingResult {
 type DialogStep = 'upload' | 'preview' | 'processing';
 
 export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
+  const { user, companyId } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<DialogStep>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -43,23 +45,6 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
-  const [authData, setAuthData] = useState<{ user: any; companyId: string | null }>({ user: null, companyId: null });
-
-  // Lazy load auth data only when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      const loadAuthData = async () => {
-        try {
-          const { useAuth } = await import("@/context/AuthContext");
-          const { user, companyId } = useAuth();
-          setAuthData({ user, companyId });
-        } catch (error) {
-          console.error('Failed to load auth data:', error);
-        }
-      };
-      loadAuthData();
-    }
-  }, [isOpen]);
 
   const downloadSampleCSV = useCallback(() => {
     const sampleData = [
@@ -211,9 +196,9 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           name: member.name,
           email: member.email,
           department: member.department || null,
-          companyId: authData.companyId,
+          companyId: companyId,
           role: "member",
-          invitedBy: authData.user?.id,
+          invitedBy: user?.id,
           origin: window.location.origin
         }
       });
@@ -255,8 +240,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     setParsedMembers([]);
   }, []);
 
-  // Show loading state while auth data loads
-  const isAuthLoading = isOpen && (!authData.user || !authData.companyId);
+  // No longer need loading state since auth is available immediately
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -267,16 +251,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[80vh]">
-        {isAuthLoading ? (
-          <div className="flex items-center justify-center p-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
+        <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
                 Invite Team Members
@@ -330,10 +305,8 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
                   onClose={handleClose}
                 />
               )}
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
