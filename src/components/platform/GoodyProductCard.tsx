@@ -2,8 +2,6 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { GoodyProduct } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 
@@ -12,29 +10,22 @@ interface GoodyProductCardProps {
 }
 
 export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
-  const { enabledProducts, enableProduct, disableProduct, updatePointsMultiplier, isUpdating } = usePlatformRewardSettings();
+  const { blacklistedProducts, addToBlacklist, removeFromBlacklist, isUpdating } = usePlatformRewardSettings();
   
-  const isEnabled = enabledProducts[product.id]?.enabled || false;
-  const currentMultiplier = enabledProducts[product.id]?.pointsMultiplier || 1;
-  const pointsCost = Math.round(product.price * currentMultiplier);
+  const isDisabled = blacklistedProducts.has(product.id);
+  const pointsCost = Math.round(product.price); // Default 1:1 ratio
   const imageUrl = product.images[0]?.image_large?.url || '';
 
-  const handleToggleEnable = () => {
-    if (isEnabled) {
-      disableProduct(product.id);
+  const handleToggleDisable = () => {
+    if (isDisabled) {
+      removeFromBlacklist(product.id);
     } else {
-      enableProduct(product.id, 1);
-    }
-  };
-
-  const handleMultiplierChange = (newMultiplier: number) => {
-    if (isEnabled && newMultiplier > 0) {
-      updatePointsMultiplier(product.id, newMultiplier);
+      addToBlacklist(product.id);
     }
   };
 
   return (
-    <Card className={`transition-all ${isEnabled ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
+    <Card className={`transition-all ${isDisabled ? 'ring-2 ring-red-500 bg-red-50/50 opacity-75' : 'bg-green-50/30'}`}>
       <CardContent className="p-4">
         <div className="space-y-3">
           {imageUrl && (
@@ -61,7 +52,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             <span className="text-sm font-medium">
               ${(product.price / 100).toFixed(2)}
             </span>
-            <Badge variant={isEnabled ? "default" : "secondary"} className="text-xs">
+            <Badge variant={isDisabled ? "destructive" : "default"} className="text-xs">
               {pointsCost} pts
             </Badge>
           </div>
@@ -72,32 +63,14 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             </p>
           )}
 
-          {isEnabled && (
-            <div className="space-y-2">
-              <Label htmlFor={`multiplier-${product.id}`} className="text-xs">
-                Points per dollar
-              </Label>
-              <Input
-                id={`multiplier-${product.id}`}
-                type="number"
-                value={currentMultiplier}
-                onChange={(e) => handleMultiplierChange(Number(e.target.value))}
-                min={0.1}
-                step={0.1}
-                className="h-8"
-                disabled={isUpdating}
-              />
-            </div>
-          )}
-
           <Button
-            onClick={handleToggleEnable}
+            onClick={handleToggleDisable}
             disabled={isUpdating}
-            variant={isEnabled ? "outline" : "default"}
+            variant={isDisabled ? "default" : "destructive"}
             className="w-full"
             size="sm"
           >
-            {isEnabled ? "Disable" : "Enable"} Product
+            {isDisabled ? "Enable" : "Disable"} Product
           </Button>
         </div>
       </CardContent>

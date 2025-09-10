@@ -2,101 +2,79 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface EnabledProduct {
-  productId: string;
-  pointsMultiplier: number;
-  enabled: boolean;
-}
-
 export const usePlatformRewardSettings = () => {
   const queryClient = useQueryClient();
 
-  // Get enabled products from platform settings
-  const { data: enabledProducts = {}, isLoading } = useQuery({
-    queryKey: ['platform-reward-settings'],
+  // Fetch blacklisted products
+  const { data: blacklistedProducts = new Set(), isLoading: isLoadingBlacklist } = useQuery({
+    queryKey: ['platform-product-blacklist'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('platform_settings')
-        .select('*')
-        .eq('key', 'enabled_goody_products')
-        .maybeSingle();
+        .from('platform_product_blacklist')
+        .select('goody_product_id');
 
-      if (error && error.code !== 'PGRST116') { // Not found is OK
-        console.error('Error fetching platform reward settings:', error);
+      if (error) {
+        console.error('Error fetching blacklisted products:', error);
         throw error;
       }
 
-      if (!data) {
-        return {};
-      }
-
-      return JSON.parse(data.value as string) as Record<string, EnabledProduct>;
+      return new Set(data.map(item => item.goody_product_id));
     },
   });
 
-  // Mutation to update enabled products
-  const updateEnabledProductsMutation = useMutation({
-    mutationFn: async (products: Record<string, EnabledProduct>) => {
+  // Add product to blacklist
+  const addToBlacklistMutation = useMutation({
+    mutationFn: async (productId: string) => {
       const { error } = await supabase
-        .from('platform_settings')
-        .upsert({
-          key: 'enabled_goody_products',
-          value: JSON.stringify(products) as any,
-          description: 'Enabled Goody products with their settings'
+        .from('platform_product_blacklist')
+        .insert({
+          goody_product_id: productId,
+          disabled_by: (await supabase.auth.getUser()).data.user?.id
         });
 
       if (error) {
-        console.error('Error updating platform reward settings:', error);
+        console.error('Error adding to blacklist:', error);
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['platform-reward-settings'] });
-      toast.success('Product settings updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['platform-product-blacklist'] });
+      toast.success('Product disabled successfully');
     },
-    onError: (error: any) => {
-      console.error('Failed to update product settings:', error);
-      toast.error('Failed to update product settings');
+    onError: (error) => {
+      console.error('Failed to disable product:', error);
+      toast.error('Failed to disable product');
     },
   });
 
-  const enableProduct = (productId: string, pointsMultiplier: number) => {
-    const newProducts = {
-      ...enabledProducts,
-      [productId]: {
-        productId,
-        pointsMultiplier,
-        enabled: true
-      }
-    };
-    updateEnabledProductsMutation.mutate(newProducts);
-  };
+  // Remove product from blacklist
+  const removeFromBlacklistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase
+        .from('platform_product_blacklist')
+        .delete()
+        .eq('goody_product_id', productId);
 
-  const disableProduct = (productId: string) => {
-    const newProducts = { ...enabledProducts };
-    delete newProducts[productId];
-    updateEnabledProductsMutation.mutate(newProducts);
-  };
-
-  const updatePointsMultiplier = (productId: string, pointsMultiplier: number) => {
-    if (!enabledProducts[productId]) return;
-    
-    const newProducts = {
-      ...enabledProducts,
-      [productId]: {
-        ...enabledProducts[productId],
-        pointsMultiplier
+      if (error) {
+        console.error('Error removing from blacklist:', error);
+        throw error;
       }
-    };
-    updateEnabledProductsMutation.mutate(newProducts);
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-product-blacklist'] });
+      toast.success('Product enabled successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to enable product:', error);
+      toast.error('Failed to enable product');
+    },
+  });
 
   return {
-    enabledProducts,
-    isLoading,
-    enableProduct,
-    disableProduct,
-    updatePointsMultiplier,
-    isUpdating: updateEnabledProductsMutation.isPending
+    blacklistedProducts,
+    isLoadingBlacklist,
+    addToBlacklist: addToBlacklistMutation.mutate,
+    removeFromBlacklist: removeFromBlacklistMutation.mutate,
+    isUpdating: addToBlacklistMutation.isPending || removeFromBlacklistMutation.isPending,
   };
 };

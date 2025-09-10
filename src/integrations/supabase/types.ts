@@ -402,6 +402,38 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_product_blacklist: {
+        Row: {
+          created_at: string
+          disabled_at: string
+          disabled_by: string | null
+          goody_product_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string
+          disabled_by?: string | null
+          goody_product_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string
+          disabled_by?: string | null
+          goody_product_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_product_blacklist_disabled_by_fkey"
+            columns: ["disabled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string

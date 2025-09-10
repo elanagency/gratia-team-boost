@@ -3,30 +3,38 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Loader2, RefreshCw } from "lucide-react";
 import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { useGoodyProducts } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 import { SyncGiftCardsDialog } from "@/components/platform/SyncGiftCardsDialog";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 
 const PlatformRewardsCatalog = () => {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all");
   
   const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, true);
-  const { enabledProducts } = usePlatformRewardSettings();
+  const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   const { refreshCatalog, syncStatus } = useSyncGiftCards();
 
-  // Filter products based on search term
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.brand.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter products based on search term and status
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.brand.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const isDisabled = blacklistedProducts.has(product.id);
+    
+    if (statusFilter === "disabled") return matchesSearch && isDisabled;
+    if (statusFilter === "enabled") return matchesSearch && !isDisabled;
+    return matchesSearch;
+  });
 
-  const enabledCount = Object.keys(enabledProducts).length;
+  const disabledCount = blacklistedProducts.size;
+  const enabledCount = products.length - disabledCount;
 
   return (
     <div className="space-y-6">
@@ -49,7 +57,7 @@ const PlatformRewardsCatalog = () => {
           </Button>
           <SyncGiftCardsDialog />
           <Badge variant="outline" className="text-sm">
-            {enabledCount} gift cards enabled
+            {enabledCount} enabled • {disabledCount} disabled
           </Badge>
         </div>
       </div>
@@ -64,6 +72,18 @@ const PlatformRewardsCatalog = () => {
             className="pl-10"
           />
         </div>
+        
+        <Select value={statusFilter} onValueChange={(value: "all" | "enabled" | "disabled") => setStatusFilter(value)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Products</SelectItem>
+            <SelectItem value="enabled">Enabled Only</SelectItem>
+            <SelectItem value="disabled">Disabled Only</SelectItem>
+          </SelectContent>
+        </Select>
+        
         <div className="text-sm text-gray-500">
           Showing {filteredProducts.length} of {totalCount} gift cards
           {syncStatus?.lastSynced && (
@@ -74,11 +94,11 @@ const PlatformRewardsCatalog = () => {
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading || isLoadingBlacklist ? (
         <div className="flex justify-center my-12">
           <div className="flex items-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading saved gift cards...</span>
+            <span>Loading gift cards catalog...</span>
           </div>
         </div>
       ) : error ? (
