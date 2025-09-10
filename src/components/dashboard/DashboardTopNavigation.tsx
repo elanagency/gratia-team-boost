@@ -1,33 +1,37 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LayoutDashboard, Settings, User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { RedeemablePointsBox } from "@/components/navigation/RedeemablePointsBox";
 
-interface TopNavigationProps {
+type DashboardTopNavigationProps = {
   user: any;
   firstName: string;
   lastName: string;
   handleLogout: () => Promise<void>;
+  isAdmin: boolean;
 }
 
-export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNavigationProps) => {
+export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout, isAdmin }: DashboardTopNavigationProps) => {
   const location = useLocation();
   
   const menuItems = [
     {
       name: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard-team"
-    }
+      path: "/dashboard"
+    },
+    // Only show Settings for admin users
+    ...(isAdmin ? [{
+      name: "Settings",
+      icon: Settings,
+      path: "/dashboard/settings"
+    }] : [])
   ];
   
   const isActive = (path: string) => {
@@ -49,7 +53,7 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
       <div className="absolute bottom-0 left-10 w-40 h-40 rounded-full bg-grattia-purple/20 blur-2xl"></div>
       {/* Logo */}
       <div className="flex items-center relative z-10">
-        <Link to="/dashboard-team" className="flex items-center">
+        <Link to="/dashboard" className="flex items-center">
           <img 
             src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
             alt="Grattia Logo" 
@@ -57,7 +61,7 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
           />
         </Link>
       </div>
-      
+          
       {/* Center Navigation */}
       <div className="flex items-center space-x-3 relative z-10">
         {menuItems.map(item => (
@@ -78,18 +82,18 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
         ))}
         <RedeemablePointsBox />
       </div>
-      
+          
       {/* User Menu */}
       <div className="flex items-center relative z-10">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 rounded-full p-0 hover:bg-white/10">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-grattia-pink text-white text-xs">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+          <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/10 transition-colors">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-medium">
+              {initials}
+            </div>
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-white">{displayName}</p>
+              <p className="text-xs text-white/70">{user?.email}</p>
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <div className="flex items-center justify-start gap-2 p-2">
@@ -98,15 +102,14 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/dashboard-team/profile" className="w-full">
+              <Link to="/dashboard/profile" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
                 Profile Settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive">
+              <LogOut className="h-4 w-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

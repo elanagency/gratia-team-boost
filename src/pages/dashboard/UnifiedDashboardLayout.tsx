@@ -1,16 +1,14 @@
-
 import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { TopNavigation } from "@/components/team/TopNavigation";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
+import { DashboardTopNavigation } from "@/components/dashboard/DashboardTopNavigation";
 
-const TeamDashboardLayout = () => {
+const UnifiedDashboardLayout = () => {
   const { 
     user, 
     firstName, 
     lastName, 
-    userName, 
     isLoading,
     isAdminLoading,
     signOut,
@@ -19,7 +17,7 @@ const TeamDashboardLayout = () => {
   
   useEffect(() => {
     if (user) {
-      console.log("TeamDashboardLayout - User authenticated:", user.email);
+      console.log("UnifiedDashboardLayout - User authenticated:", user.email);
       console.log("User is admin:", isAdmin);
       console.log("Admin loading status:", isAdminLoading);
     }
@@ -36,20 +34,15 @@ const TeamDashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
   
-  // If user is admin and we're not loading admin status, redirect to admin dashboard
-  if (isAdmin && !isAdminLoading) {
-    console.log("User is admin, redirecting to admin dashboard");
-    return <Navigate to="/dashboard" replace />;
-  }
-  
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       {/* Top Navigation */}
-      <TopNavigation 
+      <DashboardTopNavigation 
         user={user}
         firstName={firstName}
         lastName={lastName}
         handleLogout={signOut}
+        isAdmin={isAdmin}
       />
       
       {/* Main Content */}
@@ -62,4 +55,4 @@ const TeamDashboardLayout = () => {
   );
 };
 
-export default TeamDashboardLayout;
+export default UnifiedDashboardLayout;

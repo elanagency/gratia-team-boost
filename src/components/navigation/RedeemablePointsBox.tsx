@@ -14,8 +14,7 @@ export const RedeemablePointsBox = ({ className = "" }: RedeemablePointsBoxProps
   const { isAdmin } = useAuth();
 
   const handleClick = () => {
-    const rewardsPath = isAdmin ? "/dashboard/rewards" : "/dashboard-team/rewards";
-    navigate(rewardsPath);
+    navigate("/dashboard/rewards");
   };
 
   if (isLoading) {

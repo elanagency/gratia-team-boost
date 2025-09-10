@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import DashboardLayout from "./pages/dashboard/DashboardLayout";
+import UnifiedDashboardLayout from "./pages/dashboard/UnifiedDashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
 
@@ -18,10 +18,6 @@ import RewardsCatalog from "./pages/admin/RewardsCatalog";
 
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
-
-// Import Team Dashboard components
-import TeamDashboardLayout from "./pages/team/TeamDashboardLayout";
-import TeamDashboard from "./pages/team/TeamDashboard";
 
 import RewardShop from "./pages/team/RewardShop";
 
@@ -52,9 +48,7 @@ const RouteClassWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   
   // Determine if this is a dashboard route
-  const isDashboard = 
-    location.pathname.startsWith('/dashboard') || 
-    location.pathname.startsWith('/dashboard-team');
+  const isDashboard = location.pathname.startsWith('/dashboard');
   
   // Apply the appropriate class to the body
   return (
@@ -93,24 +87,19 @@ const App = () => (
                 <Route path="migration" element={<SubscriptionMigration />} />
               </Route>
               
-              {/* Dashboard routes for administrators */}
-              <Route path="/dashboard" element={<DashboardLayout />}>
+              {/* Unified Dashboard routes for all users */}
+              <Route path="/dashboard" element={<UnifiedDashboardLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="team" element={<TeamManagement />} />
-                
-                <Route path="rewards" element={<RewardsCatalog />} />
+                <Route path="rewards" element={<RewardShop />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />
               </Route>
               
-              {/* Team Dashboard routes for regular team members */}
-              <Route path="/dashboard-team" element={<TeamDashboardLayout />}>
-                <Route index element={<TeamDashboard />} />
-                
-                <Route path="rewards" element={<RewardShop />} />
-                <Route path="profile" element={<ProfileSettings />} />
-              </Route>
+              {/* Redirect old team dashboard routes to unified dashboard */}
+              <Route path="/dashboard-team" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard-team/*" element={<Navigate to="/dashboard" replace />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
