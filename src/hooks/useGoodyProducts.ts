@@ -64,6 +64,14 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
         throw new Error('No data received from gift cards service');
       }
 
+      console.log('Raw data received:', JSON.stringify(data, null, 2));
+      
+      // Check if data has error property
+      if (data.error) {
+        console.error('Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
       return data as GoodyApiResponse;
     },
     enabled,

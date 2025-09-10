@@ -675,13 +675,19 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number, perPage
       console.warn(`Response size (${responseStr.length}) may be too large`);
     }
 
-    return new Response(responseStr, { headers: corsHeaders });
+  return new Response(responseStr, { 
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200 
+  });
 
   } catch (error) {
     console.error('Error in handleLoadFromDatabase:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to load products from database' }),
-      { status: 500, headers: corsHeaders }
+      JSON.stringify({ error: 'Failed to load products from database', details: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 }
