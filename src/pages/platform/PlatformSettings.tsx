@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Database, Users, Settings2, CreditCard, Star, TestTube, Globe, AlertTriangle } from "lucide-react";
+import { Shield, Database, Users, Settings2, Star, TestTube, Globe, AlertTriangle } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -21,7 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
@@ -37,20 +36,6 @@ import {
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
-import { usePlatformPaymentMethods } from "@/hooks/usePlatformPaymentMethods";
-
-interface PaymentMethodForm {
-  cardNumber: string;
-  expiryMonth: string;
-  expiryYear: string;
-  cvv: string;
-  nameOnCard: string;
-  billingAddress: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  isDefault: boolean;
-}
 
 interface PlatformConfigForm {
   pointRate: string;
@@ -58,7 +43,6 @@ interface PlatformConfigForm {
 }
 
 const PlatformSettings = () => {
-  const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [showLiveConfirmation, setShowLiveConfirmation] = useState(false);
   
@@ -71,32 +55,6 @@ const PlatformSettings = () => {
     isAdding, 
     isRemoving 
   } = usePlatformAdmins();
-  
-  const {
-    paymentMethods,
-    isLoading: isLoadingPaymentMethods,
-    addPaymentMethod,
-    updatePaymentMethod,
-    removePaymentMethod,
-    isAdding: isAddingPayment,
-    isUpdating: isUpdatingPayment,
-    isRemovingPaymentMethod,
-  } = usePlatformPaymentMethods();
-
-  const form = useForm<PaymentMethodForm>({
-    defaultValues: {
-      cardNumber: "",
-      expiryMonth: "",
-      expiryYear: "",
-      cvv: "",
-      nameOnCard: "",
-      billingAddress: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      isDefault: false,
-    },
-  });
 
   const configForm = useForm<PlatformConfigForm>({
     defaultValues: {
@@ -122,47 +80,6 @@ const PlatformSettings = () => {
     }
   }, [initialFormValues, configForm]);
 
-  // Format card number with spaces
-  const formatCardNumber = (value: string) => {
-    // Remove all spaces and non-digits
-    const cardNumber = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    
-    // Add spaces every 4 digits
-    const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
-    
-    // Limit to 19 characters (16 digits + 3 spaces)
-    return formattedCardNumber.substring(0, 19);
-  };
-
-  // Handle card number input change
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (value: string) => void) => {
-    const formatted = formatCardNumber(e.target.value);
-    onChange(formatted);
-  };
-
-  // Set default checkbox when adding first payment method
-  useEffect(() => {
-    if (paymentMethods.length === 0) {
-      form.setValue('isDefault', true);
-    }
-  }, [paymentMethods.length, form]);
-
-  const onSubmitPaymentMethod = (data: PaymentMethodForm) => {
-    // Remove spaces from card number before submitting
-    const cardNumberWithoutSpaces = data.cardNumber.replace(/\s/g, '');
-    
-    addPaymentMethod({
-      cardNumber: cardNumberWithoutSpaces,
-      expiryMonth: data.expiryMonth,
-      expiryYear: data.expiryYear,
-      cvv: data.cvv,
-      nameOnCard: data.nameOnCard,
-      isDefault: data.isDefault,
-    });
-    setIsAddingPaymentMethod(false);
-    form.reset();
-  };
-
   const onSubmitConfiguration = (data: PlatformConfigForm) => {
     console.log("Configuration data:", data);
     
@@ -178,14 +95,6 @@ const PlatformSettings = () => {
     }
   };
 
-  const handleSetDefault = (id: string) => {
-    updatePaymentMethod({ id, isDefault: true });
-  };
-
-  const handleRemovePaymentMethod = (id: string) => {
-    console.log('Remove button clicked for payment method:', id);
-    removePaymentMethod(id);
-  };
 
   const currentEnvironment = getSetting('environment_mode') || 'test';
   const isLiveMode = currentEnvironment === 'live';
