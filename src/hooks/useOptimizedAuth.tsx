@@ -40,7 +40,7 @@ export const useOptimizedAuth = () => {
         supabase
           .from('company_members')
           .select('company_id, is_admin')
-          .eq('user_id', userId)
+          .eq('profile_id', userId)
           .maybeSingle()
       ]);
 

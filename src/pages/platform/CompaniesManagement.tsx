@@ -59,7 +59,7 @@ const CompaniesManagement = () => {
       const { data: members, error: membersError } = await supabase
         .from('company_members')
         .select(`
-          user_id,
+          profile_id,
           points,
           is_admin,
           role,
@@ -71,7 +71,7 @@ const CompaniesManagement = () => {
       if (!members || members.length === 0) return [];
 
       // Get user profiles separately
-      const userIds = members.map(m => m.user_id);
+      const userIds = members.map(m => m.profile_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, avatar_url')
@@ -100,12 +100,12 @@ const CompaniesManagement = () => {
 
       // Combine member data with profiles and emails
       return members.map(member => {
-        const profile = profileLookup[member.user_id];
+        const profile = profileLookup[member.profile_id];
         return {
-          user_id: member.user_id,
+          user_id: member.profile_id,
           first_name: profile?.first_name || 'Unknown',
           last_name: profile?.last_name || 'User',
-          email: emailData?.emails?.[member.user_id] || 'No email',
+          email: emailData?.emails?.[member.profile_id] || 'No email',
           points: member.points,
           is_admin: member.is_admin,
           role: member.role,

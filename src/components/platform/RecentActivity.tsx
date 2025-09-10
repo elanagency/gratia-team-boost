@@ -43,7 +43,7 @@ export const RecentActivity = () => {
       // Get recent team members
       const { data: members } = await supabase
         .from('company_members')
-        .select('created_at, company_id, user_id')
+        .select('created_at, company_id, profile_id')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -55,7 +55,7 @@ export const RecentActivity = () => {
         .in('id', memberCompanyIds);
 
       // Get user profiles for members
-      const userIds = members?.map(m => m.user_id) || [];
+      const userIds = members?.map(m => m.profile_id) || [];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
@@ -90,7 +90,7 @@ export const RecentActivity = () => {
       // Add member activities
       members?.forEach(member => {
         const company = memberCompanyNames?.find(c => c.id === member.company_id);
-        const profile = profiles?.find(p => p.id === member.user_id);
+        const profile = profiles?.find(p => p.id === member.profile_id);
         const name = profile ? 
           `${profile.first_name} ${profile.last_name}` : 
           'New Member';

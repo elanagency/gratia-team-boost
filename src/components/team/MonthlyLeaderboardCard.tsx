@@ -38,7 +38,7 @@ export function MonthlyLeaderboardCard() {
       const { data: transactions, error: transactionsError } = await supabase
         .from('point_transactions')
         .select(`
-          recipient_id,
+          recipient_profile_id,
           points
         `)
         .eq('company_id', companyId)
@@ -54,7 +54,7 @@ export function MonthlyLeaderboardCard() {
       
       // Group points by recipient and calculate totals
       const pointsByUser = transactions.reduce((acc, transaction) => {
-        const userId = transaction.recipient_id;
+        const userId = transaction.recipient_profile_id;
         acc[userId] = (acc[userId] || 0) + transaction.points;
         return acc;
       }, {} as Record<string, number>);
@@ -71,12 +71,12 @@ export function MonthlyLeaderboardCard() {
       const { data: members, error: membersError } = await supabase
         .from('company_members')
         .select(`
-          user_id,
+          profile_id,
           role
         `)
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .in('user_id', userIds);
+        .in('profile_id', userIds);
       
       if (membersError) throw membersError;
       
@@ -90,7 +90,7 @@ export function MonthlyLeaderboardCard() {
       // Create maps for easy lookup
       const memberMap = new Map();
       members?.forEach(member => {
-        memberMap.set(member.user_id, member);
+        memberMap.set(member.profile_id, member);
       });
       
       const profileMap = new Map();

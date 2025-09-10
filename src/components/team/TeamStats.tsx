@@ -35,14 +35,14 @@ export const TeamStats = () => {
         const {
           data: memberData,
           error: memberError
-        } = await supabase.from('company_members').select('points').eq('user_id', user.id).eq('company_id', companyId).maybeSingle();
+        } = await supabase.from('company_members').select('points').eq('profile_id', user.id).eq('company_id', companyId).maybeSingle();
         if (memberError) throw memberError;
 
         // Count recognitions received
         const {
           data: recognitionsData,
           error: recognitionsError
-        } = await supabase.from('point_transactions').select('id').eq('recipient_id', user.id).eq('company_id', companyId);
+        } = await supabase.from('point_transactions').select('id').eq('recipient_profile_id', user.id).eq('company_id', companyId);
         if (recognitionsError) throw recognitionsError;
 
         // Count rewards redeemed
