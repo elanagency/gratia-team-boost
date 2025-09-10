@@ -13,11 +13,10 @@ import { SyncGiftCardsDialog } from "@/components/platform/SyncGiftCardsDialog";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
 
 const PlatformRewardsCatalog = () => {
-  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all");
   
-  const { products, totalCount, isLoading, error } = useGoodyProducts(page, true, true);
+  const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   const { refreshCatalog, syncStatus } = useSyncGiftCards();
 
@@ -85,7 +84,7 @@ const PlatformRewardsCatalog = () => {
         </Select>
         
         <div className="text-sm text-gray-500">
-          Showing {filteredProducts.length} of {totalCount} gift cards
+          Showing {filteredProducts.length} gift cards (all loaded)
           {syncStatus?.lastSynced && (
             <div className="text-xs text-gray-400 mt-1">
               Last synced: {new Date(syncStatus.lastSynced).toLocaleString()}

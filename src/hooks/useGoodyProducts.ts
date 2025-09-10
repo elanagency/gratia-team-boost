@@ -41,15 +41,15 @@ interface GoodyApiResponse {
   };
 }
 
-export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useSavedIds: boolean = true) => {
+export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useSavedIds: boolean = true, perPage: number = 20) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['goody-gift-cards', page, useSavedIds],
+    queryKey: ['goody-gift-cards', page, useSavedIds, perPage],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
         body: { 
           method: useSavedIds ? 'LOAD_FROM_DATABASE' : 'GET',
           page: page,
-          perPage: 20
+          perPage: perPage
         }
       });
 
