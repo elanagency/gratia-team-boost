@@ -110,6 +110,9 @@ export const TeamManagementCard = () => {
         
       if (companyError) throw companyError;
       
+      // Check if user has ever logged in to determine if they need credentials
+      const hasLoggedIn = member.first_login_at !== null;
+      
       const origin = window.location.origin;
       
       // Call the send invitation email function
@@ -118,14 +121,18 @@ export const TeamManagementCard = () => {
           email: member.email,
           name: member.name,
           companyName: company.name,
-          isNewUser: false, // This is a re-send, so user already exists
-          origin
+          isNewUser: !hasLoggedIn, // Treat as new user if they haven't logged in yet
+          origin,
+          requiresPasswordReset: !hasLoggedIn && !member.invitation_status // For existing users who haven't logged in
         }
       });
       
       if (error) throw error;
       
-      toast.success(`Invitation email sent to ${member.name}`);
+      const message = hasLoggedIn 
+        ? `Invitation email sent to ${member.name}`
+        : `Login instructions sent to ${member.name}`;
+      toast.success(message);
     } catch (error) {
       console.error("Error resending invitation:", error);
       toast.error("Failed to resend invitation email");

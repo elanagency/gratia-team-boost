@@ -15,10 +15,11 @@ interface InvitationEmailRequest {
   isNewUser: boolean;
   password?: string;
   origin: string;
+  requiresPasswordReset?: boolean;
 }
 
 const generateEmailContent = (data: InvitationEmailRequest) => {
-  const { name, companyName, isNewUser, email, password, origin } = data;
+  const { name, companyName, isNewUser, email, password, origin, requiresPasswordReset } = data;
   
   const subject = isNewUser 
     ? `Welcome to ${companyName} - Your Account Details`
@@ -58,7 +59,7 @@ const generateEmailContent = (data: InvitationEmailRequest) => {
         <div class="content">
           <h1 class="welcome-message">Hello ${name}!</h1>
           
-          ${isNewUser ? `
+          ${isNewUser && password ? `
             <p>Welcome to <span class="highlight">${companyName}</span>! We're excited to have you join our team recognition platform.</p>
             <p>Your account has been created successfully. Here are your login credentials:</p>
             
@@ -74,6 +75,24 @@ const generateEmailContent = (data: InvitationEmailRequest) => {
             </div>
             
             <p><strong>Important:</strong> Please change your password after your first login for security purposes.</p>
+          ` : requiresPasswordReset ? `
+            <p>You've been invited to join <span class="highlight">${companyName}</span> on Grattia, our employee recognition platform.</p>
+            <p>Since this is your first time accessing the platform, you'll need to set up your password:</p>
+            
+            <div class="credentials-box">
+              <div class="credential-item">
+                <span class="credential-label">Your Email:</span>
+                <span class="credential-value">${email}</span>
+              </div>
+            </div>
+            
+            <p><strong>To get started:</strong></p>
+            <ol>
+              <li>Click the "Access Platform" button below</li>
+              <li>Click "Forgot Password?" on the login page</li>
+              <li>Enter your email (${email}) to receive password reset instructions</li>
+              <li>Follow the link in that email to set your password</li>
+            </ol>
           ` : `
             <p>Great news! You've been invited to join <span class="highlight">${companyName}</span> on Grattia, our employee recognition platform.</p>
             <p>You can now log in using your existing account credentials and start participating in team recognition activities.</p>
