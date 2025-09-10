@@ -79,6 +79,9 @@ serve(async (req) => {
         company_id,
         companies (
           stripe_customer_id,
+          stripe_customer_id_live,
+          stripe_customer_id_test,
+          environment,
           name
         )
       `)
@@ -90,13 +93,18 @@ serve(async (req) => {
     }
 
     const company = membership.companies as any;
-    if (!company?.stripe_customer_id) {
-      throw new Error("No Stripe customer found for this company");
+    
+    // Get environment-specific customer ID
+    const customerId = company.environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
+    
+    if (!customerId) {
+      throw new Error(`No Stripe customer found for this company in ${company.environment} mode`);
     }
 
     logStep("Found company with Stripe customer", { 
       companyName: company.name, 
-      customerId: company.stripe_customer_id 
+      customerId: customerId,
+      environment: company.environment
     });
 
     const stripeKey = await getStripeKey(supabaseClient, membership.company_id);
@@ -106,7 +114,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://kbjcjtycmfdjfnduxiud.supabase.co";
     
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: company.stripe_customer_id,
+      customer: customerId,
       return_url: `${origin}/dashboard/settings`,
     });
     

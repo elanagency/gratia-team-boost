@@ -113,29 +113,33 @@ serve(async (req: Request) => {
       );
     }
 
-    let customerId = company.stripe_customer_id;
+    // Get environment-specific customer ID
+    const customerIdField = company.environment === 'live' ? 'stripe_customer_id_live' : 'stripe_customer_id_test';
+    let customerId = company.environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
 
-    // Create Stripe customer if doesn't exist
+    // Create Stripe customer if doesn't exist for this environment
     if (!customerId) {
-      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer with email:", user.email);
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Creating new Stripe customer with email:", user.email, "for environment:", company.environment);
       const customer = await stripe.customers.create({
-        email: user.email, // Include email when creating customer
+        email: user.email,
         metadata: {
           company_id: companyId,
           company_name: company.name,
+          environment: company.environment
         },
       });
 
       customerId = customer.id;
       console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Created Stripe customer:", customerId);
 
-      // Update company with customer ID
+      // Update company with environment-specific customer ID
+      const updateData = { [customerIdField]: customerId };
       await supabaseAdmin
         .from("companies")
-        .update({ stripe_customer_id: customerId })
+        .update(updateData)
         .eq("id", companyId);
     } else {
-      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Using existing Stripe customer:", customerId);
+      console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Using existing Stripe customer:", customerId, "for environment:", company.environment);
     }
 
     // Check if company already has an active subscription
