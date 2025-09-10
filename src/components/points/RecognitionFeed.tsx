@@ -66,7 +66,7 @@ export function RecognitionFeed() {
       const { data, error } = await supabase
         .from('company_members')
         .select('points')
-        .eq('user_id', user.id)
+        .eq('profile_id', user.id)
         .eq('company_id', companyId)
         .single();
       
@@ -122,8 +122,8 @@ export function RecognitionFeed() {
       
       // Get unique user IDs from filtered transactions
       const userIds = [...new Set([
-        ...filteredTransactions.map(t => t.sender_id),
-        ...filteredTransactions.map(t => t.recipient_id)
+        ...filteredTransactions.map(t => t.sender_profile_id),
+        ...filteredTransactions.map(t => t.recipient_profile_id)
       ])];
       
       // Fetch profiles
@@ -143,13 +143,13 @@ export function RecognitionFeed() {
       // Format transactions
       const formattedTransactions: PointTransaction[] = filteredTransactions.map(transaction => ({
         id: transaction.id,
-        sender_id: transaction.sender_id,
-        recipient_id: transaction.recipient_id,
+        sender_id: transaction.sender_profile_id,
+        recipient_id: transaction.recipient_profile_id,
         points: transaction.points,
         description: transaction.description,
         created_at: transaction.created_at,
-        sender_name: profileMap.get(transaction.sender_id) || 'Unknown User',
-        recipient_name: profileMap.get(transaction.recipient_id) || 'Unknown User'
+        sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
+        recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
       }));
       
       setTransactions(formattedTransactions);

@@ -147,8 +147,8 @@ export function GivePointsCard() {
       // Create a transaction for each mentioned person with the total points
       const transactions = mentions.map(mention => ({
         company_id: companyId,
-        sender_id: user.id,
-        recipient_id: mention.userId,
+        sender_profile_id: user.id,
+        recipient_profile_id: mention.userId,
         points: totalPointsToGive,
         description: text
       }));

@@ -48,7 +48,7 @@ export const useTeamMembers = () => {
         .select(`
           id,
           is_admin,
-          user_id,
+          profile_id,
           points,
           department,
           invitation_status,
@@ -78,7 +78,7 @@ export const useTeamMembers = () => {
       }
       
       // Get user IDs for batch profile query
-      const userIds = members.map(m => m.user_id);
+      const userIds = members.map(m => m.profile_id);
       
       // Fetch profiles in batch
       const { data: profiles, error: profilesError } = await supabase
@@ -110,7 +110,7 @@ export const useTeamMembers = () => {
       
       // Format team members with profile data
       const formattedMembers: TeamMember[] = members.map(member => {
-        const profile = profileMap.get(member.user_id);
+        const profile = profileMap.get(member.profile_id);
         const memberName = profile ? 
           `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
           'No Name';
@@ -118,8 +118,8 @@ export const useTeamMembers = () => {
         return {
           id: member.id,
           name: memberName || 'No Name',
-          email: emailsMap[member.user_id] || '',
-          user_id: member.user_id,
+          email: emailsMap[member.profile_id] || '',
+          user_id: member.profile_id,
           points: member.points || 0,
           department: member.department || '',
           invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',

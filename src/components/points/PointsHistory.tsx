@@ -41,12 +41,12 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
       // Build the base query
       let query = supabase
         .from('point_transactions')
-        .select('id, sender_id, recipient_id, points, description, created_at')
+        .select('id, sender_profile_id, recipient_profile_id, points, description, created_at')
         .eq('company_id', companyId);
       
       // If personal view is enabled, only show transactions where the current user is involved
       if (personalView && user?.id) {
-        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+        query = query.or(`sender_profile_id.eq.${user.id},recipient_profile_id.eq.${user.id}`);
       }
         
       // Execute the query
@@ -64,8 +64,8 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
       // Get all user IDs involved in transactions
       const userIds = new Set<string>();
       transactionsData.forEach(tx => {
-        userIds.add(tx.sender_id);
-        userIds.add(tx.recipient_id);
+        userIds.add(tx.sender_profile_id);
+        userIds.add(tx.recipient_profile_id);
       });
       
       // Fetch profiles for these users
@@ -84,8 +84,8 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
       
       // Format transactions with user names
       const formattedTransactions = transactionsData.map(tx => {
-        const senderProfile = profileMap.get(tx.sender_id);
-        const recipientProfile = profileMap.get(tx.recipient_id);
+        const senderProfile = profileMap.get(tx.sender_profile_id);
+        const recipientProfile = profileMap.get(tx.recipient_profile_id);
         
         const senderName = senderProfile ? 
           `${senderProfile.first_name || ''} ${senderProfile.last_name || ''}`.trim() : 
@@ -97,6 +97,8 @@ export function PointsHistory({ personalView = false }: PointsHistoryProps) {
         
         return {
           ...tx,
+          sender_id: tx.sender_profile_id,
+          recipient_id: tx.recipient_profile_id,
           sender_name: senderName,
           recipient_name: recipientName
         };

@@ -35,7 +35,7 @@ export function LeaderboardCard() {
       // Fetch all point transactions for this company
       const { data: transactions, error: transactionsError } = await supabase
         .from('point_transactions')
-        .select('recipient_id, points')
+        .select('recipient_profile_id, points')
         .eq('company_id', companyId);
       
       if (transactionsError) throw transactionsError;
@@ -48,8 +48,8 @@ export function LeaderboardCard() {
       // Calculate total recognition points received for each user
       const pointsMap = new Map<string, number>();
       transactions.forEach(transaction => {
-        const currentPoints = pointsMap.get(transaction.recipient_id) || 0;
-        pointsMap.set(transaction.recipient_id, currentPoints + transaction.points);
+        const currentPoints = pointsMap.get(transaction.recipient_profile_id) || 0;
+        pointsMap.set(transaction.recipient_profile_id, currentPoints + transaction.points);
       });
       
       // Get unique recipient IDs
@@ -63,9 +63,9 @@ export function LeaderboardCard() {
       // Fetch company members to filter out admins and get roles and departments
       const { data: members, error: membersError } = await supabase
         .from('company_members')
-        .select('user_id, role, is_admin, department')
+        .select('profile_id, role, is_admin, department')
         .eq('company_id', companyId)
-        .in('user_id', recipientIds);
+        .in('profile_id', recipientIds);
       
       if (membersError) throw membersError;
       
@@ -78,7 +78,7 @@ export function LeaderboardCard() {
       }
       
       // Fetch profiles for non-admin members
-      const nonAdminUserIds = nonAdminMembers.map(m => m.user_id);
+      const nonAdminUserIds = nonAdminMembers.map(m => m.profile_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
@@ -95,17 +95,17 @@ export function LeaderboardCard() {
       // Format leaderboard with profile data and ranks, sorted by recognition points
       const formattedLeaderboard: LeaderboardMember[] = nonAdminMembers
         .map(member => {
-          const profile = profileMap.get(member.user_id);
+          const profile = profileMap.get(member.profile_id);
           const memberName = profile ? 
             `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
             'No Name';
           
           return {
-            userId: member.user_id,
+            userId: member.profile_id,
             name: memberName || 'No Name',
             role: member.role || 'Member',
             department: member.department || null,
-            points: pointsMap.get(member.user_id) || 0,
+            points: pointsMap.get(member.profile_id) || 0,
             rank: 0 // Will be set after sorting
           };
         })

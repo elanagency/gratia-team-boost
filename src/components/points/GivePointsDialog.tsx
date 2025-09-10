@@ -84,14 +84,14 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         .select(`
           id,
           is_admin,
-          user_id,
+          profile_id,
           points,
           department,
           invitation_status,
           first_login_at
         `)
         .eq('company_id', companyId)
-        .neq('user_id', user.id);
+        .neq('profile_id', user.id);
       
       if (membersError) throw membersError;
       
@@ -101,7 +101,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       }
       
       // Get user IDs for batch profile query
-      const userIds = members.map(m => m.user_id);
+      const userIds = members.map(m => m.profile_id);
       
       // Fetch profiles in batch
       const { data: profiles, error: profilesError } = await supabase
@@ -119,7 +119,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       
       // Format team members with profile data
       const formattedMembers = members.map(member => {
-        const profile = profileMap.get(member.user_id);
+        const profile = profileMap.get(member.profile_id);
         const memberName = profile ? 
           `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
           'No Name';
@@ -128,7 +128,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           id: member.id,
           name: memberName || 'No Name',
           email: '', // We don't have email in the profiles table
-          user_id: member.user_id,
+          user_id: member.profile_id,
           points: member.points || 0,
           department: member.department || '',
           invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',
@@ -167,8 +167,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         .from('point_transactions')
         .insert({
           company_id: companyId,
-          sender_id: user.id,
-          recipient_id: selectedMember.user_id,
+          sender_profile_id: user.id,
+          recipient_profile_id: selectedMember.user_id,
           points: points,
           description: description
         });

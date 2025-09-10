@@ -58,7 +58,7 @@ serve(async (req) => {
       .from('company_members')
       .select('points, is_admin')
       .eq('company_id', companyId)
-      .eq('user_id', userId)
+      .eq('profile_id', userId)
       .single()
 
     if (memberError) {
@@ -108,8 +108,8 @@ serve(async (req) => {
         .from('point_transactions')
         .insert({
           company_id: companyId,
-          sender_id: userId,
-          recipient_id: null, // null indicates points returned to company
+          sender_profile_id: userId,
+          recipient_profile_id: null, // null indicates points returned to company
           points: member.points,
           description: `Points returned to company after member removal`
         })
@@ -120,7 +120,26 @@ serve(async (req) => {
       }
     }
 
-    // Delete user-related records in correct order
+    // Mark profile as inactive instead of deleting auth user
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ is_active: false })
+      .eq('id', userId)
+
+    if (profileError) {
+      console.error('Error marking profile as inactive:', profileError)
+      throw profileError
+    }
+
+    // Delete auth.users record while preserving profile and transaction history
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
+    
+    if (authDeleteError) {
+      console.error('Error deleting auth user:', authDeleteError)
+      throw authDeleteError
+    }
+
+    // Delete user-related records in correct order (but keep profile and transactions)
     const deletions = [
       // Delete cart items
       supabase.from('carts').delete().eq('company_id', companyId).eq('user_id', userId),
@@ -131,14 +150,13 @@ serve(async (req) => {
       // Delete allocation records
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId).eq('user_id', userId),
       
-      // Delete point transactions (both as sender and recipient)
-      supabase.from('point_transactions').delete().eq('company_id', companyId).or(`sender_id.eq.${userId},recipient_id.eq.${userId}`),
+      // Don't delete point transactions - they reference profile_id which we keep for history
       
       // Delete reward redemptions
       supabase.from('reward_redemptions').delete().eq('user_id', userId),
       
       // Finally delete the company member record
-      supabase.from('company_members').delete().eq('company_id', companyId).eq('user_id', userId)
+      supabase.from('company_members').delete().eq('company_id', companyId).eq('profile_id', userId)
     ]
 
     // Execute all deletions
