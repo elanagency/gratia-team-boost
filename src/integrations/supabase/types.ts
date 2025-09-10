@@ -402,48 +402,6 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_payment_methods: {
-        Row: {
-          card_last_four: string
-          card_type: string | null
-          cardholder_name: string
-          created_at: string
-          expiry_month: string
-          expiry_year: string
-          id: string
-          is_default: boolean
-          spreedly_token: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          card_last_four: string
-          card_type?: string | null
-          cardholder_name: string
-          created_at?: string
-          expiry_month: string
-          expiry_year: string
-          id?: string
-          is_default?: boolean
-          spreedly_token: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          card_last_four?: string
-          card_type?: string | null
-          cardholder_name?: string
-          created_at?: string
-          expiry_month?: string
-          expiry_year?: string
-          id?: string
-          is_default?: boolean
-          spreedly_token?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       platform_settings: {
         Row: {
           created_at: string

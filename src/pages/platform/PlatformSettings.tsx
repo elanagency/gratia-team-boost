@@ -95,7 +95,6 @@ const PlatformSettings = () => {
     }
   };
 
-
   const currentEnvironment = getSetting('environment_mode') || 'test';
   const isLiveMode = currentEnvironment === 'live';
 
@@ -129,7 +128,6 @@ const PlatformSettings = () => {
           <p className="text-gray-600">Configure platform-wide settings</p>
         </div>
       </div>
-
 
       {/* Platform Configuration */}
       <Card>
@@ -182,267 +180,7 @@ const PlatformSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Billing & Payment Methods */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Billing & Payment Methods
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Rye Payment Methods</h4>
-                <p className="text-sm text-gray-600">Manage payment methods for Rye marketplace orders</p>
-              </div>
-              <Button 
-                onClick={() => setIsAddingPaymentMethod(true)}
-                className="bg-[#F572FF] hover:bg-[#E061EE]"
-                disabled={isAddingPayment}
-              >
-                {isAddingPayment ? 'Adding...' : 'Add Payment Method'}
-              </Button>
-            </div>
-          </div>
-          
-          {isAddingPaymentMethod && (
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h5 className="font-medium mb-4">Add New Payment Method</h5>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmitPaymentMethod)} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="nameOnCard"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name on Card</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="cardNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Card Number</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="1234 5678 9012 3456" 
-                              value={field.value}
-                              onChange={(e) => handleCardNumberChange(e, field.onChange)}
-                              maxLength={19}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="expiryMonth"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Month</FormLabel>
-                          <FormControl>
-                            <Input placeholder="MM" maxLength={2} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="expiryYear"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Year</FormLabel>
-                          <FormControl>
-                            <Input placeholder="YYYY" maxLength={4} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="cvv"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CVV</FormLabel>
-                          <FormControl>
-                            <Input placeholder="123" maxLength={4} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  {paymentMethods.length > 0 && (
-                    <FormField
-                      control={form.control}
-                      name="isDefault"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>
-                              Set as default payment method
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                  
-                  <Separator />
-                  
-                  <h6 className="font-medium">Billing Address</h6>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="billingAddress"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Address</FormLabel>
-                          <FormControl>
-                            <Input placeholder="123 Main Street" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input placeholder="New York" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State</FormLabel>
-                          <FormControl>
-                            <Input placeholder="NY" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ZIP Code</FormLabel>
-                          <FormControl>
-                            <Input placeholder="10001" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      type="submit" 
-                      className="bg-[#F572FF] hover:bg-[#E061EE]"
-                      disabled={isAddingPayment}
-                    >
-                      {isAddingPayment ? 'Saving...' : 'Save Payment Method'}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsAddingPaymentMethod(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
-          )}
-          
-          <Separator />
-          
-          <div>
-            <h4 className="font-medium mb-2">Saved Payment Methods</h4>
-            {isLoadingPaymentMethods ? (
-              <div className="text-center py-4 text-gray-500">Loading payment methods...</div>
-            ) : paymentMethods.length > 0 ? (
-              <div className="space-y-2">
-                {paymentMethods.map((method) => (
-                  <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="h-4 w-4 text-gray-600" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">•••• •••• •••• {method.card_last_four}</p>
-                          {method.is_default && (
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {method.card_type} • Expires {method.expiry_month}/{method.expiry_year} • {method.cardholder_name}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!method.is_default && paymentMethods.length > 1 && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleSetDefault(method.id)}
-                          disabled={isUpdatingPayment}
-                        >
-                          {isUpdatingPayment ? 'Setting...' : 'Set Default'}
-                        </Button>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRemovePaymentMethod(method.id)}
-                        disabled={isRemovingPaymentMethod(method.id)}
-                      >
-                        {isRemovingPaymentMethod(method.id) ? 'Removing...' : 'Remove'}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-500 p-3 border border-dashed rounded">
-                No payment methods saved yet
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Admin Management - Updated with real data */}
+      {/* Platform Admin Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -452,53 +190,58 @@ const PlatformSettings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="new-admin">Add New Platform Admin</Label>
-            <div className="flex space-x-2">
-              <Input 
-                id="new-admin" 
-                placeholder="admin@email.com" 
-                className="flex-1"
-                value={newAdminEmail}
-                onChange={(e) => setNewAdminEmail(e.target.value)}
-              />
-              <Button 
-                onClick={handleAddAdmin}
-                disabled={isAdding || !newAdminEmail.trim()}
-                className="bg-[#F572FF] hover:bg-[#E061EE]"
-              >
-                {isAdding ? 'Adding...' : 'Add Admin'}
-              </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium">Platform Administrators</h4>
+                <p className="text-sm text-gray-600">Manage users who have platform admin access</p>
+              </div>
             </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="Admin email address"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddAdmin()}
+            />
+            <Button 
+              onClick={handleAddAdmin}
+              className="bg-[#F572FF] hover:bg-[#E061EE]"
+              disabled={isAdding || !newAdminEmail.trim()}
+            >
+              {isAdding ? 'Adding...' : 'Add Admin'}
+            </Button>
           </div>
           
           <Separator />
           
           <div>
-            <h4 className="font-medium mb-4">Current Platform Admins</h4>
+            <h4 className="font-medium mb-2">Current Platform Admins</h4>
             {isLoadingAdmins ? (
-              <div className="text-center py-4 text-gray-500">Loading platform admins...</div>
+              <div className="text-center py-4 text-gray-500">Loading administrators...</div>
             ) : platformAdmins.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {platformAdmins.map((admin) => (
                     <TableRow key={admin.id}>
-                      <TableCell className="font-medium">
-                        {admin.first_name && admin.last_name 
-                          ? `${admin.first_name} ${admin.last_name}`
-                          : 'No name set'
-                        }
+                      <TableCell>
+                        {admin.first_name} {admin.last_name}
                       </TableCell>
                       <TableCell>{admin.email}</TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
+                      <TableCell>
+                        Admin
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
                           size="sm"
                           onClick={() => removeAdmin(admin.id)}
                           disabled={isRemoving}
@@ -511,8 +254,10 @@ const PlatformSettings = () => {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-4 text-gray-500 border border-dashed rounded">
-                No platform admins found
+              <div className="text-center py-8 text-gray-500">
+                <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No platform administrators added yet</p>
+                <p className="text-sm">Add an administrator to get started</p>
               </div>
             )}
           </div>
@@ -527,26 +272,73 @@ const PlatformSettings = () => {
             System Monitoring
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <Database className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <h4 className="font-medium">Database Health</h4>
-              <p className="text-sm text-gray-600">Excellent</p>
-            </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <h4 className="font-medium">Active Users</h4>
-              <p className="text-sm text-gray-600">1,245</p>
+              <div className="text-2xl font-bold text-green-600">Online</div>
+              <div className="text-sm text-gray-600">Database Status</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">Active</div>
+              <div className="text-sm text-gray-600">API Status</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <h4 className="font-medium">Security Status</h4>
-              <p className="text-sm text-gray-600">Secure</p>
+              <div className="text-2xl font-bold text-purple-600">
+                {isLiveMode ? 'Live' : 'Test'}
+              </div>
+              <div className="text-sm text-gray-600">Environment</div>
             </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium">Environment Mode</h4>
+                <p className="text-sm text-gray-600">
+                  Switch between test and live environments
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <TestTube className="h-4 w-4" />
+                <Switch
+                  checked={isLiveMode}
+                  onCheckedChange={handleEnvironmentToggle}
+                />
+                <Globe className="h-4 w-4" />
+              </div>
+            </div>
+            
+            {isLiveMode && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <span className="text-sm text-red-700">
+                  Live mode is active. All transactions will be processed with real payment methods.
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Environment Confirmation Dialog */}
+      <AlertDialog open={showLiveConfirmation} onOpenChange={setShowLiveConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch to Live Mode?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to switch to live mode. This means all transactions will be processed with real payment methods and actual money will be charged. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLiveMode}>
+              Yes, Switch to Live Mode
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

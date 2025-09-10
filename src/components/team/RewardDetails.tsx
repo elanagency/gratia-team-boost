@@ -8,7 +8,6 @@ import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useDefaultPaymentMethod } from "@/hooks/useDefaultPaymentMethod";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { ShippingInfoDialog } from "./ShippingInfoDialog";
 import { RewardImage } from "./RewardImage";
@@ -22,7 +21,6 @@ interface RewardDetailsProps {
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { redeemReward } = useRewards();
   const { user } = useAuth();
-  const { hasDefaultPaymentMethod, isLoading: isLoadingPaymentMethod } = useDefaultPaymentMethod();
   const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
@@ -88,11 +86,6 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       return;
     }
     
-    if (!hasDefaultPaymentMethod) {
-      console.log('❌ No default payment method found');
-      toast.error("An Error occurred at this moment, please try again later - Code 0001");
-      return;
-    }
     
     console.log('✅ Opening shipping info dialog');
     setIsDialogOpen(true);
@@ -141,9 +134,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
 
   const isRedeemDisabled = reward.stock === 0 || 
                           redeemReward.isPending || 
-                          isLoadingPaymentMethod || 
                           isLoadingPoints ||
-                          !hasDefaultPaymentMethod ||
                           !hasEnoughPoints;
 
   return (
@@ -166,8 +157,6 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
           
           <RewardInfo
             reward={reward}
-            hasDefaultPaymentMethod={hasDefaultPaymentMethod}
-            isLoadingPaymentMethod={isLoadingPaymentMethod}
             onRedeem={handleConfirmRedeem}
             isRedeemDisabled={isRedeemDisabled}
             isProcessing={redeemReward.isPending}

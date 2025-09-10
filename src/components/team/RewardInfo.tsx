@@ -7,8 +7,6 @@ import { Reward } from "@/hooks/useRewards";
 
 interface RewardInfoProps {
   reward: Reward;
-  hasDefaultPaymentMethod: boolean;
-  isLoadingPaymentMethod: boolean;
   onRedeem: () => void;
   isRedeemDisabled: boolean;
   isProcessing: boolean;
@@ -19,8 +17,6 @@ interface RewardInfoProps {
 
 export const RewardInfo = ({
   reward,
-  hasDefaultPaymentMethod,
-  isLoadingPaymentMethod,
   onRedeem,
   isRedeemDisabled,
   isProcessing,
@@ -62,14 +58,6 @@ export const RewardInfo = ({
         </Alert>
       )}
       
-      {!hasDefaultPaymentMethod && !isLoadingPaymentMethod && (
-        <Alert className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            An Error occurred at this moment, please try again later - Code 0001
-          </AlertDescription>
-        </Alert>
-      )}
       
       <div className="mt-4">
         {reward.stock !== null && (
@@ -86,7 +74,6 @@ export const RewardInfo = ({
           className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? "Processing..." : 
-           isLoadingPaymentMethod ? "Loading..." :
            isLoadingPoints ? "Loading..." :
            !hasEnoughPoints ? "Insufficient Points" :
            "Redeem Reward"}
