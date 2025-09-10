@@ -182,38 +182,6 @@ export const useTeamMembers = () => {
     try {
       if (!companyId) throw new Error("Company ID not found");
       
-      if (member.points > 0) {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('points_balance')
-          .eq('id', companyId)
-          .single();
-          
-        if (companyError) throw companyError;
-        
-        const currentBalance = companyData?.points_balance || 0;
-        const newBalance = currentBalance + member.points;
-        
-        const { error: updateCompanyError } = await supabase
-          .from('companies')
-          .update({ points_balance: newBalance })
-          .eq('id', companyId);
-          
-        if (updateCompanyError) throw updateCompanyError;
-        
-        const { error: transactionError } = await supabase
-          .from('point_transactions')
-          .insert({
-            company_id: companyId,
-            sender_id: member.user_id,
-            recipient_id: user?.id || '',
-            points: member.points,
-            description: `Points returned to company when ${member.name} was removed from team.`
-          });
-          
-        if (transactionError) throw transactionError;
-      }
-      
       const { error } = await supabase
         .from('company_members')
         .delete()
@@ -221,11 +189,7 @@ export const useTeamMembers = () => {
         
       if (error) throw error;
 
-      toast.success(
-        member.points > 0 
-          ? `Team member removed successfully. ${member.points} points have been returned to the company.`
-          : "Team member removed successfully."
-      );
+      toast.success("Team member removed successfully.");
       
       fetchTeamMembers();
     } catch (error) {

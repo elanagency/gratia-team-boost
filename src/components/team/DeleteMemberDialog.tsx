@@ -41,8 +41,8 @@ const DeleteMemberDialog: React.FC<DeleteMemberDialogProps> = ({
           <AlertDialogDescription>
             This will remove {member?.name} from your team. This action cannot be undone.
             {member && member.points > 0 && (
-              <p className="mt-2 text-sm font-semibold text-[#F572FF]">
-                {member.points} points will be returned to your company.
+              <p className="mt-2 text-sm font-semibold text-destructive">
+                {member.points} recognition points will be permanently lost.
               </p>
             )}
           </AlertDialogDescription>
