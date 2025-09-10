@@ -1,12 +1,13 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Gift, Settings, User, LogOut } from "lucide-react";
+import { LayoutDashboard, Settings, User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { RedeemablePointsBox } from "@/components/navigation/RedeemablePointsBox";
 
 type AdminTopNavigationProps = {
   user: any;
@@ -23,11 +24,6 @@ export const AdminTopNavigation = ({ user, firstName, lastName, handleLogout }: 
       name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard"
-    },
-    {
-      name: "Rewards",
-      icon: Gift,
-      path: "/dashboard/rewards"
     },
     {
       name: "Settings",
@@ -64,7 +60,7 @@ export const AdminTopNavigation = ({ user, firstName, lastName, handleLogout }: 
       </div>
           
       {/* Center Navigation */}
-      <div className="flex items-center space-x-1 relative z-10">
+      <div className="flex items-center space-x-3 relative z-10">
         {menuItems.map(item => (
           <Link 
             key={item.name} 
@@ -81,6 +77,7 @@ export const AdminTopNavigation = ({ user, firstName, lastName, handleLogout }: 
             <span className="hidden sm:inline">{item.name}</span>
           </Link>
         ))}
+        <RedeemablePointsBox />
       </div>
           
       {/* User Menu */}

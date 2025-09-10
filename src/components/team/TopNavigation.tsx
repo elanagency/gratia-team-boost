@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Gift, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { RedeemablePointsBox } from "@/components/navigation/RedeemablePointsBox";
 
 interface TopNavigationProps {
   user: any;
@@ -26,11 +27,6 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
       name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard-team"
-    },
-    {
-      name: "Rewards Shop",
-      icon: Gift,
-      path: "/dashboard-team/rewards"
     }
   ];
   
@@ -63,7 +59,7 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
       </div>
       
       {/* Center Navigation */}
-      <div className="flex items-center space-x-1 relative z-10">
+      <div className="flex items-center space-x-3 relative z-10">
         {menuItems.map(item => (
           <Link 
             key={item.name} 
@@ -80,6 +76,7 @@ export const TopNavigation = ({ user, firstName, lastName, handleLogout }: TopNa
             <span className="hidden sm:inline">{item.name}</span>
           </Link>
         ))}
+        <RedeemablePointsBox />
       </div>
       
       {/* User Menu */}
