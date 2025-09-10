@@ -365,7 +365,7 @@ serve(async (req: Request) => {
         is_admin: false,
         role: role.toLowerCase(),
         department: department || null,
-        points: 100, // Give new team members 100 initial points
+        points: 0, // New team members start with 0 points, get monthly allocation on first login
         invitation_status: 'invited', // Set initial status as invited
         temporary_password: password, // Store the generated password for resending invites
       })
