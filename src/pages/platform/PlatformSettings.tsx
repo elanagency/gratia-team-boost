@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Database, Users, Settings2, Star, TestTube, Globe, AlertTriangle } from "lucide-react";
+import { Shield, Settings2 } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -21,18 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { usePlatformAdmins } from "@/hooks/usePlatformAdmins";
@@ -44,7 +32,6 @@ interface PlatformConfigForm {
 
 const PlatformSettings = () => {
   const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [showLiveConfirmation, setShowLiveConfirmation] = useState(false);
   
   const { settings, isLoading, updateSetting, isUpdating, getSetting } = usePlatformSettings();
   const { 
@@ -95,21 +82,6 @@ const PlatformSettings = () => {
     }
   };
 
-  const currentEnvironment = getSetting('environment_mode') || 'test';
-  const isLiveMode = currentEnvironment === 'live';
-
-  const handleEnvironmentToggle = (checked: boolean) => {
-    if (checked) {
-      setShowLiveConfirmation(true);
-    } else {
-      updateSetting({ key: 'environment_mode', value: 'test' });
-    }
-  };
-
-  const confirmLiveMode = () => {
-    updateSetting({ key: 'environment_mode', value: 'live' });
-    setShowLiveConfirmation(false);
-  };
 
   if (isLoading) {
     return (
@@ -264,81 +236,6 @@ const PlatformSettings = () => {
         </CardContent>
       </Card>
 
-      {/* System Monitoring */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            System Monitoring
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">Online</div>
-              <div className="text-sm text-gray-600">Database Status</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">Active</div>
-              <div className="text-sm text-gray-600">API Status</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">
-                {isLiveMode ? 'Live' : 'Test'}
-              </div>
-              <div className="text-sm text-gray-600">Environment</div>
-            </div>
-          </div>
-          
-          <Separator />
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Environment Mode</h4>
-                <p className="text-sm text-gray-600">
-                  Switch between test and live environments
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <TestTube className="h-4 w-4" />
-                <Switch
-                  checked={isLiveMode}
-                  onCheckedChange={handleEnvironmentToggle}
-                />
-                <Globe className="h-4 w-4" />
-              </div>
-            </div>
-            
-            {isLiveMode && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-700">
-                  Live mode is active. All transactions will be processed with real payment methods.
-                </span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Environment Confirmation Dialog */}
-      <AlertDialog open={showLiveConfirmation} onOpenChange={setShowLiveConfirmation}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Switch to Live Mode?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to switch to live mode. This means all transactions will be processed with real payment methods and actual money will be charged. Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLiveMode}>
-              Yes, Switch to Live Mode
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
