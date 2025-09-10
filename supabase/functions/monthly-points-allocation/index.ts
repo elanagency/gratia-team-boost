@@ -26,18 +26,17 @@ serve(async (req) => {
 
     console.log('Starting monthly points allocation process...');
 
-    // Get all companies with active subscriptions
+    // Get all companies (not just those with subscriptions)
     const { data: companies, error: companiesError } = await supabase
       .from('companies')
-      .select('id, name, billing_cycle_anchor, stripe_subscription_id')
-      .not('stripe_subscription_id', 'is', null);
+      .select('id, name');
 
     if (companiesError) {
       console.error('Error fetching companies:', companiesError);
       throw companiesError;
     }
 
-    console.log(`Found ${companies?.length || 0} companies with subscriptions`);
+    console.log(`Found ${companies?.length || 0} companies for monthly points allocation`);
 
     let totalAllocations = 0;
     const results = [];
