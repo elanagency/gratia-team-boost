@@ -2,17 +2,17 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import RewardCard from "@/components/rewards/RewardCard";
-import { useRewardCatalog } from "@/hooks/useRewardCatalog";
+import { useAdminRewardCatalog } from "@/hooks/useAdminRewardCatalog";
 
 const RewardsCatalog = () => {
-  const { rewards, isLoadingRewards } = useRewardCatalog();
+  const { rewards, isLoadingRewards } = useAdminRewardCatalog();
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Rewards Catalog</h2>
+        <h2 className="text-xl font-semibold">Gift Cards Catalog</h2>
         <p className="text-gray-500 text-sm mt-1">
-          Browse rewards available from Grattia. Rewards are managed by our team and updated regularly.
+          Browse gift cards available from our platform. These are managed centrally and updated regularly.
         </p>
       </div>
 
@@ -32,9 +32,9 @@ const RewardsCatalog = () => {
         </div>
       ) : (
         <Card className="p-12 text-center">
-          <h3 className="text-lg font-medium text-gray-800">No rewards available</h3>
+          <h3 className="text-lg font-medium text-gray-800">No gift cards available</h3>
           <p className="text-gray-500 mt-2">
-            Our team is working on adding rewards to the catalog. Check back soon!
+            Gift cards are being loaded. Please check back soon!
           </p>
         </Card>
       )}

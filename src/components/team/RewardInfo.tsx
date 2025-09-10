@@ -3,10 +3,10 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { Reward } from "@/hooks/useRewards";
+import { TeamReward } from "@/hooks/useTeamRewards";
 
 interface RewardInfoProps {
-  reward: Reward;
+  reward: TeamReward;
   onRedeem: () => void;
   isRedeemDisabled: boolean;
   isProcessing: boolean;

@@ -2,9 +2,9 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Reward } from "@/hooks/useRewards";
+import { TeamReward } from "@/hooks/useTeamRewards";
 import { ArrowLeft } from "lucide-react";
-import { useRewards } from "@/hooks/useRewards";
+// Note: Redemption functionality to be implemented later
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,12 +14,12 @@ import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 
 interface RewardDetailsProps {
-  reward: Reward;
+  reward: TeamReward;
   onClose: () => void;
 }
 
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
-  const { redeemReward } = useRewards();
+  // TODO: Implement redemption with new gift card system
   const { user } = useAuth();
   const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -109,10 +109,8 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
         shippingAddress: shippingInfo
       });
       
-      await redeemReward.mutateAsync({
-        rewardId: reward.id,
-        shippingAddress: shippingInfo
-      });
+      // TODO: Implement actual redemption flow
+      console.log('Redemption will be implemented later');
       
       console.log('✅ Redemption completed successfully');
       setIsDialogOpen(false);
@@ -133,7 +131,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   };
 
   const isRedeemDisabled = reward.stock === 0 || 
-                          redeemReward.isPending || 
+                          false || // redeemReward.isPending - to be implemented
                           isLoadingPoints ||
                           !hasEnoughPoints;
 
@@ -159,7 +157,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
             reward={reward}
             onRedeem={handleConfirmRedeem}
             isRedeemDisabled={isRedeemDisabled}
-            isProcessing={redeemReward.isPending}
+            isProcessing={false} // redeemReward.isPending - to be implemented
             userPoints={recognitionPoints}
             hasEnoughPoints={hasEnoughPoints}
             isLoadingPoints={isLoadingPoints}
@@ -173,7 +171,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
         shippingInfo={shippingInfo}
         onShippingInfoChange={handleInputChange}
         onSubmit={handleSubmitRedemption}
-        isProcessing={redeemReward.isPending}
+        isProcessing={false} // redeemReward.isPending - to be implemented
       />
     </div>
   );

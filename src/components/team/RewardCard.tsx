@@ -9,11 +9,12 @@ interface RewardCardProps {
   reward: {
     id: string;
     name: string;
-    description: string | null;
-    image_url: string | null;
+    description: string;
+    image_url: string;
     points_cost: number;
-    stock: number | null;
+    stock: number;
     company_id?: string | null;
+    brand_name?: string;
   };
   onClick: () => void;
 }
@@ -58,13 +59,18 @@ export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
           </p>
         )}
         
-        {reward.stock !== null && (
-          <p className="text-xs text-gray-500 mb-3">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-gray-500">
             {reward.stock > 0 
               ? `${reward.stock} in stock` 
               : "Out of stock"}
           </p>
-        )}
+          {reward.brand_name && (
+            <p className="text-xs text-gray-400">
+              {reward.brand_name}
+            </p>
+          )}
+        </div>
         
         <Button 
           className={`w-full ${
@@ -75,7 +81,7 @@ export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
           disabled={!hasEnoughPoints || isLoadingPoints || reward.stock === 0}
           onClick={(e) => {
             e.stopPropagation();
-            if (hasEnoughPoints && !isLoadingPoints && reward.stock !== 0) {
+            if (hasEnoughPoints && !isLoadingPoints && reward.stock > 0) {
               onClick();
             }
           }}

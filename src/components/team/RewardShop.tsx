@@ -1,27 +1,17 @@
 
 import React, { useState } from "react";
-import { useRewards, Reward } from "@/hooks/useRewards";
+import { useTeamRewards, TeamReward } from "@/hooks/useTeamRewards";
 import { RewardCard } from "./RewardCard";
 import { RewardDetails } from "./RewardDetails";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Search } from "lucide-react";
 
 export const RewardShop = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<TeamReward | null>(null);
   
-  const { rewards, categories, isLoading } = useRewards(
-    selectedCategory === "all" ? undefined : selectedCategory
-  );
+  const { rewards, isLoading } = useTeamRewards();
   
   // Filter rewards based on search term
   const filteredRewards = rewards.filter(reward => 
@@ -29,7 +19,7 @@ export const RewardShop = () => {
     (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  const handleSelectReward = (reward: Reward) => {
+  const handleSelectReward = (reward: TeamReward) => {
     setSelectedReward(reward);
   };
 
@@ -39,7 +29,7 @@ export const RewardShop = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Rewards Shop</h2>
+      <h2 className="text-xl font-semibold">Gift Cards Shop</h2>
       
       {selectedReward ? (
         <RewardDetails 
@@ -48,33 +38,15 @@ export const RewardShop = () => {
         />
       ) : (
         <>
-          {/* Search and filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <Input
-                placeholder="Search rewards..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="w-full sm:w-48">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <Input
+              placeholder="Search gift cards..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
           
           {/* Rewards grid */}
@@ -94,11 +66,11 @@ export const RewardShop = () => {
             </div>
           ) : (
             <Card className="p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-800">No rewards found</h3>
+              <h3 className="text-lg font-medium text-gray-800">No gift cards found</h3>
               <p className="text-gray-500 mt-2">
                 {searchTerm 
-                  ? "Try a different search term or category" 
-                  : "Check back soon for new rewards!"}
+                  ? "Try a different search term" 
+                  : "Check back soon for new gift cards!"}
               </p>
             </Card>
           )}
