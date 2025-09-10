@@ -203,10 +203,10 @@ export type Database = {
           is_trial_user: boolean | null
           monthly_points: number
           points: number
+          profile_id: string
           role: string
           temporary_password: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
           company_id: string
@@ -219,10 +219,10 @@ export type Database = {
           is_trial_user?: boolean | null
           monthly_points?: number
           points?: number
+          profile_id: string
           role?: string
           temporary_password?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
           company_id?: string
@@ -235,10 +235,10 @@ export type Database = {
           is_trial_user?: boolean | null
           monthly_points?: number
           points?: number
+          profile_id?: string
           role?: string
           temporary_password?: string | null
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -246,6 +246,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -477,8 +484,8 @@ export type Database = {
           description: string
           id: string
           points: number
-          recipient_id: string
-          sender_id: string
+          recipient_profile_id: string
+          sender_profile_id: string
         }
         Insert: {
           company_id: string
@@ -486,8 +493,8 @@ export type Database = {
           description: string
           id?: string
           points: number
-          recipient_id: string
-          sender_id: string
+          recipient_profile_id: string
+          sender_profile_id: string
         }
         Update: {
           company_id?: string
@@ -495,8 +502,8 @@ export type Database = {
           description?: string
           id?: string
           points?: number
-          recipient_id?: string
-          sender_id?: string
+          recipient_profile_id?: string
+          sender_profile_id?: string
         }
         Relationships: [
           {
@@ -504,6 +511,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -514,6 +535,7 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          is_active: boolean
           is_platform_admin: boolean
           last_name: string
           shipping_address: string | null
@@ -530,6 +552,7 @@ export type Database = {
           created_at?: string
           first_name: string
           id: string
+          is_active?: boolean
           is_platform_admin?: boolean
           last_name: string
           shipping_address?: string | null
@@ -546,6 +569,7 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          is_active?: boolean
           is_platform_admin?: boolean
           last_name?: string
           shipping_address?: string | null
@@ -791,11 +815,11 @@ export type Database = {
         Returns: boolean
       }
       check_company_membership: {
-        Args: { company_id: string; user_id: string }
+        Args: { company_id: string; profile_id: string }
         Returns: boolean
       }
       check_user_company_membership: {
-        Args: { company_id: string; user_id: string }
+        Args: { company_id: string; profile_id: string }
         Returns: boolean
       }
       get_company_member_count: {
