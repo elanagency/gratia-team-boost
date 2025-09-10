@@ -113,6 +113,19 @@ export const TeamManagementCard = () => {
       // Check if user has ever logged in to determine if they need credentials
       const hasLoggedIn = member.first_login_at !== null;
       
+      // Fetch stored temporary password if user hasn't logged in
+      let storedPassword = null;
+      if (!hasLoggedIn) {
+        const { data: memberData } = await supabase
+          .from('company_members')
+          .select('temporary_password')
+          .eq('user_id', member.user_id)
+          .eq('company_id', companyId)
+          .single();
+        
+        storedPassword = memberData?.temporary_password;
+      }
+      
       const origin = window.location.origin;
       
       // Call the send invitation email function
@@ -122,8 +135,8 @@ export const TeamManagementCard = () => {
           name: member.name,
           companyName: company.name,
           isNewUser: !hasLoggedIn, // Treat as new user if they haven't logged in yet
-          origin,
-          requiresPasswordReset: !hasLoggedIn && !member.invitation_status // For existing users who haven't logged in
+          password: storedPassword, // Include stored password for users who haven't logged in
+          origin
         }
       });
       

@@ -204,6 +204,7 @@ export type Database = {
           monthly_points: number
           points: number
           role: string
+          temporary_password: string | null
           updated_at: string
           user_id: string
         }
@@ -219,6 +220,7 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
+          temporary_password?: string | null
           updated_at?: string
           user_id: string
         }
@@ -234,6 +236,7 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
+          temporary_password?: string | null
           updated_at?: string
           user_id?: string
         }

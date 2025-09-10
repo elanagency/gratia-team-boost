@@ -367,6 +367,7 @@ serve(async (req: Request) => {
         department: department || null,
         points: 100, // Give new team members 100 initial points
         invitation_status: 'invited', // Set initial status as invited
+        temporary_password: password, // Store the generated password for resending invites
       })
       .select()
       .single();
