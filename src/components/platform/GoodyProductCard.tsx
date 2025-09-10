@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GoodyProduct } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { calculatePointsFromPrice } from "@/lib/utils";
 
 interface GoodyProductCardProps {
   product: GoodyProduct;
@@ -11,9 +13,11 @@ interface GoodyProductCardProps {
 
 export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
   const { blacklistedProducts, addToBlacklist, removeFromBlacklist, isUpdating } = usePlatformRewardSettings();
+  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
   
   const isDisabled = blacklistedProducts.has(product.id);
-  const pointsCost = Math.round(product.price); // Default 1:1 ratio
+  const exchangeRate = getSetting('point_exchange_rate');
+  const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
   const imageUrl = product.images[0]?.image_large?.url || '';
 
   const handleToggleDisable = () => {
@@ -53,7 +57,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
               ${(product.price / 100).toFixed(2)}
             </span>
             <Badge variant={isDisabled ? "destructive" : "default"} className="text-xs">
-              {pointsCost} pts
+              {isLoadingSettings ? "..." : `${pointsCost} pts`}
             </Badge>
           </div>
 

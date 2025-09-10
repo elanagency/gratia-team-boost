@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { calculatePointsFromPrice } from "@/lib/utils";
 
 interface GoodyProduct {
   id: string;
@@ -56,6 +58,7 @@ export const AddProductDialog = ({
   onAddProducts, 
   isLoading 
 }: AddProductDialogProps) => {
+  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
   const [goodyProducts, setGoodyProducts] = useState<GoodyProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [pointsMultiplier, setPointsMultiplier] = useState(1);
@@ -175,7 +178,8 @@ export const AddProductDialog = ({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {goodyProducts.map((product) => {
                   const isSelected = selectedProducts.has(product.id);
-                  const pointsCost = Math.round(product.price * pointsMultiplier);
+                  const exchangeRate = getSetting('point_exchange_rate');
+                  const pointsCost = calculatePointsFromPrice(product.price, exchangeRate, pointsMultiplier);
                   const imageUrl = product.images[0]?.image_large?.url || '';
                   
                   return (
@@ -212,7 +216,7 @@ export const AddProductDialog = ({
                                 ${(product.price / 100).toFixed(2)}
                               </span>
                               <Badge variant="secondary" className="text-xs">
-                                {pointsCost} pts
+                                {isLoadingSettings ? "..." : `${pointsCost} pts`}
                               </Badge>
                             </div>
                             {product.variants.length > 0 && (
