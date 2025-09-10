@@ -54,9 +54,6 @@ interface PaymentMethodForm {
 
 interface PlatformConfigForm {
   pointRate: string;
-  minPurchase: string;
-  maxPurchase: string;
-  defaultSlots: string;
   memberPrice: string;
 }
 
@@ -104,9 +101,6 @@ const PlatformSettings = () => {
   const configForm = useForm<PlatformConfigForm>({
     defaultValues: {
       pointRate: "",
-      minPurchase: "",
-      maxPurchase: "",
-      defaultSlots: "",
       memberPrice: "",
     },
   });
@@ -117,9 +111,6 @@ const PlatformSettings = () => {
     
     return {
       pointRate: getSetting('point_exchange_rate'),
-      minPurchase: getSetting('min_point_purchase'),
-      maxPurchase: getSetting('max_point_purchase'),
-      defaultSlots: getSetting('default_team_slots'),
       memberPrice: (parseInt(getSetting('member_monthly_price_cents') || '299') / 100).toFixed(2),
     };
   }, [settings, getSetting]);
@@ -177,9 +168,6 @@ const PlatformSettings = () => {
     
     // Update each setting
     updateSetting({ key: 'point_exchange_rate', value: data.pointRate });
-    updateSetting({ key: 'min_point_purchase', value: data.minPurchase });
-    updateSetting({ key: 'max_point_purchase', value: data.maxPurchase });
-    updateSetting({ key: 'default_team_slots', value: data.defaultSlots });
     updateSetting({ key: 'member_monthly_price_cents', value: (parseFloat(data.memberPrice) * 100).toString() });
   };
 
@@ -254,45 +242,6 @@ const PlatformSettings = () => {
                       <FormLabel>Point Exchange Rate (USD per point)</FormLabel>
                       <FormControl>
                         <Input placeholder="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={configForm.control}
-                  name="minPurchase"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Minimum Point Purchase</FormLabel>
-                      <FormControl>
-                        <Input placeholder="100" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={configForm.control}
-                  name="maxPurchase"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Point Purchase</FormLabel>
-                      <FormControl>
-                        <Input placeholder="10000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={configForm.control}
-                  name="defaultSlots"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Team Slots</FormLabel>
-                      <FormControl>
-                        <Input placeholder="5" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
