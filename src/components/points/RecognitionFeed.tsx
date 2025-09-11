@@ -95,6 +95,7 @@ export function RecognitionFeed() {
       
       if (!transactionsData?.length) {
         setTransactions([]);
+        setThreadedRecognitions([]);
         return;
       }
 
@@ -117,6 +118,7 @@ export function RecognitionFeed() {
 
       if (!filteredTransactions?.length) {
         setTransactions([]);
+        setThreadedRecognitions([]);
         return;
       }
       
