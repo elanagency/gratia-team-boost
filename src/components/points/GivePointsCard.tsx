@@ -264,66 +264,6 @@ export function GivePointsCard() {
               mentions={mentions}
               points={points}
             />
-            
-            {/* Mention Dropdown */}
-            {showMentionDropdown && filteredMembers.length > 0 && (
-              <div className="absolute z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {filteredMembers.slice(0, 5).map((member) => (
-                  <button
-                    key={member.user_id}
-                    onClick={() => selectMention(member)}
-                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
-                  >
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src="" />
-                      <AvatarFallback className="text-xs">{getInitials(member.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="text-sm font-medium">{member.name}</div>
-                      {member.department && (
-                        <div className="text-xs text-muted-foreground">{member.department}</div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Point Dropdown */}
-            {showPointDropdown && (
-              <div className="absolute z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                <div className="px-3 py-2 text-xs text-muted-foreground border-b">
-                  Quick point values (Available: {monthlyPoints})
-                </div>
-                {filteredPointValues.filter(value => value <= monthlyPoints).map((value) => (
-                  <button
-                    key={value}
-                    onClick={() => selectPoint(value)}
-                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
-                        +
-                      </span>
-                      <span className="text-sm font-medium">{value} points</span>
-                    </div>
-                  </button>
-                ))}
-                {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
-                  <button
-                    onClick={() => selectPoint(Number(pointQuery))}
-                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-t transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
-                        +
-                      </span>
-                      <span className="text-sm font-medium">{pointQuery} points (custom)</span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            )}
 
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">
@@ -354,6 +294,66 @@ export function GivePointsCard() {
               </Button>
             </div>
           </div>
+          
+          {/* Mention Dropdown - positioned below the toolbar */}
+          {showMentionDropdown && filteredMembers.length > 0 && (
+            <div className="absolute top-full left-0 z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredMembers.slice(0, 5).map((member) => (
+                <button
+                  key={member.user_id}
+                  onClick={() => selectMention(member)}
+                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-xs">{getInitials(member.name)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="text-sm font-medium">{member.name}</div>
+                    {member.department && (
+                      <div className="text-xs text-muted-foreground">{member.department}</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Point Dropdown - positioned below the toolbar */}
+          {showPointDropdown && (
+            <div className="absolute top-full left-0 z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                Quick point values (Available: {monthlyPoints})
+              </div>
+              {filteredPointValues.filter(value => value <= monthlyPoints).map((value) => (
+                <button
+                  key={value}
+                  onClick={() => selectPoint(value)}
+                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                      +
+                    </span>
+                    <span className="text-sm font-medium">{value} points</span>
+                  </div>
+                </button>
+              ))}
+              {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
+                <button
+                  onClick={() => selectPoint(Number(pointQuery))}
+                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-t transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                      +
+                    </span>
+                    <span className="text-sm font-medium">{pointQuery} points (custom)</span>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
