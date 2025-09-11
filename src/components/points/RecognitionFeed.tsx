@@ -285,16 +285,14 @@ export function RecognitionFeed() {
   const extractHashtags = (description: string) => {
     const hashtags = description.match(/#\w+/g) || [];
     
-    // Remove hashtags, mentions, and points in multiple passes for better accuracy
+    // Remove only specific tag patterns and plus indicators
     let cleanDescription = description
-      .replace(/#\w+/g, '') // Remove hashtags
-      .replace(/@\[[^\]]+\]/g, '') // Remove @[Name] patterns
-      .replace(/@\w+(\s+\w+)*/g, '') // Remove @Name patterns (without brackets)
-      .replace(/\+\[\d+\]/g, '') // Remove +[10] patterns
-      .replace(/\+\d+/g, '') // Remove +10 patterns
-      .replace(/^[A-Z][a-z]+(\s+[A-Z][a-z]+)*\s*\+\d+\s*/g, '') // Remove "Name +points " at start
-      .replace(/^[A-Z][a-z]+(\s+[A-Z][a-z]+)*\s+/g, '') // Remove standalone names at start
-      .replace(/^\s*\+\d+\s*/g, '') // Remove any remaining +points at start
+      .replace(/@\[[^\]]+\]/g, '') // Remove @[Name] mentions
+      .replace(/@\w+/g, '') // Remove @username mentions
+      .replace(/#\w+/g, '') // Remove #hashtag
+      .replace(/\+\[\d+\]/g, '') // Remove +[10] points
+      .replace(/\+\d+/g, '') // Remove +10 points
+      .replace(/\s+/g, ' ') // Clean up multiple spaces
       .trim();
     
     return { cleanDescription, hashtags };
