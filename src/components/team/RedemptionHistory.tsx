@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,28 +40,23 @@ export const RedemptionHistory = () => {
             <Card key={redemption.id} className="p-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="flex gap-4 mb-3 sm:mb-0">
-                  {redemption.reward?.image_url ? (
-                    <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0">
-                      <img 
-                        src={redemption.reward.image_url} 
-                        alt={redemption.reward.name || "Reward"} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-gray-400 text-xs">No image</span>
-                    </div>
-                  )}
+                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                    <span className="text-gray-400 text-xs">Gift</span>
+                  </div>
                   
                   <div>
-                    <h4 className="font-medium">{redemption.reward?.name || "Unknown Reward"}</h4>
+                    <h4 className="font-medium">Gift Card Redemption</h4>
                     <p className="text-sm text-gray-500">
                       Redeemed on {format(new Date(redemption.redemption_date), 'MMM d, yyyy')}
                     </p>
                     <p className="text-sm font-medium text-[#F572FF]">
                       {redemption.points_spent} points
                     </p>
+                    {redemption.goody_product_id && (
+                      <p className="text-xs text-gray-400">
+                        Product ID: {redemption.goody_product_id}
+                      </p>
+                    )}
                   </div>
                 </div>
                 
@@ -79,7 +73,7 @@ export const RedemptionHistory = () => {
         <Card className="p-8 text-center">
           <h3 className="text-lg font-medium text-gray-800">No redemption history</h3>
           <p className="text-gray-500 mt-2">
-            You haven't redeemed any rewards yet. Check out the rewards shop to get started!
+            You haven't redeemed any gift cards yet. Check out the gift card shop to get started!
           </p>
         </Card>
       )}

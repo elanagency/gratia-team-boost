@@ -14,7 +14,7 @@ export const RedeemablePointsBox = ({ className = "" }: RedeemablePointsBoxProps
   const { isAdmin } = useAuth();
 
   const handleClick = () => {
-    navigate("/dashboard/rewards");
+    navigate("/dashboard/gift-cards");
   };
 
   if (isLoading) {

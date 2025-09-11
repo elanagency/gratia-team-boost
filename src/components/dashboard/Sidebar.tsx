@@ -19,9 +19,9 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }:
     icon: LayoutDashboard,
     path: "/dashboard"
   }, {
-    name: "Rewards",
+    name: "Gift Cards",
     icon: Gift,
-    path: "/dashboard/rewards"
+    path: "/dashboard/gift-cards"
   }, {
     name: "Settings",
     icon: Settings,
@@ -34,9 +34,9 @@ export const Sidebar = ({ user, firstName, lastName, handleLogout, isTeamView }:
     icon: LayoutDashboard,
     path: "/dashboard-team"
   }, {
-    name: "Rewards Shop",
+    name: "Gift Card Shop",
     icon: Gift,
-    path: "/dashboard-team/rewards"
+    path: "/dashboard-team/gift-cards"
   }];
   
   // Select which menu items to display based on isTeamView

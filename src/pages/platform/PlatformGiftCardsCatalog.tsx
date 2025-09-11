@@ -48,10 +48,10 @@ const PlatformGiftCardsCatalog = () => {
             variant="outline"
             size="sm"
             onClick={refreshCatalog}
-            disabled={syncStatus === 'syncing'}
+            disabled={syncStatus?.count !== undefined && syncStatus.count > 0}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            {syncStatus === 'syncing' ? 'Syncing...' : 'Refresh Catalog'}
+            <RefreshCw className={`h-4 w-4 mr-2 ${typeof syncStatus === 'object' && syncStatus ? 'animate-spin' : ''}`} />
+            {typeof syncStatus === 'object' && syncStatus ? 'Syncing...' : 'Refresh Catalog'}
           </Button>
           <SyncGiftCardsDialog />
         </div>
@@ -127,8 +127,6 @@ const PlatformGiftCardsCatalog = () => {
               <GoodyProductCard
                 key={product.id}
                 product={product}
-                isEnabled={!blacklistedProducts.has(product.id)}
-                onToggle={() => {}}
               />
             ))
           ) : (

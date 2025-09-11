@@ -30,13 +30,12 @@ const GiftCardsCatalog = () => {
                 name: reward.name,
                 price: reward.price,
                 brand: { id: "1", name: reward.brand_name, shipping_price: 0 },
-                images: [{ image_large: { url: reward.image_url, width: 300, height: 300 } }],
+                images: [{ id: "1", image_large: { url: reward.image_url, width: 300, height: 300 } }],
                 variants: [],
-                subtitle: reward.description
+                subtitle: reward.description,
+                recipient_description: reward.description,
+                price_is_variable: false
               }}
-              isEnabled={true}
-              onToggle={() => {}}
-              disabled={true}
             />
           ))}
         </div>
