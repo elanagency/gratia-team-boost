@@ -307,24 +307,38 @@ export function RecognitionFeed() {
         return match ? parseInt(match[1]) : 0;
       });
       
+      // Create a copy of the HTML for text extraction
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = messageContent;
+      
       // Filter out recipient mention and transaction points if requested
       if (filterRecipient) {
         const recipientName = transaction.recipient_name;
         const transactionPoints = transaction.points;
         
-        // Remove mentions that match the recipient name
-        mentions = mentions.filter(mention => mention !== recipientName);
+        // Remove mention elements that match the recipient name
+        tempDiv.querySelectorAll('.mention-balloon').forEach(el => {
+          if (el.textContent === recipientName) {
+            el.remove();
+          }
+        });
         
-        // Remove points that match the main transaction amount
+        // Remove point elements that match the main transaction amount
+        tempDiv.querySelectorAll('.point-balloon').forEach(el => {
+          const text = el.textContent || '';
+          const match = text.match(/\+?(\d+)/);
+          if (match && parseInt(match[1]) === transactionPoints) {
+            el.remove();
+          }
+        });
+        
+        // Update mentions and points arrays after filtering
+        mentions = mentions.filter(mention => mention !== recipientName);
         points = points.filter(point => point !== transactionPoints);
+      } else {
+        // Remove all balloon elements if not filtering
+        tempDiv.querySelectorAll('.mention-balloon, .point-balloon').forEach(el => el.remove());
       }
-      
-      // Create a copy of the HTML for text extraction
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = messageContent;
-      
-      // Remove balloon elements from the copy
-      tempDiv.querySelectorAll('.mention-balloon, .point-balloon').forEach(el => el.remove());
       
       // Get clean text from the modified HTML
       const cleanText = tempDiv.textContent || tempDiv.innerText || '';
