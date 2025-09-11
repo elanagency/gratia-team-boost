@@ -9,7 +9,6 @@ import { Loader2, Medal, Trophy, Star, Calendar } from "lucide-react";
 type LeaderboardMember = {
   userId: string;
   name: string;
-  role: string;
   points: number;
   rank: number;
 };
@@ -70,7 +69,7 @@ export function MonthlyLeaderboardCard() {
       // Fetch user profiles from profiles table (which now contains all member info)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role')
+        .select('id, first_name, last_name')
         .eq('company_id', companyId)
         .eq('is_admin', false)
         .eq('is_active', true)
@@ -96,7 +95,6 @@ export function MonthlyLeaderboardCard() {
           return {
             userId,
             name: memberName || 'No Name',
-            role: profile.role || 'Member',
             points: pointsByUser[userId] || 0,
             rank: 0 // Will be set after sorting
           };
@@ -152,29 +150,27 @@ export function MonthlyLeaderboardCard() {
         ) : leaderboard.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs sm:text-sm">Rank</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                  <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Role</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">Points</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leaderboard.map((member) => (
-                  <TableRow key={member.userId}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        {getRankIcon(member.rank)}
-                        <span className="text-xs sm:text-sm">{member.rank}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{member.name}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{member.role}</TableCell>
-                    <TableCell className="text-right font-semibold text-xs sm:text-sm text-[#F572FF]">{member.points}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead className="text-xs sm:text-sm">Rank</TableHead>
+                   <TableHead className="text-xs sm:text-sm">Name</TableHead>
+                   <TableHead className="text-right text-xs sm:text-sm">Points</TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {leaderboard.map((member) => (
+                   <TableRow key={member.userId}>
+                     <TableCell className="font-medium">
+                       <div className="flex items-center gap-1 sm:gap-2">
+                         {getRankIcon(member.rank)}
+                         <span className="text-xs sm:text-sm">{member.rank}</span>
+                       </div>
+                     </TableCell>
+                     <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{member.name}</TableCell>
+                     <TableCell className="text-right font-semibold text-xs sm:text-sm text-[#F572FF]">{member.points}</TableCell>
+                   </TableRow>
+                 ))}
+               </TableBody>
             </Table>
           </div>
         ) : (
