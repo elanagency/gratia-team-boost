@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +8,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Upload, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Papa from "papaparse";
@@ -39,12 +48,51 @@ type DialogStep = 'upload' | 'preview' | 'processing';
 export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const { user, companyId } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
   const [currentStep, setCurrentStep] = useState<DialogStep>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [parsedMembers, setParsedMembers] = useState<CSVMember[]>([]);
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
+
+  // Check subscription status when component loads
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (!companyId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('stripe_subscription_id, subscription_status')
+          .eq('id', companyId)
+          .single();
+        
+        if (error) {
+          console.error('Error checking subscription status:', error);
+          setHasActiveSubscription(false);
+          return;
+        }
+        
+        const isActive = data?.stripe_subscription_id && data?.subscription_status === 'active';
+        setHasActiveSubscription(isActive);
+      } catch (error) {
+        console.error('Error checking subscription status:', error);
+        setHasActiveSubscription(false);
+      }
+    };
+    
+    checkSubscriptionStatus();
+  }, [companyId]);
+
+  const handleCSVUploadClick = () => {
+    if (hasActiveSubscription === false) {
+      setShowSubscriptionAlert(true);
+    } else {
+      setIsOpen(true);
+    }
+  };
 
   const downloadSampleCSV = useCallback(() => {
     const sampleData = [
@@ -240,16 +288,46 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
     setParsedMembers([]);
   }, []);
 
-  // No longer need loading state since auth is available immediately
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Upload className="h-4 w-4" />
-          Upload CSV
-        </Button>
-      </DialogTrigger>
+    <>
+      {/* Subscription Alert Dialog */}
+      <AlertDialog open={showSubscriptionAlert} onOpenChange={setShowSubscriptionAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Subscription Required
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Bulk CSV upload is only available for companies with an active subscription.
+              </p>
+              <p>
+                To get started, please add your first team member individually. This will begin your subscription setup, and once complete, you'll be able to use the bulk upload feature.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowSubscriptionAlert(false)}>
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* CSV Upload Dialog */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={handleCSVUploadClick}
+            disabled={hasActiveSubscription === null}
+          >
+            <Upload className="h-4 w-4" />
+            Upload CSV
+          </Button>
+        </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[80vh]">
         <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -308,5 +386,6 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           </div>
         </DialogContent>
       </Dialog>
-    );
-  };
+    </>
+  );
+};
