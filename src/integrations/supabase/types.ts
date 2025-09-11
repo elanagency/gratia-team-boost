@@ -128,59 +128,6 @@ export type Database = {
         }
         Relationships: []
       }
-      company_point_transactions: {
-        Row: {
-          amount: number
-          company_id: string
-          created_at: string
-          created_by: string
-          description: string
-          id: string
-          payment_status: string | null
-          stripe_fee: number | null
-          stripe_payment_intent_id: string | null
-          stripe_session_id: string | null
-          total_amount: number | null
-          transaction_type: string
-        }
-        Insert: {
-          amount: number
-          company_id: string
-          created_at?: string
-          created_by: string
-          description: string
-          id?: string
-          payment_status?: string | null
-          stripe_fee?: number | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
-          total_amount?: number | null
-          transaction_type: string
-        }
-        Update: {
-          amount?: number
-          company_id?: string
-          created_at?: string
-          created_by?: string
-          description?: string
-          id?: string
-          payment_status?: string | null
-          stripe_fee?: number | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
-          total_amount?: number | null
-          transaction_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_point_transactions_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       goody_gift_cards: {
         Row: {
           brand_name: string
