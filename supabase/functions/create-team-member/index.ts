@@ -126,10 +126,10 @@ serve(async (req: Request) => {
       }
     );
     
-    // Get company info and check current team member count
+    // Get company info
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
-      .select('subscription_status, stripe_subscription_id, stripe_customer_id, name, team_slots')
+      .select('subscription_status, stripe_subscription_id, stripe_customer_id, name')
       .eq('id', companyId)
       .single();
 
@@ -144,41 +144,19 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get current team member count (non-admin members)
-    const { data: currentMembers, error: membersError } = await supabaseAdmin
-      .rpc('get_used_team_slots', { company_id: companyId });
-
-    if (membersError) {
-      console.error("[CREATE-TEAM-MEMBER] Error getting current team members:", membersError);
-      return new Response(
-        JSON.stringify({ error: "Failed to check current team members" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const currentMemberCount = currentMembers || 0;
+    // Check if company has active subscription (simplified logic)
     const hasActiveSubscription = company.subscription_status === 'active' && company.stripe_subscription_id;
-    const hasAvailableSlots = company.team_slots > currentMemberCount;
-    const needsSubscription = !hasActiveSubscription || !hasAvailableSlots;
 
-    console.log("[CREATE-TEAM-MEMBER] Team member check:", {
-      currentMemberCount,
-      teamSlots: company.team_slots,
+    console.log("[CREATE-TEAM-MEMBER] Company check:", {
       subscriptionStatus: company.subscription_status,
       hasActiveSubscription,
-      hasAvailableSlots,
-      needsSubscription,
       stripeCustomerId: company.stripe_customer_id,
       stripeSubscriptionId: company.stripe_subscription_id
     });
 
-    // Check if we need to handle subscription setup
-    if (needsSubscription) {
-      const reason = !hasActiveSubscription ? "No active subscription" : "No available team slots";
-      console.log("[CREATE-TEAM-MEMBER] Subscription setup needed:", reason);
+    // For now, only check for active subscription, not team slots
+    if (!hasActiveSubscription) {
+      console.log("[CREATE-TEAM-MEMBER] No active subscription found");
       
       if (authHeader) {
         try {
@@ -194,7 +172,6 @@ serve(async (req: Request) => {
             },
             body: JSON.stringify({ 
               companyId,
-              teamSlots: 1, // Start with 1 for usage-based billing
               memberData,
               origin
             })
@@ -208,9 +185,7 @@ serve(async (req: Request) => {
               JSON.stringify({
                 needsBillingSetup: true,
                 checkoutUrl: checkoutData?.url,
-                message: hasActiveSubscription ? 
-                  "Need to purchase additional team slots" : 
-                  "Setting up your subscription to add team members"
+                message: "Setting up your subscription to add team members"
               }),
               {
                 status: 200,
@@ -224,9 +199,7 @@ serve(async (req: Request) => {
           console.error("[CREATE-TEAM-MEMBER] Failed to create subscription checkout:", checkoutErr);
           return new Response(
             JSON.stringify({ 
-              error: hasActiveSubscription ? 
-                "Failed to purchase additional team slots. Please try again." :
-                "Failed to setup subscription. Please try again.",
+              error: "Failed to setup subscription. Please try again.",
               needsBillingSetup: true 
             }),
             {
@@ -236,20 +209,6 @@ serve(async (req: Request) => {
           );
         }
       }
-    }
-    
-    // Double-check: if we reach here, ensure we actually have available slots
-    if (!hasAvailableSlots && hasActiveSubscription) {
-      return new Response(
-        JSON.stringify({ 
-          error: `No available team slots. Current usage: ${currentMemberCount}/${company.team_slots}. Please purchase additional slots.`,
-          needsBillingSetup: true 
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     }
     
     // Continue with normal member creation (slots are available)
@@ -330,18 +289,19 @@ serve(async (req: Request) => {
     }
     
     // Check if user is already a member of this company
-    const { data: existingMembership, error: membershipCheckError } = await supabaseAdmin
-      .from("company_members")
+    const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+      .from("profiles")
       .select("*")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .eq("company_id", companyId)
+      .eq("is_active", true)
       .maybeSingle();
     
-    if (membershipCheckError) {
-      console.error("[CREATE-TEAM-MEMBER] Error checking existing membership:", membershipCheckError);
+    if (profileCheckError) {
+      console.error("[CREATE-TEAM-MEMBER] Error checking existing profile:", profileCheckError);
     }
     
-    if (existingMembership) {
+    if (existingProfile) {
       console.log("[CREATE-TEAM-MEMBER] User is already a member of this company");
       return new Response(
         JSON.stringify({
@@ -356,24 +316,31 @@ serve(async (req: Request) => {
       );
     }
     
-    // Add user as a NON-ADMIN member of the company with 100 initial points
-    const { data: membership, error: membershipError } = await supabaseAdmin
-      .from("company_members")
-      .insert({
+    // Parse name into first and last name for profile
+    const { firstName, lastName } = parseFullName(name);
+    
+    // Add user profile or update existing profile to add to company
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .upsert({
+        id: userId,
+        first_name: firstName,
+        last_name: lastName,
         company_id: companyId,
-        user_id: userId,
         is_admin: false,
         role: role.toLowerCase(),
         department: department || null,
         points: 0, // New team members start with 0 points, get monthly allocation on first login
+        monthly_points: 100, // Give initial monthly points
         invitation_status: 'invited', // Set initial status as invited
         temporary_password: password, // Store the generated password for resending invites
+        is_active: true,
       })
       .select()
       .single();
     
-    if (membershipError) {
-      console.error("[CREATE-TEAM-MEMBER] Error adding user to company:", membershipError);
+    if (profileError) {
+      console.error("[CREATE-TEAM-MEMBER] Error adding user profile:", profileError);
       return new Response(
         JSON.stringify({ error: "Failed to add user to company" }),
         {
@@ -408,17 +375,20 @@ serve(async (req: Request) => {
       }
     }
     
-    // Get updated member count
-    const { data: newMemberCount } = await supabaseAdmin
-      .rpc('get_used_team_slots', { company_id: companyId });
+    // Get updated member count using direct query
+    const { count: memberCount } = await supabaseAdmin
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('is_active', true);
 
-    const finalMemberCount = newMemberCount || (currentMemberCount + 1);
+    const finalMemberCount = memberCount || 0;
     
     // Return success response
     const response = {
       message: "Team member added successfully",
       userId,
-      membership,
+      profile,
       isNewUser,
       memberCount: finalMemberCount,
       needsBillingSetup: false,
