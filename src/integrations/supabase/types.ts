@@ -477,6 +477,14 @@ export type Database = {
         Args: { company_id: string; profile_id: string }
         Returns: boolean
       }
+      check_user_is_company_admin_bypass_rls: {
+        Args: { company_id: string; user_id: string }
+        Returns: boolean
+      }
+      check_user_is_team_member_bypass_rls: {
+        Args: { company_id: string; user_id: string }
+        Returns: boolean
+      }
       get_company_member_count: {
         Args: { company_id: string }
         Returns: number
