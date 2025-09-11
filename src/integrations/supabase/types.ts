@@ -481,6 +481,10 @@ export type Database = {
         Args: { setting_key: string }
         Returns: string
       }
+      get_user_platform_admin_status: {
+        Args: { user_id?: string }
+        Returns: boolean
+      }
       is_company_admin: {
         Args: { company_id: string }
         Returns: boolean
