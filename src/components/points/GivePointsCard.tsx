@@ -21,6 +21,7 @@ export function GivePointsCard() {
   const [showPointDropdown, setShowPointDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [pointQuery, setPointQuery] = useState("");
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -59,10 +60,14 @@ export function GivePointsCard() {
     setPoints(newPoints);
   };
 
-  const handleMentionTrigger = (query: string, position: number) => {
+  const handleMentionTrigger = (query: string, position: number, cursorX?: number, cursorY?: number) => {
     if (query === '' && position === -1) {
       setShowMentionDropdown(false);
       return;
+    }
+    
+    if (cursorX !== undefined && cursorY !== undefined) {
+      setCursorPosition({ x: cursorX, y: cursorY });
     }
     
     setMentionQuery(query);
@@ -70,10 +75,14 @@ export function GivePointsCard() {
     setShowPointDropdown(false);
   };
 
-  const handlePointTrigger = (query: string, position: number) => {
+  const handlePointTrigger = (query: string, position: number, cursorX?: number, cursorY?: number) => {
     if (query === '' && position === -1) {
       setShowPointDropdown(false);
       return;
+    }
+    
+    if (cursorX !== undefined && cursorY !== undefined) {
+      setCursorPosition({ x: cursorX, y: cursorY });
     }
     
     setPointQuery(query);
@@ -295,9 +304,15 @@ export function GivePointsCard() {
             </div>
           </div>
           
-          {/* Mention Dropdown - positioned below the toolbar */}
+          {/* Mention Dropdown - positioned below cursor */}
           {showMentionDropdown && filteredMembers.length > 0 && (
-            <div className="absolute top-full left-0 z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            <div 
+              className="absolute z-[60] w-64 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+              style={{
+                left: `${cursorPosition.x}px`,
+                top: `${cursorPosition.y + 4}px`
+              }}
+            >
               {filteredMembers.slice(0, 5).map((member) => (
                 <button
                   key={member.user_id}
@@ -319,9 +334,15 @@ export function GivePointsCard() {
             </div>
           )}
 
-          {/* Point Dropdown - positioned below the toolbar */}
+          {/* Point Dropdown - positioned below cursor */}
           {showPointDropdown && (
-            <div className="absolute top-full left-0 z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            <div 
+              className="absolute z-[60] w-64 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+              style={{
+                left: `${cursorPosition.x}px`,
+                top: `${cursorPosition.y + 4}px`
+              }}
+            >
               <div className="px-3 py-2 text-xs text-muted-foreground border-b">
                 Quick point values (Available: {monthlyPoints})
               </div>
