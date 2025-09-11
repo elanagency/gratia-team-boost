@@ -152,6 +152,7 @@ export function RecognitionFeed() {
         recipient_id: transaction.recipient_profile_id,
         points: transaction.points,
         description: transaction.description,
+        structured_message: transaction.structured_message,
         created_at: transaction.created_at,
         sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
         recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
