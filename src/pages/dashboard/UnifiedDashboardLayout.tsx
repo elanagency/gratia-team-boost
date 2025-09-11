@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
+import { usePlatformAuth } from "@/hooks/usePlatformAuth";
 import { DashboardTopNavigation } from "@/components/dashboard/DashboardTopNavigation";
 
 const UnifiedDashboardLayout = () => {
@@ -15,6 +16,8 @@ const UnifiedDashboardLayout = () => {
     isAdmin
   } = useAuth();
   
+  const { isPlatformAdmin, isPlatformAdminLoading } = usePlatformAuth();
+  
   useEffect(() => {
     if (user) {
       console.log("UnifiedDashboardLayout - User authenticated:", user.email);
@@ -23,8 +26,8 @@ const UnifiedDashboardLayout = () => {
     }
   }, [user, isAdmin, isAdminLoading]);
   
-  // Show loading spinner if either main loading or admin status is loading
-  if (isLoading || isAdminLoading) {
+  // Show loading spinner if either main loading, admin status, or platform admin status is loading
+  if (isLoading || isAdminLoading || isPlatformAdminLoading) {
     return <LoadingSpinner />;
   }
   
@@ -32,6 +35,12 @@ const UnifiedDashboardLayout = () => {
   if (!user) {
     console.log("No user found, redirecting to login");
     return <Navigate to="/login" replace />;
+  }
+  
+  // If user is platform admin, redirect to platform admin dashboard
+  if (isPlatformAdmin) {
+    console.log("Platform admin detected, redirecting to platform admin dashboard");
+    return <Navigate to="/platform-admin" replace />;
   }
   
   return (
