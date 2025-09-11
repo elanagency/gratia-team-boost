@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useMonthlySpending } from "@/hooks/useMonthlySpending";
+import { useUserPoints } from "@/hooks/useUserPoints";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { TeamMember } from "@/hooks/useTeamMembers";
@@ -34,7 +34,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
   
   const { user, companyId, isAdmin } = useAuth();
-  const { monthlySpent, monthlyLimit, monthlyRemaining } = useMonthlySpending();
+  const { monthlyPoints } = useUserPoints();
   const queryClient = useQueryClient();
 
   // Fetch team members when dialog opens
@@ -51,10 +51,10 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     }
   }, [open, companyId]);
 
-  // Check spending limits when points change
+  // Check if user has enough monthly points
   useEffect(() => {
-    setShowInsufficientPoints(points > monthlyRemaining);
-  }, [points, monthlyRemaining]);
+    setShowInsufficientPoints(points > monthlyPoints);
+  }, [points, monthlyPoints]);
 
   // Filter members based on search query
   useEffect(() => {
@@ -135,8 +135,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       return;
     }
 
-    // Check monthly limit for all users
-    if (points > monthlyRemaining) {
+    // Check if user has enough monthly points
+    if (points > monthlyPoints) {
       setShowInsufficientPoints(true);
       return;
     }
@@ -160,7 +160,6 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       toast.success(`Successfully gave ${points} points to ${selectedMember.name}`);
       
       // Invalidate relevant queries to refresh the data
-      await queryClient.invalidateQueries({ queryKey: ['monthlySpending'] });
       await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
       
       setOpen(false);
@@ -172,8 +171,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     }
   };
 
-  const availablePoints = monthlyRemaining;
-  const balanceLabel = "Monthly Points to Give";
+  const availablePoints = monthlyPoints;
+  const balanceLabel = "Available Points to Give";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -197,11 +196,6 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
             <span className="text-sm font-medium">{balanceLabel}:</span>
             <span className="font-semibold">{availablePoints} points</span>
           </div>
-          {monthlyLimit > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
-              Used this month: {monthlySpent} / {monthlyLimit} points
-            </div>
-          )}
         </div>
         
         {showInsufficientPoints && (
@@ -209,10 +203,10 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-600">
-                Monthly limit exceeded
+                Insufficient points
               </p>
               <p className="text-xs text-red-500">
-                You can only give {monthlyRemaining} more points this month. Your monthly limit is {monthlyLimit} points.
+                You only have {monthlyPoints} points available to give this month.
               </p>
             </div>
           </div>

@@ -76,7 +76,6 @@ export type Database = {
           stripe_customer_id_test: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
-          team_member_monthly_limit: number | null
           trial_ends_at: string | null
           trial_mode: boolean | null
           updated_at: string
@@ -98,7 +97,6 @@ export type Database = {
           stripe_customer_id_test?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
-          team_member_monthly_limit?: number | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null
           updated_at?: string
@@ -120,7 +118,6 @@ export type Database = {
           stripe_customer_id_test?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
-          team_member_monthly_limit?: number | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null
           updated_at?: string
@@ -173,36 +170,6 @@ export type Database = {
           product_data?: Json | null
           subtitle?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      member_monthly_spending: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          month_year: string
-          points_spent: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          month_year: string
-          points_spent?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          month_year?: string
-          points_spent?: number
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -498,10 +465,6 @@ export type Database = {
         }
         Returns: number
       }
-      can_user_spend_points: {
-        Args: { company_id: string; points_to_spend: number; user_id: string }
-        Returns: boolean
-      }
       check_company_membership: {
         Args: { company_id: string; profile_id: string }
         Returns: boolean
@@ -517,10 +480,6 @@ export type Database = {
       get_platform_setting: {
         Args: { setting_key: string }
         Returns: string
-      }
-      get_user_monthly_spending: {
-        Args: { company_id: string; user_id: string }
-        Returns: number
       }
       is_company_admin: {
         Args: { company_id: string }
