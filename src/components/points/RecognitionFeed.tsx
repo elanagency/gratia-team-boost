@@ -306,23 +306,30 @@ export function RecognitionFeed() {
         return match ? parseInt(match[1]) : 0;
       });
       
-      // Get clean text by removing all balloon elements and normalizing
-      const textContent = doc.body.textContent || '';
-      const cleanText = textContent
+      // Create a copy of the HTML for text extraction
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = messageContent;
+      
+      // Remove balloon elements from the copy
+      tempDiv.querySelectorAll('.mention-balloon, .point-balloon').forEach(el => el.remove());
+      
+      // Get clean text from the modified HTML
+      const cleanText = tempDiv.textContent || tempDiv.innerText || '';
+      const finalCleanText = cleanText
         .replace(/\s+/g, ' ')
         .trim();
       
       // Extract hashtags from clean text
-      const hashtagMatches = cleanText.match(/#\w+/g) || [];
+      const hashtagMatches = finalCleanText.match(/#\w+/g) || [];
       const hashtags = hashtagMatches.map(tag => tag.substring(1));
       
       // Remove hashtags from clean text for final display
-      const finalCleanText = cleanText
+      const textWithoutHashtags = finalCleanText
         .replace(/#\w+/g, '')
         .replace(/\s+/g, ' ')
         .trim();
       
-      return { hashtags, cleanText: finalCleanText, mentions, points };
+      return { hashtags, cleanText: textWithoutHashtags, mentions, points };
     }
     
     // Fallback: treat as plain text and use original extraction logic
@@ -477,34 +484,26 @@ export function RecognitionFeed() {
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
-                       <div className="text-sm text-muted-foreground">
-                         {(() => {
-                           const parsed = parseStructuredMessage(thread.mainPost);
-                           return (
-                             <div>
-                               {parsed.mentions.length > 0 && (
-                                 <div className="flex flex-wrap gap-1 mb-1">
-                                   {parsed.mentions.map((mention, idx) => (
-                                     <span key={idx} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
-                                       @{mention}
-                                     </span>
-                                   ))}
-                                 </div>
-                               )}
-                               <span>{parsed.cleanText}</span>
-                               {parsed.points.length > 0 && (
-                                 <div className="flex flex-wrap gap-1 mt-1">
-                                   {parsed.points.map((point, idx) => (
-                                     <span key={idx} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                       +{point}
-                                     </span>
-                                   ))}
-                                 </div>
-                               )}
-                             </div>
-                           );
-                         })()}
-                       </div>
+                        <div className="text-sm text-muted-foreground">
+                          {(() => {
+                            const parsed = parseStructuredMessage(thread.mainPost);
+                            return (
+                              <div className="flex flex-wrap items-center gap-1">
+                                {parsed.mentions.map((mention, idx) => (
+                                  <span key={`mention-${idx}`} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
+                                    @{mention}
+                                  </span>
+                                ))}
+                                {parsed.cleanText && <span className="text-sm">{parsed.cleanText}</span>}
+                                {parsed.points.map((point, idx) => (
+                                  <span key={`point-${idx}`} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                    +{point}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </div>
                        
                        {(() => {
                          const parsed = parseStructuredMessage(thread.mainPost);
