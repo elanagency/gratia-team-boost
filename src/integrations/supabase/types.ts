@@ -66,10 +66,10 @@ export type Database = {
           company_id: string
           created_at: string
           external_cart_id: string | null
+          goody_product_id_ref: string | null
           id: string
           product_id: string
           quantity: number
-          reward_id: string
           status: string
           updated_at: string
           user_id: string
@@ -80,10 +80,10 @@ export type Database = {
           company_id: string
           created_at?: string
           external_cart_id?: string | null
+          goody_product_id_ref?: string | null
           id?: string
           product_id: string
           quantity?: number
-          reward_id: string
           status?: string
           updated_at?: string
           user_id: string
@@ -94,10 +94,10 @@ export type Database = {
           company_id?: string
           created_at?: string
           external_cart_id?: string | null
+          goody_product_id_ref?: string | null
           id?: string
           product_id?: string
           quantity?: number
-          reward_id?: string
           status?: string
           updated_at?: string
           user_id?: string
@@ -108,13 +108,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_carts_reward_id"
-            columns: ["reward_id"]
-            isOneToOne: false
-            referencedRelation: "rewards"
             referencedColumns: ["id"]
           },
         ]
@@ -549,73 +542,14 @@ export type Database = {
           },
         ]
       }
-      reward_categories: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reward_categories_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reward_category_mappings: {
-        Row: {
-          category_id: string
-          reward_id: string
-        }
-        Insert: {
-          category_id: string
-          reward_id: string
-        }
-        Update: {
-          category_id?: string
-          reward_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reward_category_mappings_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "reward_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reward_category_mappings_reward_id_fkey"
-            columns: ["reward_id"]
-            isOneToOne: false
-            referencedRelation: "rewards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       reward_redemptions: {
         Row: {
           external_cart_id: string | null
           external_order_id: string | null
+          goody_product_id: string | null
           id: string
           points_spent: number
           redemption_date: string
-          reward_id: string
           shipping_address: Json | null
           status: string
           updated_at: string
@@ -624,10 +558,10 @@ export type Database = {
         Insert: {
           external_cart_id?: string | null
           external_order_id?: string | null
+          goody_product_id?: string | null
           id?: string
           points_spent: number
           redemption_date?: string
-          reward_id: string
           shipping_address?: Json | null
           status?: string
           updated_at?: string
@@ -636,77 +570,16 @@ export type Database = {
         Update: {
           external_cart_id?: string | null
           external_order_id?: string | null
+          goody_product_id?: string | null
           id?: string
           points_spent?: number
           redemption_date?: string
-          reward_id?: string
           shipping_address?: Json | null
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "reward_redemptions_reward_id_fkey"
-            columns: ["reward_id"]
-            isOneToOne: false
-            referencedRelation: "rewards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rewards: {
-        Row: {
-          company_id: string | null
-          created_at: string
-          description: string | null
-          external_id: string | null
-          id: string
-          image_url: string | null
-          is_global: boolean
-          name: string
-          points_cost: number
-          product_url: string | null
-          stock: number | null
-          updated_at: string
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string
-          description?: string | null
-          external_id?: string | null
-          id?: string
-          image_url?: string | null
-          is_global?: boolean
-          name: string
-          points_cost: number
-          product_url?: string | null
-          stock?: number | null
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string
-          description?: string | null
-          external_id?: string | null
-          id?: string
-          image_url?: string | null
-          is_global?: boolean
-          name?: string
-          points_cost?: number
-          product_url?: string | null
-          stock?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rewards_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       subscription_events: {
         Row: {

@@ -14,18 +14,18 @@ import UnifiedDashboardLayout from "./pages/dashboard/UnifiedDashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
 
-import RewardsCatalog from "./pages/admin/RewardsCatalog";
+import GiftCardsCatalog from "./pages/admin/GiftCardsCatalog";
 
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 
-import RewardShop from "./pages/team/RewardShop";
+import GiftCardShop from "./pages/team/GiftCardShop";
 
 // Import Platform Admin components
 import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import CompaniesManagement from "./pages/platform/CompaniesManagement";
-import PlatformRewardsCatalog from "./pages/platform/PlatformRewardsCatalog";
+import PlatformGiftCardsCatalog from "./pages/platform/PlatformGiftCardsCatalog";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
 import SubscriptionMigration from "./pages/platform/SubscriptionMigration";
@@ -81,7 +81,7 @@ const App = () => (
               <Route path="/platform-admin" element={<PlatformAdminLayout />}>
                 <Route index element={<PlatformDashboard />} />
                 <Route path="companies" element={<CompaniesManagement />} />
-                <Route path="rewards" element={<PlatformRewardsCatalog />} />
+                <Route path="gift-cards" element={<PlatformGiftCardsCatalog />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
                 <Route path="migration" element={<SubscriptionMigration />} />
@@ -91,7 +91,7 @@ const App = () => (
               <Route path="/dashboard" element={<UnifiedDashboardLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="team" element={<TeamManagement />} />
-                <Route path="rewards" element={<RewardShop />} />
+                <Route path="gift-cards" element={<GiftCardShop />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />

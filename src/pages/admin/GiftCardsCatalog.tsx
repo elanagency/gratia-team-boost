@@ -1,10 +1,10 @@
 
 import React from "react";
 import { Card } from "@/components/ui/card";
-import RewardCard from "@/components/rewards/RewardCard";
+import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { useAdminRewardCatalog } from "@/hooks/useAdminRewardCatalog";
 
-const RewardsCatalog = () => {
+const GiftCardsCatalog = () => {
   const { rewards, isLoadingRewards } = useAdminRewardCatalog();
 
   return (
@@ -23,10 +23,20 @@ const RewardsCatalog = () => {
       ) : rewards.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rewards.map((reward) => (
-            <RewardCard 
+            <GoodyProductCard 
               key={reward.id} 
-              reward={reward}
-              // No onDelete prop - read-only for company admins
+              product={{
+                id: reward.external_id,
+                name: reward.name,
+                price: reward.price,
+                brand: { id: "1", name: reward.brand_name, shipping_price: 0 },
+                images: [{ image_large: { url: reward.image_url, width: 300, height: 300 } }],
+                variants: [],
+                subtitle: reward.description
+              }}
+              isEnabled={true}
+              onToggle={() => {}}
+              disabled={true}
             />
           ))}
         </div>
@@ -42,4 +52,4 @@ const RewardsCatalog = () => {
   );
 };
 
-export default RewardsCatalog;
+export default GiftCardsCatalog;
