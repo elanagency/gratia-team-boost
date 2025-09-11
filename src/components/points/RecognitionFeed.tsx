@@ -426,7 +426,7 @@ export function RecognitionFeed() {
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
-                      <div className="text-sm text-muted-foreground">{formatMessageWithBoldNames(cleanDescription)}</div>
+                      <div className="text-sm text-muted-foreground">{cleanDescription}</div>
                       
                       {hashtags.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
