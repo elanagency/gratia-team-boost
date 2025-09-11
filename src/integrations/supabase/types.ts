@@ -59,59 +59,6 @@ export type Database = {
         }
         Relationships: []
       }
-      carts: {
-        Row: {
-          buyer_identity: Json
-          cart_cost: Json | null
-          company_id: string
-          created_at: string
-          external_cart_id: string | null
-          goody_product_id_ref: string | null
-          id: string
-          product_id: string
-          quantity: number
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          buyer_identity: Json
-          cart_cost?: Json | null
-          company_id: string
-          created_at?: string
-          external_cart_id?: string | null
-          goody_product_id_ref?: string | null
-          id?: string
-          product_id: string
-          quantity?: number
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          buyer_identity?: Json
-          cart_cost?: Json | null
-          company_id?: string
-          created_at?: string
-          external_cart_id?: string | null
-          goody_product_id_ref?: string | null
-          id?: string
-          product_id?: string
-          quantity?: number
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_carts_company_id"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       companies: {
         Row: {
           address: string | null
