@@ -290,66 +290,18 @@ export function RecognitionFeed() {
     
     if (!messageContent) return { hashtags: [], cleanText: "", mentions: [], points: [] };
     
-    // If it's HTML (structured message), parse it with regex
-    if (messageContent.includes('<span class="mention-balloon">') || messageContent.includes('<span class="point-balloon">')) {
-      // Extract mentions using regex
-      const mentionMatches = messageContent.match(/<span class="mention-balloon"[^>]*>([^<]+)<\/span>/g) || [];
-      let mentions = mentionMatches.map(match => {
-        const textMatch = match.match(/>([^<]+)</);
-        return textMatch ? textMatch[1] : '';
-      }).filter(Boolean);
-      
-      // Extract points using regex
-      const pointMatches = messageContent.match(/<span class="point-balloon"[^>]*data-point-value="(\d+)"[^>]*>/g) || [];
-      let points = pointMatches.map(match => {
-        const valueMatch = match.match(/data-point-value="(\d+)"/);
-        return valueMatch ? parseInt(valueMatch[1]) : 0;
-      });
-      
-      // Strip all HTML spans to get clean text
-      let cleanText = messageContent.replace(/<span[^>]*>([^<]*)<\/span>/g, '').trim();
-      
-      // Filter out recipient mention and transaction points if requested
-      if (filterRecipient) {
-        const recipientName = transaction.recipient_name;
-        const transactionPoints = transaction.points;
-        
-        // Filter out mentions that match the recipient name
-        mentions = mentions.filter(mention => mention !== recipientName);
-        
-        // Filter out points that match the main transaction amount
-        points = points.filter(point => point !== transactionPoints);
-      }
-      
-      const finalCleanText = cleanText
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      // Extract hashtags from clean text
-      const hashtagMatches = finalCleanText.match(/#\w+/g) || [];
-      const hashtags = hashtagMatches.map(tag => tag.substring(1));
-      
-      // Remove hashtags from clean text for final display
-      const textWithoutHashtags = finalCleanText
-        .replace(/#\w+/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      return { hashtags, cleanText: textWithoutHashtags, mentions, points };
-    }
-    
-    // Fallback: treat as plain text and use original extraction logic
-    const hashtags = messageContent.match(/#\w+/g) || [];
     const cleanText = messageContent
-      .replace(/@\[[^\]]+\]/g, '')
-      .replace(/@\w+/g, '')
-      .replace(/#\w+/g, '')
-      .replace(/\+\[\d+\]/g, '')
-      .replace(/\+\d+/g, '')
+      // Remove mention balloons
+      .replace(/<span class="mention-balloon"[^>]*>([^<]*)<\/span>/g, '')
+      // Remove point balloons  
+      .replace(/<span class="point-balloon"[^>]*>[^<]*<\/span>/g, '')
+      // Remove any other HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Clean up whitespace
       .replace(/\s+/g, ' ')
       .trim();
-    
-    return { hashtags: hashtags.map(tag => tag.substring(1)), cleanText, mentions: [], points: [] };
+
+    return { hashtags: [], cleanText, mentions: [], points: [] };
   };
 
   const formatMessageWithBoldNames = (description: string) => {
