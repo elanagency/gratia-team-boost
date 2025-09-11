@@ -283,7 +283,7 @@ export function RecognitionFeed() {
       .slice(0, 2);
   };
 
-  const parseStructuredMessage = (transaction: PointTransaction) => {
+  const parseStructuredMessage = (transaction: PointTransaction, filterRecipient = false) => {
     // Use structured_message if available, fallback to description
     const messageContent = transaction.structured_message || transaction.description;
     
@@ -296,15 +296,27 @@ export function RecognitionFeed() {
       
       // Extract mentions
       const mentionElements = doc.querySelectorAll('.mention-balloon');
-      const mentions = Array.from(mentionElements).map(el => el.textContent || '');
+      let mentions = Array.from(mentionElements).map(el => el.textContent?.replace('@', '') || '');
       
       // Extract points
       const pointElements = doc.querySelectorAll('.point-balloon');
-      const points = Array.from(pointElements).map(el => {
+      let points = Array.from(pointElements).map(el => {
         const text = el.textContent || '';
         const match = text.match(/\+?(\d+)/);
         return match ? parseInt(match[1]) : 0;
       });
+      
+      // Filter out recipient mention and transaction points if requested
+      if (filterRecipient) {
+        const recipientName = transaction.recipient_name;
+        const transactionPoints = transaction.points;
+        
+        // Remove mentions that match the recipient name
+        mentions = mentions.filter(mention => mention !== recipientName);
+        
+        // Remove points that match the main transaction amount
+        points = points.filter(point => point !== transactionPoints);
+      }
       
       // Create a copy of the HTML for text extraction
       const tempDiv = document.createElement('div');
@@ -486,7 +498,7 @@ export function RecognitionFeed() {
                       
                         <div className="text-sm text-muted-foreground">
                           {(() => {
-                            const parsed = parseStructuredMessage(thread.mainPost);
+                            const parsed = parseStructuredMessage(thread.mainPost, true);
                             return (
                               <div className="flex flex-wrap items-center gap-1">
                                 {parsed.mentions.map((mention, idx) => (
