@@ -497,6 +497,10 @@ export type Database = {
         Args: { user_id?: string }
         Returns: boolean
       }
+      is_platform_admin_with_company_check: {
+        Args: { user_id?: string }
+        Returns: boolean
+      }
       should_allocate_monthly_points: {
         Args: { target_company_id: string }
         Returns: boolean
