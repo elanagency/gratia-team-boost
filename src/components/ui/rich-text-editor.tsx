@@ -121,11 +121,11 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             }
           }
           
-          // Check for + trigger (points)
+          // Check for + trigger (points) - only show dropdown, don't auto-create balloons
           const plusIndex = textUpToCursor.lastIndexOf('+');
           if (plusIndex !== -1 && (plusIndex === 0 || textContent[plusIndex - 1] === ' ')) {
             const query = textUpToCursor.slice(plusIndex + 1);
-            if (!query.includes(' ')) {
+            if (!query.includes(' ') && !/\d+/.test(query)) {
               onPointTrigger?.(query, plusIndex);
               return;
             }

@@ -244,12 +244,12 @@ export function GivePointsCard() {
             
             {/* Mention Dropdown */}
             {showMentionDropdown && filteredMembers.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {filteredMembers.slice(0, 5).map((member) => (
                   <button
                     key={member.user_id}
                     onClick={() => selectMention(member)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 transition-colors"
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage src="" />
@@ -268,7 +268,7 @@ export function GivePointsCard() {
 
             {/* Point Dropdown */}
             {showPointDropdown && (
-              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-[60] w-full mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 <div className="px-3 py-2 text-xs text-muted-foreground border-b">
                   Quick point values (Available: {monthlyPoints})
                 </div>
@@ -276,7 +276,7 @@ export function GivePointsCard() {
                   <button
                     key={value}
                     onClick={() => selectPoint(value)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
@@ -289,7 +289,7 @@ export function GivePointsCard() {
                 {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
                   <button
                     onClick={() => selectPoint(Number(pointQuery))}
-                    className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-t"
+                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 border-t transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
