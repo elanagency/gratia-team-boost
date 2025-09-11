@@ -114,6 +114,14 @@ serve(async (req: Request) => {
     // Get the original authorization header to pass it along
     const authHeader = req.headers.get("Authorization");
     
+    // Debug email sending conditions
+    console.log("[CREATE-TEAM-MEMBER] Email sending debug:", {
+      hasAuthHeader: !!authHeader,
+      hasOrigin: !!origin,
+      authHeaderValue: authHeader ? `${authHeader.substring(0, 20)}...` : 'null',
+      originValue: origin || 'null'
+    });
+    
     // Initialize Supabase admin client with service role
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
@@ -376,7 +384,14 @@ serve(async (req: Request) => {
     let emailSent = false;
     let emailError = null;
     
+    console.log("[CREATE-TEAM-MEMBER] Checking email sending conditions:", {
+      hasAuthHeader: !!authHeader,
+      hasOrigin: !!origin,
+      willSendEmail: !!(authHeader && origin)
+    });
+    
     if (authHeader && origin) {
+      console.log("[CREATE-TEAM-MEMBER] Attempting to send invitation email...");
       try {
         await sendInvitationEmail({
           email,
@@ -390,9 +405,15 @@ serve(async (req: Request) => {
         console.log("[CREATE-TEAM-MEMBER] Invitation email sent successfully");
       } catch (error) {
         console.error("[CREATE-TEAM-MEMBER] Failed to send invitation email:", error);
-        emailError = error.message;
+        emailError = error instanceof Error ? error.message : String(error);
         // Don't fail the entire operation if email fails
       }
+    } else {
+      console.log("[CREATE-TEAM-MEMBER] Email not sent - missing requirements:", {
+        missingAuthHeader: !authHeader,
+        missingOrigin: !origin
+      });
+      emailError = `Missing requirements: ${!authHeader ? 'authorization header' : ''} ${!origin ? 'origin' : ''}`.trim();
     }
     
     // Get updated member count using direct query
