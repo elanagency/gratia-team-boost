@@ -489,45 +489,6 @@ export type Database = {
           },
         ]
       }
-      reward_redemptions: {
-        Row: {
-          external_cart_id: string | null
-          external_order_id: string | null
-          goody_product_id: string | null
-          id: string
-          points_spent: number
-          redemption_date: string
-          shipping_address: Json | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          external_cart_id?: string | null
-          external_order_id?: string | null
-          goody_product_id?: string | null
-          id?: string
-          points_spent: number
-          redemption_date?: string
-          shipping_address?: Json | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          external_cart_id?: string | null
-          external_order_id?: string | null
-          goody_product_id?: string | null
-          id?: string
-          points_spent?: number
-          redemption_date?: string
-          shipping_address?: Json | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       subscription_events: {
         Row: {
           amount_charged: number | null
