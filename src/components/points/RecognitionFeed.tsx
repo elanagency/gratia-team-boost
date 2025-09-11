@@ -16,7 +16,6 @@ type PointTransaction = {
   recipient_id: string;
   points: number;
   description: string;
-  structured_message?: string;
   created_at: string;
   sender_name: string;
   recipient_name: string;
@@ -39,6 +38,27 @@ export function RecognitionFeed() {
   
   const { user, companyId } = useAuth();
   const queryClient = useQueryClient();
+
+  // Helper function to clean HTML content and extract plain text
+  const cleanHtmlDescription = (description: string): string => {
+    return description
+      // Remove mention balloons
+      .replace(/<span class="mention-balloon"[^>]*>([^<]*)<\/span>/g, '')
+      // Remove point balloons  
+      .replace(/<span class="point-balloon"[^>]*>[^<]*<\/span>/g, '')
+      // Remove any other HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Decode HTML entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // Clean up whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
   useEffect(() => {
     if (companyId && user?.id) {
@@ -191,7 +211,9 @@ export function RecognitionFeed() {
     
     // Create threads for main posts
     mainPosts.forEach(post => {
-      const threadKey = `${post.recipient_id}-${post.description.trim()}`;
+      // Clean the description to get just the text content
+      const cleanDescription = cleanHtmlDescription(post.description);
+      const threadKey = `${post.recipient_id}-${cleanDescription}`;
       threads.set(threadKey, {
         mainPost: post,
         comments: [],
@@ -203,7 +225,9 @@ export function RecognitionFeed() {
     
     // Add comments to their respective threads
     comments.forEach(comment => {
-      const originalDescription = comment.description.replace('Quick appreciation: ', '').trim();
+      const originalDescription = cleanHtmlDescription(
+        comment.description.replace('Quick appreciation: ', '').trim()
+      );
       const threadKey = `${comment.recipient_id}-${originalDescription}`;
       console.log(`Looking for thread: ${threadKey} for comment: ${comment.description}`);
       
@@ -283,63 +307,18 @@ export function RecognitionFeed() {
       .slice(0, 2);
   };
 
-  const parseStructuredMessage = (transaction: PointTransaction) => {
-    // Use structured_message if available, fallback to description
-    const messageContent = transaction.structured_message || transaction.description;
-    
-    if (!messageContent) return { hashtags: [], cleanText: "", mentions: [], points: [] };
-    
-    // If it's HTML (structured message), parse it
-    if (messageContent.includes('<span class="mention-balloon">') || messageContent.includes('<span class="point-balloon">')) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(messageContent, 'text/html');
-      
-      // Extract mentions
-      const mentionElements = doc.querySelectorAll('.mention-balloon');
-      const mentions = Array.from(mentionElements).map(el => el.textContent || '');
-      
-      // Extract points
-      const pointElements = doc.querySelectorAll('.point-balloon');
-      const points = Array.from(pointElements).map(el => {
-        const text = el.textContent || '';
-        const match = text.match(/\+?(\d+)/);
-        return match ? parseInt(match[1]) : 0;
-      });
-      
-      // Get clean text by removing all balloon elements and normalizing
-      const textContent = doc.body.textContent || '';
-      const cleanText = textContent
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      // Extract hashtags from clean text
-      const hashtagMatches = cleanText.match(/#\w+/g) || [];
-      const hashtags = hashtagMatches.map(tag => tag.substring(1));
-      
-      // Remove hashtags from clean text for final display
-      const finalCleanText = cleanText
-        .replace(/#\w+/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      return { hashtags, cleanText: finalCleanText, mentions, points };
-    }
-    
-    // Fallback: treat as plain text and use original extraction logic
-    const hashtags = messageContent.match(/#\w+/g) || [];
-    const cleanText = messageContent
-      .replace(/@\[[^\]]+\]/g, '')
-      .replace(/@\w+/g, '')
-      .replace(/#\w+/g, '')
-      .replace(/\+\[\d+\]/g, '')
-      .replace(/\+\d+/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    return { hashtags: hashtags.map(tag => tag.substring(1)), cleanText, mentions: [], points: [] };
+  const extractHashtags = (description: string) => {
+    // First clean the HTML, then extract hashtags
+    const cleanText = cleanHtmlDescription(description);
+    const hashtags = cleanText.match(/#\w+/g) || [];
+    const cleanDescription = cleanText.replace(/#\w+/g, '').trim();
+    return { cleanDescription, hashtags };
   };
 
   const formatMessageWithBoldNames = (description: string) => {
+    // First clean any HTML content to get plain text
+    const cleanText = cleanHtmlDescription(description);
+    
     // Pattern to match @mentions in the format @[Name] and +points in the format +[number]
     const mentionPattern = /@\[([^\]]+)\]/g;
     const pointPattern = /\+\[(\d+)\]/g;
@@ -349,7 +328,7 @@ export function RecognitionFeed() {
     let match;
     
     // Find all mentions
-    while ((match = mentionPattern.exec(description)) !== null) {
+    while ((match = mentionPattern.exec(cleanText)) !== null) {
       allMatches.push({
         type: 'mention',
         start: match.index,
@@ -361,7 +340,7 @@ export function RecognitionFeed() {
     
     // Reset regex lastIndex and find all points
     pointPattern.lastIndex = 0;
-    while ((match = pointPattern.exec(description)) !== null) {
+    while ((match = pointPattern.exec(cleanText)) !== null) {
       allMatches.push({
         type: 'point',
         start: match.index,
@@ -375,7 +354,7 @@ export function RecognitionFeed() {
     allMatches.sort((a, b) => a.start - b.start);
     
     if (allMatches.length === 0) {
-      return description;
+      return cleanText;
     }
     
     const parts = [];
@@ -384,7 +363,7 @@ export function RecognitionFeed() {
     allMatches.forEach((match, index) => {
       // Add text before this match
       if (match.start > lastIndex) {
-        parts.push(description.slice(lastIndex, match.start));
+        parts.push(cleanText.slice(lastIndex, match.start));
       }
       
       if (match.type === 'mention') {
@@ -413,8 +392,8 @@ export function RecognitionFeed() {
     });
     
     // Add remaining text
-    if (lastIndex < description.length) {
-      parts.push(description.slice(lastIndex));
+    if (lastIndex < cleanText.length) {
+      parts.push(cleanText.slice(lastIndex));
     }
     
     return parts;
@@ -453,7 +432,7 @@ export function RecognitionFeed() {
         {threadedRecognitions.length > 0 ? (
           <div className="space-y-6 flex-1 overflow-y-auto">
             {threadedRecognitions.map((thread) => {
-              const parsed = parseStructuredMessage(thread.mainPost);
+              const { cleanDescription, hashtags } = extractHashtags(thread.mainPost.description);
               const canGivePoints = user?.id !== thread.mainPost.recipient_id;
               
               return (
@@ -477,47 +456,17 @@ export function RecognitionFeed() {
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
-                       <div className="text-sm text-muted-foreground">
-                         {(() => {
-                           const parsed = parseStructuredMessage(thread.mainPost);
-                           return (
-                             <div>
-                               {parsed.mentions.length > 0 && (
-                                 <div className="flex flex-wrap gap-1 mb-1">
-                                   {parsed.mentions.map((mention, idx) => (
-                                     <span key={idx} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
-                                       @{mention}
-                                     </span>
-                                   ))}
-                                 </div>
-                               )}
-                               <span>{parsed.cleanText}</span>
-                               {parsed.points.length > 0 && (
-                                 <div className="flex flex-wrap gap-1 mt-1">
-                                   {parsed.points.map((point, idx) => (
-                                     <span key={idx} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                       +{point}
-                                     </span>
-                                   ))}
-                                 </div>
-                               )}
-                             </div>
-                           );
-                         })()}
-                       </div>
-                       
-                       {(() => {
-                         const parsed = parseStructuredMessage(thread.mainPost);
-                         return parsed.hashtags.length > 0 && (
-                           <div className="flex gap-1 flex-wrap">
-                             {parsed.hashtags.map((tag, index) => (
-                               <Badge key={index} variant="outline" className="text-xs">
-                                 #{tag}
-                               </Badge>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                      <div className="text-sm text-muted-foreground">{cleanDescription}</div>
+                      
+                      {hashtags.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {hashtags.map((tag, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -537,7 +486,7 @@ export function RecognitionFeed() {
                                   key={points}
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleQuickPoints(thread.mainPost.recipient_id, points, parsed.cleanText)}
+                                  onClick={() => handleQuickPoints(thread.mainPost.recipient_id, points, cleanDescription)}
                                   disabled={isGiving || !hasEnoughPoints}
                                   className={`h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF] ${
                                     !hasEnoughPoints ? 'opacity-50 cursor-not-allowed' : ''
