@@ -70,7 +70,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setDepartment('');
         setOpen(false);
         
-        toast.success("Team Slots Required - Redirecting to team slots purchase. Complete payment to add the team member.");
+        toast.success("Setting up subscription - Redirecting to payment. Complete payment to add the team member.");
         
         setTimeout(() => {
           window.location.href = data.checkoutUrl;
