@@ -11,18 +11,19 @@ export const usePlatformAuth = () => {
     queryFn: async () => {
       if (!user?.id) return false;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_platform_admin')
-        .eq('id', user.id)
-        .maybeSingle();
+      console.log('Checking platform admin status for user:', user.id);
+      
+      const { data, error } = await supabase.rpc('get_user_platform_admin_status', {
+        user_id: user.id
+      });
 
       if (error) {
         console.error('Error checking platform admin status:', error);
         return false;
       }
 
-      return data?.is_platform_admin || false;
+      console.log('Platform admin status result:', data);
+      return data || false;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
