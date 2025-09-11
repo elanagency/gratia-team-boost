@@ -77,9 +77,11 @@ serve(async (req) => {
         id,
         first_name,
         last_name,
-        company_members!inner(company_id, points, department, role)
+        points,
+        department,
+        role
       `)
-      .eq('company_members.company_id', companyId)
+      .eq('company_id', companyId)
 
     console.log('Found users to backup:', usersToBackup?.length || 0)
 
@@ -99,9 +101,9 @@ serve(async (req) => {
         last_name: userToBackup.last_name,
         email: emailMap[userToBackup.id] || '',
         company_name: company.name,
-        points: userToBackup.company_members[0]?.points || 0,
-        department: userToBackup.company_members[0]?.department,
-        role: userToBackup.company_members[0]?.role,
+        points: userToBackup.points || 0,
+        department: userToBackup.department,
+        role: userToBackup.role,
         deleted_by: user.id // Platform admin who performed the deletion
       }))
 
@@ -129,34 +131,17 @@ serve(async (req) => {
       console.log('Auth users deleted successfully')
     }
 
-    // Step 3: Get reward IDs that belong to this company
-    const { data: companyRewards } = await supabase
-      .from('rewards')
-      .select('id')
-      .eq('company_id', companyId);
-    
-    const rewardIds = companyRewards?.map(r => r.id) || [];
-    
+    // Step 3: Delete company-related data in correct order
     const deletions = [
-      // Delete cart items first
-      supabase.from('carts').delete().eq('company_id', companyId),
-      
       // Delete point-related records
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId),
       supabase.from('point_transactions').delete().eq('company_id', companyId),
       
-      // Delete reward-related records (only if there are rewards)
-      ...(rewardIds.length > 0 ? [
-        supabase.from('reward_category_mappings').delete().in('reward_id', rewardIds)
-      ] : []),
-      supabase.from('reward_categories').delete().eq('company_id', companyId),
-      supabase.from('rewards').delete().eq('company_id', companyId),
-      
       // Delete subscription events
       supabase.from('subscription_events').delete().eq('company_id', companyId),
       
-      // Delete company members
-      supabase.from('company_members').delete().eq('company_id', companyId),
+      // Mark profiles as inactive instead of deleting (they're already backed up)
+      supabase.from('profiles').update({ is_active: false }).eq('company_id', companyId),
       
       // Finally delete the company
       supabase.from('companies').delete().eq('id', companyId)
