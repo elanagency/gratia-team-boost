@@ -128,7 +128,7 @@ export const TeamManagementCard = () => {
       
       const origin = window.location.origin;
       
-      // Call the send invitation email function
+      // Call the send invitation email function (which now uses the centralized email service)
       const { error } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: member.email,

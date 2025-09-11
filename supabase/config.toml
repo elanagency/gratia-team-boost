@@ -172,3 +172,9 @@ trusted_proxies = ["0.0.0.0/0"]
 
 [functions.create-team-member]
 verify_jwt = true
+
+[functions.email-service]
+verify_jwt = true
+
+[functions.send-invitation-email]
+verify_jwt = true
