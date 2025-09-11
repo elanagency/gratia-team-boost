@@ -284,7 +284,16 @@ export function RecognitionFeed() {
 
   const extractHashtags = (description: string) => {
     const hashtags = description.match(/#\w+/g) || [];
-    const cleanDescription = description.replace(/#\w+/g, '').trim();
+    
+    // Remove hashtags, mentions (@[Name]), points (+[10] or +10), and leading name patterns
+    let cleanDescription = description
+      .replace(/#\w+/g, '') // Remove hashtags
+      .replace(/@\[[^\]]+\]/g, '') // Remove @[Name] patterns
+      .replace(/\+\[\d+\]/g, '') // Remove +[10] patterns
+      .replace(/\+\d+/g, '') // Remove +10 patterns
+      .replace(/^[^@#\+]+\s*\+\d+\s*/g, '') // Remove "Name +10 " at start
+      .trim();
+    
     return { cleanDescription, hashtags };
   };
 
