@@ -34,15 +34,7 @@ const TransactionsOverview = () => {
   const { data: transactions = [], isLoading, error } = useQuery({
     queryKey: ['platform-transactions'],
     queryFn: async () => {
-      // Get company point transactions
-      const { data: companyTransactions } = await supabase
-        .from('company_point_transactions')
-        .select(`
-          *
-        `)
-        .order('created_at', { ascending: false });
-
-      // Get point transactions (recognitions)
+      // Only get point transactions (recognitions) - other tables removed
       const { data: pointTransactions } = await supabase
         .from('point_transactions')
         .select(`
@@ -50,11 +42,9 @@ const TransactionsOverview = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Get reward redemptions
-      const { data: redemptions } = await supabase
-        .from('reward_redemptions')
-        .select('*')
-        .order('redemption_date', { ascending: false });
+      // Other transaction types no longer exist
+      const companyTransactions: any[] = [];
+      const redemptions: any[] = [];
 
       // Get companies info for mapping
       const { data: companies } = await supabase

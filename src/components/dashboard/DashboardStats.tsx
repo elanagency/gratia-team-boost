@@ -45,13 +45,8 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
         
         if (recognitionsError) throw recognitionsError;
         
-        // Count rewards claimed this month
-        const { count: rewardsThisMonth, error: rewardsError } = await supabase
-          .from('reward_redemptions')
-          .select('*', { count: 'exact', head: true })
-          .gte('redemption_date', startOfMonth.toISOString());
-        
-        if (rewardsError) throw rewardsError;
+        // Rewards count is not tracked anymore
+        const rewardsThisMonth = 0;
         
         setRecognitionCount(recognitionsThisMonth || 0);
         setRewardsCount(rewardsThisMonth || 0);

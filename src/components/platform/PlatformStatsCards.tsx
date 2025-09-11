@@ -26,18 +26,9 @@ export const PlatformStatsCards = () => {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const { count: transactionsCount } = await supabase
-        .from('company_point_transactions')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startOfMonth.toISOString());
-
-      // Get total points distributed
-      const { data: pointsData } = await supabase
-        .from('company_point_transactions')
-        .select('amount')
-        .eq('transaction_type', 'purchase');
-
-      const totalPoints = pointsData?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+      // Company point transactions no longer exist
+      const transactionsCount = 0;
+      const totalPoints = 0;
 
       return {
         companies: companiesCount || 0,

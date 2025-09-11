@@ -144,9 +144,6 @@ serve(async (req) => {
       // Delete cart items
       supabase.from('carts').delete().eq('company_id', companyId).eq('user_id', userId),
       
-      // Delete spending records
-      supabase.from('member_monthly_spending').delete().eq('company_id', companyId).eq('user_id', userId),
-      
       // Delete allocation records
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId).eq('user_id', userId),
       

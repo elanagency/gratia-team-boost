@@ -45,12 +45,8 @@ export const TeamStats = () => {
         } = await supabase.from('point_transactions').select('id').eq('recipient_profile_id', user.id).eq('company_id', companyId);
         if (recognitionsError) throw recognitionsError;
 
-        // Count rewards redeemed
-        const {
-          data: rewardsData,
-          error: rewardsError
-        } = await supabase.from('reward_redemptions').select('id').eq('user_id', user.id);
-        if (rewardsError) throw rewardsError;
+        // Rewards redemptions no longer tracked
+        const rewardsData: any[] = [];
         setMemberData({
           points: memberData?.points || 0,
           recognitionsReceived: recognitionsData?.length || 0,

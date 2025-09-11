@@ -142,10 +142,8 @@ serve(async (req) => {
       supabase.from('carts').delete().eq('company_id', companyId),
       
       // Delete point-related records
-      supabase.from('member_monthly_spending').delete().eq('company_id', companyId),
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId),
       supabase.from('point_transactions').delete().eq('company_id', companyId),
-      supabase.from('company_point_transactions').delete().eq('company_id', companyId),
       
       // Delete reward-related records (only if there are rewards)
       ...(rewardIds.length > 0 ? [

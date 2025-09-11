@@ -26,7 +26,6 @@ interface Company {
   created_at: string;
   subscription_status: string;
   points_balance: number;
-  team_member_monthly_limit: number;
   billing_cycle_anchor?: number;
   stripe_subscription_id?: string;
   environment?: string;

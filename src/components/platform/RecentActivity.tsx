@@ -26,12 +26,8 @@ export const RecentActivity = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Get recent transactions with company info
-      const { data: transactions } = await supabase
-        .from('company_point_transactions')
-        .select('amount, created_at, transaction_type, company_id')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Company point transactions no longer exist
+      const transactions: any[] = [];
 
       // Get company names for transactions
       const companyIds = transactions?.map(t => t.company_id) || [];

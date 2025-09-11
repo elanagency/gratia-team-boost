@@ -26,12 +26,8 @@ export const PlatformAnalytics = () => {
         .gte('created_at', sixMonthsAgo.toISOString())
         .order('created_at');
 
-      // Get transaction volume over last 6 months
-      const { data: transactions } = await supabase
-        .from('company_point_transactions')
-        .select('created_at, amount')
-        .gte('created_at', sixMonthsAgo.toISOString())
-        .order('created_at');
+      // Company point transactions no longer exist
+      const transactions: any[] = [];
 
       // Group by month
       const monthlyData: Record<string, MonthlyData> = {};
