@@ -203,7 +203,7 @@ const CompaniesManagement = () => {
                 <TableRow>
                   <TableHead>Company</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Team Size</TableHead>
+                  <TableHead>Team Members</TableHead>
                   <TableHead>Points Balance</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Actions</TableHead>
@@ -261,7 +261,7 @@ const CompaniesManagement = () => {
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4 text-gray-400" />
-                          <span>-</span>
+                          <span>Usage-based</span>
                         </div>
                       </TableCell>
                       <TableCell>

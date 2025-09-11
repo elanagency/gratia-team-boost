@@ -69,7 +69,7 @@ serve(async (req) => {
       const { data: companies } = await supabase
         .from('companies')
         .select(`
-          id, name, stripe_subscription_id, team_slots,
+          id, name, stripe_subscription_id,
           subscription_status, stripe_customer_id
         `)
         .not('stripe_subscription_id', 'is', null)
@@ -81,10 +81,11 @@ serve(async (req) => {
         try {
           // Get current team member count
           const { data: memberCount } = await supabase
-            .from('company_members')
+            .from('profiles')
             .select('id', { count: 'exact' })
             .eq('company_id', company.id)
-            .eq('is_admin', false);
+            .eq('is_admin', false)
+            .eq('is_active', true);
 
           const currentMembers = memberCount?.length || 0;
 
@@ -101,14 +102,13 @@ serve(async (req) => {
           analysis.push({
             companyId: company.id,
             companyName: company.name,
-            currentSlots: company.team_slots,
             currentMembers,
             stripeSubscriptionId: company.stripe_subscription_id,
             subscriptionStatus: company.subscription_status,
             stripeStatus: stripeSubscription?.status,
             currentQuantity: stripeSubscription?.items?.data[0]?.quantity,
-            migrationNeeded: company.team_slots !== currentMembers,
-            estimatedCostChange: (currentMembers * pricePerMember) - (company.team_slots * pricePerMember),
+            migrationNeeded: (stripeSubscription?.items?.data[0]?.quantity || 0) !== currentMembers,
+            estimatedCostChange: (currentMembers * pricePerMember) - ((stripeSubscription?.items?.data[0]?.quantity || 0) * pricePerMember),
           });
         } catch (error) {
           logStep("Error analyzing company", { companyId: company.id, error: error.message });
@@ -134,10 +134,11 @@ serve(async (req) => {
 
       // Get current team member count (excluding admins)
       const { data: members } = await supabase
-        .from('company_members')
+        .from('profiles')
         .select('id')
         .eq('company_id', companyId)
-        .eq('is_admin', false);
+        .eq('is_admin', false)
+        .eq('is_active', true);
 
       const currentMembers = members?.length || 0;
 
@@ -156,18 +157,9 @@ serve(async (req) => {
 
         logStep("Updated Stripe subscription", {
           subscriptionId: company.stripe_subscription_id,
-          oldQuantity: company.team_slots,
+          oldQuantity: subscription.items.data[0].quantity,
           newQuantity: currentMembers,
         });
-
-        // Update company record
-        await supabase
-          .from('companies')
-          .update({
-            team_slots: currentMembers, // Keep for backward compatibility during transition
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', companyId);
 
         // Log migration event
         await supabase
@@ -175,20 +167,18 @@ serve(async (req) => {
           .insert({
             company_id: companyId,
             event_type: 'migration_to_usage_based',
-            previous_quantity: company.team_slots,
+            previous_quantity: subscription.items.data[0].quantity,
             new_quantity: currentMembers,
-            previous_slots: company.team_slots,
-            new_slots: currentMembers,
             metadata: {
               migration_date: new Date().toISOString(),
-              migration_type: 'slot_to_usage_based',
+              migration_type: 'usage_based_billing',
             },
           });
 
         return new Response(JSON.stringify({
           success: true,
           companyId,
-          oldQuantity: company.team_slots,
+          oldQuantity: subscription.items.data[0].quantity,
           newQuantity: currentMembers,
           stripeSubscriptionId: company.stripe_subscription_id,
         }), {
@@ -207,7 +197,7 @@ serve(async (req) => {
       // Get all companies with active subscriptions that need migration
       const { data: companies } = await supabase
         .from('companies')
-        .select('id, name, stripe_subscription_id, team_slots')
+        .select('id, name, stripe_subscription_id')
         .not('stripe_subscription_id', 'is', null)
         .eq('subscription_status', 'active');
 

@@ -19,7 +19,6 @@ interface SubscriptionStatus {
 interface CompanyData {
   id: string;
   name: string;
-  team_slots: number;
   subscription_status: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -42,7 +41,6 @@ export const BillingCard = () => {
       .select(`
         id,
         name,
-        team_slots,
         subscription_status,
         stripe_customer_id,
         stripe_subscription_id
@@ -93,10 +91,10 @@ export const BillingCard = () => {
             setSubscriptionStatus({
               has_subscription: checkResult.has_subscription,
               status: checkResult.status,
-              team_members: checkResult.team_slots || teamMembers,
+              team_members: teamMembers,
               next_billing_date: checkResult.next_billing_date,
-              amount_per_member: checkResult.amount_per_slot || amountPerMember,
-              monthly_cost: (checkResult.amount_per_slot || amountPerMember) * (checkResult.team_slots || teamMembers)
+              amount_per_member: amountPerMember,
+              monthly_cost: amountPerMember * teamMembers
             });
             setHasExistingSubscription(true);
             return;
@@ -109,10 +107,10 @@ export const BillingCard = () => {
         setSubscriptionStatus({
           has_subscription: true,
           status: company.subscription_status || 'active',
-          team_members: company.team_slots || teamMembers,
+          team_members: teamMembers,
           next_billing_date: null,
           amount_per_member: amountPerMember,
-          monthly_cost: amountPerMember * (company.team_slots || teamMembers)
+          monthly_cost: amountPerMember * teamMembers
         });
         setHasExistingSubscription(true);
       } else {

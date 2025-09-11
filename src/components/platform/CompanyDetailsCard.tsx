@@ -25,7 +25,6 @@ interface Company {
   address?: string;
   created_at: string;
   subscription_status: string;
-  team_slots: number;
   points_balance: number;
   team_member_monthly_limit: number;
   billing_cycle_anchor?: number;

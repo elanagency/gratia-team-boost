@@ -84,17 +84,16 @@ serve(async (req: Request) => {
     }
 
     const companyId = session.metadata?.company_id;
-    const teamSlots = parseInt(session.metadata?.team_slots || "0");
     const pendingMemberData = session.metadata?.pending_member_data;
 
-    if (!companyId || !teamSlots) {
+    if (!companyId) {
       return new Response(
         JSON.stringify({ error: "Invalid session metadata" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("[VERIFY-STRIPE-SESSION] Processing:", { companyId, teamSlots, hasPendingMember: !!pendingMemberData });
+    console.log("[VERIFY-STRIPE-SESSION] Processing:", { companyId, hasPendingMember: !!pendingMemberData });
 
     // Get the subscription from the session
     const subscriptionId = session.subscription as string;
@@ -103,13 +102,12 @@ serve(async (req: Request) => {
     const amountTotal = session.amount_total || 0; // in cents
     console.log("[VERIFY-STRIPE-SESSION] Amount charged:", amountTotal);
     
-    // Update company with subscription information and team slots
+    // Update company with subscription information
     const { error: updateError } = await supabaseAdmin
       .from("companies")
       .update({
         stripe_subscription_id: subscriptionId,
         subscription_status: "active",
-        team_slots: teamSlots,
       })
       .eq("id", companyId);
 
@@ -121,18 +119,28 @@ serve(async (req: Request) => {
       );
     }
 
+    // Get current team member count for subscription event
+    const { data: memberCount } = await supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact" })
+      .eq("company_id", companyId)
+      .eq("is_admin", false)
+      .eq("is_active", true);
+
+    const currentMembers = memberCount?.length || 0;
+
     // Log the subscription event
     const { error: eventError } = await supabaseAdmin
       .from("subscription_events")
       .insert({
         company_id: companyId,
-        event_type: "slots_purchased",
-        new_slots: teamSlots,
+        event_type: "subscription_created",
+        new_quantity: currentMembers,
         amount_charged: amountTotal,
         metadata: {
           subscription_id: subscriptionId,
           session_id: sessionId,
-          team_slots: teamSlots,
+          initial_member_count: currentMembers,
         },
       });
 
@@ -177,7 +185,6 @@ serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         companyId,
-        teamSlots,
         subscriptionId,
         memberCreated: !!memberCreationResult,
         ...memberCreationResult,

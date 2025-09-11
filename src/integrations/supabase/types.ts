@@ -137,7 +137,6 @@ export type Database = {
           stripe_subscription_id: string | null
           subscription_status: string | null
           team_member_monthly_limit: number | null
-          team_slots: number | null
           trial_ends_at: string | null
           trial_mode: boolean | null
           updated_at: string
@@ -160,7 +159,6 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           team_member_monthly_limit?: number | null
-          team_slots?: number | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null
           updated_at?: string
@@ -183,7 +181,6 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           team_member_monthly_limit?: number | null
-          team_slots?: number | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null
           updated_at?: string
@@ -720,9 +717,7 @@ export type Database = {
           id: string
           metadata: Json | null
           new_quantity: number | null
-          new_slots: number | null
           previous_quantity: number | null
-          previous_slots: number | null
           stripe_invoice_id: string | null
         }
         Insert: {
@@ -733,9 +728,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           new_quantity?: number | null
-          new_slots?: number | null
           previous_quantity?: number | null
-          previous_slots?: number | null
           stripe_invoice_id?: string | null
         }
         Update: {
@@ -746,9 +739,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           new_quantity?: number | null
-          new_slots?: number | null
           previous_quantity?: number | null
-          previous_slots?: number | null
           stripe_invoice_id?: string | null
         }
         Relationships: [
@@ -799,17 +790,9 @@ export type Database = {
         Args: { setting_key: string }
         Returns: string
       }
-      get_used_team_slots: {
-        Args: { company_id: string }
-        Returns: number
-      }
       get_user_monthly_spending: {
         Args: { company_id: string; user_id: string }
         Returns: number
-      }
-      has_available_team_slots: {
-        Args: { company_id: string }
-        Returns: boolean
       }
       is_company_admin: {
         Args: { company_id: string }

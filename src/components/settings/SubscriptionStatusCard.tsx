@@ -73,9 +73,13 @@ export const SubscriptionStatusCard = () => {
 
       // Get current team member count
       const { data: memberCount } = await supabase
-        .rpc('get_used_team_slots', { company_id: companyId });
+        .from('profiles')
+        .select('id', { count: 'exact' })
+        .eq('company_id', companyId)
+        .eq('is_admin', false)
+        .eq('is_active', true);
 
-      const teamMembers = memberCount || 0;
+      const teamMembers = memberCount?.length || 0;
       
       // Use pricing from the dedicated hook (always up-to-date from platform settings)
       const amountPerMember = pricePerMemberCents;
