@@ -478,11 +478,11 @@ export type Database = {
         Returns: boolean
       }
       check_user_is_company_admin_bypass_rls: {
-        Args: { company_id: string; user_id: string }
+        Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
       check_user_is_team_member_bypass_rls: {
-        Args: { company_id: string; user_id: string }
+        Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
       get_company_member_count: {
