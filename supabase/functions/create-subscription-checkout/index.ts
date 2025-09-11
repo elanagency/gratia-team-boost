@@ -46,11 +46,11 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { companyId, teamSlots, memberData, origin } = await req.json();
+    const { companyId, teamSlots = 1, memberData, origin } = await req.json();
 
-    if (!companyId || !teamSlots) {
+    if (!companyId) {
       return new Response(
-        JSON.stringify({ error: "Company ID and team slots are required" }),
+        JSON.stringify({ error: "Company ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -181,20 +181,12 @@ serve(async (req: Request) => {
         proration_behavior: 'always_invoice',
       });
 
-      // Update company with new team slots
-      await supabaseAdmin
-        .from("companies")
-        .update({ team_slots: teamSlots })
-        .eq("id", companyId);
-
       // Log the subscription update
       await supabaseAdmin
         .from("subscription_events")
         .insert({
           company_id: companyId,
           event_type: "quantity_updated",
-          previous_slots: company.team_slots || 0,
-          new_slots: teamSlots,
           previous_quantity: existingSubscription.items.data[0].quantity,
           new_quantity: teamSlots,
           metadata: {
@@ -251,7 +243,7 @@ serve(async (req: Request) => {
       ],
       metadata: {
         company_id: companyId,
-        team_slots: teamSlots.toString(),
+        subscription_quantity: teamSlots.toString(),
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
       },
       success_url: `${baseUrl}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,

@@ -144,19 +144,38 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check if company has active subscription (simplified logic)
+    // Count current active users in the company (excluding this invitation)
+    const { data: activeUsers, error: countError } = await supabaseAdmin
+      .from('profiles')
+      .select('id', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('is_active', true);
+
+    if (countError) {
+      console.error("[CREATE-TEAM-MEMBER] Error counting active users:", countError);
+      return new Response(
+        JSON.stringify({ error: "Failed to check company status" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const currentActiveUserCount = activeUsers?.length || 0;
     const hasActiveSubscription = company.subscription_status === 'active' && company.stripe_subscription_id;
 
     console.log("[CREATE-TEAM-MEMBER] Company check:", {
       subscriptionStatus: company.subscription_status,
       hasActiveSubscription,
       stripeCustomerId: company.stripe_customer_id,
-      stripeSubscriptionId: company.stripe_subscription_id
+      stripeSubscriptionId: company.stripe_subscription_id,
+      currentActiveUserCount
     });
 
-    // For now, only check for active subscription, not team slots
-    if (!hasActiveSubscription) {
-      console.log("[CREATE-TEAM-MEMBER] No active subscription found");
+    // If this will be the 2nd user (first team member besides admin) and no subscription exists, start checkout
+    if (!hasActiveSubscription && currentActiveUserCount >= 1) {
+      console.log("[CREATE-TEAM-MEMBER] Adding first team member - subscription required");
       
       if (authHeader) {
         try {
@@ -172,6 +191,7 @@ serve(async (req: Request) => {
             },
             body: JSON.stringify({ 
               companyId,
+              teamSlots: 1, // Start with 1 slot for the admin
               memberData,
               origin
             })
