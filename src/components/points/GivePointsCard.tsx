@@ -162,13 +162,18 @@ export function GivePointsCard() {
     setIsSubmitting(true);
 
     try {
+      // Get the HTML content from the rich text editor to preserve structure
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      const structuredMessage = editorElement?.innerHTML || text;
+      
       // Create a transaction for each mentioned person with the total points
       const transactions = mentions.map(mention => ({
         company_id: companyId,
         sender_profile_id: user.id,
         recipient_profile_id: mention.userId,
         points: totalPointsToGive,
-        description: text
+        description: text,
+        structured_message: structuredMessage
       }));
 
       const { error } = await supabase

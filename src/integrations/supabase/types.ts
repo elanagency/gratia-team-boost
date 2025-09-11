@@ -271,6 +271,7 @@ export type Database = {
           points: number
           recipient_profile_id: string
           sender_profile_id: string
+          structured_message: string | null
         }
         Insert: {
           company_id: string
@@ -280,6 +281,7 @@ export type Database = {
           points: number
           recipient_profile_id: string
           sender_profile_id: string
+          structured_message?: string | null
         }
         Update: {
           company_id?: string
@@ -289,6 +291,7 @@ export type Database = {
           points?: number
           recipient_profile_id?: string
           sender_profile_id?: string
+          structured_message?: string | null
         }
         Relationships: [
           {
