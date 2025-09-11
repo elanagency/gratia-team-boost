@@ -469,6 +469,10 @@ export type Database = {
         Args: { company_id: string; profile_id: string }
         Returns: boolean
       }
+      check_platform_admin_bypass_rls: {
+        Args: { user_id?: string }
+        Returns: boolean
+      }
       check_user_company_membership: {
         Args: { company_id: string; profile_id: string }
         Returns: boolean
