@@ -40,26 +40,21 @@ export const RecentActivity = () => {
         .select('id, name')
         .in('id', companyIds);
 
-      // Get recent team members
-      const { data: members } = await supabase
-        .from('company_members')
-        .select('created_at, company_id, profile_id')
+      // Get recent team members from profiles table
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, created_at, company_id')
+        .not('company_id', 'is', null)
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(5);
 
       // Get company names for members
-      const memberCompanyIds = members?.map(m => m.company_id) || [];
+      const memberCompanyIds = profiles?.map(p => p.company_id) || [];
       const { data: memberCompanyNames } = await supabase
         .from('companies')
         .select('id, name')
         .in('id', memberCompanyIds);
-
-      // Get user profiles for members
-      const userIds = members?.map(m => m.profile_id) || [];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
 
       const activities: Activity[] = [];
 
@@ -88,16 +83,13 @@ export const RecentActivity = () => {
       });
 
       // Add member activities
-      members?.forEach(member => {
-        const company = memberCompanyNames?.find(c => c.id === member.company_id);
-        const profile = profiles?.find(p => p.id === member.profile_id);
-        const name = profile ? 
-          `${profile.first_name} ${profile.last_name}` : 
-          'New Member';
+      profiles?.forEach(profile => {
+        const company = memberCompanyNames?.find(c => c.id === profile.company_id);
+        const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'New Member';
         activities.push({
           type: 'member',
           title: `${name} joined ${company?.name || 'Unknown Company'}`,
-          time: member.created_at,
+          time: profile.created_at,
           icon: Users,
           color: 'bg-purple-50 text-purple-600',
         });

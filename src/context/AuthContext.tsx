@@ -34,29 +34,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!authData.user || !authData.session) return;
 
       try {
-        // Check if user has any company memberships with 'invited' status OR first_login_at is null
-        const { data: memberships, error } = await supabase
-          .from('company_members')
-          .select('id, first_login_at, invitation_status, monthly_points')
-          .eq('user_id', authData.user.id);
+        // Check if user profile has 'invited' status OR first_login_at is null
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('id, first_login_at, invitation_status, monthly_points, company_id')
+          .eq('id', authData.user.id)
+          .eq('is_active', true)
+          .single();
 
         if (error) {
-          console.error('Error checking membership status:', error);
+          console.error('Error checking profile status:', error);
           return;
         }
 
-        // Process each membership
-        for (const membership of memberships || []) {
+        if (profile) {
           // Handle invited users
-          if (membership.invitation_status === 'invited') {
+          if (profile.invitation_status === 'invited') {
             const { error: updateError } = await supabase
-              .from('company_members')
+              .from('profiles')
               .update({
                 invitation_status: 'active',
                 first_login_at: new Date().toISOString(),
                 monthly_points: 100 // Give 100 monthly points on first login
               })
-              .eq('id', membership.id);
+              .eq('id', profile.id);
 
             if (updateError) {
               console.error('Error updating invitation status:', updateError);
@@ -65,14 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           // Handle first login for active users who haven't logged in yet
-          else if (!membership.first_login_at && membership.invitation_status === 'active') {
+          else if (!profile.first_login_at && profile.invitation_status === 'active') {
             const { error: updateError } = await supabase
-              .from('company_members')
+              .from('profiles')
               .update({
                 first_login_at: new Date().toISOString(),
                 monthly_points: 100 // Give 100 monthly points on first login
               })
-              .eq('id', membership.id);
+              .eq('id', profile.id);
 
             if (updateError) {
               console.error('Error updating first login status:', updateError);

@@ -37,10 +37,11 @@ export const MonthlyLimitsCard = () => {
 
       // Get team member count (non-admin members)
       const { count, error: countError } = await supabase
-        .from('company_members')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('is_admin', false);
+        .eq('is_admin', false)
+        .eq('is_active', true);
       
       if (countError) throw countError;
       

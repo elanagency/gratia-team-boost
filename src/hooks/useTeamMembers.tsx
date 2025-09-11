@@ -42,28 +42,31 @@ export const useTeamMembers = () => {
         console.error("Error fetching company:", companyError);
       }
 
-      // Get all members but exclude admins from the team view
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
+      // Get all team members (non-admin profiles) directly from profiles table
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
         .select(`
           id,
+          first_name,
+          last_name,
+          avatar_url,
           is_admin,
-          profile_id,
           points,
           department,
           invitation_status,
           first_login_at
         `)
         .eq('company_id', companyId)
-        .eq('is_admin', false); // Only get non-admin members
+        .eq('is_admin', false)
+        .eq('is_active', true);
       
-      if (membersError) {
-        throw membersError;
+      if (profilesError) {
+        throw profilesError;
       }
       
-      console.log(`Found ${members?.length || 0} team members (excluding admins)`);
+      console.log(`Found ${profiles?.length || 0} team members (excluding admins)`);
       
-      const usedMembers = members?.length || 0;
+      const usedMembers = profiles?.length || 0;
       const hasSubscription = !!company?.stripe_subscription_id;
       
       setTeamSlots({
@@ -72,29 +75,13 @@ export const useTeamMembers = () => {
         total: hasSubscription ? usedMembers : 0
       });
       
-      if (!members?.length) {
+      if (!profiles?.length) {
         setTeamMembers([]);
         return;
       }
       
-      // Get user IDs for batch profile query
-      const userIds = members.map(m => m.profile_id);
-      
-      // Fetch profiles in batch
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .in('id', userIds);
-      
-      if (profilesError) {
-        throw profilesError;
-      }
-      
-      // Create a map for easy profile lookup
-      const profileMap = new Map();
-      profiles?.forEach(profile => {
-        profileMap.set(profile.id, profile);
-      });
+      // Get user IDs for batch email query
+      const userIds = profiles.map(p => p.id);
       
       // Fetch emails from our edge function
       const { data: emailsResponse, error: emailsError } = await supabase.functions.invoke("get-user-emails", {
@@ -107,23 +94,19 @@ export const useTeamMembers = () => {
       
       const emailsMap = emailsResponse?.emails || {};
       
-      
-      // Format team members with profile data
-      const formattedMembers: TeamMember[] = members.map(member => {
-        const profile = profileMap.get(member.profile_id);
-        const memberName = profile ? 
-          `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-          'No Name';
+      // Format team members directly from profiles data
+      const formattedMembers: TeamMember[] = profiles.map(profile => {
+        const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
         return {
-          id: member.id,
+          id: profile.id, // Use profile.id directly instead of member.id
           name: memberName || 'No Name',
-          email: emailsMap[member.profile_id] || '',
-          user_id: member.profile_id,
-          points: member.points || 0,
-          department: member.department || '',
-          invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',
-          first_login_at: member.first_login_at
+          email: emailsMap[profile.id] || '',
+          user_id: profile.id,
+          points: profile.points || 0,
+          department: profile.department || '',
+          invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
+          first_login_at: profile.first_login_at
         };
       });
       
@@ -145,30 +128,17 @@ export const useTeamMembers = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
-      // Get the member to find user_id
-      const member = teamMembers.find(m => m.id === memberId);
-      if (!member) throw new Error("Member not found");
-      
-      // Update profile (name)
+      // Update profile directly (both name and department are now in profiles table)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
-          last_name: lastName
-        })
-        .eq('id', member.user_id);
-        
-      if (profileError) throw profileError;
-      
-      // Update company member (department)
-      const { error: memberError } = await supabase
-        .from('company_members')
-        .update({
+          last_name: lastName,
           department: updateData.department
         })
         .eq('id', memberId);
         
-      if (memberError) throw memberError;
+      if (profileError) throw profileError;
       
       toast.success("Team member updated successfully.");
       fetchTeamMembers();
@@ -176,15 +146,16 @@ export const useTeamMembers = () => {
       console.error("Error in updateMember:", error);
       toast.error("Failed to update team member");
     }
-  }, [companyId, teamMembers, fetchTeamMembers]);
+  }, [companyId, fetchTeamMembers]);
 
   const removeMember = useCallback(async (member: TeamMember) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
       
+      // Mark profile as inactive instead of deleting
       const { error } = await supabase
-        .from('company_members')
-        .delete()
+        .from('profiles')
+        .update({ is_active: false })
         .eq('id', member.id);
         
       if (error) throw error;
@@ -196,7 +167,7 @@ export const useTeamMembers = () => {
       console.error("Error in removeMember:", error);
       toast.error("Failed to remove team member");
     }
-  }, [fetchTeamMembers, user, companyId]);
+  }, [fetchTeamMembers, companyId]);
 
   useEffect(() => {
     if (user && companyId) {

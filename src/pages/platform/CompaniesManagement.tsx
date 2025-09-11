@@ -39,8 +39,7 @@ const CompaniesManagement = () => {
       const { data, error } = await supabase
         .from('companies')
         .select(`
-          *,
-          company_members(count)
+          *
         `)
         .order('created_at', { ascending: false });
 
@@ -55,33 +54,27 @@ const CompaniesManagement = () => {
     queryFn: async () => {
       if (!expandedCompany) return [];
       
-      // Get company members first
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
+      // Get profiles directly (which now contains all member info)
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
         .select(`
-          profile_id,
+          id,
+          first_name,
+          last_name,
+          avatar_url,
           points,
           is_admin,
           role,
           department
         `)
-        .eq('company_id', expandedCompany);
+        .eq('company_id', expandedCompany)
+        .eq('is_active', true);
 
-      if (membersError) throw membersError;
-      if (!members || members.length === 0) return [];
-
-      // Get user profiles separately
-      const userIds = members.map(m => m.profile_id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Failed to fetch profiles:', profilesError);
-      }
+      if (profilesError) throw profilesError;
+      if (!profiles || profiles.length === 0) return [];
 
       // Get user emails from the edge function
+      const userIds = profiles.map(p => p.id);
       const { data: emailData, error: emailError } = await supabase.functions.invoke(
         'get-user-emails',
         { body: { userIds } }
@@ -92,27 +85,18 @@ const CompaniesManagement = () => {
         // Continue without emails rather than failing completely
       }
 
-      // Create profile lookup
-      const profileLookup = profiles?.reduce((acc, profile) => {
-        acc[profile.id] = profile;
-        return acc;
-      }, {} as Record<string, any>) || {};
-
-      // Combine member data with profiles and emails
-      return members.map(member => {
-        const profile = profileLookup[member.profile_id];
-        return {
-          user_id: member.profile_id,
-          first_name: profile?.first_name || 'Unknown',
-          last_name: profile?.last_name || 'User',
-          email: emailData?.emails?.[member.profile_id] || 'No email',
-          points: member.points,
-          is_admin: member.is_admin,
-          role: member.role,
-          department: member.department,
-          avatar_url: profile?.avatar_url,
-        };
-      });
+      // Format member data
+      return profiles.map(profile => ({
+        user_id: profile.id,
+        first_name: profile.first_name || 'Unknown',
+        last_name: profile.last_name || 'User',
+        email: emailData?.emails?.[profile.id] || 'No email',
+        points: profile.points,
+        is_admin: profile.is_admin,
+        role: profile.role,
+        department: profile.department,
+        avatar_url: profile.avatar_url,
+      }));
     },
     enabled: !!expandedCompany,
   });
@@ -277,7 +261,7 @@ const CompaniesManagement = () => {
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4 text-gray-400" />
-                          <span>{company.company_members?.[0]?.count || 0}</span>
+                          <span>-</span>
                         </div>
                       </TableCell>
                       <TableCell>

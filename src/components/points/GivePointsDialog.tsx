@@ -78,61 +78,43 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     try {
       setIsSearching(true);
       
-      // Get all company members except the current user
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
+      // Get all profiles except the current user
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
         .select(`
           id,
-          is_admin,
-          profile_id,
+          first_name,
+          last_name,
+          avatar_url,
           points,
           department,
           invitation_status,
           first_login_at
         `)
         .eq('company_id', companyId)
-        .neq('profile_id', user.id);
+        .neq('id', user.id)
+        .eq('is_active', true);
       
-      if (membersError) throw membersError;
+      if (profilesError) throw profilesError;
       
-      if (!members?.length) {
+      if (!profiles?.length) {
         setTeamMembers([]);
         return;
       }
       
-      // Get user IDs for batch profile query
-      const userIds = members.map(m => m.profile_id);
-      
-      // Fetch profiles in batch
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .in('id', userIds);
-      
-      if (profilesError) throw profilesError;
-      
-      // Create a map for easy profile lookup
-      const profileMap = new Map();
-      profiles?.forEach(profile => {
-        profileMap.set(profile.id, profile);
-      });
-      
-      // Format team members with profile data
-      const formattedMembers = members.map(member => {
-        const profile = profileMap.get(member.profile_id);
-        const memberName = profile ? 
-          `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-          'No Name';
+      // Format team members directly from profiles data
+      const formattedMembers = profiles.map(profile => {
+        const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
         return {
-          id: member.id,
+          id: profile.id,
           name: memberName || 'No Name',
           email: '', // We don't have email in the profiles table
-          user_id: member.profile_id,
-          points: member.points || 0,
-          department: member.department || '',
-          invitation_status: (member.invitation_status as 'invited' | 'active') || 'invited',
-          first_login_at: member.first_login_at
+          user_id: profile.id,
+          points: profile.points || 0,
+          department: profile.department || '',
+          invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
+          first_login_at: profile.first_login_at
         };
       });
       

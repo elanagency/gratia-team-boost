@@ -31,11 +31,11 @@ export const TeamStats = () => {
     const fetchMemberData = async () => {
       if (!user || !companyId) return;
       try {
-        // Get member points from company_members table
+        // Get member points from profiles table
         const {
           data: memberData,
           error: memberError
-        } = await supabase.from('company_members').select('points').eq('profile_id', user.id).eq('company_id', companyId).maybeSingle();
+        } = await supabase.from('profiles').select('points').eq('id', user.id).eq('company_id', companyId).maybeSingle();
         if (memberError) throw memberError;
 
         // Count recognitions received

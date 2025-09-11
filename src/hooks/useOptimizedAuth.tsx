@@ -31,28 +31,21 @@ export const useOptimizedAuth = () => {
 
       console.log('Fetching user profile data for user:', userId);
       
-      const [profileResponse, companyMemberResponse] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('first_name, last_name, is_platform_admin')
-          .eq('id', userId)
-          .maybeSingle(),
-        supabase
-          .from('company_members')
-          .select('company_id, is_admin')
-          .eq('profile_id', userId)
-          .maybeSingle()
-      ]);
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, is_platform_admin, company_id, is_admin')
+        .eq('id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (profileResponse.error) throw profileResponse.error;
-      if (companyMemberResponse.error) throw companyMemberResponse.error;
+      if (profileError) throw profileError;
 
       let companyName = '';
-      if (companyMemberResponse.data?.company_id) {
+      if (profileData?.company_id) {
         const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('name')
-          .eq('id', companyMemberResponse.data.company_id)
+          .eq('id', profileData.company_id)
           .maybeSingle();
         
         if (companyError) throw companyError;
@@ -61,12 +54,12 @@ export const useOptimizedAuth = () => {
 
       const userProfile: UserProfile = {
         id: userId,
-        first_name: profileResponse.data?.first_name || null,
-        last_name: profileResponse.data?.last_name || null,
-        company_id: companyMemberResponse.data?.company_id || null,
+        first_name: profileData?.first_name || null,
+        last_name: profileData?.last_name || null,
+        company_id: profileData?.company_id || null,
         company_name: companyName,
-        is_admin: companyMemberResponse.data?.is_admin || false,
-        is_platform_admin: profileResponse.data?.is_platform_admin || false,
+        is_admin: profileData?.is_admin || false,
+        is_platform_admin: profileData?.is_platform_admin || false,
       };
       
       console.log('Profile data fetched successfully:', userProfile);

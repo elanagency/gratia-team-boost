@@ -72,11 +72,12 @@ export const BillingCard = () => {
 
       // Get active member count (only active members for billing)
       const { count: memberCount } = await supabase
-        .from('company_members')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .eq('invitation_status', 'active');
+        .eq('invitation_status', 'active')
+        .eq('is_active', true);
 
       const teamMembers = memberCount || 0;
       

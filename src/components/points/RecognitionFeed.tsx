@@ -64,9 +64,9 @@ export function RecognitionFeed() {
     
     try {
       const { data, error } = await supabase
-        .from('company_members')
+        .from('profiles')
         .select('points')
-        .eq('profile_id', user.id)
+        .eq('id', user.id)
         .eq('company_id', companyId)
         .single();
       

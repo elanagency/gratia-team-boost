@@ -16,8 +16,10 @@ export const PlatformStatsCards = () => {
 
       // Get total users
       const { count: usersCount } = await supabase
-        .from('company_members')
-        .select('*', { count: 'exact', head: true });
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .not('company_id', 'is', null)
+        .eq('is_active', true);
 
       // Get total transactions this month
       const startOfMonth = new Date();

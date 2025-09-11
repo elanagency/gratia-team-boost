@@ -117,9 +117,9 @@ export const TeamManagementCard = () => {
       let storedPassword = null;
       if (!hasLoggedIn) {
         const { data: memberData } = await supabase
-          .from('company_members')
+          .from('profiles')
           .select('temporary_password')
-          .eq('user_id', member.user_id)
+          .eq('id', member.user_id)
           .eq('company_id', companyId)
           .single();
         

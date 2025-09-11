@@ -12,9 +12,9 @@ export const useUserPoints = () => {
       if (!user?.id || !companyId) return { recognitionPoints: 0, monthlyPoints: 0 };
 
       const { data, error } = await supabase
-        .from('company_members')
+        .from('profiles')
         .select('points, monthly_points')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .eq('company_id', companyId)
         .single();
 

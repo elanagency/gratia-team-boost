@@ -67,32 +67,18 @@ export function MonthlyLeaderboardCard() {
         return;
       }
       
-      // Fetch user profiles and company members info
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
-        .select(`
-          profile_id,
-          role
-        `)
-        .eq('company_id', companyId)
-        .eq('is_admin', false)
-        .in('profile_id', userIds);
-      
-      if (membersError) throw membersError;
-      
+      // Fetch user profiles from profiles table (which now contains all member info)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, role')
+        .eq('company_id', companyId)
+        .eq('is_admin', false)
+        .eq('is_active', true)
         .in('id', userIds);
       
       if (profilesError) throw profilesError;
       
-      // Create maps for easy lookup
-      const memberMap = new Map();
-      members?.forEach(member => {
-        memberMap.set(member.profile_id, member);
-      });
-      
+      // Create profile map for easy lookup
       const profileMap = new Map();
       profiles?.forEach(profile => {
         profileMap.set(profile.id, profile);
@@ -101,19 +87,16 @@ export function MonthlyLeaderboardCard() {
       // Format leaderboard with profile data and ranks
       const formattedLeaderboard: LeaderboardMember[] = userIds
         .map(userId => {
-          const member = memberMap.get(userId);
           const profile = profileMap.get(userId);
           
-          if (!member || !profile) return null;
+          if (!profile) return null;
           
-          const memberName = profile ? 
-            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-            'No Name';
+          const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
           
           return {
             userId,
             name: memberName || 'No Name',
-            role: member.role || 'Member',
+            role: profile.role || 'Member',
             points: pointsByUser[userId] || 0,
             rank: 0 // Will be set after sorting
           };

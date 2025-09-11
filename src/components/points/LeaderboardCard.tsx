@@ -60,52 +60,33 @@ export function LeaderboardCard() {
         return;
       }
       
-      // Fetch company members to filter out admins and get roles and departments
-      const { data: members, error: membersError } = await supabase
-        .from('company_members')
-        .select('profile_id, role, is_admin, department')
+      // Fetch profiles for recipients and filter out admins
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, role, department')
         .eq('company_id', companyId)
-        .in('profile_id', recipientIds);
+        .eq('is_admin', false)
+        .eq('is_active', true)
+        .in('id', recipientIds);
       
-      if (membersError) throw membersError;
+      if (profilesError) throw profilesError;
       
-      // Filter out admins and get non-admin members with their recognition points
-      const nonAdminMembers = members?.filter(member => !member.is_admin) || [];
-      
-      if (!nonAdminMembers.length) {
+      if (!profiles?.length) {
         setLeaderboard([]);
         return;
       }
       
-      // Fetch profiles for non-admin members
-      const nonAdminUserIds = nonAdminMembers.map(m => m.profile_id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', nonAdminUserIds);
-      
-      if (profilesError) throw profilesError;
-      
-      // Create a map for easy profile lookup
-      const profileMap = new Map();
-      profiles?.forEach(profile => {
-        profileMap.set(profile.id, profile);
-      });
-      
       // Format leaderboard with profile data and ranks, sorted by recognition points
-      const formattedLeaderboard: LeaderboardMember[] = nonAdminMembers
-        .map(member => {
-          const profile = profileMap.get(member.profile_id);
-          const memberName = profile ? 
-            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-            'No Name';
+      const formattedLeaderboard: LeaderboardMember[] = profiles
+        .map(profile => {
+          const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
           
           return {
-            userId: member.profile_id,
+            userId: profile.id,
             name: memberName || 'No Name',
-            role: member.role || 'Member',
-            department: member.department || null,
-            points: pointsMap.get(member.profile_id) || 0,
+            role: profile.role || 'Member',
+            department: profile.department || null,
+            points: pointsMap.get(profile.id) || 0,
             rank: 0 // Will be set after sorting
           };
         })
