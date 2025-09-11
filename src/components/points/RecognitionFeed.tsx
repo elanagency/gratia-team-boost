@@ -152,7 +152,6 @@ export function RecognitionFeed() {
         recipient_id: transaction.recipient_profile_id,
         points: transaction.points,
         description: transaction.description,
-        structured_message: transaction.structured_message,
         created_at: transaction.created_at,
         sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
         recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
@@ -284,58 +283,46 @@ export function RecognitionFeed() {
       .slice(0, 2);
   };
 
-  const parseStructuredMessage = (transaction: PointTransaction, filterRecipient = false) => {
+  const parseStructuredMessage = (transaction: PointTransaction) => {
     // Use structured_message if available, fallback to description
     const messageContent = transaction.structured_message || transaction.description;
     
     if (!messageContent) return { hashtags: [], cleanText: "", mentions: [], points: [] };
     
-    // If it's HTML (structured message), parse it with regex
+    // If it's HTML (structured message), parse it
     if (messageContent.includes('<span class="mention-balloon">') || messageContent.includes('<span class="point-balloon">')) {
-      // Extract mentions using regex
-      const mentionMatches = messageContent.match(/<span class="mention-balloon"[^>]*>([^<]+)<\/span>/g) || [];
-      let mentions = mentionMatches.map(match => {
-        const textMatch = match.match(/>([^<]+)</);
-        return textMatch ? textMatch[1] : '';
-      }).filter(Boolean);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(messageContent, 'text/html');
       
-      // Extract points using regex
-      const pointMatches = messageContent.match(/<span class="point-balloon"[^>]*data-point-value="(\d+)"[^>]*>/g) || [];
-      let points = pointMatches.map(match => {
-        const valueMatch = match.match(/data-point-value="(\d+)"/);
-        return valueMatch ? parseInt(valueMatch[1]) : 0;
+      // Extract mentions
+      const mentionElements = doc.querySelectorAll('.mention-balloon');
+      const mentions = Array.from(mentionElements).map(el => el.textContent || '');
+      
+      // Extract points
+      const pointElements = doc.querySelectorAll('.point-balloon');
+      const points = Array.from(pointElements).map(el => {
+        const text = el.textContent || '';
+        const match = text.match(/\+?(\d+)/);
+        return match ? parseInt(match[1]) : 0;
       });
       
-      // Strip all HTML spans to get clean text
-      let cleanText = messageContent.replace(/<span[^>]*>([^<]*)<\/span>/g, '').trim();
-      
-      // Filter out recipient mention and transaction points if requested
-      if (filterRecipient) {
-        const recipientName = transaction.recipient_name;
-        const transactionPoints = transaction.points;
-        
-        // Filter out mentions that match the recipient name
-        mentions = mentions.filter(mention => mention !== recipientName);
-        
-        // Filter out points that match the main transaction amount
-        points = points.filter(point => point !== transactionPoints);
-      }
-      
-      const finalCleanText = cleanText
+      // Get clean text by removing all balloon elements and normalizing
+      const textContent = doc.body.textContent || '';
+      const cleanText = textContent
         .replace(/\s+/g, ' ')
         .trim();
       
       // Extract hashtags from clean text
-      const hashtagMatches = finalCleanText.match(/#\w+/g) || [];
+      const hashtagMatches = cleanText.match(/#\w+/g) || [];
       const hashtags = hashtagMatches.map(tag => tag.substring(1));
       
       // Remove hashtags from clean text for final display
-      const textWithoutHashtags = finalCleanText
+      const finalCleanText = cleanText
         .replace(/#\w+/g, '')
         .replace(/\s+/g, ' ')
         .trim();
       
-      return { hashtags, cleanText: textWithoutHashtags, mentions, points };
+      return { hashtags, cleanText: finalCleanText, mentions, points };
     }
     
     // Fallback: treat as plain text and use original extraction logic
@@ -490,26 +477,34 @@ export function RecognitionFeed() {
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
-                        <div className="text-sm text-muted-foreground">
-                          {(() => {
-                            const parsed = parseStructuredMessage(thread.mainPost, true);
-                            return (
-                              <div className="flex flex-wrap items-center gap-1">
-                                {parsed.mentions.map((mention, idx) => (
-                                  <span key={`mention-${idx}`} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
-                                    @{mention}
-                                  </span>
-                                ))}
-                                {parsed.cleanText && <span className="text-sm">{parsed.cleanText}</span>}
-                                {parsed.points.map((point, idx) => (
-                                  <span key={`point-${idx}`} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                    +{point}
-                                  </span>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                       <div className="text-sm text-muted-foreground">
+                         {(() => {
+                           const parsed = parseStructuredMessage(thread.mainPost);
+                           return (
+                             <div>
+                               {parsed.mentions.length > 0 && (
+                                 <div className="flex flex-wrap gap-1 mb-1">
+                                   {parsed.mentions.map((mention, idx) => (
+                                     <span key={idx} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
+                                       @{mention}
+                                     </span>
+                                   ))}
+                                 </div>
+                               )}
+                               <span>{parsed.cleanText}</span>
+                               {parsed.points.length > 0 && (
+                                 <div className="flex flex-wrap gap-1 mt-1">
+                                   {parsed.points.map((point, idx) => (
+                                     <span key={idx} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                       +{point}
+                                     </span>
+                                   ))}
+                                 </div>
+                               )}
+                             </div>
+                           );
+                         })()}
+                       </div>
                        
                        {(() => {
                          const parsed = parseStructuredMessage(thread.mainPost);
