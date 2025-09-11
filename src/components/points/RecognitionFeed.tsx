@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 type PointTransaction = {
   id: string;
@@ -36,6 +37,7 @@ export function RecognitionFeed() {
   const [userPoints, setUserPoints] = useState<number>(0);
   
   const { user, companyId } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (companyId && user?.id) {
@@ -260,7 +262,8 @@ export function RecognitionFeed() {
       
       toast.success(`Gave ${points} additional points!`);
       fetchRecognitionFeed(); // Refresh feed
-      fetchUserPoints(); // Refresh user points
+      // Invalidate user points query to trigger immediate refresh
+      queryClient.invalidateQueries({ queryKey: ['userPoints', user.id, companyId] });
       
     } catch (error: any) {
       console.error("Error giving quick points:", error);
