@@ -191,72 +191,6 @@ export type Database = {
         }
         Relationships: []
       }
-      company_members: {
-        Row: {
-          company_id: string
-          created_at: string
-          department: string | null
-          first_login_at: string | null
-          id: string
-          invitation_status: string
-          is_admin: boolean
-          is_trial_user: boolean | null
-          monthly_points: number
-          points: number
-          profile_id: string
-          role: string
-          temporary_password: string | null
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          department?: string | null
-          first_login_at?: string | null
-          id?: string
-          invitation_status?: string
-          is_admin?: boolean
-          is_trial_user?: boolean | null
-          monthly_points?: number
-          points?: number
-          profile_id: string
-          role?: string
-          temporary_password?: string | null
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          department?: string | null
-          first_login_at?: string | null
-          id?: string
-          invitation_status?: string
-          is_admin?: boolean
-          is_trial_user?: boolean | null
-          monthly_points?: number
-          points?: number
-          profile_id?: string
-          role?: string
-          temporary_password?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_members_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_members_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       company_point_transactions: {
         Row: {
           amount: number
@@ -532,12 +466,20 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_id: string | null
           created_at: string
+          department: string | null
+          first_login_at: string | null
           first_name: string
           id: string
+          invitation_status: string
           is_active: boolean
+          is_admin: boolean
           is_platform_admin: boolean
           last_name: string
+          monthly_points: number
+          points: number
+          role: string
           shipping_address: string | null
           shipping_city: string | null
           shipping_country: string | null
@@ -545,16 +487,25 @@ export type Database = {
           shipping_phone: string | null
           shipping_state: string | null
           shipping_zip_code: string | null
+          temporary_password: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
+          department?: string | null
+          first_login_at?: string | null
           first_name: string
           id: string
+          invitation_status?: string
           is_active?: boolean
+          is_admin?: boolean
           is_platform_admin?: boolean
           last_name: string
+          monthly_points?: number
+          points?: number
+          role?: string
           shipping_address?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
@@ -562,16 +513,25 @@ export type Database = {
           shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
+          temporary_password?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
+          department?: string | null
+          first_login_at?: string | null
           first_name?: string
           id?: string
+          invitation_status?: string
           is_active?: boolean
+          is_admin?: boolean
           is_platform_admin?: boolean
           last_name?: string
+          monthly_points?: number
+          points?: number
+          role?: string
           shipping_address?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
@@ -579,9 +539,18 @@ export type Database = {
           shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
+          temporary_password?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reward_categories: {
         Row: {
