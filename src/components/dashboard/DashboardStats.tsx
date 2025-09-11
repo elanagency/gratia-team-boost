@@ -45,7 +45,7 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
         
         if (recognitionsError) throw recognitionsError;
         
-        // Rewards count is not tracked anymore
+        // Rewards count is no longer tracked since the table was removed
         const rewardsThisMonth = 0;
         
         setRecognitionCount(recognitionsThisMonth || 0);
