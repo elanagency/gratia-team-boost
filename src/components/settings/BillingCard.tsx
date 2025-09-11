@@ -262,11 +262,11 @@ export const BillingCard = () => {
             </div>
             <Button 
               onClick={handleManageBilling}
-              disabled={isPortalLoading}
+              disabled={!hasExistingSubscription || isPortalLoading}
               className="gap-2"
             >
               <ExternalLink className="h-4 w-4" />
-              {isPortalLoading ? 'Opening Portal...' : 'Manage Billing'}
+              {isPortalLoading ? 'Opening Portal...' : hasExistingSubscription ? 'Manage Billing' : 'No Active Subscription'}
             </Button>
           </div>
         </div>
