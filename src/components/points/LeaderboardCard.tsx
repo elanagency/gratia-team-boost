@@ -26,6 +26,19 @@ export function LeaderboardCard() {
     }
   }, [companyId]);
 
+  // Listen for recognition feed updates to refresh leaderboard
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchLeaderboard();
+    };
+
+    window.addEventListener('refreshRecognitionFeed', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('refreshRecognitionFeed', handleRefresh);
+    };
+  }, []);
+
   const fetchLeaderboard = async () => {
     if (!companyId) return;
     
