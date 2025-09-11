@@ -21,7 +21,7 @@ export const usePricing = () => {
 
       return data?.value ? parseInt(JSON.parse(data.value.toString())) : 299;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
   });
 
   return {

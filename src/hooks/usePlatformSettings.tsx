@@ -48,6 +48,7 @@ export const usePlatformSettings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['pricing'] });
       toast.success('Settings updated successfully');
     },
     onError: (error) => {
