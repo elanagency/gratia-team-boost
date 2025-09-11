@@ -290,58 +290,37 @@ export function RecognitionFeed() {
     
     if (!messageContent) return { hashtags: [], cleanText: "", mentions: [], points: [] };
     
-    // If it's HTML (structured message), parse it
+    // If it's HTML (structured message), parse it with regex
     if (messageContent.includes('<span class="mention-balloon">') || messageContent.includes('<span class="point-balloon">')) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(messageContent, 'text/html');
+      // Extract mentions using regex
+      const mentionMatches = messageContent.match(/<span class="mention-balloon"[^>]*>([^<]+)<\/span>/g) || [];
+      let mentions = mentionMatches.map(match => {
+        const textMatch = match.match(/>([^<]+)</);
+        return textMatch ? textMatch[1] : '';
+      }).filter(Boolean);
       
-      // Extract mentions
-      const mentionElements = doc.querySelectorAll('.mention-balloon');
-      let mentions = Array.from(mentionElements).map(el => el.textContent?.replace('@', '') || '');
-      
-      // Extract points
-      const pointElements = doc.querySelectorAll('.point-balloon');
-      let points = Array.from(pointElements).map(el => {
-        const text = el.textContent || '';
-        const match = text.match(/\+?(\d+)/);
-        return match ? parseInt(match[1]) : 0;
+      // Extract points using regex
+      const pointMatches = messageContent.match(/<span class="point-balloon"[^>]*data-point-value="(\d+)"[^>]*>/g) || [];
+      let points = pointMatches.map(match => {
+        const valueMatch = match.match(/data-point-value="(\d+)"/);
+        return valueMatch ? parseInt(valueMatch[1]) : 0;
       });
       
-      // Create a copy of the HTML for text extraction
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = messageContent;
+      // Strip all HTML spans to get clean text
+      let cleanText = messageContent.replace(/<span[^>]*>([^<]*)<\/span>/g, '').trim();
       
       // Filter out recipient mention and transaction points if requested
       if (filterRecipient) {
         const recipientName = transaction.recipient_name;
         const transactionPoints = transaction.points;
         
-        // Remove mention elements that match the recipient name
-        tempDiv.querySelectorAll('.mention-balloon').forEach(el => {
-          if (el.textContent === recipientName) {
-            el.remove();
-          }
-        });
-        
-        // Remove point elements that match the main transaction amount
-        tempDiv.querySelectorAll('.point-balloon').forEach(el => {
-          const text = el.textContent || '';
-          const match = text.match(/\+?(\d+)/);
-          if (match && parseInt(match[1]) === transactionPoints) {
-            el.remove();
-          }
-        });
-        
-        // Update mentions and points arrays after filtering
+        // Filter out mentions that match the recipient name
         mentions = mentions.filter(mention => mention !== recipientName);
+        
+        // Filter out points that match the main transaction amount
         points = points.filter(point => point !== transactionPoints);
-      } else {
-        // Remove all balloon elements if not filtering
-        tempDiv.querySelectorAll('.mention-balloon, .point-balloon').forEach(el => el.remove());
       }
       
-      // Get clean text from the modified HTML
-      const cleanText = tempDiv.textContent || tempDiv.innerText || '';
       const finalCleanText = cleanText
         .replace(/\s+/g, ' ')
         .trim();
