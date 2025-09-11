@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,13 +23,31 @@ export function GivePointsCard() {
   const [pointQuery, setPointQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { user, companyId } = useAuth();
   const { teamMembers } = useTeamMembers();
   const { monthlyPoints } = useUserPoints();
 
-  const availableRecipients = teamMembers?.filter(member => member.user_id !== user?.id) || [];
+  // Handle clicking outside dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowMentionDropdown(false);
+        setShowPointDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const availableRecipients = teamMembers?.filter(member => 
+    member.user_id !== user?.id && member.invitation_status === 'active'
+  ) || [];
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -203,7 +221,7 @@ export function GivePointsCard() {
         </div>
 
         {/* Composer */}
-        <div className="relative flex-1 flex flex-col">
+        <div className="relative flex-1 flex flex-col" ref={dropdownRef}>
           <div className="border rounded-lg bg-card flex flex-col flex-1">
             {/* Toolbar */}
             <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
@@ -249,7 +267,7 @@ export function GivePointsCard() {
                   <button
                     key={member.user_id}
                     onClick={() => selectMention(member)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 transition-colors"
+                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage src="" />
@@ -276,7 +294,7 @@ export function GivePointsCard() {
                   <button
                     key={value}
                     onClick={() => selectPoint(value)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 transition-colors"
+                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
@@ -289,7 +307,7 @@ export function GivePointsCard() {
                 {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
                   <button
                     onClick={() => selectPoint(Number(pointQuery))}
-                    className="w-full px-3 py-2 text-left hover:bg-accent/80 hover:text-accent-foreground flex items-center gap-2 border-t transition-colors"
+                    className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-t transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
