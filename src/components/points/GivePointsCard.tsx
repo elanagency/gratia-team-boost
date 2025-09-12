@@ -22,6 +22,8 @@ export function GivePointsCard() {
   const [mentionQuery, setMentionQuery] = useState("");
   const [pointQuery, setPointQuery] = useState("");
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0, shouldFlip: false });
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const [selectedPointIndex, setSelectedPointIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -32,7 +34,20 @@ export function GivePointsCard() {
   const { teamMembers } = useTeamMembers();
   const { monthlyPoints } = useUserPoints();
 
-  // Handle clicking outside dropdowns
+  const availableRecipients = teamMembers?.filter(member => 
+    member.user_id !== user?.id && member.invitation_status === 'active'
+  ) || [];
+
+  const filteredMembers = availableRecipients.filter(member =>
+    member.name.toLowerCase().includes(mentionQuery)
+  );
+
+  const commonPointValues = [10, 20, 25, 50, 100];
+  const filteredPointValues = pointQuery 
+    ? commonPointValues.filter(value => value.toString().includes(pointQuery))
+    : commonPointValues;
+
+  // Handle clicking outside dropdowns and keyboard navigation
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -41,15 +56,59 @@ export function GivePointsCard() {
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (showMentionDropdown) {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setSelectedMentionIndex(prev => 
+            prev < Math.min(filteredMembers.length - 1, 4) ? prev + 1 : 0
+          );
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setSelectedMentionIndex(prev => 
+            prev > 0 ? prev - 1 : Math.min(filteredMembers.length - 1, 4)
+          );
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          if (filteredMembers[selectedMentionIndex]) {
+            selectMention(filteredMembers[selectedMentionIndex]);
+          }
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          setShowMentionDropdown(false);
+        }
+      } else if (showPointDropdown) {
+        const availablePointValues = filteredPointValues.filter(value => value <= monthlyPoints);
+        const customPointValue = pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints ? Number(pointQuery) : null;
+        const totalOptions = availablePointValues.length + (customPointValue ? 1 : 0);
+        
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setSelectedPointIndex(prev => prev < totalOptions - 1 ? prev + 1 : 0);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setSelectedPointIndex(prev => prev > 0 ? prev - 1 : totalOptions - 1);
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          if (selectedPointIndex < availablePointValues.length) {
+            selectPoint(availablePointValues[selectedPointIndex]);
+          } else if (customPointValue) {
+            selectPoint(customPointValue);
+          }
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          setShowPointDropdown(false);
+        }
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
-
-  const availableRecipients = teamMembers?.filter(member => 
-    member.user_id !== user?.id && member.invitation_status === 'active'
-  ) || [];
+  }, [showMentionDropdown, showPointDropdown, selectedMentionIndex, selectedPointIndex, filteredMembers, pointQuery, monthlyPoints]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -100,6 +159,7 @@ export function GivePointsCard() {
     setMentionQuery(query);
     setShowMentionDropdown(true);
     setShowPointDropdown(false);
+    setSelectedMentionIndex(0); // Reset to first option
   };
 
   const handlePointTrigger = (query: string, position: number, coordinates?: { viewportX: number, viewportY: number, editorX: number, editorY: number }) => {
@@ -141,6 +201,7 @@ export function GivePointsCard() {
     setPointQuery(query);
     setShowPointDropdown(true);
     setShowMentionDropdown(false);
+    setSelectedPointIndex(0); // Reset to first option
   };
 
   const selectMention = (member: any) => {
@@ -179,6 +240,7 @@ export function GivePointsCard() {
     setShowMentionDropdown(true);
     setShowPointDropdown(false);
     setMentionQuery("");
+    setSelectedMentionIndex(0);
   };
 
   const handleAmountButtonClick = () => {
@@ -186,16 +248,9 @@ export function GivePointsCard() {
     setShowPointDropdown(true);
     setShowMentionDropdown(false);
     setPointQuery("");
+    setSelectedPointIndex(0);
   };
 
-  const filteredMembers = availableRecipients.filter(member =>
-    member.name.toLowerCase().includes(mentionQuery)
-  );
-
-  const commonPointValues = [10, 20, 25, 50, 100];
-  const filteredPointValues = pointQuery 
-    ? commonPointValues.filter(value => value.toString().includes(pointQuery))
-    : commonPointValues;
 
   const handleSubmit = async () => {
     if (!text.trim() || mentions.length === 0) {
@@ -367,11 +422,15 @@ export function GivePointsCard() {
                 top: `${dropdownPosition.y}px`
               }}
             >
-              {filteredMembers.slice(0, 5).map((member) => (
+              {filteredMembers.slice(0, 5).map((member, index) => (
                 <button
                   key={member.user_id}
                   onClick={() => selectMention(member)}
-                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
+                    index === selectedMentionIndex 
+                      ? 'bg-accent text-accent-foreground' 
+                      : 'hover:bg-muted/50'
+                  }`}
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarImage src="" />
@@ -401,11 +460,15 @@ export function GivePointsCard() {
               <div className="px-3 py-2 text-xs text-muted-foreground border-b">
                 Quick point values (Available: {monthlyPoints})
               </div>
-              {filteredPointValues.filter(value => value <= monthlyPoints).map((value) => (
+              {filteredPointValues.filter(value => value <= monthlyPoints).map((value, index) => (
                 <button
                   key={value}
                   onClick={() => selectPoint(value)}
-                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
+                    index === selectedPointIndex
+                      ? 'bg-accent text-accent-foreground'
+                      : 'hover:bg-muted/50'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
@@ -418,7 +481,11 @@ export function GivePointsCard() {
               {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
                 <button
                   onClick={() => selectPoint(Number(pointQuery))}
-                  className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-t transition-colors"
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 border-t transition-colors ${
+                    selectedPointIndex === filteredPointValues.filter(value => value <= monthlyPoints).length
+                      ? 'bg-accent text-accent-foreground'
+                      : 'hover:bg-muted/50'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
