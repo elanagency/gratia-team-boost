@@ -21,10 +21,11 @@ export function GivePointsCard() {
   const [showPointDropdown, setShowPointDropdown] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [pointQuery, setPointQuery] = useState("");
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0, shouldFlip: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { user, companyId } = useAuth();
@@ -60,14 +61,40 @@ export function GivePointsCard() {
     setPoints(newPoints);
   };
 
-  const handleMentionTrigger = (query: string, position: number, cursorX?: number, cursorY?: number) => {
+  const handleMentionTrigger = (query: string, position: number, coordinates?: { viewportX: number, viewportY: number, editorX: number, editorY: number }) => {
     if (query === '' && position === -1) {
       setShowMentionDropdown(false);
       return;
     }
     
-    if (cursorX !== undefined && cursorY !== undefined) {
-      setCursorPosition({ x: cursorX, y: cursorY });
+    if (coordinates && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = 200; // Approximate dropdown height
+      const dropdownWidth = 256; // w-64 = 256px
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      
+      // Calculate position relative to container
+      let x = coordinates.viewportX - containerRect.left;
+      let y = coordinates.viewportY - containerRect.top + 8; // 8px offset below cursor
+      
+      // Check if dropdown would go off screen and flip if needed
+      let shouldFlip = false;
+      if (coordinates.viewportY + dropdownHeight > viewport.height) {
+        y = coordinates.viewportY - containerRect.top - dropdownHeight - 8; // Position above cursor
+        shouldFlip = true;
+      }
+      
+      // Ensure dropdown doesn't go off the right edge
+      if (x + dropdownWidth > containerRect.width) {
+        x = containerRect.width - dropdownWidth - 8;
+      }
+      
+      // Ensure dropdown doesn't go off the left edge
+      if (x < 8) {
+        x = 8;
+      }
+      
+      setDropdownPosition({ x, y, shouldFlip });
     }
     
     setMentionQuery(query);
@@ -75,14 +102,40 @@ export function GivePointsCard() {
     setShowPointDropdown(false);
   };
 
-  const handlePointTrigger = (query: string, position: number, cursorX?: number, cursorY?: number) => {
+  const handlePointTrigger = (query: string, position: number, coordinates?: { viewportX: number, viewportY: number, editorX: number, editorY: number }) => {
     if (query === '' && position === -1) {
       setShowPointDropdown(false);
       return;
     }
     
-    if (cursorX !== undefined && cursorY !== undefined) {
-      setCursorPosition({ x: cursorX, y: cursorY });
+    if (coordinates && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = 200; // Approximate dropdown height
+      const dropdownWidth = 256; // w-64 = 256px
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      
+      // Calculate position relative to container
+      let x = coordinates.viewportX - containerRect.left;
+      let y = coordinates.viewportY - containerRect.top + 8; // 8px offset below cursor
+      
+      // Check if dropdown would go off screen and flip if needed
+      let shouldFlip = false;
+      if (coordinates.viewportY + dropdownHeight > viewport.height) {
+        y = coordinates.viewportY - containerRect.top - dropdownHeight - 8; // Position above cursor
+        shouldFlip = true;
+      }
+      
+      // Ensure dropdown doesn't go off the right edge
+      if (x + dropdownWidth > containerRect.width) {
+        x = containerRect.width - dropdownWidth - 8;
+      }
+      
+      // Ensure dropdown doesn't go off the left edge
+      if (x < 8) {
+        x = 8;
+      }
+      
+      setDropdownPosition({ x, y, shouldFlip });
     }
     
     setPointQuery(query);
@@ -235,7 +288,7 @@ export function GivePointsCard() {
         </div>
 
         {/* Composer */}
-        <div className="relative flex-1 flex flex-col" ref={dropdownRef}>
+        <div className="relative flex-1 flex flex-col" ref={containerRef}>
           <div className="border rounded-lg bg-card flex flex-col flex-1">
             {/* Toolbar */}
             <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
@@ -304,13 +357,14 @@ export function GivePointsCard() {
             </div>
           </div>
           
-          {/* Mention Dropdown - positioned below cursor */}
+          {/* Mention Dropdown - positioned near cursor */}
           {showMentionDropdown && filteredMembers.length > 0 && (
             <div 
-              className="absolute z-[60] w-64 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+              ref={dropdownRef}
+              className="absolute z-[60] w-64 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
               style={{
-                left: `${cursorPosition.x}px`,
-                top: `${cursorPosition.y + 4}px`
+                left: `${dropdownPosition.x}px`,
+                top: `${dropdownPosition.y}px`
               }}
             >
               {filteredMembers.slice(0, 5).map((member) => (
@@ -334,13 +388,14 @@ export function GivePointsCard() {
             </div>
           )}
 
-          {/* Point Dropdown - positioned below cursor */}
+          {/* Point Dropdown - positioned near cursor */}
           {showPointDropdown && (
             <div 
-              className="absolute z-[60] w-64 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+              ref={dropdownRef}
+              className="absolute z-[60] w-64 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
               style={{
-                left: `${cursorPosition.x}px`,
-                top: `${cursorPosition.y + 4}px`
+                left: `${dropdownPosition.x}px`,
+                top: `${dropdownPosition.y}px`
               }}
             >
               <div className="px-3 py-2 text-xs text-muted-foreground border-b">

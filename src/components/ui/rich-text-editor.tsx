@@ -15,8 +15,8 @@ export interface PointBalloon {
 export interface RichTextEditorProps {
   value: string;
   onChange: (value: string, mentions: Mention[], points: PointBalloon[]) => void;
-  onMentionTrigger?: (query: string, position: number, cursorX?: number, cursorY?: number) => void;
-  onPointTrigger?: (query: string, position: number, cursorX?: number, cursorY?: number) => void;
+  onMentionTrigger?: (query: string, position: number, coordinates?: { viewportX: number, viewportY: number, editorX: number, editorY: number }) => void;
+  onPointTrigger?: (query: string, position: number, coordinates?: { viewportX: number, viewportY: number, editorX: number, editorY: number }) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -111,18 +111,27 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           const cursorPos = range.startOffset;
           const textUpToCursor = textContent.slice(0, cursorPos);
           
-          // Get cursor coordinates
+          // Get cursor coordinates (both viewport and editor-relative)
           const rect = range.getBoundingClientRect();
           const editorRect = editorRef.current?.getBoundingClientRect();
-          const cursorX = editorRect ? rect.left - editorRect.left : rect.left;
-          const cursorY = editorRect ? rect.bottom - editorRect.top : rect.bottom;
+          const coordinates = editorRect ? {
+            viewportX: rect.left,
+            viewportY: rect.bottom,
+            editorX: rect.left - editorRect.left,
+            editorY: rect.bottom - editorRect.top
+          } : {
+            viewportX: rect.left,
+            viewportY: rect.bottom,
+            editorX: rect.left,
+            editorY: rect.bottom
+          };
           
           // Check for @ trigger (mentions)
           const atIndex = textUpToCursor.lastIndexOf('@');
           if (atIndex !== -1 && (atIndex === 0 || textContent[atIndex - 1] === ' ')) {
             const query = textUpToCursor.slice(atIndex + 1);
             if (!query.includes(' ')) {
-              onMentionTrigger?.(query.toLowerCase(), atIndex, cursorX, cursorY);
+              onMentionTrigger?.(query.toLowerCase(), atIndex, coordinates);
               return;
             }
           }
@@ -132,7 +141,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           if (plusIndex !== -1 && (plusIndex === 0 || textContent[plusIndex - 1] === ' ')) {
             const query = textUpToCursor.slice(plusIndex + 1);
             if (!query.includes(' ') && !/\d+/.test(query)) {
-              onPointTrigger?.(query, plusIndex, cursorX, cursorY);
+              onPointTrigger?.(query, plusIndex, coordinates);
               return;
             }
           }
