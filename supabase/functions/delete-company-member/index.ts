@@ -55,10 +55,10 @@ serve(async (req) => {
 
     // Get member info before deletion to handle points
     const { data: member, error: memberError } = await supabase
-      .from('company_members')
+      .from('profiles')
       .select('points, is_admin')
       .eq('company_id', companyId)
-      .eq('profile_id', userId)
+      .eq('id', userId)
       .single()
 
     if (memberError) {
@@ -70,11 +70,12 @@ serve(async (req) => {
     }
 
     // Check if this is the last admin
-    const { data: adminCount, error: adminCountError } = await supabase
-      .from('company_members')
+    const { data: adminProfiles, error: adminCountError } = await supabase
+      .from('profiles')
       .select('id', { count: 'exact' })
       .eq('company_id', companyId)
       .eq('is_admin', true)
+      .eq('is_active', true)
 
     if (adminCountError) {
       console.error('Error checking admin count:', adminCountError)
@@ -84,7 +85,7 @@ serve(async (req) => {
       )
     }
 
-    if (member.is_admin && (adminCount?.length || 0) <= 1) {
+    if (member.is_admin && (adminProfiles?.length || 0) <= 1) {
       return new Response(
         JSON.stringify({ error: 'Cannot delete the last admin of a company' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -141,19 +142,10 @@ serve(async (req) => {
 
     // Delete user-related records in correct order (but keep profile and transactions)
     const deletions = [
-      // Delete cart items
-      supabase.from('carts').delete().eq('company_id', companyId).eq('user_id', userId),
-      
       // Delete allocation records
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId).eq('user_id', userId),
       
       // Don't delete point transactions - they reference profile_id which we keep for history
-      
-      // Delete reward redemptions
-      supabase.from('reward_redemptions').delete().eq('user_id', userId),
-      
-      // Finally delete the company member record
-      supabase.from('company_members').delete().eq('company_id', companyId).eq('profile_id', userId)
     ]
 
     // Execute all deletions
@@ -163,6 +155,42 @@ serve(async (req) => {
         console.error('Deletion error:', error)
         throw error
       }
+    }
+
+    // Get current active member count before updating subscription
+    const { data: activeMembersData, error: countError } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .neq('id', userId) // Exclude the user being deleted
+
+    if (countError) {
+      console.error('Error counting active members:', countError)
+      // Continue with deletion even if count fails
+    }
+
+    const remainingMembers = activeMembersData?.length || 0
+    console.log('Remaining active members after deletion:', remainingMembers)
+
+    // Update Stripe subscription with new member count
+    try {
+      const { error: subscriptionError } = await supabase.functions.invoke('update-subscription', {
+        body: {
+          companyId: companyId,
+          newQuantity: remainingMembers
+        }
+      })
+
+      if (subscriptionError) {
+        console.error('Error updating subscription:', subscriptionError)
+        // Don't fail the deletion for subscription update errors
+      } else {
+        console.log('Successfully updated subscription quantity to:', remainingMembers)
+      }
+    } catch (subscriptionError) {
+      console.error('Failed to call update-subscription function:', subscriptionError)
+      // Don't fail the deletion for subscription update errors
     }
 
     console.log('Member deleted successfully:', { companyId, userId, pointsReturned: member.points })
