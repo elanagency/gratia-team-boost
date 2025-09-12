@@ -140,7 +140,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           const plusIndex = textUpToCursor.lastIndexOf('+');
           if (plusIndex !== -1 && (plusIndex === 0 || textContent[plusIndex - 1] === ' ')) {
             const query = textUpToCursor.slice(plusIndex + 1);
-            if (!query.includes(' ') && !/\d+/.test(query)) {
+            if (!query.includes(' ')) {
               onPointTrigger?.(query, plusIndex, coordinates);
               return;
             }
