@@ -102,26 +102,26 @@ serve(async (req: Request) => {
 
     console.log("[CHECK-SUBSCRIPTION-STATUS] Authenticated user:", user.id);
 
-    // Get user's company membership
-    console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching company membership");
-    const { data: membership, error: membershipError } = await supabaseAdmin
-      .from("company_members")
+    // Get user's profile and company membership from profiles table
+    console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching user profile and company membership");
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
       .select("company_id, is_admin")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .eq("is_admin", true)
       .single();
 
-    if (membershipError) {
-      console.error("[CHECK-SUBSCRIPTION-STATUS] Membership error:", membershipError);
+    if (profileError) {
+      console.error("[CHECK-SUBSCRIPTION-STATUS] Profile error:", profileError);
       
       // Check if the user is a member of any company (not necessarily admin)
-      const { data: nonAdminMembership, error: nonAdminError } = await supabaseAdmin
-        .from("company_members")
+      const { data: nonAdminProfile, error: nonAdminError } = await supabaseAdmin
+        .from("profiles")
         .select("company_id")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .single();
         
-      if (nonAdminError || !nonAdminMembership) {
+      if (nonAdminError || !nonAdminProfile || !nonAdminProfile.company_id) {
         console.error("[CHECK-SUBSCRIPTION-STATUS] No company membership found");
         return new Response(
           JSON.stringify({ error: "Company membership not found" }),
@@ -132,7 +132,7 @@ serve(async (req: Request) => {
       // Non-admin user, return limited information
       console.log("[CHECK-SUBSCRIPTION-STATUS] Non-admin user, returning limited info");
       const { data: usedSlots } = await supabaseAdmin
-        .rpc('get_used_team_slots', { company_id: nonAdminMembership.company_id });
+        .rpc('get_used_team_slots', { company_id: nonAdminProfile.company_id });
       
       const currentUsedSlots = usedSlots || 0;
       
@@ -154,7 +154,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const companyId = membership.company_id;
+    const companyId = profile.company_id;
     console.log("[CHECK-SUBSCRIPTION-STATUS] Company ID:", companyId);
 
     // Get company info with subscription status
