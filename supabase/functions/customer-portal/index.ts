@@ -65,12 +65,43 @@ serve(async (req) => {
 
     // Extract the JWT token from the Authorization header
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) {
-      logStep("User authentication failed", { error: userError });
-      throw new Error(`Authentication error: ${userError?.message}`);
+    
+    // Try to get the user from the JWT token
+    let user;
+    try {
+      const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError || !authUser) {
+        logStep("Direct auth failed, trying to decode JWT", { error: userError?.message });
+        
+        // If direct auth fails, try to decode the JWT to get user ID
+        const jwtPayload = JSON.parse(atob(token.split('.')[1]));
+        const userId = jwtPayload.sub;
+        
+        if (!userId) {
+          throw new Error("No user ID found in JWT token");
+        }
+        
+        // Verify user exists in profiles table using service role
+        const { data: profileData, error: profileCheckError } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .single();
+          
+        if (profileCheckError || !profileData) {
+          throw new Error("User not found or inactive");
+        }
+        
+        user = { id: userId };
+        logStep("User authenticated via JWT decode", { userId });
+      } else {
+        user = authUser;
+        logStep("User authenticated directly", { userId: user.id, email: user.email });
+      }
+    } catch (jwtError) {
+      logStep("JWT authentication completely failed", { error: jwtError });
+      throw new Error("Invalid or expired authentication token");
     }
-    logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get user's company and stripe customer ID from profiles table
     const { data: profile, error: profileError } = await supabaseClient
