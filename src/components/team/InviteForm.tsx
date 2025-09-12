@@ -3,6 +3,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import DepartmentCombobox from "@/components/team/DepartmentCombobox";
 
 interface InviteFormProps {
   email: string;
@@ -55,14 +56,11 @@ const InviteForm = ({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="department">
-          Department
-        </Label>
-        <Input
-          id="department"
+        <Label htmlFor="department">Department</Label>
+        <DepartmentCombobox
           value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          placeholder="Enter department (optional)"
+          onChange={setDepartment}
+          placeholder="Select or create department (optional)"
         />
       </div>
       <Button 
