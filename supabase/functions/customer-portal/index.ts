@@ -72,9 +72,9 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get user's company and stripe customer ID
-    const { data: membership, error: membershipError } = await supabaseClient
-      .from('company_members')
+    // Get user's company and stripe customer ID from profiles table
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
       .select(`
         company_id,
         companies (
@@ -85,14 +85,14 @@ serve(async (req) => {
           name
         )
       `)
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
-    if (membershipError || !membership) {
+    if (profileError || !profile || !profile.company_id) {
       throw new Error("User is not a member of any company");
     }
 
-    const company = membership.companies as any;
+    const company = profile.companies as any;
     
     // Get environment-specific customer ID
     const customerId = company.environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
@@ -107,7 +107,7 @@ serve(async (req) => {
       environment: company.environment
     });
 
-    const stripeKey = await getStripeKey(supabaseClient, membership.company_id);
+    const stripeKey = await getStripeKey(supabaseClient, profile.company_id);
     logStep("Stripe key retrieved and verified");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
