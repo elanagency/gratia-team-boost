@@ -152,11 +152,13 @@ export const useTeamMembers = () => {
     try {
       if (!companyId) throw new Error("Company ID not found");
       
-      // Mark profile as inactive instead of deleting
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: false })
-        .eq('id', member.id);
+      // Call the delete-company-member edge function for proper deletion
+      const { error } = await supabase.functions.invoke('delete-company-member', {
+        body: {
+          companyId,
+          userId: member.id
+        }
+      });
         
       if (error) throw error;
 

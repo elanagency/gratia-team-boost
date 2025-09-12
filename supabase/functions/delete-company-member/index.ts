@@ -157,6 +157,17 @@ serve(async (req) => {
       }
     }
 
+    // Mark profile as inactive to preserve transaction history
+    const { error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({ is_active: false })
+      .eq('id', userId)
+
+    if (profileUpdateError) {
+      console.error('Error updating profile to inactive:', profileUpdateError)
+      throw profileUpdateError
+    }
+
     // Get current active member count before updating subscription
     const { data: activeMembersData, error: countError } = await supabase
       .from('profiles')
