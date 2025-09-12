@@ -122,14 +122,14 @@ serve(async (req) => {
     }
 
     // Mark profile as inactive instead of deleting auth user
-    const { error: profileError } = await supabase
+    const { error: profileUpdateError } = await supabase
       .from('profiles')
       .update({ is_active: false })
       .eq('id', userId)
 
-    if (profileError) {
-      console.error('Error marking profile as inactive:', profileError)
-      throw profileError
+    if (profileUpdateError) {
+      console.error('Error marking profile as inactive:', profileUpdateError)
+      throw profileUpdateError
     }
 
     // Delete auth.users record while preserving profile and transaction history
@@ -157,16 +157,6 @@ serve(async (req) => {
       }
     }
 
-    // Mark profile as inactive to preserve transaction history
-    const { error: profileUpdateError } = await supabase
-      .from('profiles')
-      .update({ is_active: false })
-      .eq('id', userId)
-
-    if (profileUpdateError) {
-      console.error('Error updating profile to inactive:', profileUpdateError)
-      throw profileUpdateError
-    }
 
     // Get current active member count before updating subscription
     const { data: activeMembersData, error: countError } = await supabase
