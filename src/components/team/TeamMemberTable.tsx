@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { MoreHorizontal, Edit, Trash2, Mail } from "lucide-react";
 import { TeamMember } from "@/hooks/useTeamMembers";
 
@@ -12,16 +13,33 @@ interface TeamMemberTableProps {
   onRemoveMember: (member: TeamMember) => void;
   onEditMember?: (member: TeamMember) => void;
   onResendInvite?: (member: TeamMember) => void;
+  currentPage?: number;
+  totalPages?: number;
+  totalMembers?: number;
+  onPageChange?: (page: number) => void;
 }
 
 const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   teamMembers,
   onRemoveMember,
   onEditMember,
-  onResendInvite
+  onResendInvite,
+  currentPage = 1,
+  totalPages = 1,
+  totalMembers = 0,
+  onPageChange
 }) => {
+  const startIndex = (currentPage - 1) * 10 + 1;
+  const endIndex = Math.min(currentPage * 10, totalMembers);
   return (
-    <Table>
+    <div className="space-y-4">
+      {totalMembers > 0 && (
+        <div className="text-sm text-muted-foreground">
+          Showing {startIndex}-{endIndex} of {totalMembers} members
+        </div>
+      )}
+      
+      <Table>
       <TableHeader>
         <TableRow className="border-gray-100">
           <TableHead className="text-gray-500">Name</TableHead>
@@ -102,7 +120,53 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
           </TableRow>
         )}
       </TableBody>
-    </Table>
+      </Table>
+      
+      {totalPages > 1 && onPageChange && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) onPageChange(currentPage - 1);
+                  }}
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onPageChange(page);
+                    }}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) onPageChange(currentPage + 1);
+                  }}
+                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
   );
 };
 

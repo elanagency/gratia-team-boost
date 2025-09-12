@@ -14,16 +14,20 @@ import { supabase } from "@/integrations/supabase/client";
 const TeamManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const processedSessionIds = useRef(new Set<string>());
+  
   const {
     teamMembers,
     fetchTeamMembers,
     removeMember,
     isLoading,
-    teamSlots
-  } = useTeamMembers();
+    teamSlots,
+    totalMembers,
+    totalPages
+  } = useTeamMembers(currentPage, 10);
 
   // Handle billing setup success/cancellation from URL params
   useEffect(() => {
@@ -81,6 +85,10 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -97,7 +105,14 @@ const TeamManagement = () => {
             {isVerifying ? "Processing subscription setup..." : "Loading team members..."}
           </div>
         ) : (
-          <TeamMemberTable teamMembers={teamMembers} onRemoveMember={handleDeleteClick} />
+          <TeamMemberTable 
+            teamMembers={teamMembers} 
+            onRemoveMember={handleDeleteClick}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalMembers={totalMembers}
+            onPageChange={handlePageChange}
+          />
         )}
       </Card>
       

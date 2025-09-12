@@ -15,10 +15,12 @@ export interface TeamMember {
   first_login_at?: string;
 }
 
-export const useTeamMembers = () => {
+export const useTeamMembers = (page = 1, pageSize = 10) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0 });
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const { user, companyId } = useAuth();
 
   const fetchTeamMembers = useCallback(async () => {
@@ -42,7 +44,24 @@ export const useTeamMembers = () => {
         console.error("Error fetching company:", companyError);
       }
 
-      // Get all team members (non-admin profiles) directly from profiles table
+      // Get total count first
+      const { count: totalCount, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('is_admin', false)
+        .eq('is_active', true);
+
+      if (countError) {
+        throw countError;
+      }
+
+      const total = totalCount || 0;
+      setTotalMembers(total);
+      setTotalPages(Math.ceil(total / pageSize));
+
+      // Get paginated team members (non-admin profiles) directly from profiles table
+      const offset = (page - 1) * pageSize;
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -58,15 +77,17 @@ export const useTeamMembers = () => {
         `)
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
       
       if (profilesError) {
         throw profilesError;
       }
       
-      console.log(`Found ${profiles?.length || 0} team members (excluding admins)`);
+      console.log(`Found ${profiles?.length || 0} team members on page ${page} (excluding admins)`);
       
-      const usedMembers = profiles?.length || 0;
+      const usedMembers = total;
       const hasSubscription = !!company?.stripe_subscription_id;
       
       setTeamSlots({
@@ -117,7 +138,7 @@ export const useTeamMembers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, companyId]);
+  }, [user, companyId, page, pageSize]);
 
   const updateMember = useCallback(async (memberId: string, updateData: { name: string; department: string | null }) => {
     try {
@@ -184,6 +205,9 @@ export const useTeamMembers = () => {
     updateMember,
     removeMember,
     companyId,
-    teamSlots
+    teamSlots,
+    totalMembers,
+    totalPages,
+    currentPage: page
   };
 };
