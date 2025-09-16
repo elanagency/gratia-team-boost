@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, Send, AtSign, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { useAllCompanyMembers } from "@/hooks/useAllCompanyMembers";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,11 +31,11 @@ export function GivePointsCard() {
   const queryClient = useQueryClient();
 
   const { user, companyId } = useAuth();
-  const { teamMembers } = useTeamMembers();
+  const { companyMembers } = useAllCompanyMembers();
   const { monthlyPoints } = useUserPoints();
 
-  const availableRecipients = teamMembers?.filter(member => 
-    member.user_id !== user?.id && member.invitation_status === 'active'
+  const availableRecipients = companyMembers?.filter(member => 
+    member.invitation_status === 'active'
   ) || [];
 
   const filteredMembers = availableRecipients.filter(member =>
