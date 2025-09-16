@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Clock, Zap } from "lucide-react";
+import { MessageCircle, Clock, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -505,7 +505,7 @@ export function RecognitionFeed() {
                                     <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
                                   ) : (
                                     <>
-                                      <Zap className="h-3 w-3 mr-1" />
+                                      <Heart className="h-3 w-3 mr-1" />
                                       +{points}
                                     </>
                                   )}
