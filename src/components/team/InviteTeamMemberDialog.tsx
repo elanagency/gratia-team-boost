@@ -32,7 +32,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !name) {
+    if (!email || !name || !department) {
       toast.error("Please fill out all required fields");
       return;
     }

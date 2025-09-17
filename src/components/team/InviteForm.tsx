@@ -56,11 +56,11 @@ const InviteForm = ({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="department">Department</Label>
+        <Label htmlFor="department">Department *</Label>
         <NewDepartmentCombobox
           value={department}
           onChange={setDepartment}
-          placeholder="Select or create department (optional)"
+          placeholder="Select or create department"
         />
       </div>
       <Button 
