@@ -72,12 +72,11 @@ export function LeaderboardCard() {
         return;
       }
       
-      // Fetch profiles for recipients and filter out admins
+      // Fetch profiles for recipients (include all active members)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, department')
         .eq('company_id', companyId)
-        .eq('is_admin', false)
         .eq('is_active', true)
         .in('id', recipientIds);
       

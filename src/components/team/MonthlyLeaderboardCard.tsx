@@ -66,12 +66,11 @@ export function MonthlyLeaderboardCard() {
         return;
       }
       
-      // Fetch user profiles from profiles table (which now contains all member info)
+      // Fetch user profiles from profiles table (include all active members)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .eq('company_id', companyId)
-        .eq('is_admin', false)
         .eq('is_active', true)
         .in('id', userIds);
       
