@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { MoreHorizontal, Edit, Trash2, Mail } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Mail, Check, X, UserCheck } from "lucide-react";
 import { TeamMember } from "@/hooks/useTeamMembers";
+import { getUserStatus } from "@/lib/userStatus";
 
 interface TeamMemberTableProps {
   teamMembers: TeamMember[];
   onRemoveMember: (member: TeamMember) => void;
   onEditMember?: (member: TeamMember) => void;
   onResendInvite?: (member: TeamMember) => void;
+  onReactivateMember?: (member: TeamMember) => void;
   currentPage?: number;
   totalPages?: number;
   totalMembers?: number;
@@ -24,6 +26,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   onRemoveMember,
   onEditMember,
   onResendInvite,
+  onReactivateMember,
   currentPage = 1,
   totalPages = 1,
   totalMembers = 0,
@@ -59,15 +62,21 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
               <TableCell className="text-gray-600">{member.email}</TableCell>
               <TableCell className="text-gray-600">{member.department || 'Not specified'}</TableCell>
               <TableCell>
-                <Badge 
-                  variant={member.invitation_status === 'active' ? 'default' : 'secondary'}
-                  className={member.invitation_status === 'active' 
-                    ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                    : 'bg-orange-100 text-orange-800 hover:bg-orange-100'
-                  }
-                >
-                  {member.invitation_status === 'active' ? 'Active' : 'Invited'}
-                </Badge>
+                {(() => {
+                  const status = getUserStatus(member.invitation_status, member.is_active);
+                  const IconComponent = status.icon === 'check' ? Check : 
+                                       status.icon === 'x' ? X : Mail;
+                  
+                  return (
+                    <Badge 
+                      variant={status.variant}
+                      className={`${status.className} flex items-center gap-1 w-fit`}
+                    >
+                      <IconComponent className="h-3 w-3" />
+                      {status.label}
+                    </Badge>
+                  );
+                })()}
               </TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -81,32 +90,53 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                       <span className="sr-only">Open menu</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40 bg-background border shadow-md">
-                    {onEditMember && (
-                      <DropdownMenuItem 
-                        onClick={() => onEditMember(member)}
-                        className="cursor-pointer"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                    )}
-                    {onResendInvite && member.invitation_status === 'invited' && (
-                      <DropdownMenuItem 
-                        onClick={() => onResendInvite(member)}
-                        className="cursor-pointer text-blue-600 focus:text-blue-600"
-                      >
-                        <Mail className="mr-2 h-4 w-4" />
-                        Re-send Invite
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem 
-                      onClick={() => onRemoveMember(member)}
-                      className="cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md">
+                    {(() => {
+                      const status = getUserStatus(member.invitation_status, member.is_active);
+                      
+                      return (
+                        <>
+                          {onEditMember && status.type !== 'deactivated' && (
+                            <DropdownMenuItem 
+                              onClick={() => onEditMember(member)}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {onResendInvite && status.type === 'invited' && (
+                            <DropdownMenuItem 
+                              onClick={() => onResendInvite(member)}
+                              className="cursor-pointer text-blue-600 focus:text-blue-600"
+                            >
+                              <Mail className="mr-2 h-4 w-4" />
+                              Resend Invite
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {onReactivateMember && status.type === 'deactivated' && (
+                            <DropdownMenuItem 
+                              onClick={() => onReactivateMember(member)}
+                              className="cursor-pointer text-green-600 focus:text-green-600"
+                            >
+                              <UserCheck className="mr-2 h-4 w-4" />
+                              Reactivate
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuItem 
+                            onClick={() => onRemoveMember(member)}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {status.type === 'deactivated' ? 'Remove Permanently' : 
+                             status.type === 'active' ? 'Deactivate' : 'Remove'}
+                          </DropdownMenuItem>
+                        </>
+                      );
+                    })()}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

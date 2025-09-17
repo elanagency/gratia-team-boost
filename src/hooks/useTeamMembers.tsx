@@ -12,6 +12,7 @@ export interface TeamMember {
   points: number;
   department?: string;
   invitation_status: 'invited' | 'active';
+  is_active?: boolean;
   first_login_at?: string;
 }
 
@@ -69,6 +70,7 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
           last_name,
           avatar_url,
           is_admin,
+          is_active,
           points,
           department,
           invitation_status,
@@ -125,6 +127,7 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
           points: profile.points || 0,
           department: profile.department || '',
           invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
+          is_active: profile.is_active,
           first_login_at: profile.first_login_at
         };
       });

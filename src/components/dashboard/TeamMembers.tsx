@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Check, Mail, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { Link } from "react-router-dom";
+import { getUserStatus } from "@/lib/userStatus";
 
 export const TeamMembers = () => {
   const { teamMembers, isLoading } = useTeamMembers();
@@ -32,7 +33,21 @@ export const TeamMembers = () => {
                 {member.name.charAt(0)}
               </div>
               <div className="ml-3 flex-1 min-w-0">
-                <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{member.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{member.name}</p>
+                  {(() => {
+                    const status = getUserStatus(member.invitation_status, member.is_active);
+                    const IconComponent = status.icon === 'check' ? Check : 
+                                         status.icon === 'x' ? X : Mail;
+                    
+                    return (
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${status.className}`}>
+                        <IconComponent className="h-3 w-3" />
+                        {status.label}
+                      </div>
+                    );
+                  })()}
+                </div>
                 <p className="text-xs text-gray-500">Team Member</p>
               </div>
               <div className="ml-auto flex items-center flex-shrink-0">
