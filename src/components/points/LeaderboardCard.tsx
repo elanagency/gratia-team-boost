@@ -44,41 +44,12 @@ export function LeaderboardCard() {
     try {
       setIsLoading(true);
       
-      // Fetch all point transactions for this company
-      const { data: transactions, error: transactionsError } = await supabase
-        .from('point_transactions')
-        .select('recipient_profile_id, points')
-        .eq('company_id', companyId);
-      
-      if (transactionsError) throw transactionsError;
-      
-      if (!transactions?.length) {
-        setLeaderboard([]);
-        return;
-      }
-      
-      // Calculate total recognition points received for each user
-      const pointsMap = new Map<string, number>();
-      transactions.forEach(transaction => {
-        const currentPoints = pointsMap.get(transaction.recipient_profile_id) || 0;
-        pointsMap.set(transaction.recipient_profile_id, currentPoints + transaction.points);
-      });
-      
-      // Get unique recipient IDs
-      const recipientIds = Array.from(pointsMap.keys());
-      
-      if (!recipientIds.length) {
-        setLeaderboard([]);
-        return;
-      }
-      
-      // Fetch profiles for recipients (include all active members)
+      // Fetch all active company members first
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, department')
         .eq('company_id', companyId)
-        .eq('is_active', true)
-        .in('id', recipientIds);
+        .eq('is_active', true);
       
       if (profilesError) throw profilesError;
       
@@ -87,7 +58,24 @@ export function LeaderboardCard() {
         return;
       }
       
-      // Format leaderboard with profile data and ranks, sorted by recognition points
+      // Fetch all point transactions for this company
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('point_transactions')
+        .select('recipient_profile_id, points')
+        .eq('company_id', companyId);
+      
+      if (transactionsError) throw transactionsError;
+      
+      // Calculate total recognition points received for each user
+      const pointsMap = new Map<string, number>();
+      if (transactions?.length) {
+        transactions.forEach(transaction => {
+          const currentPoints = pointsMap.get(transaction.recipient_profile_id) || 0;
+          pointsMap.set(transaction.recipient_profile_id, currentPoints + transaction.points);
+        });
+      }
+      
+      // Format leaderboard with all active members, sorted by recognition points
       const formattedLeaderboard: LeaderboardMember[] = profiles
         .map(profile => {
           const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();

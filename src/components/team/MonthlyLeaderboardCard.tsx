@@ -33,6 +33,20 @@ export function MonthlyLeaderboardCard() {
       // Get current month in YYYY-MM format
       const currentMonth = new Date().toISOString().slice(0, 7);
       
+      // Fetch all active company members first
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+      
+      if (profilesError) throw profilesError;
+      
+      if (!profiles?.length) {
+        setLeaderboard([]);
+        return;
+      }
+      
       // Fetch point transactions for current month, grouped by recipient
       const { data: transactions, error: transactionsError } = await supabase
         .from('point_transactions')
@@ -46,63 +60,29 @@ export function MonthlyLeaderboardCard() {
       
       if (transactionsError) throw transactionsError;
       
-      if (!transactions?.length) {
-        setLeaderboard([]);
-        return;
-      }
-      
       // Group points by recipient and calculate totals
-      const pointsByUser = transactions.reduce((acc, transaction) => {
+      const pointsByUser = transactions?.reduce((acc, transaction) => {
         const userId = transaction.recipient_profile_id;
         acc[userId] = (acc[userId] || 0) + transaction.points;
         return acc;
-      }, {} as Record<string, number>);
+      }, {} as Record<string, number>) || {};
       
-      // Get unique user IDs
-      const userIds = Object.keys(pointsByUser);
-      
-      if (!userIds.length) {
-        setLeaderboard([]);
-        return;
-      }
-      
-      // Fetch user profiles from profiles table (include all active members)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .in('id', userIds);
-      
-      if (profilesError) throw profilesError;
-      
-      // Create profile map for easy lookup
-      const profileMap = new Map();
-      profiles?.forEach(profile => {
-        profileMap.set(profile.id, profile);
-      });
-      
-      // Format leaderboard with profile data and ranks
-      const formattedLeaderboard: LeaderboardMember[] = userIds
-        .map(userId => {
-          const profile = profileMap.get(userId);
-          
-          if (!profile) return null;
-          
+      // Format leaderboard with all active members, including those with 0 points
+      const formattedLeaderboard: LeaderboardMember[] = profiles
+        .map(profile => {
           const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
           
           return {
-            userId,
+            userId: profile.id,
             name: memberName || 'No Name',
-            points: pointsByUser[userId] || 0,
+            points: pointsByUser[profile.id] || 0,
             rank: 0 // Will be set after sorting
           };
         })
-        .filter(Boolean)
-        .sort((a, b) => b!.points - a!.points)
+        .sort((a, b) => b.points - a.points)
         .slice(0, 10) // Top 10
         .map((member, index) => ({
-          ...member!,
+          ...member,
           rank: index + 1
         }));
       
