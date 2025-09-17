@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { usePricing } from "@/hooks/usePricing";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -32,6 +33,7 @@ export const BillingCard = () => {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const { user, companyId } = useAuth();
   const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
+  const navigate = useNavigate();
 
   const fetchCompanyData = async () => {
     if (!companyId) return null;
@@ -192,66 +194,93 @@ export const BillingCard = () => {
       </div>
       
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Your Plan */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              Your plan
+        <div className="relative">
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 transition-all duration-300 ${!hasExistingSubscription ? 'blur-sm opacity-50' : ''}`}>
+            {/* Your Plan */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                Your plan
+              </div>
+              <div className="font-semibold">
+                {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                ${(pricePerMemberCents / 100).toFixed(2)} per member/month
+              </div>
             </div>
-            <div className="font-semibold">
-              {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
+
+            {/* Active Members */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                Active members
+              </div>
+              <div className="font-semibold">
+                {subscriptionStatus?.team_members || 0}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {hasExistingSubscription ? 'Only active members billed' : 'Add members to start'}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              ${(pricePerMemberCents / 100).toFixed(2)} per member/month
+
+            {/* Monthly Cost */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <DollarSign className="h-4 w-4" />
+                Monthly cost
+              </div>
+              <div className="font-semibold">
+                ${((subscriptionStatus?.monthly_cost || 0) / 100).toFixed(2)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {hasExistingSubscription ? 'Current billing' : 'No charges yet'}
+              </div>
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CreditCard className="h-4 w-4" />
+                Payment method
+              </div>
+              <div className="font-semibold">
+                {hasExistingSubscription ? 'Card ending in ****' : 'Not set'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {hasExistingSubscription ? 'Managed via Stripe' : 'Set up billing to view'}
+              </div>
             </div>
           </div>
 
-          {/* Active Members */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              Active members
+          {/* Overlay for no subscription */}
+          {!hasExistingSubscription && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md">
+              <div className="text-center p-6 bg-card rounded-lg border shadow-lg max-w-sm">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">Start by adding your first team member</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add team members to activate billing and start giving recognition
+                </p>
+                <Button 
+                  onClick={() => {
+                    // Scroll to team management section smoothly
+                    const teamSection = document.querySelector('[data-section="team-management"]');
+                    if (teamSection) {
+                      teamSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+                >
+                  Add Team Members
+                </Button>
+              </div>
             </div>
-            <div className="font-semibold">
-              {subscriptionStatus?.team_members || 0}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Only active members billed' : 'Add members to start'}
-            </div>
-          </div>
-
-          {/* Monthly Cost */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <DollarSign className="h-4 w-4" />
-              Monthly cost
-            </div>
-            <div className="font-semibold">
-              ${((subscriptionStatus?.monthly_cost || 0) / 100).toFixed(2)}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Current billing' : 'No charges yet'}
-            </div>
-          </div>
-
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CreditCard className="h-4 w-4" />
-              Payment method
-            </div>
-            <div className="font-semibold">
-              {hasExistingSubscription ? 'Card ending in ****' : 'Not set'}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Managed via Stripe' : 'Set up billing to view'}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Manage Button */}
-        <div className="border-t pt-6">
+        <div className={`border-t pt-6 transition-all duration-300 ${!hasExistingSubscription ? 'blur-sm opacity-50' : ''}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-medium">Manage Your Subscription</h3>

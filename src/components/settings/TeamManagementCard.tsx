@@ -161,7 +161,7 @@ export const TeamManagementCard = () => {
 
   return (
     <>
-      <Card className="dashboard-card">
+      <Card className="dashboard-card" data-section="team-management">
         <div className="card-header">
           <h2 className="card-title">Team Management</h2>
           
