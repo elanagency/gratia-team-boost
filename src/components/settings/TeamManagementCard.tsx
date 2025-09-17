@@ -18,6 +18,7 @@ export const TeamManagementCard = () => {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
   const processedSessionIds = useRef(new Set<string>());
@@ -27,8 +28,10 @@ export const TeamManagementCard = () => {
     removeMember,
     isLoading,
     teamSlots,
-    companyId
-  } = useTeamMembers(true); // Fetch all members
+    companyId,
+    totalPages,
+    totalMembers
+  } = useTeamMembers(currentPage, 10);
 
   // Handle billing setup success/cancellation from URL params
   useEffect(() => {
@@ -152,6 +155,10 @@ export const TeamManagementCard = () => {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <>
       <Card className="dashboard-card">
@@ -175,6 +182,10 @@ export const TeamManagementCard = () => {
               onRemoveMember={handleDeleteClick}
               onEditMember={handleEditClick}
               onResendInvite={handleResendInvite}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalMembers={totalMembers}
+              onPageChange={handlePageChange}
             />
           )}
         </div>
