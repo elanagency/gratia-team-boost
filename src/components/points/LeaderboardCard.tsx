@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/context/AuthContext";
@@ -19,26 +18,7 @@ export function LeaderboardCard() {
   const [isLoading, setIsLoading] = useState(true);
   const { companyId } = useAuth();
 
-  useEffect(() => {
-    if (companyId) {
-      fetchLeaderboard();
-    }
-  }, [companyId]);
-
-  // Listen for recognition feed updates to refresh leaderboard
-  useEffect(() => {
-    const handleRefresh = () => {
-      fetchLeaderboard();
-    };
-
-    window.addEventListener('refreshRecognitionFeed', handleRefresh);
-    
-    return () => {
-      window.removeEventListener('refreshRecognitionFeed', handleRefresh);
-    };
-  }, []);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     if (!companyId) return;
     
     try {
@@ -87,7 +67,7 @@ export function LeaderboardCard() {
             department: profile.department || null,
             points: pointsMap.get(profile.id) || 0,
             rank: 0 // Will be set after sorting
-  }, [companyId]);
+          };
         })
         .sort((a, b) => b.points - a.points) // Sort by points descending
         .slice(0, 10) // Limit to top 10
@@ -103,7 +83,51 @@ export function LeaderboardCard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  // Set up real-time updates for point transactions
+  useEffect(() => {
+    if (!companyId) return;
+
+    const channel = supabase
+      .channel('leaderboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'point_transactions',
+          filter: `company_id=eq.${companyId}`
+        },
+        () => {
+          fetchLeaderboard();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, fetchLeaderboard]);
+
+  // Legacy event listener for manual refresh
+  useEffect(() => {
+    const handleLeaderboardRefresh = () => {
+      fetchLeaderboard();
+    };
+
+    window.addEventListener('leaderboardRefresh', handleLeaderboardRefresh);
+    window.addEventListener('refreshRecognitionFeed', handleLeaderboardRefresh);
+    
+    return () => {
+      window.removeEventListener('leaderboardRefresh', handleLeaderboardRefresh);
+      window.removeEventListener('refreshRecognitionFeed', handleLeaderboardRefresh);
+    };
+  }, [fetchLeaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

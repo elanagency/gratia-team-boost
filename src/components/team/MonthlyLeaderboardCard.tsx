@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/context/AuthContext";
@@ -18,13 +17,7 @@ export function MonthlyLeaderboardCard() {
   const [isLoading, setIsLoading] = useState(true);
   const { companyId } = useAuth();
 
-  useEffect(() => {
-    if (companyId) {
-      fetchMonthlyLeaderboard();
-    }
-  }, [companyId]);
-
-  const fetchMonthlyLeaderboard = async () => {
+  const fetchMonthlyLeaderboard = useCallback(async () => {
     if (!companyId) return;
     
     try {
@@ -78,7 +71,7 @@ export function MonthlyLeaderboardCard() {
             name: memberName || 'No Name',
             points: pointsByUser[profile.id] || 0,
             rank: 0 // Will be set after sorting
-  }, [companyId]);
+          };
         })
         .sort((a, b) => b.points - a.points)
         .slice(0, 10) // Top 10
@@ -94,7 +87,36 @@ export function MonthlyLeaderboardCard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchMonthlyLeaderboard();
+  }, [fetchMonthlyLeaderboard]);
+
+  // Set up real-time updates for point transactions
+  useEffect(() => {
+    if (!companyId) return;
+
+    const channel = supabase
+      .channel('monthly-leaderboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'point_transactions',
+          filter: `company_id=eq.${companyId}`
+        },
+        () => {
+          fetchMonthlyLeaderboard();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, fetchMonthlyLeaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
