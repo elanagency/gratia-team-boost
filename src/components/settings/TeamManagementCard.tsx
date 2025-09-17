@@ -28,7 +28,7 @@ export const TeamManagementCard = () => {
     isLoading,
     teamSlots,
     companyId
-  } = useTeamMembers();
+  } = useTeamMembers(true); // Fetch all members
 
   // Handle billing setup success/cancellation from URL params
   useEffect(() => {

@@ -15,12 +15,11 @@ export interface TeamMember {
   first_login_at?: string;
 }
 
-export const useTeamMembers = (page = 1, pageSize = 10) => {
+export const useTeamMembers = (fetchAll = false) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0 });
   const [totalMembers, setTotalMembers] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const { user, companyId } = useAuth();
 
   const fetchTeamMembers = useCallback(async () => {
@@ -44,25 +43,8 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
         console.error("Error fetching company:", companyError);
       }
 
-      // Get total count first
-      const { count: totalCount, error: countError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('is_admin', false)
-        .eq('is_active', true);
-
-      if (countError) {
-        throw countError;
-      }
-
-      const total = totalCount || 0;
-      setTotalMembers(total);
-      setTotalPages(Math.ceil(total / pageSize));
-
-      // Get paginated team members (non-admin profiles) directly from profiles table
-      const offset = (page - 1) * pageSize;
-      const { data: profiles, error: profilesError } = await supabase
+      // Get team members (non-admin profiles) directly from profiles table
+      let profilesQuery = supabase
         .from('profiles')
         .select(`
           id,
@@ -78,16 +60,23 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
         .eq('company_id', companyId)
         .eq('is_admin', false)
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + pageSize - 1);
+        .order('created_at', { ascending: false });
+
+      // If not fetching all, limit to 10 for backward compatibility
+      if (!fetchAll) {
+        profilesQuery = profilesQuery.limit(10);
+      }
+
+      const { data: profiles, error: profilesError } = await profilesQuery;
       
       if (profilesError) {
         throw profilesError;
       }
       
-      console.log(`Found ${profiles?.length || 0} team members on page ${page} (excluding admins)`);
+      console.log(`Found ${profiles?.length || 0} team members (excluding admins)`);
       
-      const usedMembers = total;
+      const usedMembers = profiles?.length || 0;
+      setTotalMembers(usedMembers);
       const hasSubscription = !!company?.stripe_subscription_id;
       
       setTeamSlots({
@@ -138,7 +127,7 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, companyId, page, pageSize]);
+  }, [user, companyId, fetchAll]);
 
   const updateMember = useCallback(async (memberId: string, updateData: { name: string; department: string | null }) => {
     try {
@@ -206,8 +195,6 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
     removeMember,
     companyId,
     teamSlots,
-    totalMembers,
-    totalPages,
-    currentPage: page
+    totalMembers
   };
 };

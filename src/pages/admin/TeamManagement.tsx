@@ -16,7 +16,6 @@ const TeamManagement = () => {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const processedSessionIds = useRef(new Set<string>());
   
   const {
@@ -25,9 +24,8 @@ const TeamManagement = () => {
     removeMember,
     isLoading,
     teamSlots,
-    totalMembers,
-    totalPages
-  } = useTeamMembers(currentPage, 10);
+    totalMembers
+  } = useTeamMembers(true); // Fetch all members
 
   // Handle billing setup success/cancellation from URL params
   useEffect(() => {
@@ -85,9 +83,6 @@ const TeamManagement = () => {
     setMemberToDelete(null);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
 
   return (
     <div className="space-y-6">
@@ -108,10 +103,6 @@ const TeamManagement = () => {
           <TeamMemberTable 
             teamMembers={teamMembers} 
             onRemoveMember={handleDeleteClick}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalMembers={totalMembers}
-            onPageChange={handlePageChange}
           />
         )}
       </Card>
