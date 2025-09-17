@@ -5,8 +5,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Clock, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
+import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -34,16 +36,15 @@ export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [threadedRecognitions, setThreadedRecognitions] = useState<ThreadedRecognition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [givingPoints, setGivingPoints] = useState<{ [key: string]: boolean }>({});
-  const [userPoints, setUserPoints] = useState<number>(0);
+  const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
   
   const { user, companyId } = useAuth();
+  const optimisticAuth = useOptimisticAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (companyId && user?.id) {
       fetchRecognitionFeed();
-      fetchUserPoints();
     }
   }, [companyId, user?.id]);
 
@@ -52,7 +53,6 @@ export function RecognitionFeed() {
     const handleRefresh = () => {
       if (companyId && user?.id) {
         fetchRecognitionFeed();
-        fetchUserPoints();
       }
     };
 
@@ -62,23 +62,7 @@ export function RecognitionFeed() {
     };
   }, [companyId, user?.id]);
 
-  const fetchUserPoints = async () => {
-    if (!user?.id || !companyId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('monthly_points')
-        .eq('id', user.id)
-        .eq('company_id', companyId)
-        .single();
-      
-      if (error) throw error;
-      setUserPoints(data?.monthly_points || 0);
-    } catch (error) {
-      console.error("Error fetching user points:", error);
-    }
-  };
+  // Remove fetchUserPoints function as we now use optimisticAuth
 
   const fetchRecognitionFeed = async () => {
     if (!companyId) return;
@@ -248,48 +232,62 @@ export function RecognitionFeed() {
     return result;
   };
 
-  const handleQuickPoints = async (recipientId: string, points: number, originalDescription: string) => {
-    if (!user || !companyId) return;
-    
-    // Check if user has enough points
-    if (userPoints < points) {
-      toast.error(`Insufficient points. You have ${userPoints} points, need ${points}.`);
-      return;
-    }
-    
-    const transactionId = `${recipientId}-${points}`;
-    setGivingPoints(prev => ({ ...prev, [transactionId]: true }));
-    
-    try {
-      // Use the new transfer function for atomic point transfer
+  const { mutate: giveQuickPoints } = useOptimisticMutation({
+    mutationFn: async (variables: { recipientId: string; points: number; originalDescription: string }) => {
       const { data, error } = await supabase.rpc('transfer_points_between_users', {
-        sender_user_id: user.id,
-        recipient_user_id: recipientId,
-        transfer_company_id: companyId,
-        points_amount: points,
-        transfer_description: `Quick appreciation: ${originalDescription}`
+        sender_user_id: user!.id,
+        recipient_user_id: variables.recipientId,
+        transfer_company_id: companyId!,
+        points_amount: variables.points,
+        transfer_description: `Quick appreciation: ${variables.originalDescription}`
       });
 
       if (error) throw error;
-      
-      // Type the response data properly
+      return data;
+    },
+    onOptimisticUpdate: (variables) => {
+      // Immediately update UI: decrease sender's monthly points
+      optimisticAuth.updateOptimisticPoints(-variables.points);
+      // Add processing state for this specific recognition
+      setProcessingQuickPoints(prev => new Set(prev).add(variables.recipientId));
+    },
+    onRollback: (variables) => {
+      // Rollback the optimistic update
+      optimisticAuth.rollbackOptimisticPoints();
+      setProcessingQuickPoints(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.recipientId);
+        return newSet;
+      });
+    },
+    onSuccess: (data, variables) => {
       const result = data as { success: boolean; error?: string; message?: string };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Transfer failed');
+      if (result?.success) {
+        // Confirm optimistic changes and refresh data
+        optimisticAuth.confirmOptimisticPoints();
+        fetchRecognitionFeed();
+        setProcessingQuickPoints(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(variables.recipientId);
+          return newSet;
+        });
+      } else {
+        throw new Error(result?.error || "Failed to give points");
       }
-      
-      toast.success(`Gave ${points} additional points!`);
-      fetchRecognitionFeed(); // Refresh feed
-      // Invalidate user points query to trigger immediate refresh
-      queryClient.invalidateQueries({ queryKey: ['userPoints', user.id, companyId] });
-      
-    } catch (error: any) {
-      console.error("Error giving quick points:", error);
-      toast.error(error.message || "Failed to give points");
-    } finally {
-      setGivingPoints(prev => ({ ...prev, [transactionId]: false }));
+    },
+    successMessage: `Gave additional points!`,
+    errorMessage: "Failed to give points. Please try again."
+  });
+
+  const handleQuickPoints = (recipientId: string, points: number, originalDescription: string) => {
+    if (!user || !companyId) return;
+    
+    // Check if user has enough points
+    if ((optimisticAuth.monthlyPoints || 0) < points) {
+      return;
     }
+
+    giveQuickPoints({ recipientId, points, originalDescription });
   };
 
   const getInitials = (name: string) => {
@@ -501,10 +499,10 @@ export function RecognitionFeed() {
                         
                         {canGivePoints && (
                           <div className="flex gap-1">
-                            {quickPoints.map((points) => {
-                              const transactionId = `${thread.mainPost.recipient_id}-${points}`;
-                              const isGiving = givingPoints[transactionId];
-                              const hasEnoughPoints = userPoints >= points;
+                             {quickPoints.map((points) => {
+                               const recipientId = thread.mainPost.recipient_id;
+                               const isGiving = processingQuickPoints.has(recipientId);
+                               const hasEnoughPoints = (optimisticAuth.monthlyPoints || 0) >= points;
                               
                               return (
                                 <Button
@@ -516,7 +514,7 @@ export function RecognitionFeed() {
                                   className={`h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF] ${
                                     !hasEnoughPoints ? 'opacity-50 cursor-not-allowed' : ''
                                   }`}
-                                  title={!hasEnoughPoints ? `You need ${points} points (you have ${userPoints})` : `Give ${points} additional points`}
+                                  title={!hasEnoughPoints ? `You need ${points} points (you have ${optimisticAuth.monthlyPoints || 0})` : `Give ${points} additional points`}
                                 >
                                   {isGiving ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />

@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-
+import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
+import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 // Internal interface for the dialog
 interface DialogTeamMember {
   id: string;
@@ -39,11 +40,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [companyPoints, setCompanyPoints] = useState(0);
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
   
-  const { user, companyId, isAdmin, monthlyPoints } = useAuth();
+  const { user, companyId, isAdmin } = useAuth();
+  const optimisticAuth = useOptimisticAuth();
   const queryClient = useQueryClient();
 
   // Fetch team members when dialog opens
@@ -62,8 +64,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
 
   // Check if user has enough monthly points
   useEffect(() => {
-    setShowInsufficientPoints(points > monthlyPoints);
-  }, [points, monthlyPoints]);
+    setShowInsufficientPoints(points > (optimisticAuth.monthlyPoints || 0));
+  }, [points, optimisticAuth.monthlyPoints]);
 
   // Filter members based on search query
   useEffect(() => {
@@ -138,49 +140,63 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     }
   };
 
-  const handleSubmit = async () => {
-    if (!selectedMember || !description || points < 1 || !user?.id || !companyId) {
-      toast.error("Please fill out all fields");
-      return;
-    }
-
-    // Check if user has enough monthly points
-    if (points > monthlyPoints) {
-      setShowInsufficientPoints(true);
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      // Create the point transaction
+  const { mutate: givePoints, isLoading: isSubmitting } = useOptimisticMutation({
+    mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string }) => {
       const { error } = await supabase
         .from('point_transactions')
         .insert({
           company_id: companyId,
-          sender_profile_id: user.id,
-          recipient_profile_id: selectedMember.user_id,
-          points: points,
-          description: description
+          sender_profile_id: user!.id,
+          recipient_profile_id: variables.member.user_id,
+          points: variables.points,
+          description: variables.description
         });
 
       if (error) throw error;
-
-      toast.success(`Successfully gave ${points} points to ${selectedMember.name}`);
+      return { success: true };
+    },
+    onOptimisticUpdate: (variables) => {
+      // Immediately update UI: decrease sender's monthly points
+      optimisticAuth.updateOptimisticPoints(-variables.points);
+    },
+    onRollback: (variables) => {
+      // Rollback the optimistic update
+      optimisticAuth.rollbackOptimisticPoints();
+    },
+    onSuccess: (data, variables) => {
+      // Confirm optimistic changes and refresh data
+      optimisticAuth.confirmOptimisticPoints();
+      queryClient.invalidateQueries({ queryKey: ['userPoints'] });
       
-      // Invalidate relevant queries to refresh the data
-      await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
-      
+      // Reset form and close dialog
+      setSelectedMember(null);
+      setDescription("");
+      setPoints(1);
       setOpen(false);
-    } catch (error) {
-      console.error("Error giving points:", error);
-      toast.error("Failed to give points");
-    } finally {
-      setIsSubmitting(false);
+    },
+    successMessage: `Successfully gave ${points} points to ${selectedMember?.name}!`,
+    errorMessage: "Failed to give points. Please try again."
+  });
+
+  const handleSubmit = async () => {
+    if (!selectedMember || !description || points < 1 || !user?.id || !companyId) {
+      return;
     }
+
+    // Check if user has enough monthly points
+    if (points > (optimisticAuth.monthlyPoints || 0)) {
+      setShowInsufficientPoints(true);
+      return;
+    }
+
+    givePoints({
+      member: selectedMember,
+      points: points,
+      description: description
+    });
   };
 
-  const availablePoints = monthlyPoints;
+  const availablePoints = optimisticAuth.monthlyPoints || 0;
   const balanceLabel = "Available Points to Give";
 
   return (
@@ -203,7 +219,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         <div className="bg-gray-50 p-3 rounded-md mb-4">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">{balanceLabel}:</span>
-            <span className="font-semibold">{availablePoints} points</span>
+            <span className="font-semibold">
+              {availablePoints} points
+              {optimisticAuth.hasOptimisticUpdates && (
+                <span className="ml-1 text-xs text-primary">(updating...)</span>
+              )}
+            </span>
           </div>
         </div>
         
@@ -215,7 +236,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
                 Insufficient points
               </p>
               <p className="text-xs text-red-500">
-                You only have {monthlyPoints} points available to give this month.
+                You only have {optimisticAuth.monthlyPoints} points available to give this month.
               </p>
             </div>
           </div>
