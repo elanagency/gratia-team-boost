@@ -27,27 +27,27 @@ serve(async (req) => {
       )
     }
 
-    // Check if user is platform admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_platform_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile?.is_platform_admin) {
-      console.error('Not a platform admin:', profileError)
-      return new Response(
-        JSON.stringify({ error: 'Forbidden: Platform admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     const { companyId, userId } = await req.json()
 
     if (!companyId || !userId) {
       return new Response(
         JSON.stringify({ error: 'Company ID and User ID are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user is company admin of the target company
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin, company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.is_admin || profile.company_id !== companyId) {
+      console.error('Not a company admin or wrong company:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Company admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
