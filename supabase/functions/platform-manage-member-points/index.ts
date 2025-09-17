@@ -100,11 +100,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get current member points
+    // Get current member points from profiles table
     const { data: memberData, error: memberError } = await supabase
-      .from('company_members')
-      .select('points, user_id')
-      .eq('user_id', member_id)
+      .from('profiles')
+      .select('points, id')
+      .eq('id', member_id)
       .eq('company_id', company_id)
       .single()
 
@@ -138,14 +138,14 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Update member points
+    // Update member points in profiles table
     const { error: updateError } = await supabase
-      .from('company_members')
+      .from('profiles')
       .update({ 
         points: newPoints,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', member_id)
+      .eq('id', member_id)
       .eq('company_id', company_id)
 
     if (updateError) {

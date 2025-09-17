@@ -115,7 +115,7 @@ export function useDepartmentManagement() {
         .from("profiles")
         .select("id, first_name, last_name")
         .eq("department_id", id)
-        .eq("is_active", true);
+        .eq("status", "active");
 
       if (usersError) throw usersError;
 

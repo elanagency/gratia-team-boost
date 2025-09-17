@@ -125,6 +125,39 @@ export type Database = {
         }
         Relationships: []
       }
+      company_point_transactions: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          payment_status: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          payment_status?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          payment_status?: string
+          transaction_type?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           company_id: string
@@ -360,13 +393,6 @@ export type Database = {
           monthly_points: number
           points: number
           role: string
-          shipping_address: string | null
-          shipping_city: string | null
-          shipping_country: string | null
-          shipping_name: string | null
-          shipping_phone: string | null
-          shipping_state: string | null
-          shipping_zip_code: string | null
           status: string
           temporary_password: string | null
           updated_at: string
@@ -386,13 +412,6 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_name?: string | null
-          shipping_phone?: string | null
-          shipping_state?: string | null
-          shipping_zip_code?: string | null
           status?: string
           temporary_password?: string | null
           updated_at?: string
@@ -412,13 +431,6 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_name?: string | null
-          shipping_phone?: string | null
-          shipping_state?: string | null
-          shipping_zip_code?: string | null
           status?: string
           temporary_password?: string | null
           updated_at?: string

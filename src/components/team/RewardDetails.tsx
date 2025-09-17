@@ -36,40 +36,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   // Check if user has enough points
   const hasEnoughPoints = recognitionPoints >= reward.points_cost;
 
-  // Fetch saved shipping info when dialog opens
-  React.useEffect(() => {
-    const fetchShippingInfo = async () => {
-      if (!user?.id || !isDialogOpen) return;
-      
-      console.log('🔍 Fetching saved shipping info for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('shipping_name, shipping_address, shipping_city, shipping_state, shipping_zip_code, shipping_country, shipping_phone')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) {
-        console.error('❌ Error fetching shipping info:', error);
-        return;
-      }
-      
-      if (data) {
-        console.log('✅ Loaded saved shipping info:', data);
-        setShippingInfo({
-          name: data.shipping_name || "",
-          address: data.shipping_address || "",
-          city: data.shipping_city || "",
-          state: data.shipping_state || "",
-          zipCode: data.shipping_zip_code || "",
-          country: data.shipping_country || "",
-          phone: data.shipping_phone || ""
-        });
-      }
-    };
-    
-    fetchShippingInfo();
-  }, [user?.id, isDialogOpen]);
+  // Note: Shipping info is now collected at redemption time only
 
   const handleConfirmRedeem = () => {
     console.log('🎯 Redeem button clicked for reward:', reward.id);
