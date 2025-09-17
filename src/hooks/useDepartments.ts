@@ -19,25 +19,20 @@ async function fetchDepartments(): Promise<string[]> {
   const companyId = await fetchCompanyId();
   if (!companyId) return [];
 
+  // Fetch from the new departments table
   const { data, error } = await supabase
-    .from("profiles")
-    .select("department, is_active")
+    .from("departments")
+    .select("name")
     .eq("company_id", companyId)
     .eq("is_active", true)
-    .not("department", "is", null);
+    .order("name");
 
   if (error) {
     console.error("Failed to load departments", error);
     return [];
   }
 
-  const unique = new Set<string>();
-  for (const row of data || []) {
-    const dep = (row as { department: string | null }).department?.trim();
-    if (dep) unique.add(dep);
-  }
-
-  return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  return data.map(dept => dept.name);
 }
 
 export function useDepartments() {

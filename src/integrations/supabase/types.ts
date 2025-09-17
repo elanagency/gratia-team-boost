@@ -125,6 +125,33 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       goody_gift_cards: {
         Row: {
           brand_name: string
@@ -323,6 +350,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           department: string | null
+          department_id: string | null
           first_login_at: string | null
           first_name: string
           id: string
@@ -349,6 +377,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           first_login_at?: string | null
           first_name: string
           id: string
@@ -375,6 +404,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           first_login_at?: string | null
           first_name?: string
           id?: string
@@ -402,6 +432,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
         ]

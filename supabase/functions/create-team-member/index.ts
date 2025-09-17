@@ -347,6 +347,37 @@ serve(async (req: Request) => {
     // Parse name into first and last name for profile
     const { firstName, lastName } = parseFullName(name);
     
+    // Handle department - either find existing or create new
+    let departmentId = null;
+    if (department && department.trim()) {
+      // First try to find existing department
+      const { data: existingDept } = await supabaseAdmin
+        .from("departments")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("name", department.trim())
+        .eq("is_active", true)
+        .maybeSingle();
+      
+      if (existingDept) {
+        departmentId = existingDept.id;
+      } else {
+        // Create new department
+        const { data: newDept, error: deptError } = await supabaseAdmin
+          .from("departments")
+          .insert({
+            name: department.trim(),
+            company_id: companyId,
+          })
+          .select("id")
+          .single();
+        
+        if (!deptError && newDept) {
+          departmentId = newDept.id;
+        }
+      }
+    }
+    
     // Add user profile or update existing profile to add to company
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -357,7 +388,8 @@ serve(async (req: Request) => {
         company_id: companyId,
         is_admin: false,
         role: role.toLowerCase(),
-        department: department || null,
+        department_id: departmentId,
+        department: department || null, // Keep legacy field for backward compatibility
         points: 0, // New team members start with 0 points, get monthly allocation on first login
         monthly_points: 100, // Give initial monthly points
         invitation_status: 'invited', // Set initial status as invited
