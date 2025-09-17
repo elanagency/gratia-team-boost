@@ -38,7 +38,8 @@ export function MonthlyLeaderboardCard() {
         .from('profiles')
         .select('id, first_name, last_name')
         .eq('company_id', companyId)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('invitation_status', 'active');
       
       if (profilesError) throw profilesError;
       

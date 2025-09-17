@@ -98,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .update({
                 invitation_status: 'active',
                 first_login_at: new Date().toISOString(),
-                monthly_points: 100 // Give 100 monthly points on first login
+                monthly_points: 100, // Give 100 monthly points on first login
+                is_active: true // Set user as active on first login
               })
               .eq('id', profile.id);
 

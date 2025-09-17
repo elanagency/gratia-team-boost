@@ -394,7 +394,7 @@ serve(async (req: Request) => {
         monthly_points: 100, // Give initial monthly points
         invitation_status: 'invited', // Set initial status as invited
         temporary_password: password, // Store the generated password for resending invites
-        is_active: true,
+        is_active: false, // Users are not active until they log in
       })
       .select()
       .single();
