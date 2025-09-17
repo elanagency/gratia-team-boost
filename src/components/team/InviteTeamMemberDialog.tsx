@@ -15,6 +15,7 @@ import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { usePricing } from "@/hooks/usePricing";
+import { useDepartments } from "@/hooks/useDepartments";
 import InviteForm from "./InviteForm";
 
 const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -26,6 +27,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
   const { pricePerMember } = usePricing();
+  const { refetch: refetchDepartments } = useDepartments();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +108,9 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         // Show warning if email failed but member was still created
         toast.warning(`${name} has been added to the team, but the invitation email could not be sent. Please contact them directly with their login details.`);
       }
+      
+      // Refresh departments list to include any new departments
+      refetchDepartments();
       
       if (onSuccess) {
         onSuccess();
