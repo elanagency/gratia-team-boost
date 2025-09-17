@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Medal, Trophy, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Medal, Trophy, Star, Users } from "lucide-react";
 
 type LeaderboardMember = {
   userId: string;
@@ -16,7 +18,9 @@ type LeaderboardMember = {
 export function LeaderboardCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnlyAdmin, setIsOnlyAdmin] = useState(false);
   const { companyId } = useAuth();
+  const navigate = useNavigate();
 
   const fetchLeaderboard = useCallback(async () => {
     if (!companyId) return;
@@ -27,7 +31,7 @@ export function LeaderboardCard() {
       // Fetch all active company members first
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, department')
+        .select('id, first_name, last_name, department, is_admin')
         .eq('company_id', companyId)
         .eq('status', 'active');
       
@@ -35,8 +39,13 @@ export function LeaderboardCard() {
       
       if (!profiles?.length) {
         setLeaderboard([]);
+        setIsOnlyAdmin(false);
         return;
       }
+
+      // Check if only one user exists and they are an admin
+      const adminOnlyCheck = profiles.length === 1 && profiles[0].is_admin;
+      setIsOnlyAdmin(adminOnlyCheck);
       
       // Fetch all point transactions for this company
       const { data: transactions, error: transactionsError } = await supabase
@@ -168,6 +177,18 @@ export function LeaderboardCard() {
                  ))}
                </TableBody>
             </Table>
+          </div>
+        ) : isOnlyAdmin ? (
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-sm text-gray-500 mb-2">Build your team to get started</p>
+            <p className="text-xs text-gray-400 mb-4">Add team members to start giving recognition</p>
+            <Button 
+              onClick={() => navigate('/dashboard?tab=settings')}
+              className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+            >
+              Add Your Team Members
+            </Button>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
