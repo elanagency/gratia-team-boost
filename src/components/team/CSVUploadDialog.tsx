@@ -120,23 +120,74 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     
+    if (!selectedFile) {
+      return;
+    }
+
+    // Log file details for debugging
+    console.log('File validation details:', {
+      name: selectedFile.name,
+      type: selectedFile.type,
+      size: selectedFile.size,
+      lastModified: selectedFile.lastModified
+    });
+
     // File size validation (5MB limit)
-    if (selectedFile && selectedFile.size > 5 * 1024 * 1024) {
-      toast.error("File too large. Please use a file smaller than 5MB.");
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+      toast.error(`File too large: ${sizeMB}MB. Maximum allowed: 5MB`);
+      console.error('File size validation failed:', { size: selectedFile.size, sizeMB });
       return;
     }
     
-    if (selectedFile && selectedFile.type === "text/csv") {
-      setFile(selectedFile);
-      try {
-        const members = await parseCSV(selectedFile);
-        setParsedMembers(members);
-        setCurrentStep('preview');
-      } catch (error) {
-        toast.error("Failed to parse CSV file");
-      }
-    } else {
-      toast.error("Please select a valid CSV file");
+    // Get file extension
+    const fileName = selectedFile.name.toLowerCase();
+    const fileExtension = fileName.split('.').pop();
+    
+    // Check MIME type and file extension
+    const validMimeTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'text/plain',
+      'application/csv',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx sometimes gets this
+    ];
+    
+    const hasCsvExtension = fileExtension === 'csv';
+    const hasValidMimeType = validMimeTypes.includes(selectedFile.type);
+    
+    console.log('File type validation:', {
+      mimeType: selectedFile.type,
+      extension: fileExtension,
+      hasValidMimeType,
+      hasCsvExtension
+    });
+    
+    // File must have .csv extension or valid MIME type
+    if (!hasCsvExtension && !hasValidMimeType) {
+      toast.error(`File type not supported. Detected: "${selectedFile.type}" with extension ".${fileExtension}". Please save as CSV format.`);
+      console.error('File type validation failed:', {
+        mimeType: selectedFile.type,
+        extension: fileExtension,
+        fileName: selectedFile.name
+      });
+      return;
+    }
+    
+    // Warn if MIME type doesn't match but extension is correct
+    if (hasCsvExtension && !hasValidMimeType) {
+      console.warn('CSV file with unexpected MIME type:', selectedFile.type, 'but .csv extension detected, proceeding...');
+    }
+
+    setFile(selectedFile);
+    try {
+      console.log('Starting CSV parse for file:', selectedFile.name);
+      const members = await parseCSV(selectedFile);
+      setParsedMembers(members);
+      setCurrentStep('preview');
+    } catch (error) {
+      console.error('CSV parsing failed:', error);
+      toast.error(`Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, []);
 
