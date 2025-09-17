@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { useTeamMembers } from "@/hooks/useCompanyMembers";
 import { usePricing } from "@/hooks/usePricing";
 import { useDepartments } from "@/hooks/useDepartments";
 import InviteForm from "./InviteForm";

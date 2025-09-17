@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import TeamMemberTable from "./TeamMemberTable";
-import { TeamMember } from "@/hooks/useTeamMembers";
+import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 
 interface TeamManagementContentProps {
   teamMembers: TeamMember[];

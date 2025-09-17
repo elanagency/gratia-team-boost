@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TeamMember, useTeamMembers } from "@/hooks/useTeamMembers";
+import { type CompanyMember as TeamMember, useTeamMembers } from "@/hooks/useCompanyMembers";
 
 interface EditMemberFormProps {
   member: TeamMember;

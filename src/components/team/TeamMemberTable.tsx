@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { MoreHorizontal, Edit, Trash2, Mail, Check, X, UserCheck } from "lucide-react";
-import { TeamMember } from "@/hooks/useTeamMembers";
+import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { getUserStatus } from "@/lib/userStatus";
 
 interface TeamMemberTableProps {

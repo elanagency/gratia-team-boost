@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, Check, Mail, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { useTeamMembers } from "@/hooks/useCompanyMembers";
 import { Link } from "react-router-dom";
 import { getUserStatus } from "@/lib/userStatus";
 

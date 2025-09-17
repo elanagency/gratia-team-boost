@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, Send, AtSign, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useAllCompanyMembers } from "@/hooks/useAllCompanyMembers";
+import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle } from "lucide-react";
-import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
+import { useTeamMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
@@ -24,7 +24,7 @@ export const TeamManagementCard = () => {
   const processedSessionIds = useRef(new Set<string>());
   const {
     teamMembers,
-    fetchTeamMembers,
+    refetch: fetchTeamMembers,
     removeMember,
     isLoading,
     teamSlots,

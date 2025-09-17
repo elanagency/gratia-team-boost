@@ -33,7 +33,7 @@ export const useOptimizedAuth = () => {
     queryFn: async () => {
       if (!userId) return null;
 
-      console.log('Fetching user profile data for user:', userId);
+      
       
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -70,7 +70,7 @@ export const useOptimizedAuth = () => {
         status: profileData?.status || 'invited',
       };
       
-      console.log('Profile data fetched successfully:', userProfile);
+      
       return userProfile;
     },
     enabled: !!userId,
@@ -89,7 +89,7 @@ export const useOptimizedAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       
-      console.log('Auth state changed:', event);
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
@@ -150,7 +150,6 @@ export const useOptimizedAuth = () => {
   const status = useMemo(() => profile?.status || 'invited', [profile?.status]);
 
   const signOut = async () => {
-    console.log('Signing out user');
     try {
       await supabase.auth.signOut();
     } catch (error) {

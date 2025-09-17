@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useTeamMembers, TeamMember } from "@/hooks/useTeamMembers";
+import { useTeamMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 import { useTeamMemberActions } from "@/hooks/useTeamMemberActions";
 import TeamManagementHeader from "@/components/team/TeamManagementHeader";
@@ -11,7 +11,7 @@ const TeamManagement = () => {
   
   const {
     teamMembers,
-    fetchTeamMembers,
+    refetch: fetchTeamMembers,
     removeMember,
     isLoading,
     totalMembers,

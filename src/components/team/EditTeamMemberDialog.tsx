@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TeamMember } from "@/hooks/useTeamMembers";
+import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import EditMemberForm from "./EditMemberForm";
 
 interface EditTeamMemberDialogProps {

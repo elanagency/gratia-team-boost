@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TeamMember } from "@/hooks/useTeamMembers";
+import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 
 export const useTeamMemberActions = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
