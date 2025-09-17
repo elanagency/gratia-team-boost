@@ -68,13 +68,13 @@ export function RecognitionFeed() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('points')
+        .select('monthly_points')
         .eq('id', user.id)
         .eq('company_id', companyId)
         .single();
       
       if (error) throw error;
-      setUserPoints(data?.points || 0);
+      setUserPoints(data?.monthly_points || 0);
     } catch (error) {
       console.error("Error fetching user points:", error);
     }
