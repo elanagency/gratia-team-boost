@@ -49,8 +49,7 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('is_admin', false)
-        .eq('is_active', true);
+        .eq('is_admin', false);
 
       if (countError) {
         throw countError;
@@ -77,7 +76,6 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
         `)
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
       
