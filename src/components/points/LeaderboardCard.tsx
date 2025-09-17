@@ -156,7 +156,7 @@ export function LeaderboardCard() {
             <p className="text-sm text-gray-500 mb-2">Build your team to get started</p>
             <p className="text-xs text-gray-400 mb-4">Add team members to start giving recognition</p>
             <Button 
-              onClick={() => navigate('/dashboard?tab=settings')}
+              onClick={() => navigate('/dashboard/settings')}
               className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
             >
               Add Your Team Members
