@@ -78,7 +78,7 @@ export function MonthlyLeaderboardCard() {
             name: memberName || 'No Name',
             points: pointsByUser[profile.id] || 0,
             rank: 0 // Will be set after sorting
-          };
+  }, [companyId]);
         })
         .sort((a, b) => b.points - a.points)
         .slice(0, 10) // Top 10

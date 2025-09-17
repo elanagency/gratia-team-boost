@@ -87,7 +87,7 @@ export function LeaderboardCard() {
             department: profile.department || null,
             points: pointsMap.get(profile.id) || 0,
             rank: 0 // Will be set after sorting
-          };
+  }, [companyId]);
         })
         .sort((a, b) => b.points - a.points) // Sort by points descending
         .slice(0, 10) // Limit to top 10
