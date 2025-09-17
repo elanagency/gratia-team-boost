@@ -354,8 +354,6 @@ export type Database = {
           first_login_at: string | null
           first_name: string
           id: string
-          invitation_status: string
-          is_active: boolean
           is_admin: boolean
           is_platform_admin: boolean
           last_name: string
@@ -369,6 +367,7 @@ export type Database = {
           shipping_phone: string | null
           shipping_state: string | null
           shipping_zip_code: string | null
+          status: string
           temporary_password: string | null
           updated_at: string
         }
@@ -381,8 +380,6 @@ export type Database = {
           first_login_at?: string | null
           first_name: string
           id: string
-          invitation_status?: string
-          is_active?: boolean
           is_admin?: boolean
           is_platform_admin?: boolean
           last_name: string
@@ -396,6 +393,7 @@ export type Database = {
           shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
+          status?: string
           temporary_password?: string | null
           updated_at?: string
         }
@@ -408,8 +406,6 @@ export type Database = {
           first_login_at?: string | null
           first_name?: string
           id?: string
-          invitation_status?: string
-          is_active?: boolean
           is_admin?: boolean
           is_platform_admin?: boolean
           last_name?: string
@@ -423,6 +419,7 @@ export type Database = {
           shipping_phone?: string | null
           shipping_state?: string | null
           shipping_zip_code?: string | null
+          status?: string
           temporary_password?: string | null
           updated_at?: string
         }
