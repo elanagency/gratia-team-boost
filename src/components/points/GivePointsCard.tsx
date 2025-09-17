@@ -309,8 +309,6 @@ export function GivePointsCard() {
       queryClient.invalidateQueries({ queryKey: ['userPoints'] });
       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
       
-      // Trigger refresh for any components using point transactions
-      window.dispatchEvent(new CustomEvent('refreshRecognitionFeed'));
       
     } catch (error) {
       console.error("Error giving points:", error);

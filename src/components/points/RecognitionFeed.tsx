@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -48,19 +48,6 @@ export function RecognitionFeed() {
     }
   }, [companyId, user?.id]);
 
-  // Listen for refresh events from other components
-  useEffect(() => {
-    const handleRefresh = () => {
-      if (companyId && user?.id) {
-        fetchRecognitionFeed();
-      }
-    };
-
-    window.addEventListener('refreshRecognitionFeed', handleRefresh);
-    return () => {
-      window.removeEventListener('refreshRecognitionFeed', handleRefresh);
-    };
-  }, [companyId, user?.id]);
 
   // Remove fetchUserPoints function as we now use optimisticAuth
 

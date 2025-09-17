@@ -113,20 +113,6 @@ export function LeaderboardCard() {
     };
   }, [companyId, fetchLeaderboard]);
 
-  // Legacy event listener for manual refresh
-  useEffect(() => {
-    const handleLeaderboardRefresh = () => {
-      fetchLeaderboard();
-    };
-
-    window.addEventListener('leaderboardRefresh', handleLeaderboardRefresh);
-    window.addEventListener('refreshRecognitionFeed', handleLeaderboardRefresh);
-    
-    return () => {
-      window.removeEventListener('leaderboardRefresh', handleLeaderboardRefresh);
-      window.removeEventListener('refreshRecognitionFeed', handleLeaderboardRefresh);
-    };
-  }, [fetchLeaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

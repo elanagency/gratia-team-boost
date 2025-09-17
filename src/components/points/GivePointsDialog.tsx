@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";

@@ -1,5 +1,5 @@
 
-import { useToast as useHookToast } from "@/hooks/use-toast";
+// Direct Sonner integration - no legacy hook needed
 import { toast as sonnerToast } from "sonner";
 
 // Export a correctly typed toast object
@@ -13,4 +13,8 @@ export const toast = {
   }
 };
 
-export const useToast = useHookToast;
+// Dummy useToast for legacy compatibility
+export const useToast = () => ({
+  toast: () => {},
+  toasts: []
+});

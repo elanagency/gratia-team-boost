@@ -31,8 +31,9 @@ export const useRedemptions = () => {
   } = useQuery({
     queryKey: ['redemptions', user?.id],
     queryFn: async () => {
-      // TODO: Implement actual redemption fetching when redemption tables are created
-      // For now, return empty array as redemption system is not yet implemented
+      if (!user?.id) return [];
+      
+      // Return empty array until redemption system is implemented
       return [];
     },
     enabled: !!user
@@ -40,8 +41,8 @@ export const useRedemptions = () => {
 
   return {
     redemptions,
-    isLoading: false, // No loading since we're returning empty data
-    error: null,     // No error since we're not making real API calls
+    isLoading,
+    error,
     refetch
   };
 };

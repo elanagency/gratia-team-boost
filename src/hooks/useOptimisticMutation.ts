@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface OptimisticMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
