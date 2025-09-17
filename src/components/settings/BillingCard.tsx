@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Users, CreditCard, Calendar, DollarSign, UserPlus, AlertCircle } from "lucide-react";
+import { ExternalLink, Users, CreditCard, Calendar, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { usePricing } from "@/hooks/usePricing";
-import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -34,9 +33,6 @@ export const BillingCard = () => {
   const { user, companyId } = useAuth();
   const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
 
-  const handleInviteSuccess = () => {
-    fetchSubscriptionStatus();
-  };
 
   const fetchCompanyData = async () => {
     if (!companyId) return null;
@@ -199,19 +195,10 @@ export const BillingCard = () => {
       <div className="p-6">
         {/* Subscription Hint for Users Without Active Plan */}
         {!hasExistingSubscription && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-1">
-                  Start by inviting your first team member to start a subscription
-                </h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  You'll only be charged ${(pricePerMemberCents / 100).toFixed(2)} per active team member per month. No setup fees or hidden costs.
-                </p>
-                <InviteTeamMemberDialog onSuccess={handleInviteSuccess} />
-              </div>
-            </div>
+          <div className="mb-6 p-3 bg-muted/50 border border-border rounded-md">
+            <p className="text-sm text-muted-foreground">
+              Start by inviting your first team member to start a subscription
+            </p>
           </div>
         )}
 
