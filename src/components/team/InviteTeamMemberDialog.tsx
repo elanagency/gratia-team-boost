@@ -63,20 +63,26 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       console.log("Team member creation response:", data);
       
-      // Check if billing setup is needed (no slots purchased)
+      // Check if billing setup is needed (no subscription and no billing ready)
       if (data.needsBillingSetup && data.checkoutUrl) {
-        console.log("No team slots purchased, redirecting to checkout");
+        console.log("Billing setup needed, redirecting to setup flow");
         
         setEmail('');
         setName('');
         setDepartment('');
         setOpen(false);
         
-        toast.success("Setting up subscription - Redirecting to payment. Complete payment to add the team member.");
-        
-        setTimeout(() => {
+        // Show billing explanation popup first
+        if (window.confirm(
+          "To invite team members, we need to set up your billing. You won't be charged until your first team member logs in.\n\n" +
+          "• No charge for setting up payment method\n" +
+          "• Billing starts when first invited member logs in\n" +
+          "• Only pay for active team members\n" +
+          "• Cancel anytime\n\n" +
+          "Continue to set up billing?"
+        )) {
           window.location.href = data.checkoutUrl;
-        }, 1500);
+        }
         
         return;
       }
@@ -153,11 +159,12 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-800 mb-2">First Team Member</h4>
             <p className="text-sm text-blue-700 mb-3">
-              Adding your first team member will start your subscription at ${pricePerMember}/month per team member.
+              Set up billing first, then invite team members. You'll only be charged when your first team member logs in at ${pricePerMember}/month per active member.
             </p>
             <p className="text-xs text-blue-600">
+              • No upfront charges - setup payment method only<br/>
+              • Billing starts when first member logs in<br/>
               • Pay only for active team members<br/>
-              • Add members instantly after first subscription<br/>
               • Billing adjusts automatically each month
             </p>
           </div>

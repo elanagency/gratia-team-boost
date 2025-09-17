@@ -63,9 +63,11 @@ export type Database = {
         Row: {
           address: string | null
           billing_cycle_anchor: number | null
+          billing_ready: boolean | null
           created_at: string
           environment: string
           first_active_member_at: string | null
+          first_charge_at: string | null
           handle: string | null
           id: string
           logo_url: string | null
@@ -75,6 +77,7 @@ export type Database = {
           stripe_customer_id_live: string | null
           stripe_customer_id_test: string | null
           stripe_subscription_id: string | null
+          stripe_subscription_item_id: string | null
           subscription_status: string | null
           trial_ends_at: string | null
           trial_mode: boolean | null
@@ -84,9 +87,11 @@ export type Database = {
         Insert: {
           address?: string | null
           billing_cycle_anchor?: number | null
+          billing_ready?: boolean | null
           created_at?: string
           environment?: string
           first_active_member_at?: string | null
+          first_charge_at?: string | null
           handle?: string | null
           id?: string
           logo_url?: string | null
@@ -96,6 +101,7 @@ export type Database = {
           stripe_customer_id_live?: string | null
           stripe_customer_id_test?: string | null
           stripe_subscription_id?: string | null
+          stripe_subscription_item_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null
@@ -105,9 +111,11 @@ export type Database = {
         Update: {
           address?: string | null
           billing_cycle_anchor?: number | null
+          billing_ready?: boolean | null
           created_at?: string
           environment?: string
           first_active_member_at?: string | null
+          first_charge_at?: string | null
           handle?: string | null
           id?: string
           logo_url?: string | null
@@ -117,6 +125,7 @@ export type Database = {
           stripe_customer_id_live?: string | null
           stripe_customer_id_test?: string | null
           stripe_subscription_id?: string | null
+          stripe_subscription_item_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
           trial_mode?: boolean | null

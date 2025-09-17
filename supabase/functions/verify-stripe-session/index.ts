@@ -83,12 +83,87 @@ serve(async (req: Request) => {
       );
     }
 
-    const companyId = session.metadata?.company_id;
+    const companyId = session.metadata?.company_id || session.metadata?.companyId;
     const pendingMemberData = session.metadata?.pending_member_data;
 
     if (!companyId) {
       return new Response(
         JSON.stringify({ error: "Invalid session metadata" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle setup mode sessions (billing setup)
+    if (session.mode === 'setup') {
+      console.log("[VERIFY-STRIPE-SESSION] Processing setup mode session for billing setup");
+      
+      const customerId = session.customer as string;
+      const setupIntentId = session.setup_intent as string;
+      const environment = session.metadata?.environment || 'live';
+
+      try {
+        // Retrieve setup intent to get payment method
+        const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+        const paymentMethodId = setupIntent.payment_method as string;
+
+        if (paymentMethodId) {
+          // Attach payment method to customer if not already attached
+          try {
+            await stripe.paymentMethods.attach(paymentMethodId, {
+              customer: customerId,
+            });
+          } catch (error) {
+            // Payment method might already be attached
+            console.log("[VERIFY-STRIPE-SESSION] Payment method already attached or error:", error);
+          }
+
+          // Set as default payment method
+          await stripe.customers.update(customerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+
+          console.log("[VERIFY-STRIPE-SESSION] Payment method attached and set as default");
+        }
+
+        // Mark billing as ready
+        const { error: updateError } = await supabaseAdmin
+          .from('companies')
+          .update({ 
+            billing_ready: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', companyId);
+
+        if (updateError) {
+          console.error("[VERIFY-STRIPE-SESSION] Error updating billing_ready:", updateError);
+          throw updateError;
+        }
+
+        console.log("[VERIFY-STRIPE-SESSION] Company billing marked as ready");
+
+        return new Response(JSON.stringify({ 
+          received: true, 
+          type: 'setup_completed',
+          companyId 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+
+      } catch (error) {
+        console.error("[VERIFY-STRIPE-SESSION] Error processing setup session:", error);
+        return new Response(
+          JSON.stringify({ error: "Setup processing failed" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Handle payment mode sessions (existing subscription flow)
+    if (session.payment_status !== "paid") {
+      return new Response(
+        JSON.stringify({ error: "Payment not completed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if user profile has 'invited' status OR first_login_at is null
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, first_login_at, status, monthly_points, company_id')
+          .select('id, first_login_at, status, monthly_points, company_id, is_admin')
           .eq('id', authData.user.id)
           .single();
 
@@ -110,8 +110,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
               console.log('Updated user invitation status to active and allocated 100 monthly points');
               
-              // Update subscription quantity when user becomes active
-              if (profile.company_id) {
+              // Check if this is the first non-admin member login to activate billing
+              if (profile.company_id && !profile.is_admin) {
+                // Call billing activation function for first non-admin login
+                try {
+                  const { data: activationResult } = await supabase.functions.invoke('billing-activate-on-first-login', {
+                    body: { companyId: profile.company_id }
+                  });
+                  console.log('Billing activation result:', activationResult);
+                } catch (activationError) {
+                  console.error('Error activating billing on first login:', activationError);
+                }
+                
+                // Update subscription quantity for existing subscriptions
                 await updateSubscriptionForActiveUser(profile.company_id);
               }
             }
@@ -131,8 +142,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
               console.log('Updated first login and allocated 100 monthly points');
               
-              // Update subscription quantity when user becomes active
-              if (profile.company_id) {
+              // Check if this is the first non-admin member login to activate billing
+              if (profile.company_id && !profile.is_admin) {
+                // Call billing activation function for first non-admin login
+                try {
+                  const { data: activationResult } = await supabase.functions.invoke('billing-activate-on-first-login', {
+                    body: { companyId: profile.company_id }
+                  });
+                  console.log('Billing activation result:', activationResult);
+                } catch (activationError) {
+                  console.error('Error activating billing on first login:', activationError);
+                }
+                
+                // Update subscription quantity for existing subscriptions
                 await updateSubscriptionForActiveUser(profile.company_id);
               }
             }
