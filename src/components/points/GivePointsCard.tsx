@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, Send, AtSign, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useAllCompanyMembers";
-import { useUserPoints } from "@/hooks/useUserPoints";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -30,9 +30,8 @@ export function GivePointsCard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { user, companyId } = useAuth();
+  const { user, companyId, monthlyPoints } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
-  const { monthlyPoints } = useUserPoints();
 
   const availableRecipients = companyMembers?.filter(member => 
     member.status === 'active'

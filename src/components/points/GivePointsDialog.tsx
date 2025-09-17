@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useUserPoints } from "@/hooks/useUserPoints";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 // Internal interface for the dialog
@@ -43,8 +43,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   const [companyPoints, setCompanyPoints] = useState(0);
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
   
-  const { user, companyId, isAdmin } = useAuth();
-  const { monthlyPoints } = useUserPoints();
+  const { user, companyId, isAdmin, monthlyPoints } = useAuth();
   const queryClient = useQueryClient();
 
   // Fetch team members when dialog opens

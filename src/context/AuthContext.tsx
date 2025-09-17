@@ -19,6 +19,11 @@ type AuthContextType = {
   companyName: string;
   isAdmin: boolean;
   isPlatformAdmin: boolean;
+  recognitionPoints: number;
+  monthlyPoints: number;
+  totalPoints: number;
+  department: string | null;
+  status: string;
   signOut: () => Promise<void>;
 };
 

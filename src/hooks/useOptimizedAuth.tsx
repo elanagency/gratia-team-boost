@@ -12,6 +12,10 @@ type UserProfile = {
   company_name: string;
   is_admin: boolean;
   is_platform_admin: boolean;
+  points: number;
+  monthly_points: number;
+  department: string | null;
+  status: string;
 };
 
 export const useOptimizedAuth = () => {
@@ -33,7 +37,7 @@ export const useOptimizedAuth = () => {
       
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, is_platform_admin, company_id, is_admin')
+        .select('first_name, last_name, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
         .eq('id', userId)
         .eq('status', 'active')
         .maybeSingle();
@@ -60,6 +64,10 @@ export const useOptimizedAuth = () => {
         company_name: companyName,
         is_admin: profileData?.is_admin || false,
         is_platform_admin: profileData?.is_platform_admin || false,
+        points: profileData?.points || 0,
+        monthly_points: profileData?.monthly_points || 0,
+        department: profileData?.department || null,
+        status: profileData?.status || 'invited',
       };
       
       console.log('Profile data fetched successfully:', userProfile);
@@ -135,6 +143,11 @@ export const useOptimizedAuth = () => {
   const companyName = useMemo(() => profile?.company_name || '', [profile?.company_name]);
   const isAdmin = useMemo(() => profile?.is_admin || false, [profile?.is_admin]);
   const isPlatformAdmin = useMemo(() => profile?.is_platform_admin || false, [profile?.is_platform_admin]);
+  const recognitionPoints = useMemo(() => profile?.points || 0, [profile?.points]);
+  const monthlyPoints = useMemo(() => profile?.monthly_points || 0, [profile?.monthly_points]);
+  const totalPoints = useMemo(() => recognitionPoints + monthlyPoints, [recognitionPoints, monthlyPoints]);
+  const department = useMemo(() => profile?.department || null, [profile?.department]);
+  const status = useMemo(() => profile?.status || 'invited', [profile?.status]);
 
   const signOut = async () => {
     console.log('Signing out user');
@@ -164,6 +177,11 @@ export const useOptimizedAuth = () => {
     companyName,
     isAdmin,
     isPlatformAdmin,
+    recognitionPoints,
+    monthlyPoints,
+    totalPoints,
+    department,
+    status,
     signOut,
   };
 };

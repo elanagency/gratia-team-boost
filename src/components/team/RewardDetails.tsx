@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserPoints } from "@/hooks/useUserPoints";
+
 import { ShippingInfoDialog } from "./ShippingInfoDialog";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
@@ -20,8 +20,7 @@ interface RewardDetailsProps {
 
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   // TODO: Implement redemption with new gift card system
-  const { user } = useAuth();
-  const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
+  const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     name: "",

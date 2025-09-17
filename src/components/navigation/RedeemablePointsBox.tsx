@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Coins } from "lucide-react";
-import { useUserPoints } from "@/hooks/useUserPoints";
 import { useAuth } from "@/context/AuthContext";
 
 interface RedeemablePointsBoxProps {
@@ -10,8 +9,7 @@ interface RedeemablePointsBoxProps {
 
 export const RedeemablePointsBox = ({ className = "" }: RedeemablePointsBoxProps) => {
   const navigate = useNavigate();
-  const { recognitionPoints, isLoading } = useUserPoints();
-  const { isAdmin } = useAuth();
+  const { recognitionPoints, isLoading, isAdmin } = useAuth();
 
   const handleClick = () => {
     navigate("/dashboard/gift-cards");

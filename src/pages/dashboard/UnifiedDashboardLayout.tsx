@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
-import { usePlatformAuth } from "@/hooks/usePlatformAuth";
+
 import { DashboardTopNavigation } from "@/components/dashboard/DashboardTopNavigation";
 
 const UnifiedDashboardLayout = () => {
@@ -13,10 +13,9 @@ const UnifiedDashboardLayout = () => {
     isLoading,
     isAdminLoading,
     signOut,
-    isAdmin
+    isAdmin,
+    isPlatformAdmin
   } = useAuth();
-  
-  const { isPlatformAdmin, isPlatformAdminLoading } = usePlatformAuth();
   
   useEffect(() => {
     if (user) {
@@ -26,8 +25,8 @@ const UnifiedDashboardLayout = () => {
     }
   }, [user, isAdmin, isAdminLoading]);
   
-  // Show loading spinner if either main loading, admin status, or platform admin status is loading
-  if (isLoading || isAdminLoading || isPlatformAdminLoading) {
+  // Show loading spinner if either main loading or admin status is loading
+  if (isLoading || isAdminLoading) {
     return <LoadingSpinner />;
   }
   

@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useUserPoints } from "@/hooks/useUserPoints";
+import { useAuth } from "@/context/AuthContext";
 
 interface RewardCardProps {
   reward: {
@@ -20,7 +20,7 @@ interface RewardCardProps {
 }
 
 export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
-  const { recognitionPoints, isLoading: isLoadingPoints } = useUserPoints();
+  const { recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const hasEnoughPoints = recognitionPoints >= reward.points_cost;
 
   return (

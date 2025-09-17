@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Users, Award, Gift, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { useUserPoints } from "@/hooks/useUserPoints";
+
 
 type StatItem = {
   title: string;
@@ -22,8 +22,7 @@ export const DashboardStats = ({ teamCount, isLoading }: DashboardStatsProps) =>
   const [recognitionCount, setRecognitionCount] = useState<number>(0);
   const [rewardsCount, setRewardsCount] = useState<number>(0);
   const [isLoadingRecognitions, setIsLoadingRecognitions] = useState<boolean>(true);
-  const { companyId } = useAuth();
-  const { recognitionPoints, monthlyPoints, isLoading: isLoadingUserPoints } = useUserPoints();
+  const { companyId, recognitionPoints, monthlyPoints, isLoading: isLoadingUserPoints } = useAuth();
   
   useEffect(() => {
     const fetchRecognitionStats = async () => {

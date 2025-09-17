@@ -3,16 +3,15 @@ import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
-import { usePlatformAuth } from "@/hooks/usePlatformAuth";
+
 import { PlatformSidebar } from "@/components/platform/PlatformSidebar";
 import { MemoizedHeader } from "@/components/dashboard/MemoizedHeader";
 
 const PlatformAdminLayout = () => {
-  const { user, userName, isLoading, signOut } = useAuth();
-  const { isPlatformAdmin, isPlatformAdminLoading } = usePlatformAuth();
+  const { user, userName, isLoading, signOut, isPlatformAdmin } = useAuth();
   
-  // Show loading spinner while checking authentication and platform admin status
-  if (isLoading || isPlatformAdminLoading) {
+  // Show loading spinner while checking authentication
+  if (isLoading) {
     return <LoadingSpinner />;
   }
   
