@@ -150,6 +150,18 @@ export function LeaderboardCard() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[#F572FF]" />
           </div>
+        ) : isOnlyAdmin ? (
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-sm text-gray-500 mb-2">Build your team to get started</p>
+            <p className="text-xs text-gray-400 mb-4">Add team members to start giving recognition</p>
+            <Button 
+              onClick={() => navigate('/dashboard?tab=settings')}
+              className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+            >
+              Add Your Team Members
+            </Button>
+          </div>
         ) : leaderboard.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
@@ -177,18 +189,6 @@ export function LeaderboardCard() {
                  ))}
                </TableBody>
             </Table>
-          </div>
-        ) : isOnlyAdmin ? (
-          <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-sm text-gray-500 mb-2">Build your team to get started</p>
-            <p className="text-xs text-gray-400 mb-4">Add team members to start giving recognition</p>
-            <Button 
-              onClick={() => navigate('/dashboard?tab=settings')}
-              className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-            >
-              Add Your Team Members
-            </Button>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
