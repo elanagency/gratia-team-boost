@@ -41,7 +41,7 @@ export const RecentActivity = () => {
         .from('profiles')
         .select('id, first_name, last_name, created_at, company_id')
         .not('company_id', 'is', null)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(5);
 

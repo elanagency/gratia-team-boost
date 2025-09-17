@@ -36,8 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('id', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('is_active', true)
-        .eq('invitation_status', 'active');
+        .eq('status', 'active');
 
       if (countError) {
         console.error('Error counting active users for subscription update:', countError);
@@ -80,9 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if user profile has 'invited' status OR first_login_at is null
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, first_login_at, invitation_status, monthly_points, company_id')
+          .select('id, first_login_at, status, monthly_points, company_id')
           .eq('id', authData.user.id)
-          .eq('is_active', true)
           .single();
 
         if (error) {
@@ -92,14 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (profile) {
           // Handle invited users becoming active
-          if (profile.invitation_status === 'invited') {
+          if (profile.status === 'invited') {
             const { error: updateError } = await supabase
               .from('profiles')
               .update({
-                invitation_status: 'active',
+                status: 'active',
                 first_login_at: new Date().toISOString(),
-                monthly_points: 100, // Give 100 monthly points on first login
-                is_active: true // Set user as active on first login
+                monthly_points: 100 // Give 100 monthly points on first login
               })
               .eq('id', profile.id);
 
@@ -115,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           // Handle first login for active users who haven't logged in yet
-          else if (!profile.first_login_at && profile.invitation_status === 'active') {
+          else if (!profile.first_login_at && profile.status === 'active') {
             const { error: updateError } = await supabase
               .from('profiles')
               .update({

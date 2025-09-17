@@ -75,7 +75,7 @@ serve(async (req) => {
       .select('id', { count: 'exact' })
       .eq('company_id', companyId)
       .eq('is_admin', true)
-      .eq('is_active', true)
+      .eq('status', 'active')
 
     if (adminCountError) {
       console.error('Error checking admin count:', adminCountError)
@@ -124,7 +124,7 @@ serve(async (req) => {
     // Mark profile as inactive instead of deleting auth user
     const { error: profileUpdateError } = await supabase
       .from('profiles')
-      .update({ is_active: false })
+      .update({ status: 'deactivated' })
       .eq('id', userId)
 
     if (profileUpdateError) {
@@ -163,7 +163,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id', { count: 'exact' })
       .eq('company_id', companyId)
-      .eq('is_active', true)
+      .eq('status', 'active')
       .neq('id', userId) // Exclude the user being deleted
 
     if (countError) {

@@ -85,7 +85,7 @@ serve(async (req) => {
             .select('id', { count: 'exact' })
             .eq('company_id', company.id)
             .eq('is_admin', false)
-            .eq('is_active', true);
+            .eq('status', 'active');
 
           const currentMembers = memberCount?.length || 0;
 
@@ -138,7 +138,7 @@ serve(async (req) => {
         .select('id')
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       const currentMembers = members?.length || 0;
 

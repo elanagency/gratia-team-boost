@@ -35,7 +35,7 @@ export function GivePointsCard() {
   const { monthlyPoints } = useUserPoints();
 
   const availableRecipients = companyMembers?.filter(member => 
-    member.invitation_status === 'active'
+    member.status === 'active'
   ) || [];
 
   const filteredMembers = availableRecipients.filter(member =>

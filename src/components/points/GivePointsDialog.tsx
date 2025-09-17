@@ -14,7 +14,17 @@ import { useAuth } from "@/context/AuthContext";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { TeamMember } from "@/hooks/useTeamMembers";
+// Internal interface for the dialog
+interface DialogTeamMember {
+  id: string;
+  name: string;
+  email: string;
+  user_id: string;
+  points: number;
+  department: string;
+  status: 'invited' | 'active' | 'deactivated';
+  first_login_at?: string;
+}
 
 interface GivePointsDialogProps {
   isTeamMember?: boolean;
@@ -23,9 +33,9 @@ interface GivePointsDialogProps {
 export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<TeamMember[]>([]);
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [teamMembers, setTeamMembers] = useState<DialogTeamMember[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<DialogTeamMember[]>([]);
+  const [selectedMember, setSelectedMember] = useState<DialogTeamMember | null>(null);
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
@@ -88,12 +98,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           avatar_url,
           points,
           department,
-          invitation_status,
+          status,
           first_login_at
         `)
         .eq('company_id', companyId)
         .neq('id', user.id)
-        .eq('is_active', true);
+        .eq('status', 'active');
       
       if (profilesError) throw profilesError;
       
@@ -103,7 +113,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       }
       
       // Format team members directly from profiles data
-      const formattedMembers = profiles.map(profile => {
+      const formattedMembers: DialogTeamMember[] = profiles.map(profile => {
         const memberName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
         return {
@@ -113,7 +123,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           user_id: profile.id,
           points: profile.points || 0,
           department: profile.department || '',
-          invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
+          status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at
         };
       });

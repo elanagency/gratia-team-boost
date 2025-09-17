@@ -157,7 +157,7 @@ serve(async (req: Request) => {
       .from('profiles')
       .select('id', { count: 'exact' })
       .eq('company_id', companyId)
-      .eq('is_active', true);
+      .eq('status', 'active');
 
     if (countError) {
       console.error("[CREATE-TEAM-MEMBER] Error counting active users:", countError);
@@ -322,7 +322,7 @@ serve(async (req: Request) => {
       .select("*")
       .eq("id", userId)
       .eq("company_id", companyId)
-      .eq("is_active", true)
+      .eq("status", "active")
       .maybeSingle();
     
     if (profileCheckError) {
@@ -392,9 +392,8 @@ serve(async (req: Request) => {
         department: department || null, // Keep legacy field for backward compatibility
         points: 0, // New team members start with 0 points, get monthly allocation on first login
         monthly_points: 100, // Give initial monthly points
-        invitation_status: 'invited', // Set initial status as invited
+        status: 'invited', // Set initial status as invited
         temporary_password: password, // Store the generated password for resending invites
-        is_active: false, // Users are not active until they log in
       })
       .select()
       .single();
@@ -453,7 +452,7 @@ serve(async (req: Request) => {
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('is_active', true);
+      .eq('status', 'active');
 
     const finalMemberCount = memberCount || 0;
     

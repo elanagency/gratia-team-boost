@@ -141,7 +141,7 @@ serve(async (req) => {
       supabase.from('subscription_events').delete().eq('company_id', companyId),
       
       // Mark profiles as inactive instead of deleting (they're already backed up)
-      supabase.from('profiles').update({ is_active: false }).eq('company_id', companyId),
+      supabase.from('profiles').update({ status: 'deactivated' }).eq('company_id', companyId),
       
       // Finally delete the company
       supabase.from('companies').delete().eq('id', companyId)

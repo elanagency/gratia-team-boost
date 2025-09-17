@@ -10,7 +10,7 @@ export interface CompanyMember {
   user_id: string;
   points: number;
   department?: string;
-  invitation_status: 'invited' | 'active';
+  status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
   is_admin: boolean;
 }
@@ -41,11 +41,11 @@ export const useAllCompanyMembers = () => {
           is_admin,
           points,
           department,
-          invitation_status,
+          status,
           first_login_at
         `)
         .eq('company_id', companyId)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .neq('id', user.id) // Exclude current user
         .order('created_at', { ascending: false });
       
@@ -85,7 +85,7 @@ export const useAllCompanyMembers = () => {
           user_id: profile.id,
           points: profile.points || 0,
           department: profile.department || '',
-          invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
+          status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at,
           is_admin: profile.is_admin || false
         };

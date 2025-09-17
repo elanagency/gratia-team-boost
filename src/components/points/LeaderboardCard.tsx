@@ -29,8 +29,7 @@ export function LeaderboardCard() {
         .from('profiles')
         .select('id, first_name, last_name, department')
         .eq('company_id', companyId)
-        .eq('is_active', true)
-        .eq('invitation_status', 'active');
+        .eq('status', 'active');
       
       if (profilesError) throw profilesError;
       

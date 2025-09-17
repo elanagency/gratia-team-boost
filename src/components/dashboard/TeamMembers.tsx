@@ -36,7 +36,7 @@ export const TeamMembers = () => {
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{member.name}</p>
                   {(() => {
-                    const status = getUserStatus(member.invitation_status, member.is_active);
+                    const status = getUserStatus(member.status);
                     const IconComponent = status.icon === 'check' ? Check : 
                                          status.icon === 'x' ? X : Mail;
                     

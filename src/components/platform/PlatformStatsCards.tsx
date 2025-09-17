@@ -19,7 +19,7 @@ export const PlatformStatsCards = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .not('company_id', 'is', null)
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       // Get total transactions this month
       const startOfMonth = new Date();

@@ -11,8 +11,7 @@ export interface TeamMember {
   user_id: string;
   points: number;
   department?: string;
-  invitation_status: 'invited' | 'active';
-  is_active?: boolean;
+  status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
 }
 
@@ -70,10 +69,10 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
           last_name,
           avatar_url,
           is_admin,
-          is_active,
+          status,
           points,
           department,
-          invitation_status,
+          
           first_login_at
         `)
         .eq('company_id', companyId)
@@ -126,8 +125,7 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
           user_id: profile.id,
           points: profile.points || 0,
           department: profile.department || '',
-          invitation_status: (profile.invitation_status as 'invited' | 'active') || 'invited',
-          is_active: profile.is_active,
+          status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at
         };
       });

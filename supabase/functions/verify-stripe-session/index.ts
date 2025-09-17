@@ -125,7 +125,7 @@ serve(async (req: Request) => {
       .select("id", { count: "exact" })
       .eq("company_id", companyId)
       .eq("is_admin", false)
-      .eq("is_active", true);
+      .eq("status", "active");
 
     const currentMembers = memberCount?.length || 0;
 

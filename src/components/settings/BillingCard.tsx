@@ -74,8 +74,7 @@ export const BillingCard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('is_admin', false)
-        .eq('invitation_status', 'active')
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       const teamMembers = memberCount || 0;
       

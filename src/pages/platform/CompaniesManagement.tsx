@@ -68,7 +68,7 @@ const CompaniesManagement = () => {
           department
         `)
         .eq('company_id', expandedCompany)
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       if (profilesError) throw profilesError;
       if (!profiles || profiles.length === 0) return [];

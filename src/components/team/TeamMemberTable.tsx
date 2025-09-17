@@ -63,7 +63,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
               <TableCell className="text-gray-600">{member.department || 'Not specified'}</TableCell>
               <TableCell>
                 {(() => {
-                  const status = getUserStatus(member.invitation_status, member.is_active);
+                   const status = getUserStatus(member.status);
                   const IconComponent = status.icon === 'check' ? Check : 
                                        status.icon === 'x' ? X : Mail;
                   
@@ -92,7 +92,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md">
                     {(() => {
-                      const status = getUserStatus(member.invitation_status, member.is_active);
+                      const status = getUserStatus(member.status);
                       
                       return (
                         <>
