@@ -110,7 +110,7 @@ serve(async (req: Request) => {
 
     // Get current used slots
     const { data: usedSlots, error: slotsError } = await supabaseAdmin
-      .rpc('get_used_team_slots', { company_id: companyId });
+      .rpc('get_company_member_count', { company_id: companyId });
 
     if (slotsError) {
       console.error("[BULK-CREATE-TEAM-MEMBERS] Error getting used slots:", slotsError);

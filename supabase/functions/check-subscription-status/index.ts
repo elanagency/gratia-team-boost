@@ -132,7 +132,7 @@ serve(async (req: Request) => {
       // Non-admin user, return limited information
       console.log("[CHECK-SUBSCRIPTION-STATUS] Non-admin user, returning limited info");
       const { data: usedSlots } = await supabaseAdmin
-        .rpc('get_used_team_slots', { company_id: nonAdminProfile.company_id });
+        .rpc('get_company_member_count', { company_id: nonAdminProfile.company_id });
       
       const currentUsedSlots = usedSlots || 0;
       
@@ -169,7 +169,7 @@ serve(async (req: Request) => {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching company:", companyError);
       // Return default values for new companies
       const { data: usedSlots } = await supabaseAdmin
-        .rpc('get_used_team_slots', { company_id: companyId });
+        .rpc('get_company_member_count', { company_id: companyId });
       
       const currentUsedSlots = usedSlots || 0;
       
@@ -199,7 +199,7 @@ serve(async (req: Request) => {
 
     // Get current used slots
     const { data: usedSlots, error: slotsError } = await supabaseAdmin
-      .rpc('get_used_team_slots', { company_id: companyId });
+      .rpc('get_company_member_count', { company_id: companyId });
 
     if (slotsError) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Error getting used slots:", slotsError);
