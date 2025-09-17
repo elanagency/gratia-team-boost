@@ -187,12 +187,9 @@ export function RecognitionFeed() {
       }
     });
     
-    console.log('Main posts:', mainPosts);
-    console.log('Comments:', comments);
-    
     // Create threads for main posts
     mainPosts.forEach(post => {
-      const threadKey = `${post.recipient_id}-${post.description.trim()}`;
+      const threadKey = `${post.recipient_id}-${post.id}`;
       threads.set(threadKey, {
         mainPost: post,
         comments: [],
@@ -200,26 +197,47 @@ export function RecognitionFeed() {
       });
     });
     
-    console.log('Initial threads:', Array.from(threads.keys()));
-    
-    // Add comments to their respective threads
+    // Add comments to their respective threads using a more flexible matching approach
     comments.forEach(comment => {
       const originalDescription = comment.description.replace('Quick appreciation: ', '').trim();
-      const threadKey = `${comment.recipient_id}-${originalDescription}`;
-      console.log(`Looking for thread: ${threadKey} for comment: ${comment.description}`);
       
-      const thread = threads.get(threadKey);
+      // Find the best matching thread for this comment
+      // Look for threads with the same recipient and check if the comment text appears in the main post
+      let bestMatch: ThreadedRecognition | null = null;
+      let bestMatchScore = 0;
       
-      if (thread) {
-        thread.comments.push(comment);
-        // Update last activity if this comment is newer
-        if (new Date(comment.created_at) > new Date(thread.lastActivity)) {
-          thread.lastActivity = comment.created_at;
+      for (const thread of threads.values()) {
+        if (thread.mainPost.recipient_id === comment.recipient_id) {
+          // Parse the main post description to extract the clean text
+          const mainPostParsed = parseStructuredMessage(thread.mainPost);
+          const mainPostCleanText = mainPostParsed.cleanText.toLowerCase().trim();
+          const commentText = originalDescription.toLowerCase().trim();
+          
+          // Check for exact match or if comment text is contained in main post text
+          let score = 0;
+          if (mainPostCleanText === commentText) {
+            score = 100; // Exact match
+          } else if (mainPostCleanText.includes(commentText) || commentText.includes(mainPostCleanText)) {
+            score = 50; // Partial match
+          } else if (Math.abs(new Date(thread.mainPost.created_at).getTime() - new Date(comment.created_at).getTime()) < 300000) {
+            // If created within 5 minutes, consider it a potential match
+            score = 10;
+          }
+          
+          if (score > bestMatchScore) {
+            bestMatchScore = score;
+            bestMatch = thread;
+          }
         }
-        console.log(`Added comment to thread: ${threadKey}`);
-      } else {
-        console.log(`No matching thread found for: ${threadKey}`);
-        console.log('Available threads:', Array.from(threads.keys()));
+      }
+      
+      // If we found a good match, add the comment to that thread
+      if (bestMatch && bestMatchScore >= 10) {
+        bestMatch.comments.push(comment);
+        // Update last activity if this comment is newer
+        if (new Date(comment.created_at) > new Date(bestMatch.lastActivity)) {
+          bestMatch.lastActivity = comment.created_at;
+        }
       }
     });
     
@@ -227,7 +245,6 @@ export function RecognitionFeed() {
       new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
     );
     
-    console.log('Final threaded recognitions:', result);
     return result;
   };
 
