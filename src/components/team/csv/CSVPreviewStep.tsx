@@ -70,7 +70,7 @@ export const CSVPreviewStep = memo(({ parsedMembers, onBack, onStartProcessing }
 
       <div className="border rounded max-h-64 overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 sticky top-0">
+          <thead className="bg-muted sticky top-0">
             <tr>
               <th className="text-left p-2 font-medium">Name</th>
               <th className="text-left p-2 font-medium">Email</th>
