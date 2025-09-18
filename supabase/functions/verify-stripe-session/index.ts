@@ -143,10 +143,42 @@ serve(async (req: Request) => {
 
         console.log("[VERIFY-STRIPE-SESSION] Company billing marked as ready");
 
+        // If there's pending member data, create the member now that billing is set up
+        let memberCreationResult = null;
+        if (pendingMemberData) {
+          try {
+            const memberData = JSON.parse(pendingMemberData);
+            console.log("[VERIFY-STRIPE-SESSION] Creating pending member after billing setup:", memberData);
+
+            // Call create-team-member function
+            const memberResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-team-member`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+              },
+              body: JSON.stringify(memberData)
+            });
+
+            if (memberResponse.ok) {
+              memberCreationResult = await memberResponse.json();
+              console.log("[VERIFY-STRIPE-SESSION] Member created successfully after billing setup");
+            } else {
+              const errorText = await memberResponse.text();
+              console.error("[VERIFY-STRIPE-SESSION] Failed to create member after billing setup:", errorText);
+            }
+          } catch (memberError) {
+            console.error("[VERIFY-STRIPE-SESSION] Error creating pending member:", memberError);
+          }
+        }
+
         return new Response(JSON.stringify({ 
           received: true, 
           type: 'setup_completed',
-          companyId 
+          companyId,
+          memberCreated: !!memberCreationResult,
+          ...memberCreationResult
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

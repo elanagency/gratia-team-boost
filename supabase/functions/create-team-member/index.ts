@@ -190,7 +190,7 @@ serve(async (req: Request) => {
           // Store member data for creation after payment
           const memberData = { name, email, department, companyId, role, invitedBy };
           
-          const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-subscription-checkout`, {
+          const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/billing-setup-checkout`, {
             method: 'POST',
             headers: {
               'Authorization': authHeader,
@@ -199,7 +199,6 @@ serve(async (req: Request) => {
             },
             body: JSON.stringify({ 
               companyId,
-              teamSlots: 1, // Start with 1 slot for the admin
               memberData,
               origin
             })
@@ -207,13 +206,13 @@ serve(async (req: Request) => {
           
           if (checkoutResponse.ok) {
             const checkoutData = await checkoutResponse.json();
-            console.log("[CREATE-TEAM-MEMBER] Subscription checkout URL created:", checkoutData?.url);
+            console.log("[CREATE-TEAM-MEMBER] Billing setup checkout URL created:", checkoutData?.url);
             
             return new Response(
               JSON.stringify({
                 needsBillingSetup: true,
                 checkoutUrl: checkoutData?.url,
-                message: "Setting up your subscription to add team members"
+                message: "Setting up your payment method to add team members"
               }),
               {
                 status: 200,
@@ -221,13 +220,13 @@ serve(async (req: Request) => {
               }
             );
           } else {
-            throw new Error("Failed to create subscription checkout session");
+            throw new Error("Failed to create billing setup session");
           }
         } catch (checkoutErr) {
-          console.error("[CREATE-TEAM-MEMBER] Failed to create subscription checkout:", checkoutErr);
+          console.error("[CREATE-TEAM-MEMBER] Failed to create billing setup:", checkoutErr);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to setup subscription. Please try again.",
+              error: "Failed to setup billing. Please try again.",
               needsBillingSetup: true 
             }),
             {
