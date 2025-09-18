@@ -16,10 +16,11 @@ import { usePricing } from "@/hooks/usePricing";
 
 interface BillingSetupDialogProps {
   onSetupComplete: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
-  const [open, setOpen] = useState(false);
+const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetupDialogProps) => {
   const [isSettingUp, setIsSettingUp] = useState(false);
   const { companyId, user, firstName, lastName } = useAuth();
   const { pricePerMember } = usePricing();
@@ -82,7 +83,7 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
         console.log("Redirecting to billing setup:", data.url);
         
         // Close dialog before redirect
-        setOpen(false);
+        onOpenChange(false);
         
         // Redirect to Stripe setup
         window.location.href = data.url;
@@ -106,21 +107,8 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          className="bg-[#F572FF] hover:bg-[#E061EE] text-white"
-        >
-          <CreditCard className="mr-2 h-4 w-4" />
-          Setup Billing
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Setup Your Billing</DialogTitle>

@@ -18,8 +18,13 @@ import { usePricing } from "@/hooks/usePricing";
 import { useDepartments } from "@/hooks/useDepartments";
 import InviteForm from "./InviteForm";
 
-const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
-  const [open, setOpen] = useState(false);
+interface InviteTeamMemberDialogProps {
+  onSuccess: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMemberDialogProps) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [department, setDepartment] = useState('');
@@ -78,7 +83,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       }
       
       // Success - member was created
-      setOpen(false);
+      onOpenChange(false);
       setEmail('');
       setName('');
       setDepartment('');
@@ -105,24 +110,10 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   };
   
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-  };
-
   const canAddMembers = true; // Always allow adding members with usage-based billing
   
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          className="bg-[#F572FF] hover:bg-[#E061EE] text-white"
-          disabled={!canAddMembers}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Invite Team Member
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Invite a team member</DialogTitle>
