@@ -45,12 +45,6 @@ export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
           <Badge variant="secondary" className="bg-[#F572FF]/10 text-[#F572FF] hover:bg-[#F572FF]/20">
             {reward.points_cost.toLocaleString()} points
           </Badge>
-          
-          {!isLoadingPoints && !hasEnoughPoints && (
-            <Badge variant="destructive" className="text-xs">
-              Insufficient Points
-            </Badge>
-          )}
         </div>
         
         {reward.description && (
@@ -59,18 +53,13 @@ export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
           </p>
         )}
         
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-gray-500">
-            {reward.stock > 0 
-              ? `${reward.stock} in stock` 
-              : "Out of stock"}
-          </p>
-          {reward.brand_name && (
+        {reward.brand_name && (
+          <div className="flex justify-end mb-3">
             <p className="text-xs text-gray-400">
               {reward.brand_name}
             </p>
-          )}
-        </div>
+          </div>
+        )}
         
         <Button 
           className={`w-full ${
