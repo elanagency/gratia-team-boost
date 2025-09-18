@@ -72,17 +72,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
         setDepartment('');
         setOpen(false);
         
-        // Show billing explanation popup first
-        if (window.confirm(
-          "To invite team members, we need to set up your billing. You won't be charged until your first team member logs in.\n\n" +
-          "• No charge for setting up payment method\n" +
-          "• Billing starts when first invited member logs in\n" +
-          "• Only pay for active team members\n" +
-          "• Cancel anytime\n\n" +
-          "Continue to set up billing?"
-        )) {
-          window.location.href = data.checkoutUrl;
-        }
+        // Redirect directly to billing setup
+        window.location.href = data.checkoutUrl;
         
         return;
       }
