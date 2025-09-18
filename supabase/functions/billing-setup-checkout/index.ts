@@ -153,7 +153,7 @@ serve(async (req: Request) => {
         setup_type: "billing_method",
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
       },
-      success_url: `${baseUrl}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${baseUrl}/dashboard/settings?setup=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/dashboard/settings?setup=cancelled`,
     };
 

@@ -76,13 +76,6 @@ serve(async (req: Request) => {
     // Retrieve the checkout session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (session.payment_status !== "paid") {
-      return new Response(
-        JSON.stringify({ error: "Payment not completed" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const companyId = session.metadata?.company_id || session.metadata?.companyId;
     const pendingMemberData = session.metadata?.pending_member_data;
 
@@ -93,7 +86,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Handle setup mode sessions (billing setup)
+    // Handle setup mode sessions (billing setup) - No payment validation needed
     if (session.mode === 'setup') {
       console.log("[VERIFY-STRIPE-SESSION] Processing setup mode session for billing setup");
       
