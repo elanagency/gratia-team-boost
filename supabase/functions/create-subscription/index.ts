@@ -8,7 +8,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Will be fetched from platform settings
+// Helper function to get the correct Stripe key based on environment
+async function getStripeKey(supabase: any, companyId: string): Promise<string> {
+  // Get platform environment mode
+  const { data: envSetting } = await supabase
+    .from('platform_settings')
+    .select('value')
+    .eq('key', 'environment_mode')
+    .maybeSingle();
+  
+  const environment = envSetting?.value ? JSON.parse(envSetting.value) : 'test';
+  
+  if (environment === 'live') {
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    if (!liveKey) {
+      throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+    }
+    return liveKey;
+  } else {
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!testKey) {
+      throw new Error("STRIPE_SECRET_KEY_TEST not configured");
+    }
+    return testKey;
+  }
+}
 
 // Helper logging function
 const logStep = (step: string, details?: any) => {
@@ -32,24 +56,21 @@ serve(async (req) => {
 
     logStep("Request validated", { companyId, employeeCount });
 
-    // Initialize Stripe
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY not configured");
-    }
-    
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    logStep("Stripe initialized");
-
     // Use service role to access company data
     const supabaseService = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+
+    // Get the correct Stripe key based on environment
+    const stripeKey = await getStripeKey(supabaseService, companyId);
+    
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2024-06-20",
+    });
+
+    logStep("Stripe initialized");
 
     // Get company details
     const { data: company, error: companyError } = await supabaseService
@@ -78,31 +99,32 @@ serve(async (req) => {
     }
 
     // Get company admin email for customer creation
-    const { data: adminMember, error: adminError } = await supabaseService
-      .from('company_members')
-      .select('user_id')
+    const { data: adminProfile, error: adminError } = await supabaseService
+      .from('profiles')
+      .select('id')
       .eq('company_id', companyId)
       .eq('is_admin', true)
+      .eq('status', 'active')
       .single();
 
-    if (adminError || !adminMember) {
+    if (adminError || !adminProfile) {
       logStep("Admin not found", { adminError });
       throw new Error("Company admin not found");
     }
 
-    logStep("Admin found", { adminUserId: adminMember.user_id });
+    logStep("Admin found", { adminUserId: adminProfile.id });
 
     // Get admin email using get-user-emails function
     const { data: emailsResponse, error: emailsError } = await supabaseService.functions.invoke("get-user-emails", {
-      body: { userIds: [adminMember.user_id] },
+      body: { userIds: [adminProfile.id] },
     });
 
-    if (emailsError || !emailsResponse?.emails?.[adminMember.user_id]) {
+    if (emailsError || !emailsResponse?.emails?.[adminProfile.id]) {
       logStep("Admin email not found", { emailsError });
       throw new Error("Admin email not found");
     }
 
-    const adminEmail = emailsResponse.emails[adminMember.user_id];
+    const adminEmail = emailsResponse.emails[adminProfile.id];
     logStep("Admin email retrieved", { adminEmail });
 
     // Get pricing from platform settings
@@ -115,29 +137,42 @@ serve(async (req) => {
     const MONTHLY_PRICE_PER_EMPLOYEE = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
     logStep("Pricing retrieved", { MONTHLY_PRICE_PER_EMPLOYEE });
 
+    // Determine environment and get appropriate customer ID
+    const { data: envSetting } = await supabaseService
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'environment_mode')
+      .maybeSingle();
+    
+    const environment = envSetting?.value ? JSON.parse(envSetting.value) : 'test';
+    const customerIdField = environment === 'live' ? 'stripe_customer_id_live' : 'stripe_customer_id_test';
+    const updateField = environment === 'live' ? { stripe_customer_id_live: null } : { stripe_customer_id_test: null };
+    
     // Create or get Stripe customer
-    let customerId = company.stripe_customer_id;
+    let customerId = environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
     if (!customerId) {
-      logStep("Creating new Stripe customer");
+      logStep("Creating new Stripe customer", { environment });
       const customer = await stripe.customers.create({
         email: adminEmail,
         name: company.name,
         metadata: {
           company_id: companyId,
+          environment: environment,
         },
       });
       customerId = customer.id;
-      logStep("Customer created", { customerId });
+      logStep("Customer created", { customerId, environment });
 
-      // Update company with customer ID
+      // Update company with customer ID for the current environment
+      const updateData = { [customerIdField]: customerId };
       await supabaseService
         .from('companies')
-        .update({ stripe_customer_id: customerId })
+        .update(updateData)
         .eq('id', companyId);
         
-      logStep("Company updated with customer ID");
+      logStep("Company updated with customer ID", { environment, customerIdField });
     } else {
-      logStep("Using existing customer", { customerId });
+      logStep("Using existing customer", { customerId, environment });
     }
 
     // Calculate prorated amount for first billing
