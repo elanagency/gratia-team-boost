@@ -193,16 +193,8 @@ export const BillingCard = () => {
       </div>
       
       <div className="p-6">
-        {/* Subscription Hint for Users Without Active Plan */}
-        {!hasExistingSubscription && (
-          <div className="mb-6 p-3 bg-muted/50 border border-border rounded-md">
-            <p className="text-sm text-muted-foreground">
-              Start by inviting your first team member to start a subscription
-            </p>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 ${!hasExistingSubscription ? 'opacity-50' : ''}`}>
           {/* Your Plan */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -264,9 +256,12 @@ export const BillingCard = () => {
         <div className="border-t pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-medium">Manage Your Subscription</h3>
+              <h3 className="font-medium">{hasExistingSubscription ? 'Manage Your Subscription' : 'Setup Your Billing'}</h3>
               <p className="text-sm text-muted-foreground">
-                View invoices, update payment methods, or cancel your subscription. Billing is based on active members only.
+                {hasExistingSubscription 
+                  ? 'View invoices, update payment methods, or cancel your subscription. Billing is based on active members only.'
+                  : 'Set up your billing information to start inviting team members and managing your subscription.'
+                }
               </p>
             </div>
             <Button 

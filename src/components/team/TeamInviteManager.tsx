@@ -12,7 +12,7 @@ const TeamInviteManager = ({ onSuccess }: TeamInviteManagerProps) => {
   const { companyId } = useAuth();
   const { teamSlots } = useTeamMembers();
 
-  // Show billing setup if no team members exist (first member)
+  // Always show "Invite Team Member" button, but determine which dialog to show
   const needsBillingSetup = teamSlots.used === 0;
 
   if (needsBillingSetup) {
