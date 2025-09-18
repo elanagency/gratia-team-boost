@@ -16,6 +16,14 @@ interface SubscriptionStatus {
   monthly_cost: number;
 }
 
+interface PaymentMethodDetails {
+  last4: string;
+  brand: string;
+  exp_month?: number;
+  exp_year?: number;
+  type: string;
+}
+
 interface CompanyData {
   id: string;
   name: string;
@@ -30,6 +38,8 @@ export const BillingCard = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
+  const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const { user, companyId } = useAuth();
   const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
 
@@ -56,6 +66,28 @@ export const BillingCard = () => {
 
     return company;
   };
+
+  const fetchPaymentMethodDetails = useCallback(async () => {
+    if (!hasExistingSubscription) return;
+    
+    setIsLoadingPaymentMethod(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-payment-method-details');
+      
+      if (error) {
+        console.error('Error fetching payment method details:', error);
+        return;
+      }
+      
+      if (data?.paymentMethod) {
+        setPaymentMethod(data.paymentMethod);
+      }
+    } catch (error) {
+      console.error('Error fetching payment method details:', error);
+    } finally {
+      setIsLoadingPaymentMethod(false);
+    }
+  }, [hasExistingSubscription]);
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!user || !companyId) return;
@@ -151,6 +183,12 @@ export const BillingCard = () => {
     }
   }, [fetchSubscriptionStatus, isPricingLoading]);
 
+  useEffect(() => {
+    if (hasExistingSubscription) {
+      fetchPaymentMethodDetails();
+    }
+  }, [fetchPaymentMethodDetails, hasExistingSubscription]);
+
   const handleManageBilling = async () => {
     setIsPortalLoading(true);
     try {
@@ -244,7 +282,17 @@ export const BillingCard = () => {
               Payment method
             </div>
             <div className="font-semibold">
-              {hasExistingSubscription ? 'Card ending in ****' : 'Not set'}
+              {hasExistingSubscription ? (
+                isLoadingPaymentMethod ? (
+                  'Loading...'
+                ) : paymentMethod ? (
+                  `${paymentMethod.brand?.charAt(0).toUpperCase()}${paymentMethod.brand?.slice(1)} ending in ${paymentMethod.last4}`
+                ) : (
+                  'Card ending in ****'
+                )
+              ) : (
+                'Not set'
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {hasExistingSubscription ? 'Managed via Stripe' : 'Set up billing to view'}
