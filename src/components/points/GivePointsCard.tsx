@@ -334,7 +334,7 @@ export function GivePointsCard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              You have <Badge variant="secondary" className="mx-1">{monthlyPoints}</Badge> points to give
+              You have <Badge className="mx-1 bg-green-100 text-green-600">{monthlyPoints}</Badge> points to give
             </span>
           </div>
         </div>
