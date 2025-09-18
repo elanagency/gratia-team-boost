@@ -1,5 +1,5 @@
 import React from "react";
-import InviteTeamMemberDialog from "./InviteTeamMemberDialog";
+import TeamInviteManager from "./TeamInviteManager";
 
 interface TeamManagementHeaderProps {
   onInviteSuccess?: () => void;
@@ -15,7 +15,7 @@ const TeamManagementHeader: React.FC<TeamManagementHeaderProps> = ({
       </h1>
       
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <InviteTeamMemberDialog onSuccess={onInviteSuccess} />
+        <TeamInviteManager onSuccess={onInviteSuccess} />
       </div>
     </div>
   );

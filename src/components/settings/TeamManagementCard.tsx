@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle } from "lucide-react";
 import { useTeamMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
-import InviteTeamMemberDialog from "@/components/team/InviteTeamMemberDialog";
+import TeamInviteManager from "@/components/team/TeamInviteManager";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import EditTeamMemberDialog from "@/components/team/EditTeamMemberDialog";
 import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
 import { toast } from "@/components/ui/use-toast";
-import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 
 export const TeamManagementCard = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -19,9 +19,6 @@ export const TeamManagementCard = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchParams] = useSearchParams();
-  const [isVerifying, setIsVerifying] = useState(false);
-  const processedSessionIds = useRef(new Set<string>());
   const {
     teamMembers,
     refetch: fetchTeamMembers,
@@ -32,45 +29,9 @@ export const TeamManagementCard = () => {
     totalPages,
     totalMembers
   } = useTeamMembers(currentPage, 10);
+  
+  const { isVerifying } = usePaymentVerification(fetchTeamMembers);
 
-  // Handle billing setup success/cancellation from URL params
-  useEffect(() => {
-    const setupStatus = searchParams.get('setup');
-    const sessionId = searchParams.get('session_id');
-    
-    if (setupStatus === 'success' && sessionId) {
-      if (processedSessionIds.current.has(sessionId) || isVerifying) {
-        return;
-      }
-
-      console.log("Processing successful payment with session ID:", sessionId);
-      setIsVerifying(true);
-      
-      processedSessionIds.current.add(sessionId);
-      
-      supabase.functions.invoke('verify-stripe-session', {
-        body: { sessionId }
-      }).then(({ data, error }) => {
-        if (error) {
-          console.error("Error verifying payment:", error);
-          toast.error("Failed to process subscription setup. Please contact support.");
-        } else {
-          console.log("Payment verification successful:", data);
-          toast.success("Subscription setup successful! You can now add team members.");
-          fetchTeamMembers();
-        }
-      }).catch((err) => {
-        console.error("Verification request failed:", err);
-        toast.error("Failed to verify payment. Please contact support.");
-      }).finally(() => {
-        setIsVerifying(false);
-        window.history.replaceState({}, '', '/dashboard/settings');
-      });
-    } else if (setupStatus === 'cancelled') {
-      toast.error("Subscription setup was cancelled.");
-      window.history.replaceState({}, '', '/dashboard/settings');
-    }
-  }, [searchParams, fetchTeamMembers, isVerifying]);
 
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
@@ -166,7 +127,7 @@ export const TeamManagementCard = () => {
           <h2 className="card-title">Team Management</h2>
           
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <InviteTeamMemberDialog onSuccess={fetchTeamMembers} />
+            <TeamInviteManager onSuccess={fetchTeamMembers} />
             <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>
         </div>

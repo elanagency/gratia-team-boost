@@ -40,7 +40,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
     setIsSubmitting(true);
     
     try {
-      console.log("Inviting team member:", { email, name, companyId, teamSlots });
+      console.log("Inviting team member:", { email, name, companyId });
       
       const origin = window.location.origin;
       
@@ -63,23 +63,8 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
       
       console.log("Team member creation response:", data);
       
-      // Check if billing setup is needed (no subscription and no billing ready)
-      if (data.needsBillingSetup && data.checkoutUrl) {
-        console.log("Billing setup needed, redirecting to setup flow");
-        
-        setEmail('');
-        setName('');
-        setDepartment('');
-        setOpen(false);
-        
-        // Redirect directly to billing setup
-        window.location.href = data.checkoutUrl;
-        
-        return;
-      }
-
-      // Handle any other errors
-      if (data.error && !data.needsBillingSetup) {
+      // Handle any errors
+      if (data.error) {
         console.log("Error adding team member:", data.error);
         toast.error(data.error);
         return;
@@ -146,31 +131,16 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           </DialogDescription>
         </DialogHeader>
         
-        {teamSlots.used === 0 ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">First Team Member</h4>
-            <p className="text-sm text-blue-700 mb-3">
-              Set up billing first, then invite team members. You'll only be charged when your first team member logs in at ${pricePerMember}/month per active member.
-            </p>
-            <p className="text-xs text-blue-600">
-              • No upfront charges - setup payment method only<br/>
-              • Billing starts when first member logs in<br/>
-              • Pay only for active team members<br/>
-              • Billing adjusts automatically each month
-            </p>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h4 className="font-medium text-green-800 mb-2">Add Team Member</h4>
+          <p className="text-sm text-green-700 mb-2">
+            Current team: {teamSlots.used} members
+          </p>
+          <div className="flex items-center gap-2 text-sm text-green-600">
+            <Mail className="h-4 w-4" />
+            <span>Invitation emails will be sent automatically</span>
           </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-medium text-green-800 mb-2">Add Team Member</h4>
-            <p className="text-sm text-green-700 mb-2">
-              Current team: {teamSlots.used} members
-            </p>
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <Mail className="h-4 w-4" />
-              <span>Invitation emails will be sent automatically</span>
-            </div>
-          </div>
-        )}
+        </div>
         
         <InviteForm
           email={email}
@@ -180,7 +150,7 @@ const InviteTeamMemberDialog = ({ onSuccess }: { onSuccess: () => void }) => {
           department={department}
           setDepartment={setDepartment}
           isSubmitting={isSubmitting}
-          isFirstMember={teamSlots.used === 0}
+          isFirstMember={false}
           onSubmit={handleSubmit}
         />
       </DialogContent>

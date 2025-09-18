@@ -181,62 +181,8 @@ serve(async (req: Request) => {
       currentActiveUserCount
     });
 
-    // If this will be the 2nd user (first team member besides admin) and no subscription exists, start checkout
-    if (!hasActiveSubscription && currentActiveUserCount >= 1) {
-      console.log("[CREATE-TEAM-MEMBER] Adding first team member - subscription required");
-      
-      if (authHeader) {
-        try {
-          // Store member data for creation after payment
-          const memberData = { name, email, department, companyId, role, invitedBy };
-          
-          const checkoutResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/billing-setup-checkout`, {
-            method: 'POST',
-            headers: {
-              'Authorization': authHeader,
-              'Content-Type': 'application/json',
-              'apikey': Deno.env.get("SUPABASE_ANON_KEY") || "",
-            },
-            body: JSON.stringify({ 
-              companyId,
-              memberData,
-              origin
-            })
-          });
-          
-          if (checkoutResponse.ok) {
-            const checkoutData = await checkoutResponse.json();
-            console.log("[CREATE-TEAM-MEMBER] Billing setup checkout URL created:", checkoutData?.url);
-            
-            return new Response(
-              JSON.stringify({
-                needsBillingSetup: true,
-                checkoutUrl: checkoutData?.url,
-                message: "Setting up your payment method to add team members"
-              }),
-              {
-                status: 200,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              }
-            );
-          } else {
-            throw new Error("Failed to create billing setup session");
-          }
-        } catch (checkoutErr) {
-          console.error("[CREATE-TEAM-MEMBER] Failed to create billing setup:", checkoutErr);
-          return new Response(
-            JSON.stringify({ 
-              error: "Failed to setup billing. Please try again.",
-              needsBillingSetup: true 
-            }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        }
-      }
-    }
+    // This function now only handles team member creation for companies with billing already set up
+    // Billing setup is handled separately via the BillingSetupDialog component
     
     // Continue with normal member creation (slots are available)
     
