@@ -30,6 +30,9 @@ interface CompanyData {
   subscription_status: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  environment: string | null;
+  stripe_customer_id_test: string | null;
+  stripe_customer_id_live: string | null;
 }
 
 export const BillingCard = () => {
@@ -55,7 +58,10 @@ export const BillingCard = () => {
         name,
         subscription_status,
         stripe_customer_id,
-        stripe_subscription_id
+        stripe_subscription_id,
+        environment,
+        stripe_customer_id_test,
+        stripe_customer_id_live
       `)
       .eq('id', companyId)
       .single();
@@ -102,8 +108,12 @@ export const BillingCard = () => {
       
       setCompanyData(company);
 
-      // Check if billing is set up (customer exists in Stripe)
-      const billingSetup = !!(company?.stripe_customer_id);
+      // Check if billing is set up (customer exists in Stripe) - environment aware
+      const environment = company?.environment || 'test';
+      const stripeCustomerId = environment === 'live' 
+        ? company?.stripe_customer_id_live 
+        : company?.stripe_customer_id_test;
+      const billingSetup = !!stripeCustomerId;
       setHasBillingSetup(billingSetup);
 
       // Get active member count (only active members for billing)
