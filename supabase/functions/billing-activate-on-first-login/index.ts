@@ -170,6 +170,11 @@ Deno.serve(async (req) => {
       priceId = price.id;
     }
 
+    // Calculate billing cycle anchor for the 1st of next month
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const billingCycleAnchor = Math.floor(nextMonth.getTime() / 1000);
+
     // Create subscription
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
@@ -178,7 +183,7 @@ Deno.serve(async (req) => {
         quantity: activeSeats
       }],
       collection_method: 'charge_automatically',
-      billing_cycle_anchor: 'now',
+      billing_cycle_anchor: billingCycleAnchor,
       proration_behavior: 'none',
       expand: ['items.data'],
       metadata: {
