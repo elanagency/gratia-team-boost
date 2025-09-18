@@ -48,13 +48,13 @@ serve(async (req) => {
   try {
     logStep("Function started");
     
-    const { companyId, employeeCount = 1 } = await req.json();
+    const { companyId } = await req.json();
     
-    if (!companyId || employeeCount <= 0) {
-      throw new Error("Company ID and valid employee count required");
+    if (!companyId) {
+      throw new Error("Company ID required");
     }
 
-    logStep("Request validated", { companyId, employeeCount });
+    logStep("Request validated", { companyId });
 
     // Use service role to access company data
     const supabaseService = createClient(
@@ -126,6 +126,27 @@ serve(async (req) => {
 
     const adminEmail = emailsResponse.emails[adminProfile.id];
     logStep("Admin email retrieved", { adminEmail });
+
+    // Count active non-admin members (billable seats)
+    const { data: memberData, error: memberCountError } = await supabaseService
+      .from('profiles')
+      .select('id', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .eq('is_admin', false);
+
+    if (memberCountError) {
+      logStep("Error counting members", { memberCountError });
+      throw new Error("Failed to count company members");
+    }
+
+    const employeeCount = memberData?.length || 0;
+    logStep("Non-admin member count", { employeeCount });
+
+    if (employeeCount <= 0) {
+      logStep("No billable members found");
+      throw new Error("No billable team members found");
+    }
 
     // Get pricing from platform settings
     const { data: pricingSetting } = await supabaseService

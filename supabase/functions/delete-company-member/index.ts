@@ -158,12 +158,13 @@ serve(async (req) => {
     }
 
 
-    // Get current active member count before updating subscription
+    // Get current active non-admin member count before updating subscription (billable seats only)
     const { data: activeMembersData, error: countError } = await supabase
       .from('profiles')
       .select('id', { count: 'exact' })
       .eq('company_id', companyId)
       .eq('status', 'active')
+      .eq('is_admin', false) // Only count non-admin members for billing
       .neq('id', userId) // Exclude the user being deleted
 
     if (countError) {
