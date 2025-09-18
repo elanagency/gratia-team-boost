@@ -33,6 +33,22 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
     setIsSettingUp(true);
 
     try {
+      // Check session validity first
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Current session valid:", !!sessionData.session);
+      
+      if (!sessionData.session) {
+        console.log("No valid session found, attempting refresh...");
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          console.error("Session refresh failed:", refreshError);
+          toast.error("Your session has expired. Please log in again.");
+          return;
+        }
+        console.log("Session refreshed successfully");
+      }
+
       console.log("Setting up billing for company:", companyId);
       
       const origin = window.location.origin;
@@ -50,12 +66,19 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
       
       if (error) {
         console.error("Error from billing-setup-checkout:", error);
+        
+        // Handle specific authentication errors
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('session')) {
+          toast.error("Authentication expired. Please log in again.");
+          return;
+        }
+        
         throw error;
       }
       
       console.log("Billing setup response:", data);
       
-      if (data.url) {
+      if (data?.url) {
         console.log("Redirecting to billing setup:", data.url);
         
         // Close dialog before redirect
@@ -64,12 +87,20 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
         // Redirect to Stripe setup
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL received");
+        throw new Error("No checkout URL received from billing setup");
       }
       
     } catch (error) {
       console.error("Error setting up billing:", error);
-      toast.error("Failed to setup billing. Please try again.");
+      
+      // Provide more specific error messages
+      if (error.message?.includes('session') || error.message?.includes('auth')) {
+        toast.error("Authentication issue. Please refresh the page and try again.");
+      } else if (error.message?.includes('checkout URL')) {
+        toast.error("Unable to create billing setup. Please contact support.");
+      } else {
+        toast.error("Failed to setup billing. Please try again.");
+      }
     } finally {
       setIsSettingUp(false);
     }
