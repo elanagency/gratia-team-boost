@@ -77,13 +77,19 @@ Deno.serve(async (req) => {
       }, { headers: corsHeaders });
     }
 
-    // Count active non-admin members
-    const { count: activeSeats } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'active')
-      .eq('is_admin', false);
+    // Use dedicated function to count stripe-billable active members (non-admin only)
+    const { data: activeSeats, error: seatsError } = await supabase
+      .rpc('get_stripe_active_member_count', { company_id: companyId });
+
+    if (seatsError) {
+      console.error('Error counting active seats:', seatsError);
+      return Response.json({
+        error: 'Failed to count active seats'
+      }, {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
 
     if (!activeSeats || activeSeats < 1) {
       return Response.json({

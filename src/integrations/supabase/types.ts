@@ -551,6 +551,10 @@ export type Database = {
         Args: { setting_key: string }
         Returns: string
       }
+      get_stripe_active_member_count: {
+        Args: { company_id: string }
+        Returns: number
+      }
       get_user_platform_admin_status: {
         Args: { user_id?: string }
         Returns: boolean
