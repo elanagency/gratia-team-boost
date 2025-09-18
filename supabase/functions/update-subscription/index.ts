@@ -75,8 +75,20 @@ serve(async (req) => {
       throw new Error("Company subscription not found");
     }
 
-    // If quantity is 0, cancel the subscription
-    if (newQuantity === 0) {
+    // Get the actual count of billable members (non-admin active members)
+    const { data: actualMemberCount, error: countError } = await supabaseService
+      .rpc('get_stripe_active_member_count', { company_id: companyId });
+
+    if (countError) {
+      console.error('Error getting member count:', countError);
+      throw new Error('Failed to get member count');
+    }
+
+    // If the new quantity doesn't match actual member count, use actual count
+    const adjustedQuantity = actualMemberCount || 0;
+    
+    // If no billable members, cancel the subscription
+    if (adjustedQuantity === 0) {
       await stripe.subscriptions.cancel(company.stripe_subscription_id);
       
       await supabaseService
@@ -93,11 +105,11 @@ serve(async (req) => {
           company_id: companyId,
           event_type: 'cancelled',
           new_quantity: 0,
-          metadata: { reason: 'no_employees' },
+          metadata: { reason: 'no_billable_members' },
         });
 
       return new Response(
-        JSON.stringify({ message: "Subscription cancelled" }),
+        JSON.stringify({ message: "Subscription cancelled - no billable members" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -109,7 +121,7 @@ serve(async (req) => {
     const subscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
     const currentQuantity = subscription.items.data[0].quantity || 0;
 
-    if (currentQuantity === newQuantity) {
+    if (currentQuantity === adjustedQuantity) {
       return new Response(
         JSON.stringify({ message: "Quantity unchanged" }),
         {
@@ -119,14 +131,14 @@ serve(async (req) => {
       );
     }
 
-    // Update subscription quantity
+    // Update subscription quantity using the adjusted count
     const updatedSubscription = await stripe.subscriptions.update(
       company.stripe_subscription_id,
       {
         items: [
           {
             id: subscription.items.data[0].id,
-            quantity: newQuantity,
+            quantity: adjustedQuantity,
           },
         ],
         proration_behavior: "always_invoice",
@@ -144,7 +156,7 @@ serve(async (req) => {
 
     const amountCharged = latestInvoice.data[0]?.amount_paid || null;
     
-    console.log(`Subscription update - Previous: ${currentQuantity}, New: ${newQuantity}, Amount charged: ${amountCharged}`);
+    console.log(`Subscription update - Previous: ${currentQuantity}, New: ${adjustedQuantity}, Amount charged: ${amountCharged}`);
 
     // Create subscription event record
     await supabaseService
@@ -153,12 +165,12 @@ serve(async (req) => {
         company_id: companyId,
         event_type: 'quantity_updated',
         previous_quantity: currentQuantity,
-        new_quantity: newQuantity,
+        new_quantity: adjustedQuantity,
         amount_charged: amountCharged,
         stripe_invoice_id: latestInvoice.data[0]?.id,
         metadata: {
           subscription_id: updatedSubscription.id,
-          change_type: newQuantity > currentQuantity ? 'increase' : 'decrease',
+          change_type: adjustedQuantity > currentQuantity ? 'increase' : 'decrease',
         },
       });
 
@@ -166,7 +178,7 @@ serve(async (req) => {
       JSON.stringify({
         message: "Subscription updated successfully",
         previous_quantity: currentQuantity,
-        new_quantity: newQuantity,
+        new_quantity: adjustedQuantity,
         amount_charged: amountCharged,
       }),
       {
