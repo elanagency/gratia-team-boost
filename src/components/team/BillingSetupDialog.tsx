@@ -55,14 +55,14 @@ const BillingSetupDialog = ({ onSetupComplete }: BillingSetupDialogProps) => {
       
       console.log("Billing setup response:", data);
       
-      if (data.checkoutUrl) {
-        console.log("Redirecting to billing setup:", data.checkoutUrl);
+      if (data.url) {
+        console.log("Redirecting to billing setup:", data.url);
         
         // Close dialog before redirect
         setOpen(false);
         
         // Redirect to Stripe setup
-        window.location.href = data.checkoutUrl;
+        window.location.href = data.url;
       } else {
         throw new Error("No checkout URL received");
       }
