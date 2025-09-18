@@ -37,6 +37,7 @@ export const BillingCard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
+  const [hasBillingSetup, setHasBillingSetup] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
@@ -68,7 +69,7 @@ export const BillingCard = () => {
   };
 
   const fetchPaymentMethodDetails = useCallback(async () => {
-    if (!hasExistingSubscription) return;
+    if (!hasBillingSetup) return;
     
     setIsLoadingPaymentMethod(true);
     try {
@@ -87,7 +88,7 @@ export const BillingCard = () => {
     } finally {
       setIsLoadingPaymentMethod(false);
     }
-  }, [hasExistingSubscription]);
+  }, [hasBillingSetup]);
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!user || !companyId) return;
@@ -100,6 +101,10 @@ export const BillingCard = () => {
       }
       
       setCompanyData(company);
+
+      // Check if billing is set up (customer exists in Stripe)
+      const billingSetup = !!(company?.stripe_customer_id);
+      setHasBillingSetup(billingSetup);
 
       // Get active member count (only active members for billing)
       const { count: memberCount } = await supabase
@@ -184,10 +189,10 @@ export const BillingCard = () => {
   }, [fetchSubscriptionStatus, isPricingLoading]);
 
   useEffect(() => {
-    if (hasExistingSubscription) {
+    if (hasBillingSetup) {
       fetchPaymentMethodDetails();
     }
-  }, [fetchPaymentMethodDetails, hasExistingSubscription]);
+  }, [fetchPaymentMethodDetails, hasBillingSetup]);
 
   const handleManageBilling = async () => {
     setIsPortalLoading(true);
@@ -282,7 +287,7 @@ export const BillingCard = () => {
               Payment method
             </div>
             <div className="font-semibold">
-              {hasExistingSubscription ? (
+              {hasBillingSetup ? (
                 isLoadingPaymentMethod ? (
                   'Loading...'
                 ) : paymentMethod ? (
@@ -295,7 +300,7 @@ export const BillingCard = () => {
               )}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Managed via Stripe' : 'Set up billing to view'}
+              {hasBillingSetup ? 'Managed via Stripe' : 'Set up billing to view'}
             </div>
           </div>
         </div>
