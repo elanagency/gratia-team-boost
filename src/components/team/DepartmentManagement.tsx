@@ -177,9 +177,6 @@ const DepartmentManagement = () => {
               >
                 <div>
                   <h4 className="font-medium">{department.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Created {new Date(department.created_at).toLocaleDateString()}
-                  </p>
                 </div>
                 <div className="flex space-x-2">
                   <Button
