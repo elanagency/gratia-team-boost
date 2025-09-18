@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { type CompanyMember as TeamMember, useTeamMembers } from "@/hooks/useCompanyMembers";
+import NewDepartmentCombobox from "@/components/team/NewDepartmentCombobox";
 
 interface EditMemberFormProps {
   member: TeamMember;
@@ -70,11 +71,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
         <Label htmlFor="edit-department">
           Department
         </Label>
-        <Input
-          id="edit-department"
+        <NewDepartmentCombobox
           value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          placeholder="Enter department (optional)"
+          onChange={setDepartment}
+          placeholder="Select or create department"
         />
       </div>
       
