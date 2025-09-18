@@ -12,8 +12,8 @@ const TeamInviteManager = ({ onSuccess }: TeamInviteManagerProps) => {
   const { companyId } = useAuth();
   const { teamSlots } = useTeamMembers();
 
-  // Always show "Invite Team Member" button, but determine which dialog to show
-  const needsBillingSetup = teamSlots.used === 0;
+  // Check if billing setup is needed based on billing_ready status
+  const needsBillingSetup = !teamSlots.billing_ready;
 
   if (needsBillingSetup) {
     return <BillingSetupDialog onSetupComplete={onSuccess} />;

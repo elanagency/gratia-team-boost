@@ -34,7 +34,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
   } = options;
 
   const { user, companyId } = useAuth();
-  const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0 });
+  const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0, billing_ready: false });
 
   const {
     data: membersData,
@@ -143,7 +143,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       try {
         const { data: company, error: companyError } = await supabase
           .from('companies')
-          .select('stripe_subscription_id')
+          .select('stripe_subscription_id, billing_ready')
           .eq('id', companyId)
           .single();
 
@@ -154,11 +154,13 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
 
         const usedMembers = membersData?.totalCount || 0;
         const hasSubscription = !!company?.stripe_subscription_id;
+        const billingReady = !!company?.billing_ready;
 
         setTeamSlots({
           used: usedMembers,
           available: hasSubscription ? 999 : 0, // Unlimited after subscription
-          total: hasSubscription ? usedMembers : 0
+          total: hasSubscription ? usedMembers : 0,
+          billing_ready: billingReady
         });
       } catch (error) {
         console.error("Error fetching team slots:", error);
