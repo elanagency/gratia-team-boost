@@ -43,7 +43,7 @@ export const RewardCard = ({ reward, onClick }: RewardCardProps) => {
         
         <div className="flex items-center gap-2 mb-2">
           <Badge variant="secondary" className="bg-[#F572FF]/10 text-[#F572FF] hover:bg-[#F572FF]/20">
-            {reward.points_cost} points
+            {reward.points_cost.toLocaleString()} points
           </Badge>
           
           {!isLoadingPoints && !hasEnoughPoints && (

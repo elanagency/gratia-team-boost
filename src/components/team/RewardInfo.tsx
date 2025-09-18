@@ -29,7 +29,7 @@ export const RewardInfo = ({
       <div className="flex justify-between items-start mb-4">
         <h2 className="text-2xl font-bold">{reward.name}</h2>
         <div className="bg-[#F572FF]/10 text-[#F572FF] px-3 py-2 rounded-md font-semibold">
-          {reward.points_cost} points
+          {reward.points_cost.toLocaleString()} points
         </div>
       </div>
       
@@ -37,7 +37,7 @@ export const RewardInfo = ({
       <div className="mb-4 p-3 bg-gray-50 rounded-md">
         <p className="text-sm text-gray-600">
           Your current points: <span className="font-semibold text-[#F572FF]">
-            {isLoadingPoints ? "Loading..." : `${userPoints} points`}
+            {isLoadingPoints ? "Loading..." : `${userPoints.toLocaleString()} points`}
           </span>
         </p>
       </div>
@@ -53,7 +53,7 @@ export const RewardInfo = ({
         <Alert className="mb-4 border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-500" />
           <AlertDescription className="text-red-700">
-            You need {reward.points_cost - userPoints} more points to redeem this reward.
+            You need {(reward.points_cost - userPoints).toLocaleString()} more points to redeem this reward.
           </AlertDescription>
         </Alert>
       )}
@@ -81,8 +81,8 @@ export const RewardInfo = ({
         
         <p className="text-xs text-gray-500 mt-2 text-center">
           {hasEnoughPoints 
-            ? `Redeeming this reward will deduct ${reward.points_cost} points from your balance`
-            : `You need ${reward.points_cost} points to redeem this reward`
+            ? `Redeeming this reward will deduct ${reward.points_cost.toLocaleString()} points from your balance`
+            : `You need ${reward.points_cost.toLocaleString()} points to redeem this reward`
           }
         </p>
       </div>
