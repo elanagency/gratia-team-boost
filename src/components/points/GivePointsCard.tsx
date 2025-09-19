@@ -434,15 +434,17 @@ export function GivePointsCard() {
                 left: `${dropdownPosition.x}px`,
                 top: `${dropdownPosition.y}px`
               }}
+              onMouseLeave={() => setSelectedMentionIndex(-1)}
             >
               {filteredMembers.slice(0, 5).map((member, index) => (
                 <button
                   key={member.user_id}
                   onClick={() => selectMention(member)}
+                  onMouseEnter={() => setSelectedMentionIndex(index)}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
                     index === selectedMentionIndex 
                       ? 'bg-muted text-foreground' 
-                      : 'hover:bg-muted/50'
+                      : ''
                   }`}
                 >
                   <Avatar className="h-6 w-6">
@@ -469,6 +471,7 @@ export function GivePointsCard() {
                 left: `${dropdownPosition.x}px`,
                 top: `${dropdownPosition.y}px`
               }}
+              onMouseLeave={() => setSelectedPointIndex(-1)}
             >
               <div className="px-3 py-2 text-xs text-muted-foreground border-b">
                 Quick point values (Available: {monthlyPoints})
@@ -477,10 +480,11 @@ export function GivePointsCard() {
                 <button
                   key={value}
                   onClick={() => selectPoint(value)}
+                  onMouseEnter={() => setSelectedPointIndex(index)}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
                     index === selectedPointIndex
                       ? 'bg-muted text-foreground'
-                      : 'hover:bg-muted/50'
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -494,10 +498,11 @@ export function GivePointsCard() {
               {pointQuery && !isNaN(Number(pointQuery)) && Number(pointQuery) > 0 && Number(pointQuery) <= monthlyPoints && (
                 <button
                   onClick={() => selectPoint(Number(pointQuery))}
+                  onMouseEnter={() => setSelectedPointIndex(filteredPointValues.filter(value => value <= monthlyPoints).length)}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 border-t transition-colors ${
                     selectedPointIndex === filteredPointValues.filter(value => value <= monthlyPoints).length
                       ? 'bg-muted text-foreground'
-                      : 'hover:bg-muted/50'
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-2">
