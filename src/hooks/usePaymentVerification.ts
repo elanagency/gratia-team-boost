@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -7,6 +8,7 @@ export const usePaymentVerification = (onSuccess?: () => void) => {
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
   const processedSessionIds = useRef(new Set<string>());
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const setupStatus = searchParams.get('setup');
@@ -31,6 +33,12 @@ export const usePaymentVerification = (onSuccess?: () => void) => {
         } else {
           console.log("Payment verification successful:", data);
           toast.success("Subscription setup successful! You can now add team members.");
+          
+          // Invalidate all company-related queries to refresh billing status
+          queryClient.invalidateQueries({ queryKey: ['company-members'] });
+          queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+          queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+          
           onSuccess?.();
         }
       }).catch((err) => {

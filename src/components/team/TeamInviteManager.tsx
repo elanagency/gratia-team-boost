@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useTeamMembers } from "@/hooks/useCompanyMembers";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ const TeamInviteManager = ({ onSuccess }: TeamInviteManagerProps) => {
   const { teamSlots } = useTeamMembers();
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Check if billing setup is needed based on billing_ready status
   const needsBillingSetup = !teamSlots.billing_ready;
@@ -29,6 +31,12 @@ const TeamInviteManager = ({ onSuccess }: TeamInviteManagerProps) => {
 
   const handleBillingSetupComplete = () => {
     setBillingDialogOpen(false);
+    
+    // Invalidate company-related queries to refresh billing status immediately
+    queryClient.invalidateQueries({ queryKey: ['company-members'] });
+    queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+    queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    
     onSuccess();
   };
 
