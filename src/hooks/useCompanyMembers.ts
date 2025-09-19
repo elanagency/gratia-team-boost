@@ -258,6 +258,6 @@ export const useTeamMembers = (page = 1, pageSize = 10) => {
     includeAdmins: false,
     page,
     pageSize,
-    activeOnly: false
+    activeOnly: true
   });
 };
