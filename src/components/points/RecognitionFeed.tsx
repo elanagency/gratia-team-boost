@@ -484,20 +484,16 @@ export function RecognitionFeed() {
                       <div className="flex items-center gap-2 flex-wrap">
                          <span className="font-bold text-sm">{thread.mainPost.sender_name}</span>
                          <span className="text-xs text-muted-foreground">gave</span>
-                         <span className="text-xs">
-                           {thread.mainPost.points} <span className="text-xs text-muted-foreground">points</span>
-                         </span>
+                         <Badge className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                            +{thread.mainPost.points}
+                          </Badge>
                          <span className="text-xs text-muted-foreground">to</span>
                          <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
                       </div>
                       
                         <div className="text-sm text-muted-foreground">
-                          {thread.mainPost.structured_message ? (
-                            <div dangerouslySetInnerHTML={{ __html: thread.mainPost.structured_message }} />
-                          ) : (
-                            <div dangerouslySetInnerHTML={{ __html: formatMessageWithBoldNames(thread.mainPost.description || '') }} />
-                          )}
-                        </div>
+                           {parsed.cleanText}
+                         </div>
                        
                        {(() => {
                          const parsed = parseStructuredMessage(thread.mainPost);
