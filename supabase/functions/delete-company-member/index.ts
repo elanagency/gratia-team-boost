@@ -145,18 +145,14 @@ serve(async (req) => {
 
     console.log('[DELETE-MEMBER] Profile marked as deactivated')
 
-    // Delete auth.users record while preserving profile and transaction history
-    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
-    
-    if (authDeleteError) {
-      console.error('[DELETE-MEMBER] Error deleting auth user:', authDeleteError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to delete user authentication record' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Revoke all sessions for the user to immediately log them out
+    try {
+      await supabase.auth.admin.signOut(userId, 'global')
+      console.log('[DELETE-MEMBER] User sessions revoked')
+    } catch (signOutError) {
+      console.error('[DELETE-MEMBER] Error revoking user sessions (non-critical):', signOutError)
+      // Continue with the process even if sign out fails
     }
-
-    console.log('[DELETE-MEMBER] Auth user deleted')
 
     // Delete user-related records in correct order (but keep profile and transactions)
     const deletions = [
@@ -217,7 +213,7 @@ serve(async (req) => {
       // Don't fail the deletion for subscription update errors
     }
 
-    console.log('[DELETE-MEMBER] Member deleted successfully:', { 
+    console.log('[DELETE-MEMBER] Member deactivated successfully:', { 
       companyId, 
       userId, 
       memberName: `${member.first_name} ${member.last_name}`,
