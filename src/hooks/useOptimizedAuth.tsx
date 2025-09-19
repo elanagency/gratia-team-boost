@@ -22,6 +22,7 @@ export const useOptimizedAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialSessionChecked, setInitialSessionChecked] = useState(false);
   const queryClient = useQueryClient();
 
   // Stable user ID to prevent unnecessary re-renders
@@ -105,11 +106,13 @@ export const useOptimizedAuth = () => {
         if (mounted) {
           setSession(data.session);
           setUser(data.session?.user ?? null);
-          // Don't set isLoading to false here - let it be handled by the combined loading logic below
         }
       } catch (error) {
         console.error("Error checking auth session:", error);
-        // Don't set isLoading to false here - let combined loading logic handle it
+      } finally {
+        if (mounted) {
+          setInitialSessionChecked(true);
+        }
       }
     };
 
@@ -123,18 +126,22 @@ export const useOptimizedAuth = () => {
 
   // Combined loading logic - only set loading to false when we have both session and profile data
   useEffect(() => {
+    // Don't make any decisions until the initial session check is complete
+    if (!initialSessionChecked) {
+      return;
+    }
+
+    // If the check is done and there's no user, we are logged out. Stop loading.
     if (!user) {
-      // No user means we're done loading (signed out state)
       setIsLoading(false);
-    } else if (user && !isProfileLoading && profile !== undefined) {
-      // We have user AND profile is done loading (either with data or null)
-      setIsLoading(false);
-    } else if (user && !isProfileLoading && profile === undefined) {
-      // Profile failed to load but we're done trying
+      return;
+    }
+
+    // If there is a user, loading is finished only when the profile is also finished loading.
+    if (user && !isProfileLoading) {
       setIsLoading(false);
     }
-    // If we have user but profile is still loading, keep isLoading true
-  }, [user, isProfileLoading, profile]);
+  }, [user, isProfileLoading, initialSessionChecked]);
 
   // Log any profile errors
   useEffect(() => {
