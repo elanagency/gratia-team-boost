@@ -301,18 +301,56 @@ export function RecognitionFeed() {
     
     if (!messageContent) return { hashtags: [], cleanText: "", mentions: [], points: [] };
     
-    const cleanText = messageContent
-      // Remove mention balloons
-      .replace(/<span class="mention-balloon"[^>]*>([^<]*)<\/span>/g, '')
-      // Remove point balloons  
-      .replace(/<span class="point-balloon"[^>]*>[^<]*<\/span>/g, '')
-      // Remove any other HTML tags
-      .replace(/<[^>]*>/g, '')
-      // Clean up whitespace
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    return { hashtags: [], cleanText, mentions: [], points: [] };
+    // If it's HTML (structured message), parse it properly
+    if (messageContent.includes('<')) {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = messageContent;
+      
+      // Extract mentions from mention bubbles
+      const mentionElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"]');
+      const mentions = Array.from(mentionElements).map(el => el.textContent || '').filter(Boolean);
+      
+      // Extract points from point bubbles
+      const pointElements = tempDiv.querySelectorAll('.point-balloon, [data-points="true"]');
+      const points = Array.from(pointElements).map(el => el.textContent || '').filter(Boolean);
+      
+      // Get clean text by removing HTML but keeping the content
+      const cleanText = tempDiv.textContent || tempDiv.innerText || '';
+      
+      // Extract hashtags (simple regex for #word)
+      const hashtagMatches = cleanText.match(/#\w+/g) || [];
+      const hashtags = hashtagMatches.map(tag => tag.substring(1));
+      
+      return {
+        hashtags,
+        cleanText: cleanText.trim(),
+        mentions,
+        points
+      };
+    } else {
+      // For plain text messages (backward compatibility)
+      const cleanText = messageContent.trim();
+      
+      // Extract mentions (@username)
+      const mentionMatches = cleanText.match(/@\w+/g) || [];
+      const mentions = mentionMatches.map(mention => mention.substring(1));
+      
+      // Extract hashtags (#hashtag)
+      const hashtagMatches = cleanText.match(/#\w+/g) || [];
+      const hashtags = hashtagMatches.map(tag => tag.substring(1));
+      
+      // Extract points (+number)
+      const pointMatches = cleanText.match(/\+\d+/g) || [];
+      const points = pointMatches;
+      
+      return {
+        hashtags,
+        cleanText,
+        mentions,
+        points
+      };
+    }
   };
 
   const formatMessageWithBoldNames = (description: string) => {

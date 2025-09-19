@@ -289,7 +289,7 @@ export function GivePointsCard() {
           recipient_user_id: mention.userId,
           transfer_company_id: companyId,
           points_amount: totalPointsToGive,
-          transfer_description: text
+          transfer_description: structuredMessage
         });
 
         if (error) throw error;
