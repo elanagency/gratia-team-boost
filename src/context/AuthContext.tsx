@@ -34,9 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authData = useOptimizedAuth();
   
   // Helper function to check if company has existing subscription and update quantity if needed
-  const updateSubscriptionForActiveUser = async (companyId: string) => {
+  const updateSubscriptionForActiveUser = async (companyId: string, retryCount = 0) => {
+    const maxRetries = 3;
+    console.log(`[SUBSCRIPTION UPDATE] Starting update for company ${companyId}, attempt ${retryCount + 1}/${maxRetries + 1}`);
+    
     try {
       // First check if company has an existing subscription
+      console.log(`[SUBSCRIPTION UPDATE] Checking company subscription status for ${companyId}`);
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .select('stripe_subscription_id, subscription_status')
@@ -44,30 +48,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (companyError) {
-        console.error('Error checking company subscription status:', companyError);
-        return;
+        console.error('[SUBSCRIPTION UPDATE] Error checking company subscription status:', companyError);
+        return false;
       }
+
+      console.log(`[SUBSCRIPTION UPDATE] Company data:`, companyData);
 
       // Only update if there's an existing active subscription
       if (companyData?.stripe_subscription_id && companyData?.subscription_status === 'active') {
-        console.log(`Updating existing subscription for company ${companyId}`);
+        console.log(`[SUBSCRIPTION UPDATE] Found active subscription ${companyData.stripe_subscription_id}, counting active members`);
         
         // Use the dedicated function to count only non-admin active members
         const { data: activeSeats, error: countError } = await supabase
           .rpc('get_stripe_active_member_count', { company_id: companyId });
 
         if (countError) {
-          console.error('Error counting active seats for subscription update:', countError);
-          return;
+          console.error('[SUBSCRIPTION UPDATE] Error counting active seats:', countError);
+          return false;
         }
 
         const activeSeatsCount = activeSeats || 0;
-        console.log(`Active seats count for company ${companyId}: ${activeSeatsCount}`);
+        console.log(`[SUBSCRIPTION UPDATE] Active seats count: ${activeSeatsCount}`);
 
         // Only update if there are active seats
         if (activeSeatsCount > 0) {
+          console.log(`[SUBSCRIPTION UPDATE] Calling update-subscription function with quantity ${activeSeatsCount}`);
+          
           try {
-            const { error: subscriptionError } = await supabase.functions.invoke('update-subscription', {
+            const { data: updateResult, error: subscriptionError } = await supabase.functions.invoke('update-subscription', {
               body: {
                 companyId,
                 newQuantity: activeSeatsCount
@@ -75,19 +83,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
 
             if (subscriptionError) {
-              console.error('Error updating subscription quantity:', subscriptionError);
+              console.error('[SUBSCRIPTION UPDATE] Error from update-subscription function:', subscriptionError);
+              
+              // Retry if we haven't reached max retries and it's a temporary error
+              if (retryCount < maxRetries && subscriptionError.message?.includes('count')) {
+                console.log(`[SUBSCRIPTION UPDATE] Retrying in 3 seconds due to count mismatch...`);
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                return updateSubscriptionForActiveUser(companyId, retryCount + 1);
+              }
+              return false;
             } else {
-              console.log('Successfully updated subscription quantity to:', activeSeatsCount);
+              console.log('[SUBSCRIPTION UPDATE] Successfully updated subscription quantity to:', activeSeatsCount);
+              console.log('[SUBSCRIPTION UPDATE] Function response:', updateResult);
+              return true;
             }
           } catch (error) {
-            console.error('Failed to call update-subscription function:', error);
+            console.error('[SUBSCRIPTION UPDATE] Failed to call update-subscription function:', error);
+            return false;
           }
+        } else {
+          console.log('[SUBSCRIPTION UPDATE] No active seats found, skipping update');
+          return false;
         }
       } else {
-        console.log(`No active subscription found for company ${companyId}, skipping quantity update`);
+        console.log(`[SUBSCRIPTION UPDATE] No active subscription found (subscription_id: ${companyData?.stripe_subscription_id}, status: ${companyData?.subscription_status})`);
+        return false;
       }
     } catch (error) {
-      console.error('Error in updateSubscriptionForActiveUser:', error);
+      console.error('[SUBSCRIPTION UPDATE] Unexpected error:', error);
+      return false;
     }
   };
 
@@ -136,12 +160,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   .single();
 
                 if (companyData?.stripe_subscription_id && companyData?.subscription_status === 'active') {
-                  // Existing subscription: just update quantity with delay to ensure DB commit
-                  console.log('Company has existing subscription, updating quantity only');
-                  // Add delay to ensure database update is committed before counting active members
-                  setTimeout(async () => {
-                    await updateSubscriptionForActiveUser(profile.company_id);
-                  }, 2000);
+                  // Existing subscription: update quantity with proper delay and retry logic
+                  console.log('[AUTH] Company has existing subscription, scheduling quantity update');
+                  
+                  // Use a more reliable approach with await and retry logic
+                  (async () => {
+                    console.log('[AUTH] Waiting 2 seconds for DB commit to complete...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    console.log('[AUTH] Starting subscription update process...');
+                    const updateSuccess = await updateSubscriptionForActiveUser(profile.company_id);
+                    
+                    if (updateSuccess) {
+                      console.log('[AUTH] Subscription update completed successfully');
+                    } else {
+                      console.error('[AUTH] Subscription update failed');
+                    }
+                  })();
                 } else {
                   // No subscription: activate billing (which will create subscription)
                   console.log('No existing subscription, activating billing');
@@ -182,12 +217,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   .single();
 
                 if (companyData?.stripe_subscription_id && companyData?.subscription_status === 'active') {
-                  // Existing subscription: just update quantity with delay to ensure DB commit
-                  console.log('Company has existing subscription, updating quantity only');
-                  // Add delay to ensure database update is committed before counting active members
-                  setTimeout(async () => {
-                    await updateSubscriptionForActiveUser(profile.company_id);
-                  }, 2000);
+                  // Existing subscription: update quantity with proper delay and retry logic
+                  console.log('[AUTH] Company has existing subscription, scheduling quantity update');
+                  
+                  // Use a more reliable approach with await and retry logic
+                  (async () => {
+                    console.log('[AUTH] Waiting 2 seconds for DB commit to complete...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    console.log('[AUTH] Starting subscription update process...');
+                    const updateSuccess = await updateSubscriptionForActiveUser(profile.company_id);
+                    
+                    if (updateSuccess) {
+                      console.log('[AUTH] Subscription update completed successfully');
+                    } else {
+                      console.error('[AUTH] Subscription update failed');
+                    }
+                  })();
                 } else {
                   // No subscription: activate billing (which will create subscription)
                   console.log('No existing subscription, activating billing');
