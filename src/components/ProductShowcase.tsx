@@ -17,7 +17,7 @@ const ProductShowcase = () => {
             Recognition Made Simple
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Recognition made simple - give points, choose rewards, track impact
+            Give points, choose rewards, track impact
           </p>
         </div>
         
