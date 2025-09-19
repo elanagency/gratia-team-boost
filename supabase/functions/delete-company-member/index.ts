@@ -92,34 +92,8 @@ serve(async (req) => {
       )
     }
 
-    // Return member's points to company if they have any
-    if (member.points > 0) {
-      const { error: pointsError } = await supabase
-        .from('companies')
-        .update({ points_balance: supabase.sql`points_balance + ${member.points}` })
-        .eq('id', companyId)
-
-      if (pointsError) {
-        console.error('Error returning points:', pointsError)
-        throw pointsError
-      }
-
-      // Log the point transaction
-      const { error: transactionError } = await supabase
-        .from('point_transactions')
-        .insert({
-          company_id: companyId,
-          sender_profile_id: userId,
-          recipient_profile_id: null, // null indicates points returned to company
-          points: member.points,
-          description: `Points returned to company after member removal`
-        })
-
-      if (transactionError) {
-        console.error('Error logging transaction:', transactionError)
-        // Don't fail the deletion for this, just log it
-      }
-    }
+    // Points remain with the inactive profile to preserve transaction history
+    console.log('Member points will remain with inactive profile:', member.points)
 
     // Mark profile as inactive instead of deleting auth user
     const { error: profileUpdateError } = await supabase
