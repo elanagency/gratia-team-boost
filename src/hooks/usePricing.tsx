@@ -15,18 +15,21 @@ export const usePricing = () => {
         console.error('Error fetching pricing:', error);
         console.error('Error code:', error.code);
         console.error('Error details:', error.details);
-        // Return default fallback for permission errors or missing data
-        return 299; // Default fallback ($2.99)
+        throw error;
       }
 
-      return data?.value ? parseInt(JSON.parse(data.value.toString())) : 299;
+      if (!data?.value) {
+        throw new Error('Pricing configuration not found in platform settings');
+      }
+
+      return parseInt(JSON.parse(data.value.toString()));
     },
     staleTime: 1000 * 30, // 30 seconds
   });
 
   return {
-    pricePerMemberCents: pricing || 299,
-    pricePerMember: ((pricing || 299) / 100).toFixed(2),
+    pricePerMemberCents: pricing,
+    pricePerMember: pricing ? (pricing / 100).toFixed(2) : undefined,
     isLoading,
   };
 };

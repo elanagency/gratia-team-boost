@@ -131,20 +131,15 @@ serve(async (req: Request) => {
       
       // Non-admin user, return limited information
       console.log("[CHECK-SUBSCRIPTION-STATUS] Non-admin user, returning limited info");
-      const { data: usedSlots } = await supabaseAdmin
-        .rpc('get_company_member_count', { company_id: nonAdminProfile.company_id });
-      
-      const currentUsedSlots = usedSlots || 0;
-      
       return new Response(
         JSON.stringify({
           has_subscription: false,
           status: 'team_member',
           team_slots: 0,
-          used_slots: currentUsedSlots,
+          used_slots: 0,
           available_slots: 0,
           next_billing_date: null,
-      amount_per_slot: 299, // Will be updated below
+          amount_per_slot: null,
           slot_utilization: 0,
         }),
         {
@@ -161,38 +156,19 @@ serve(async (req: Request) => {
     console.log("[CHECK-SUBSCRIPTION-STATUS] Fetching company data");
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
-      .select("team_slots, subscription_status, stripe_subscription_id")
+      .select("subscription_status, stripe_subscription_id")
       .eq("id", companyId)
       .single();
 
     if (companyError) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Error fetching company:", companyError);
-      // Return default values for new companies
-      const { data: usedSlots } = await supabaseAdmin
-        .rpc('get_company_member_count', { company_id: companyId });
-      
-      const currentUsedSlots = usedSlots || 0;
-      
       return new Response(
-        JSON.stringify({
-          has_subscription: false,
-          status: 'inactive',
-          team_slots: 0,
-          used_slots: currentUsedSlots,
-          available_slots: 0,
-          next_billing_date: null,
-      amount_per_slot: 299, // Will be updated below
-          slot_utilization: 0,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Company not found", details: companyError.message }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("[CHECK-SUBSCRIPTION-STATUS] Company data:", {
-      teamSlots: company.team_slots,
       subscriptionStatus: company.subscription_status,
       hasStripeId: !!company.stripe_subscription_id
     });
@@ -206,7 +182,6 @@ serve(async (req: Request) => {
     }
 
     const currentUsedSlots = usedSlots || 0;
-    const availableSlots = company.team_slots || 0;
 
     let subscriptionDetails = null;
     if (company.stripe_subscription_id) {
@@ -238,31 +213,41 @@ serve(async (req: Request) => {
         subscriptionDetails = {
           current_period_end: null,
           status: company.subscription_status,
-          quantity: company.team_slots,
+          quantity: currentUsedSlots,
         };
       }
     }
 
     // Get pricing from platform settings
-    const { data: pricingSetting } = await supabaseAdmin
+    const { data: pricingSetting, error: pricingError } = await supabaseAdmin
       .from('platform_settings')
       .select('value')
       .eq('key', 'member_monthly_price_cents')
       .single();
     
-    const unitPrice = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
+    if (pricingError || !pricingSetting?.value) {
+      console.error("[CHECK-SUBSCRIPTION-STATUS] Pricing not configured:", pricingError);
+      return new Response(
+        JSON.stringify({ error: "Pricing configuration not found" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const unitPrice = parseInt(JSON.parse(pricingSetting.value));
 
+    const subscribedQuantity = subscriptionDetails?.quantity || currentUsedSlots;
+    
     const response = {
       has_subscription: !!company.stripe_subscription_id,
       status: subscriptionDetails?.status || company.subscription_status || 'inactive',
-      team_slots: availableSlots,
+      team_slots: subscribedQuantity,
       used_slots: currentUsedSlots,
-      available_slots: Math.max(0, availableSlots - currentUsedSlots),
+      available_slots: Math.max(0, subscribedQuantity - currentUsedSlots),
       next_billing_date: subscriptionDetails?.current_period_end 
         ? new Date(subscriptionDetails.current_period_end * 1000).toISOString()
         : null,
       amount_per_slot: unitPrice,
-      slot_utilization: availableSlots > 0 ? Math.round((currentUsedSlots / availableSlots) * 100) : 0,
+      slot_utilization: subscribedQuantity > 0 ? Math.round((currentUsedSlots / subscribedQuantity) * 100) : 0,
     };
 
     console.log("[CHECK-SUBSCRIPTION-STATUS] Sending response:", response);
