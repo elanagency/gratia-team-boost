@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTeamMembers } from "@/hooks/useCompanyMembers";
+import { useTeamMembers, useAllCompanyMembers } from "@/hooks/useCompanyMembers";
 import { usePricing } from "@/hooks/usePricing";
 import { useDepartments } from "@/hooks/useDepartments";
 import InviteForm from "./InviteForm";
@@ -31,14 +31,35 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
+  const { companyMembers: allMembers } = useAllCompanyMembers();
   const { pricePerMember } = usePricing();
   const { refetch: refetchDepartments } = useDepartments();
+
+  // Check for duplicate email
+  const emailError = React.useMemo(() => {
+    if (!email.trim()) return undefined;
+    
+    const existingMember = allMembers.find(member => 
+      member.email.toLowerCase() === email.toLowerCase().trim()
+    );
+    
+    if (existingMember) {
+      return `This email is already associated with ${existingMember.name}`;
+    }
+    
+    return undefined;
+  }, [email, allMembers]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !name || !department) {
       toast.error("Please fill out all required fields");
+      return;
+    }
+
+    if (emailError) {
+      toast.error("Please fix the email error before submitting");
       return;
     }
     
@@ -143,6 +164,7 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
           isSubmitting={isSubmitting}
           isFirstMember={false}
           onSubmit={handleSubmit}
+          emailError={emailError}
         />
       </DialogContent>
     </Dialog>
