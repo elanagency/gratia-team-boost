@@ -204,6 +204,64 @@ export const BillingCard = () => {
     }
   }, [fetchPaymentMethodDetails, hasBillingSetup]);
 
+  // Real-time subscription for profiles changes (member additions/deletions)
+  useEffect(() => {
+    if (!companyId) return;
+
+    const profilesChannel = supabase
+      .channel('billing-profiles-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `company_id=eq.${companyId}`
+        },
+        (payload) => {
+          console.log('Profile change detected, refreshing billing data:', payload);
+          // Debounce the refresh to avoid excessive calls
+          setTimeout(() => {
+            fetchSubscriptionStatus();
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+    };
+  }, [companyId, fetchSubscriptionStatus]);
+
+  // Real-time subscription for company subscription changes
+  useEffect(() => {
+    if (!companyId) return;
+
+    const companiesChannel = supabase
+      .channel('billing-companies-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'companies',
+          filter: `id=eq.${companyId}`
+        },
+        (payload) => {
+          console.log('Company subscription change detected, refreshing billing data:', payload);
+          // Debounce the refresh to avoid excessive calls
+          setTimeout(() => {
+            fetchSubscriptionStatus();
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(companiesChannel);
+    };
+  }, [companyId, fetchSubscriptionStatus]);
+
   const handleManageBilling = async () => {
     setIsPortalLoading(true);
     try {
