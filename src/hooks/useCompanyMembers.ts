@@ -77,7 +77,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       }
 
       if (activeOnly) {
-        query = query.eq('status', 'active');
+        query = query.in('status', ['active', 'invited']);
       }
 
       // For pagination
