@@ -441,7 +441,7 @@ export function GivePointsCard() {
                   onClick={() => selectMention(member)}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
                     index === selectedMentionIndex 
-                      ? 'bg-accent text-accent-foreground' 
+                      ? 'bg-muted text-foreground' 
                       : 'hover:bg-muted/50'
                   }`}
                 >
@@ -479,7 +479,7 @@ export function GivePointsCard() {
                   onClick={() => selectPoint(value)}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
                     index === selectedPointIndex
-                      ? 'bg-accent text-accent-foreground'
+                      ? 'bg-muted text-foreground'
                       : 'hover:bg-muted/50'
                   }`}
                 >
@@ -496,7 +496,7 @@ export function GivePointsCard() {
                   onClick={() => selectPoint(Number(pointQuery))}
                   className={`w-full px-3 py-2 text-left flex items-center gap-2 border-t transition-colors ${
                     selectedPointIndex === filteredPointValues.filter(value => value <= monthlyPoints).length
-                      ? 'bg-accent text-accent-foreground'
+                      ? 'bg-muted text-foreground'
                       : 'hover:bg-muted/50'
                   }`}
                 >
