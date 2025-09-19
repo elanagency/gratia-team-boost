@@ -14,60 +14,90 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
-    // Verify the user is a platform admin
+    console.log('[DELETE-MEMBER] Starting deletion process')
+    
+    // Verify the user is authenticated
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
     if (authError || !user) {
-      console.error('Authentication error:', authError)
+      console.error('[DELETE-MEMBER] Authentication error:', authError)
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const { companyId, userId } = await req.json()
+    const requestBody = await req.json()
+    console.log('[DELETE-MEMBER] Request body:', requestBody)
+    
+    const { companyId, userId } = requestBody
 
     if (!companyId || !userId) {
+      console.error('[DELETE-MEMBER] Missing required fields:', { companyId, userId })
       return new Response(
         JSON.stringify({ error: 'Company ID and User ID are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Check if user is company admin of the target company
+    // Check if user is company admin of the target company OR platform admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin, company_id')
+      .select('is_admin, company_id, is_platform_admin')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin || profile.company_id !== companyId) {
-      console.error('Not a company admin or wrong company:', profileError)
+    if (profileError) {
+      console.error('[DELETE-MEMBER] Error fetching user profile:', profileError)
       return new Response(
-        JSON.stringify({ error: 'Forbidden: Company admin access required' }),
+        JSON.stringify({ error: 'Failed to verify user permissions' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const isCompanyAdmin = profile?.is_admin && profile.company_id === companyId
+    const isPlatformAdmin = profile?.is_platform_admin
+    
+    if (!isCompanyAdmin && !isPlatformAdmin) {
+      console.error('[DELETE-MEMBER] Access denied:', { 
+        userId: user.id, 
+        isCompanyAdmin, 
+        isPlatformAdmin, 
+        userCompanyId: profile?.company_id, 
+        targetCompanyId: companyId 
+      })
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Company admin or platform admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('Deleting member from company:', { companyId, userId })
+    console.log('[DELETE-MEMBER] Authorized deletion:', { companyId, userId, requestedBy: user.id })
 
     // Get member info before deletion to handle points
     const { data: member, error: memberError } = await supabase
       .from('profiles')
-      .select('points, is_admin')
+      .select('points, is_admin, first_name, last_name')
       .eq('company_id', companyId)
       .eq('id', userId)
       .single()
 
     if (memberError) {
-      console.error('Error fetching member:', memberError)
+      console.error('[DELETE-MEMBER] Error fetching member:', memberError)
       return new Response(
-        JSON.stringify({ error: 'Member not found' }),
+        JSON.stringify({ error: 'Member not found in the specified company' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('[DELETE-MEMBER] Found member to delete:', { 
+      userId, 
+      name: `${member.first_name} ${member.last_name}`,
+      points: member.points,
+      isAdmin: member.is_admin 
+    })
 
     // Check if this is the last admin
     const { data: adminProfiles, error: adminCountError } = await supabase
@@ -78,14 +108,18 @@ serve(async (req) => {
       .eq('status', 'active')
 
     if (adminCountError) {
-      console.error('Error checking admin count:', adminCountError)
+      console.error('[DELETE-MEMBER] Error checking admin count:', adminCountError)
       return new Response(
         JSON.stringify({ error: 'Failed to verify admin status' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    if (member.is_admin && (adminProfiles?.length || 0) <= 1) {
+    const adminCount = adminProfiles?.length || 0
+    console.log('[DELETE-MEMBER] Current admin count:', adminCount)
+
+    if (member.is_admin && adminCount <= 1) {
+      console.error('[DELETE-MEMBER] Cannot delete last admin')
       return new Response(
         JSON.stringify({ error: 'Cannot delete the last admin of a company' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,7 +127,7 @@ serve(async (req) => {
     }
 
     // Points remain with the inactive profile to preserve transaction history
-    console.log('Member points will remain with inactive profile:', member.points)
+    console.log('[DELETE-MEMBER] Member points will remain with inactive profile:', member.points)
 
     // Mark profile as inactive instead of deleting auth user
     const { error: profileUpdateError } = await supabase
@@ -102,17 +136,27 @@ serve(async (req) => {
       .eq('id', userId)
 
     if (profileUpdateError) {
-      console.error('Error marking profile as inactive:', profileUpdateError)
-      throw profileUpdateError
+      console.error('[DELETE-MEMBER] Error marking profile as inactive:', profileUpdateError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to deactivate member profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
+
+    console.log('[DELETE-MEMBER] Profile marked as deactivated')
 
     // Delete auth.users record while preserving profile and transaction history
     const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
     
     if (authDeleteError) {
-      console.error('Error deleting auth user:', authDeleteError)
-      throw authDeleteError
+      console.error('[DELETE-MEMBER] Error deleting auth user:', authDeleteError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to delete user authentication record' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
+
+    console.log('[DELETE-MEMBER] Auth user deleted')
 
     // Delete user-related records in correct order (but keep profile and transactions)
     const deletions = [
@@ -126,11 +170,15 @@ serve(async (req) => {
     for (const deletion of deletions) {
       const { error } = await deletion
       if (error) {
-        console.error('Deletion error:', error)
-        throw error
+        console.error('[DELETE-MEMBER] Deletion error:', error)
+        return new Response(
+          JSON.stringify({ error: 'Failed to clean up related records' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
     }
 
+    console.log('[DELETE-MEMBER] Related records cleaned up')
 
     // Get current active non-admin member count before updating subscription (billable seats only)
     const { data: activeMembersData, error: countError } = await supabase
@@ -142,12 +190,12 @@ serve(async (req) => {
       .neq('id', userId) // Exclude the user being deleted
 
     if (countError) {
-      console.error('Error counting active members:', countError)
+      console.error('[DELETE-MEMBER] Error counting active members:', countError)
       // Continue with deletion even if count fails
     }
 
     const remainingMembers = activeMembersData?.length || 0
-    console.log('Remaining active members after deletion:', remainingMembers)
+    console.log('[DELETE-MEMBER] Remaining active members after deletion:', remainingMembers)
 
     // Update Stripe subscription with new member count
     try {
@@ -159,31 +207,41 @@ serve(async (req) => {
       })
 
       if (subscriptionError) {
-        console.error('Error updating subscription:', subscriptionError)
+        console.error('[DELETE-MEMBER] Error updating subscription:', subscriptionError)
         // Don't fail the deletion for subscription update errors
       } else {
-        console.log('Successfully updated subscription quantity to:', remainingMembers)
+        console.log('[DELETE-MEMBER] Successfully updated subscription quantity to:', remainingMembers)
       }
     } catch (subscriptionError) {
-      console.error('Failed to call update-subscription function:', subscriptionError)
+      console.error('[DELETE-MEMBER] Failed to call update-subscription function:', subscriptionError)
       // Don't fail the deletion for subscription update errors
     }
 
-    console.log('Member deleted successfully:', { companyId, userId, pointsReturned: member.points })
+    console.log('[DELETE-MEMBER] Member deleted successfully:', { 
+      companyId, 
+      userId, 
+      memberName: `${member.first_name} ${member.last_name}`,
+      pointsRetained: member.points 
+    })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Member removed successfully',
-        pointsReturned: member.points
+        memberName: `${member.first_name} ${member.last_name}`,
+        pointsRetained: member.points
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error deleting member:', error)
+    console.error('[DELETE-MEMBER] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to remove member', details: error.message }),
+      JSON.stringify({ 
+        error: 'Failed to remove member', 
+        details: error.message,
+        timestamp: new Date().toISOString()
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
