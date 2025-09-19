@@ -12,6 +12,7 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   isAdminLoading: boolean;
+  isAuthLoading: boolean; // Alias for isLoading for clarity
   firstName: string;
   lastName: string;
   userName: string;

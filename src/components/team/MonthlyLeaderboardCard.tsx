@@ -15,7 +15,7 @@ type LeaderboardMember = {
 export function MonthlyLeaderboardCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { companyId } = useAuth();
+  const { companyId, isAuthLoading } = useAuth();
 
   const fetchMonthlyLeaderboard = useCallback(async () => {
     if (!companyId) return;
@@ -89,8 +89,11 @@ export function MonthlyLeaderboardCard() {
   }, [companyId]);
 
   useEffect(() => {
-    fetchMonthlyLeaderboard();
-  }, [fetchMonthlyLeaderboard]);
+    // Only fetch when auth is ready and we have companyId
+    if (!isAuthLoading && companyId) {
+      fetchMonthlyLeaderboard();
+    }
+  }, [fetchMonthlyLeaderboard, isAuthLoading, companyId]);
 
   // Set up real-time updates for point transactions
   useEffect(() => {

@@ -109,9 +109,7 @@ export const useOptimizedAuth = () => {
         }
       } catch (error) {
         console.error("Error checking auth session:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
+        // Don't set isLoading to false here - let combined loading logic handle it
       }
     };
 
@@ -185,6 +183,7 @@ export const useOptimizedAuth = () => {
     session,
     isLoading,
     isAdminLoading: isProfileLoading,
+    isAuthLoading: isLoading, // Alias for consistency
     firstName,
     lastName,
     userName,

@@ -30,8 +30,18 @@ export function GivePointsCard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { user, companyId, monthlyPoints } = useAuth();
+  const { user, companyId, monthlyPoints, isAuthLoading } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
+
+  // Debug logging for points availability
+  useEffect(() => {
+    console.log("GivePointsCard - Auth state:", { 
+      hasUser: !!user, 
+      companyId, 
+      monthlyPoints, 
+      isAuthLoading 
+    });
+  }, [user, companyId, monthlyPoints, isAuthLoading]);
 
   const availableRecipients = companyMembers?.filter(member => 
     member.status === 'active'
