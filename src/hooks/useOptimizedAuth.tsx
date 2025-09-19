@@ -89,11 +89,12 @@ export const useOptimizedAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       
-      
+      console.log('[useOptimizedAuth] Auth state change:', event, 'user:', newSession?.user?.email);
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
       if (event === "SIGNED_OUT") {
+        console.log('[useOptimizedAuth] User signed out, clearing queries');
         queryClient.removeQueries({ queryKey: ['user-profile'] });
       }
     });

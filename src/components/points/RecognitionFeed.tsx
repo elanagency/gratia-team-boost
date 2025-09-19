@@ -43,8 +43,13 @@ export function RecognitionFeed() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    console.log('[RecognitionFeed] useEffect triggered - companyId:', companyId, 'user?.id:', user?.id);
     if (companyId && user?.id) {
+      console.log('[RecognitionFeed] Calling fetchRecognitionFeed');
       fetchRecognitionFeed();
+    } else {
+      console.log('[RecognitionFeed] Missing companyId or user.id, not fetching');
+      setIsLoading(false);
     }
   }, [companyId, user?.id]);
 
@@ -52,9 +57,14 @@ export function RecognitionFeed() {
   // Remove fetchUserPoints function as we now use optimisticAuth
 
   const fetchRecognitionFeed = async () => {
-    if (!companyId) return;
+    console.log('[RecognitionFeed] fetchRecognitionFeed called with companyId:', companyId);
+    if (!companyId) {
+      console.log('[RecognitionFeed] No companyId, returning early');
+      return;
+    }
     
     try {
+      console.log('[RecognitionFeed] Setting loading to true');
       setIsLoading(true);
       
       // Fetch recent point transactions
@@ -139,6 +149,7 @@ export function RecognitionFeed() {
       console.error("Error fetching recognition feed:", error);
       toast.error("Failed to load recognition feed");
     } finally {
+      console.log('[RecognitionFeed] Setting loading to false');
       setIsLoading(false);
     }
   };

@@ -23,9 +23,14 @@ export function LeaderboardCard() {
   const navigate = useNavigate();
 
   const fetchLeaderboard = useCallback(async () => {
-    if (!companyId) return;
+    console.log('[LeaderboardCard] fetchLeaderboard called with companyId:', companyId);
+    if (!companyId) {
+      console.log('[LeaderboardCard] No companyId, returning early');
+      return;
+    }
     
     try {
+      console.log('[LeaderboardCard] Setting loading to true');
       setIsLoading(true);
       
       // Fetch all active company members first
@@ -89,18 +94,26 @@ export function LeaderboardCard() {
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     } finally {
+      console.log('[LeaderboardCard] Setting loading to false');
       setIsLoading(false);
     }
   }, [companyId]);
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+    console.log('[LeaderboardCard] useEffect triggered - will call fetchLeaderboard');
+    if (companyId) {
+      fetchLeaderboard();
+    } else {
+      console.log('[LeaderboardCard] No companyId, setting loading to false');
+      setIsLoading(false);
+    }
+  }, [companyId]); // Remove fetchLeaderboard from dependencies to prevent loops
 
   // Set up real-time updates for point transactions
   useEffect(() => {
     if (!companyId) return;
 
+    console.log('[LeaderboardCard] Setting up real-time updates for companyId:', companyId);
     const channel = supabase
       .channel('leaderboard-updates')
       .on(
@@ -112,15 +125,17 @@ export function LeaderboardCard() {
           filter: `company_id=eq.${companyId}`
         },
         () => {
+          console.log('[LeaderboardCard] Real-time update triggered, calling fetchLeaderboard');
           fetchLeaderboard();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('[LeaderboardCard] Cleaning up real-time channel');
       supabase.removeChannel(channel);
     };
-  }, [companyId, fetchLeaderboard]);
+  }, [companyId]); // Remove fetchLeaderboard from dependencies
 
 
   const getRankIcon = (rank: number) => {
