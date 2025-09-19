@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import UnifiedDashboardLayout from "./pages/dashboard/UnifiedDashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               
               {/* Add redirect from old admin routes to new dashboard routes */}
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
