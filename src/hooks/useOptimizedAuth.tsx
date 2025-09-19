@@ -99,16 +99,16 @@ export const useOptimizedAuth = () => {
       }
     });
 
-    const getInitialSession = async () => {
+  const getInitialSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (mounted) {
           setSession(data.session);
           setUser(data.session?.user ?? null);
+          // Don't set isLoading to false here - let it be handled by the combined loading logic below
         }
       } catch (error) {
         console.error("Error checking auth session:", error);
-      } finally {
         if (mounted) {
           setIsLoading(false);
         }
@@ -122,6 +122,21 @@ export const useOptimizedAuth = () => {
       subscription.unsubscribe();
     };
   }, [queryClient]);
+
+  // Combined loading logic - only set loading to false when we have both session and profile data
+  useEffect(() => {
+    if (!user) {
+      // No user means we're done loading (signed out state)
+      setIsLoading(false);
+    } else if (user && !isProfileLoading && profile !== undefined) {
+      // We have user AND profile is done loading (either with data or null)
+      setIsLoading(false);
+    } else if (user && !isProfileLoading && profile === undefined) {
+      // Profile failed to load but we're done trying
+      setIsLoading(false);
+    }
+    // If we have user but profile is still loading, keep isLoading true
+  }, [user, isProfileLoading, profile]);
 
   // Log any profile errors
   useEffect(() => {
