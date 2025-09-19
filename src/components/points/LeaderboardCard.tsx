@@ -19,7 +19,7 @@ export function LeaderboardCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnlyAdmin, setIsOnlyAdmin] = useState(false);
-  const { companyId } = useAuth();
+  const { companyId, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
 
   const fetchLeaderboard = useCallback(async () => {
@@ -100,14 +100,23 @@ export function LeaderboardCard() {
   }, [companyId]);
 
   useEffect(() => {
-    console.log('[LeaderboardCard] useEffect triggered - will call fetchLeaderboard');
+    console.log('[LeaderboardCard] useEffect triggered - isAuthLoading:', isAuthLoading, 'companyId:', companyId);
+    
+    // Wait for auth to finish loading before taking any action
+    if (isAuthLoading) {
+      console.log('[LeaderboardCard] Auth still loading, waiting...');
+      return;
+    }
+
+    // Auth is ready, now check if we have the data we need
     if (companyId) {
+      console.log('[LeaderboardCard] Auth ready with companyId, calling fetchLeaderboard');
       fetchLeaderboard();
     } else {
-      console.log('[LeaderboardCard] No companyId, setting loading to false');
+      console.log('[LeaderboardCard] Auth ready but no companyId, stopping loading');
       setIsLoading(false);
     }
-  }, [companyId]); // Remove fetchLeaderboard from dependencies to prevent loops
+  }, [companyId, isAuthLoading]); // Add isAuthLoading to dependencies
 
   // Set up real-time updates for point transactions
   useEffect(() => {

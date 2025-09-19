@@ -38,20 +38,28 @@ export function RecognitionFeed() {
   const [isLoading, setIsLoading] = useState(true);
   const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
   
-  const { user, companyId } = useAuth();
+  const { user, companyId, isLoading: isAuthLoading } = useAuth();
   const optimisticAuth = useOptimisticAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log('[RecognitionFeed] useEffect triggered - companyId:', companyId, 'user?.id:', user?.id);
+    console.log('[RecognitionFeed] useEffect triggered - isAuthLoading:', isAuthLoading, 'companyId:', companyId, 'user?.id:', user?.id);
+    
+    // Wait for auth to finish loading before taking any action
+    if (isAuthLoading) {
+      console.log('[RecognitionFeed] Auth still loading, waiting...');
+      return;
+    }
+
+    // Auth is ready, now check if we have the data we need
     if (companyId && user?.id) {
-      console.log('[RecognitionFeed] Calling fetchRecognitionFeed');
+      console.log('[RecognitionFeed] Auth ready with data, calling fetchRecognitionFeed');
       fetchRecognitionFeed();
     } else {
-      console.log('[RecognitionFeed] Missing companyId or user.id, not fetching');
+      console.log('[RecognitionFeed] Auth ready but missing companyId or user.id, stopping loading');
       setIsLoading(false);
     }
-  }, [companyId, user?.id]);
+  }, [companyId, user?.id, isAuthLoading]);
 
 
   // Remove fetchUserPoints function as we now use optimisticAuth
