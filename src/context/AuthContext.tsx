@@ -136,9 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   .single();
 
                 if (companyData?.stripe_subscription_id && companyData?.subscription_status === 'active') {
-                  // Existing subscription: just update quantity
+                  // Existing subscription: just update quantity with delay to ensure DB commit
                   console.log('Company has existing subscription, updating quantity only');
-                  await updateSubscriptionForActiveUser(profile.company_id);
+                  // Add delay to ensure database update is committed before counting active members
+                  setTimeout(async () => {
+                    await updateSubscriptionForActiveUser(profile.company_id);
+                  }, 2000);
                 } else {
                   // No subscription: activate billing (which will create subscription)
                   console.log('No existing subscription, activating billing');
@@ -179,9 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   .single();
 
                 if (companyData?.stripe_subscription_id && companyData?.subscription_status === 'active') {
-                  // Existing subscription: just update quantity
+                  // Existing subscription: just update quantity with delay to ensure DB commit
                   console.log('Company has existing subscription, updating quantity only');
-                  await updateSubscriptionForActiveUser(profile.company_id);
+                  // Add delay to ensure database update is committed before counting active members
+                  setTimeout(async () => {
+                    await updateSubscriptionForActiveUser(profile.company_id);
+                  }, 2000);
                 } else {
                   // No subscription: activate billing (which will create subscription)
                   console.log('No existing subscription, activating billing');
