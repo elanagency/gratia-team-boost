@@ -142,18 +142,23 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
 
   const { mutate: givePoints, isLoading: isSubmitting } = useOptimisticMutation({
     mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string }) => {
-      const { error } = await supabase
-        .from('point_transactions')
-        .insert({
-          company_id: companyId,
-          sender_profile_id: user!.id,
-          recipient_profile_id: variables.member.user_id,
-          points: variables.points,
-          description: variables.description
-        });
+      const { data, error } = await supabase.rpc('transfer_points_between_users', {
+        sender_user_id: user!.id,
+        recipient_user_id: variables.member.user_id,
+        transfer_company_id: companyId,
+        points_amount: variables.points,
+        transfer_description: variables.description
+      });
 
       if (error) throw error;
-      return { success: true };
+      
+      // Check if the RPC function returned an error
+      const result = data as { success: boolean; error?: string };
+      if (result && !result.success) {
+        throw new Error(result.error || 'Transfer failed');
+      }
+      
+      return result;
     },
     onOptimisticUpdate: (variables) => {
       // Immediately update UI: decrease sender's monthly points
@@ -164,9 +169,16 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       optimisticAuth.rollbackOptimisticPoints();
     },
     onSuccess: (data, variables) => {
-      // Confirm optimistic changes and refresh data
+      // Confirm optimistic changes and refresh all relevant data
       optimisticAuth.confirmOptimisticPoints();
+      
+      // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['userPoints'] });
+      queryClient.invalidateQueries({ queryKey: ['recognition-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['company-members'] });
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       
       // Reset form and close dialog
       setSelectedMember(null);
