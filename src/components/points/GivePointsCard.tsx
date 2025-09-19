@@ -282,21 +282,23 @@ export function GivePointsCard() {
       const editorElement = document.querySelector('[contenteditable="true"]');
       const structuredMessage = editorElement?.innerHTML || text;
       
-      // Create a transaction for each mentioned person with the total points
-      const transactions = mentions.map(mention => ({
-        company_id: companyId,
-        sender_profile_id: user.id,
-        recipient_profile_id: mention.userId,
-        points: totalPointsToGive,
-        description: text,
-        structured_message: structuredMessage
-      }));
+      // Use the proper transfer_points_between_users function for each mentioned person
+      for (const mention of mentions) {
+        const { data, error } = await supabase.rpc('transfer_points_between_users', {
+          sender_user_id: user.id,
+          recipient_user_id: mention.userId,
+          transfer_company_id: companyId,
+          points_amount: totalPointsToGive,
+          transfer_description: text
+        });
 
-      const { error } = await supabase
-        .from('point_transactions')
-        .insert(transactions);
+        if (error) throw error;
 
-      if (error) throw error;
+        const result = data as { success: boolean; error?: string };
+        if (!result?.success) {
+          throw new Error(result?.error || "Failed to transfer points");
+        }
+      }
 
       toast.success(`Successfully gave ${totalPointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
       
@@ -305,10 +307,14 @@ export function GivePointsCard() {
       setMentions([]);
       setPoints([]);
       
-      // Invalidate queries to refresh feeds and points
-      queryClient.invalidateQueries({ queryKey: ['userPoints'] });
-      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      // Invalidate all relevant queries to refresh feeds and points
+      await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
+      await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      await queryClient.invalidateQueries({ queryKey: ['recognitionFeed'] });
+      await queryClient.invalidateQueries({ queryKey: ['pointsHistory'] });
       
+      // Force refresh auth context to update points immediately
+      window.location.reload();
       
     } catch (error) {
       console.error("Error giving points:", error);

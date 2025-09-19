@@ -252,7 +252,16 @@ export function RecognitionFeed() {
       if (result?.success) {
         // Confirm optimistic changes and refresh data
         optimisticAuth.confirmOptimisticPoints();
+        
+        // Invalidate all relevant queries for real-time updates
+        queryClient.invalidateQueries({ queryKey: ['recognitionFeed'] });
+        queryClient.invalidateQueries({ queryKey: ['userPoints'] });
+        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+        queryClient.invalidateQueries({ queryKey: ['pointsHistory'] });
+        
+        // Also refresh the local feed
         fetchRecognitionFeed();
+        
         setProcessingQuickPoints(prev => {
           const newSet = new Set(prev);
           newSet.delete(variables.recipientId);
@@ -421,7 +430,7 @@ export function RecognitionFeed() {
           <div className="space-y-6 flex-1 overflow-y-auto">
             {threadedRecognitions.map((thread) => {
               const parsed = parseStructuredMessage(thread.mainPost);
-              const canGivePoints = user?.id !== thread.mainPost.recipient_id;
+              const canGivePoints = user?.id !== thread.mainPost.recipient_id && user?.id !== thread.mainPost.sender_id;
               
               return (
                 <div key={thread.mainPost.id} className="border-b border-border/50 pb-6 last:border-b-0">
