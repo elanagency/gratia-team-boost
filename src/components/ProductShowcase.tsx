@@ -14,7 +14,7 @@ const ProductShowcase = () => {
       <div className="container mx-auto max-w-6xl relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-            See How It Works
+            Recognition Made Simple
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             Recognition made simple - give points, choose rewards, track impact
