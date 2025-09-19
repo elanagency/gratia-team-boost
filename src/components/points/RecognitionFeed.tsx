@@ -492,24 +492,11 @@ export function RecognitionFeed() {
                       </div>
                       
                         <div className="text-sm text-muted-foreground">
-                          {(() => {
-                            const parsed = parseStructuredMessage(thread.mainPost, true);
-                            return (
-                              <div className="flex flex-wrap items-center gap-1">
-                                {parsed.mentions.map((mention, idx) => (
-                                  <span key={`mention-${idx}`} className="inline-flex items-center bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
-                                    @{mention}
-                                  </span>
-                                ))}
-                                {parsed.cleanText && <span className="text-sm">{parsed.cleanText}</span>}
-                                {parsed.points.map((point, idx) => (
-                                  <span key={`point-${idx}`} className="inline-flex items-center bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                    +{point}
-                                  </span>
-                                ))}
-                              </div>
-                            );
-                          })()}
+                          {thread.mainPost.structured_message ? (
+                            <div dangerouslySetInnerHTML={{ __html: thread.mainPost.structured_message }} />
+                          ) : (
+                            <div dangerouslySetInnerHTML={{ __html: formatMessageWithBoldNames(thread.mainPost.description || '') }} />
+                          )}
                         </div>
                        
                        {(() => {
