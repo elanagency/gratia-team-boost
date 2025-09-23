@@ -72,7 +72,7 @@ export const RewardInfo = ({
       {/* Dollar Amount Selection Grid */}
       <div className="mb-6">
         <Label className="text-sm font-medium mb-3 block">Select Amount</Label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {dollarAmounts.map((amount) => {
             const pointsNeeded = getPointsForAmount(amount);
             const canAfford = pointsNeeded <= userPoints;
