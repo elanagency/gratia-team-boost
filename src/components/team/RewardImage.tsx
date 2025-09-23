@@ -13,7 +13,7 @@ export const RewardImage = ({ imageUrl, rewardName }: RewardImageProps) => {
         <img 
           src={imageUrl} 
           alt={rewardName} 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain bg-gray-50"
         />
       </div>
     );
