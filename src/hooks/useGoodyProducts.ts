@@ -39,15 +39,22 @@ export interface GoodyProduct {
   environment?: string;
 }
 
-export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useSavedIds: boolean = true, perPage: number = 20, environment: string = 'live') => {
+export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useSavedIds: boolean = true, perPage: number = 20, environment: string = 'live', useDirectAPI: boolean = false) => {
   const query = useQuery({
-    queryKey: ['goody-gift-cards', page, useSavedIds, environment],
+    queryKey: ['goody-gift-cards', page, useSavedIds, environment, useDirectAPI],
     queryFn: async () => {
-      console.log(`Fetching products for environment: ${environment}`);
+      console.log(`Fetching products for environment: ${environment}, useDirectAPI: ${useDirectAPI}`);
       try {
+        let method = 'GET';
+        if (useDirectAPI) {
+          method = 'DIRECT_API_LOAD';
+        } else if (useSavedIds) {
+          method = 'LOAD_FROM_DB';
+        }
+        
         const { data, error } = await supabase.functions.invoke('goody-product-service', {
           body: {
-            method: useSavedIds ? 'LOAD_FROM_DB' : 'GET',
+            method,
             page,
             per_page: perPage,
             environment

@@ -55,6 +55,16 @@ const isGiftCard = (product: GoodyProduct): boolean => {
   );
 };
 
+// Utility function to check if a product is a gift card with brand confirmation
+const isGiftCardByBrand = (product: GoodyProduct): boolean => {
+  const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
+  const GIFT_CARD_BRAND_NAME = 'Gift Cards';
+  
+  // Double confirmation: brand ID and brand name
+  return product.brand?.id === GIFT_CARD_BRAND_ID && 
+         product.brand?.name === GIFT_CARD_BRAND_NAME;
+};
+
 interface GoodyApiResponse {
   data: GoodyProduct[];
   list_meta: {
@@ -122,6 +132,12 @@ serve(async (req) => {
           if (body.method === 'LOAD_FROM_DB') {
             console.log(`Loading products from database for ${environment} environment...`);
             return await handleLoadFromDatabase(supabase, body.page || 1, body.per_page || 20, environment);
+          }
+          
+          // Handle DIRECT_API_LOAD method for brand-filtered direct API calls
+          if (body.method === 'DIRECT_API_LOAD') {
+            console.log(`Direct API loading gift cards for ${environment} environment...`);
+            return await handleDirectGiftCardLoad(baseUrl, apiKey, body.page || 1, body.per_page || 20, environment);
           }
           
           // Check if this is a product fetch request
@@ -736,6 +752,76 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
     return new Response(
       JSON.stringify({
         error: 'Failed to load products from database',
+        details: error.message
+      }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+// Handle direct API loading of gift cards with brand filtering
+async function handleDirectGiftCardLoad(
+  baseUrl: string, 
+  apiKey: string, 
+  page: number, 
+  perPage: number, 
+  environment: string
+): Promise<Response> {
+  try {
+    const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
+    
+    console.log(`Direct API loading gift cards for ${environment} environment - page ${page}, perPage ${perPage}`);
+    
+    // Add brand filter to the API call
+    const goodyResponse = await fetch(
+      `${baseUrl}/v1/products?page=${page}&per_page=${perPage}&brand_id=${GIFT_CARD_BRAND_ID}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!goodyResponse.ok) {
+      const errorText = await goodyResponse.text();
+      console.error('Goody API error response:', errorText);
+      
+      if (goodyResponse.status === 401) {
+        throw new Error(`Goody API authentication failed. Status: ${goodyResponse.status}`);
+      }
+      
+      throw new Error(`Goody API error: ${goodyResponse.status} - ${errorText}`);
+    }
+
+    const goodyData = await goodyResponse.json();
+    console.log(`Raw API response: ${goodyData.data?.length || 0} products`);
+    
+    // Double confirmation: filter by brand ID and name
+    const filteredProducts = (goodyData.data || []).filter((product: GoodyProduct) => 
+      isGiftCardByBrand(product)
+    );
+    
+    console.log(`After brand filtering: ${filteredProducts.length} gift cards`);
+    
+    return new Response(
+      JSON.stringify({
+        data: filteredProducts,
+        list_meta: {
+          total_count: goodyData.list_meta?.total_count || filteredProducts.length,
+          current_page: page,
+          per_page: perPage,
+          environment: environment
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in handleDirectGiftCardLoad:', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to load gift cards directly from API',
         details: error.message
       }),
       { status: 500, headers: corsHeaders }

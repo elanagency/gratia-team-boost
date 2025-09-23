@@ -17,7 +17,7 @@ export interface AdminReward {
 }
 
 export const useAdminRewardCatalog = () => {
-  const { products, isLoading, error } = useGoodyProducts(1, true, true, 100);
+  const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, 'live', true);
   const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
 
   // Convert GoodyProducts to AdminRewards with proper points calculation
