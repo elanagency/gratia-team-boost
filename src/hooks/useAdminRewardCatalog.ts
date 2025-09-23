@@ -13,6 +13,7 @@ export interface AdminReward {
   external_id: string;
   product_url: string;
   brand_name: string;
+  brand_id: string;
   price: number;
 }
 
@@ -36,6 +37,7 @@ export const useAdminRewardCatalog = (environment: 'live' | 'sandbox' = 'live') 
       external_id: product.id,
       product_url: '',
       brand_name: product.brand?.name || '',
+      brand_id: product.brand?.id || '',
       price: product.price
     };
   });

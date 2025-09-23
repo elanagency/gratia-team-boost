@@ -44,7 +44,7 @@ const PlatformGiftCardsCatalogNew = () => {
                 id: reward.external_id,
                 name: reward.name,
                 price: reward.price,
-                brand: { id: "1", name: reward.brand_name, shipping_price: 0 },
+                brand: { id: reward.brand_id, name: reward.brand_name, shipping_price: 0 },
                 images: [{ id: "1", image_large: { url: reward.image_url, width: 300, height: 300 } }],
                 variants: [],
                 subtitle: reward.description,
