@@ -772,9 +772,9 @@ async function handleDirectGiftCardLoad(
     
     console.log(`Direct API loading gift cards for ${environment} environment - page ${page}, perPage ${perPage}`);
     
-    // Add brand filter to the API call
+    // Fetch all products without brand filtering (API brand filter is unreliable)
     const goodyResponse = await fetch(
-      `${baseUrl}/v1/products?page=${page}&per_page=${perPage}&brand_id=${GIFT_CARD_BRAND_ID}`,
+      `${baseUrl}/v1/products?page=${page}&per_page=${perPage}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -795,12 +795,28 @@ async function handleDirectGiftCardLoad(
     }
 
     const goodyData = await goodyResponse.json();
-    console.log(`Raw API response: ${goodyData.data?.length || 0} products`);
+    console.log(`Raw API response: ${goodyData.data?.length || 0} total products`);
     
-    // Use all products from the brand ID filter - no additional filtering needed
-    const filteredProducts = goodyData.data || [];
+    // Client-side filtering for the specific gift card brand ID
+    const allProducts = goodyData.data || [];
+    const filteredProducts = allProducts.filter(product => 
+      product.brand && product.brand.id === GIFT_CARD_BRAND_ID
+    );
     
-    console.log(`Products from brand ID ${GIFT_CARD_BRAND_ID}: ${filteredProducts.length} gift cards`);
+    console.log(`Filtered products: ${filteredProducts.length} gift cards from brand ID ${GIFT_CARD_BRAND_ID} (out of ${allProducts.length} total products)`);
+    
+    // Log products that don't match for debugging
+    const nonMatchingProducts = allProducts.filter(product => 
+      !product.brand || product.brand.id !== GIFT_CARD_BRAND_ID
+    );
+    if (nonMatchingProducts.length > 0) {
+      console.log(`Non-matching products found: ${nonMatchingProducts.length} products from other brands`);
+      console.log(`Sample non-matching brand IDs:`, nonMatchingProducts.slice(0, 3).map(p => ({
+        productId: p.id,
+        brandId: p.brand?.id,
+        brandName: p.brand?.name
+      })));
+    }
     
     return new Response(
       JSON.stringify({
