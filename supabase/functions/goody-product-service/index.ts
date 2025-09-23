@@ -797,12 +797,10 @@ async function handleDirectGiftCardLoad(
     const goodyData = await goodyResponse.json();
     console.log(`Raw API response: ${goodyData.data?.length || 0} products`);
     
-    // Double confirmation: filter by brand ID and name
-    const filteredProducts = (goodyData.data || []).filter((product: GoodyProduct) => 
-      isGiftCardByBrand(product)
-    );
+    // Use all products from the brand ID filter - no additional filtering needed
+    const filteredProducts = goodyData.data || [];
     
-    console.log(`After brand filtering: ${filteredProducts.length} gift cards`);
+    console.log(`Products from brand ID ${GIFT_CARD_BRAND_ID}: ${filteredProducts.length} gift cards`);
     
     return new Response(
       JSON.stringify({
