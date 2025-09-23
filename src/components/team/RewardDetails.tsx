@@ -4,12 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TeamReward } from "@/hooks/useTeamRewards";
 import { ArrowLeft } from "lucide-react";
-// Note: Redemption functionality to be implemented later
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-import { EmailConfirmationDialog } from "./EmailConfirmationDialog";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 
@@ -20,31 +17,11 @@ interface RewardDetailsProps {
 
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState(user?.email || '');
 
-  const hasEnoughPoints = recognitionPoints >= reward.points_cost;
-
-  const handleConfirmRedeem = () => {
+  const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
     if (!user) {
       toast.error("You must be logged in to redeem rewards");
-      return;
-    }
-    
-    if (!hasEnoughPoints) {
-      toast.error(`You need ${reward.points_cost} points to redeem this reward. You currently have ${recognitionPoints} points.`);
-      return;
-    }
-    
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmitRedemption = async () => {
-    // Validate email
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
-    if (!isValidEmail) {
-      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -55,7 +32,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
         body: {
           rewardId: reward.id,
           rewardName: reward.name,
-          pointsCost: reward.points_cost,
+          dollarAmount: dollarAmount,
           recipientEmail: recipientEmail
         }
       });
@@ -65,9 +42,8 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       }
 
       if (data?.success) {
-        toast.success(`Successfully redeemed ${reward.name}! Gift link sent to ${recipientEmail}`);
-        setIsDialogOpen(false);
-        onClose(); // Close the reward details view
+        toast.success(`Successfully redeemed $${dollarAmount} ${reward.name}! Gift link sent to ${recipientEmail}`);
+        onClose();
       } else {
         throw new Error(data?.error || 'Redemption failed');
       }
@@ -78,14 +54,6 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       setIsProcessing(false);
     }
   };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRecipientEmail(e.target.value);
-  };
-
-  const isRedeemDisabled = reward.stock === 0 || 
-                          isLoadingPoints ||
-                          !hasEnoughPoints;
 
   return (
     <div className="space-y-6">
@@ -107,24 +75,13 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
           
           <RewardInfo
             reward={reward}
-            onRedeem={handleConfirmRedeem}
-            isRedeemDisabled={isRedeemDisabled}
+            onRedeem={handleRedeem}
             isProcessing={isProcessing}
             userPoints={recognitionPoints}
-            hasEnoughPoints={hasEnoughPoints}
             isLoadingPoints={isLoadingPoints}
           />
         </div>
       </Card>
-      
-      <EmailConfirmationDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        recipientEmail={recipientEmail}
-        onEmailChange={handleEmailChange}
-        onSubmit={handleSubmitRedemption}
-        isProcessing={isProcessing}
-      />
     </div>
   );
 };

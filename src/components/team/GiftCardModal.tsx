@@ -10,7 +10,6 @@ import { TeamReward } from "@/hooks/useTeamRewards";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailConfirmationDialog } from "./EmailConfirmationDialog";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 
@@ -22,32 +21,13 @@ interface GiftCardModalProps {
 
 export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState(user?.email || '');
 
   if (!reward) return null;
 
-  const hasEnoughPoints = recognitionPoints >= reward.points_cost;
-
-  const handleConfirmRedeem = () => {
+  const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
     if (!user) {
       toast.error("You must be logged in to redeem rewards");
-      return;
-    }
-    
-    if (!hasEnoughPoints) {
-      toast.error(`You need ${reward.points_cost} points to redeem this reward. You currently have ${recognitionPoints} points.`);
-      return;
-    }
-    
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmitRedemption = async () => {
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
-    if (!isValidEmail) {
-      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -58,7 +38,7 @@ export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) =
         body: {
           rewardId: reward.id,
           rewardName: reward.name,
-          pointsCost: reward.points_cost,
+          dollarAmount: dollarAmount,
           recipientEmail: recipientEmail
         }
       });
@@ -68,8 +48,7 @@ export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) =
       }
 
       if (data?.success) {
-        toast.success(`Successfully redeemed ${reward.name}! Gift link sent to ${recipientEmail}`);
-        setIsDialogOpen(false);
+        toast.success(`Successfully redeemed $${dollarAmount} ${reward.name}! Gift link sent to ${recipientEmail}`);
         onClose();
       } else {
         throw new Error(data?.error || 'Redemption failed');
@@ -82,51 +61,30 @@ export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) =
     }
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRecipientEmail(e.target.value);
-  };
-
-  const isRedeemDisabled = reward.stock === 0 || 
-                          isLoadingPoints ||
-                          !hasEnoughPoints;
-
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{reward.name}</DialogTitle>
-          </DialogHeader>
-          
-          <Card className="overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <RewardImage 
-                imageUrl={reward.image_url} 
-                rewardName={reward.name} 
-              />
-              
-              <RewardInfo
-                reward={reward}
-                onRedeem={handleConfirmRedeem}
-                isRedeemDisabled={isRedeemDisabled}
-                isProcessing={isProcessing}
-                userPoints={recognitionPoints}
-                hasEnoughPoints={hasEnoughPoints}
-                isLoadingPoints={isLoadingPoints}
-              />
-            </div>
-          </Card>
-        </DialogContent>
-      </Dialog>
-
-      <EmailConfirmationDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        recipientEmail={recipientEmail}
-        onEmailChange={handleEmailChange}
-        onSubmit={handleSubmitRedemption}
-        isProcessing={isProcessing}
-      />
-    </>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{reward.name}</DialogTitle>
+        </DialogHeader>
+        
+        <Card className="overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <RewardImage 
+              imageUrl={reward.image_url} 
+              rewardName={reward.name} 
+            />
+            
+            <RewardInfo
+              reward={reward}
+              onRedeem={handleRedeem}
+              isProcessing={isProcessing}
+              userPoints={recognitionPoints}
+              isLoadingPoints={isLoadingPoints}
+            />
+          </div>
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
