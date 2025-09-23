@@ -43,6 +43,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
   const query = useQuery({
     queryKey: ['goody-gift-cards', page, useSavedIds, environment],
     queryFn: async () => {
+      console.log(`Fetching products for environment: ${environment}`);
       try {
         const { data, error } = await supabase.functions.invoke('goody-product-service', {
           body: {
@@ -63,6 +64,7 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
           throw new Error(data.details || data.error);
         }
 
+        console.log(`Received ${data?.data?.length || 0} products for ${environment} environment`);
         return {
           products: data?.data || [],
           totalCount: data?.list_meta?.total_count || 0
