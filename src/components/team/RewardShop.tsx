@@ -4,6 +4,7 @@ import { useTeamRewards, TeamReward } from "@/hooks/useTeamRewards";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { Input } from "@/components/ui/input";
+import { RealTimeStatus } from "@/components/ui/real-time-status";
 import { Search } from "lucide-react";
 
 export const RewardShop = () => {
@@ -28,7 +29,10 @@ export const RewardShop = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Gift Cards Shop</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Gift Cards Shop</h2>
+        <RealTimeStatus />
+      </div>
       
       {/* Search */}
       <div className="relative max-w-md">

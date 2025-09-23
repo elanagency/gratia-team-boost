@@ -1,6 +1,8 @@
 import { useGoodyProducts, GoodyProduct } from "./useGoodyProducts";
 import { usePlatformRewardSettings } from "./usePlatformRewardSettings";
 import { usePlatformSettings } from "./usePlatformSettings";
+import { useRealtimeGiftCards } from "./useRealtimeGiftCards";
+import { useRealtimeCompanyEnvironment } from "./useRealtimeCompanyEnvironment";
 import { calculatePointsFromPrice } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -46,6 +48,10 @@ export const useTeamRewards = () => {
     },
     enabled: !!companyId
   });
+
+  // Enable real-time updates for gift cards and company environment
+  useRealtimeGiftCards({ environment: (companyEnvironment as 'live' | 'sandbox') || 'live', enabled: !!companyId });
+  useRealtimeCompanyEnvironment();
 
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, companyEnvironment || 'live', false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useGoodyProducts } from "@/hooks/useGoodyProducts";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
+import { useRealtimeGiftCards } from "@/hooks/useRealtimeGiftCards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Globe, TestTube } from "lucide-react";
+import { RefreshCw, Globe, TestTube, Wifi } from "lucide-react";
 import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
 import { EnvironmentSyncCard } from "@/components/platform/EnvironmentSyncCard";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
@@ -19,6 +20,9 @@ const PlatformGiftCardsCatalog = () => {
   
   const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100, activeEnvironment);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
+  
+  // Enable real-time updates for the active environment
+  useRealtimeGiftCards({ environment: activeEnvironment, enabled: true });
 
   // Filter products based on search term and status
   const filteredProducts = products?.filter(product => {
@@ -50,14 +54,20 @@ const PlatformGiftCardsCatalog = () => {
             Manage platform gift card catalogs for sandbox and production environments
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={refreshCatalog}
-          disabled={isLoading}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Wifi className="h-4 w-4 text-green-500" />
+            Live Updates
+          </div>
+          <Button
+            variant="outline"
+            onClick={refreshCatalog}
+            disabled={isLoading}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Environment Sync Cards */}
