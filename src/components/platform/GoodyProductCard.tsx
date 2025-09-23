@@ -44,8 +44,14 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             <h4 className="font-medium text-sm line-clamp-2 mb-1">
               {product.name}
             </h4>
-            <p className="text-xs text-muted-foreground mb-2">
-              {product.brand.name}
+            <p className="text-xs text-muted-foreground mb-1">
+              Brand: {product.brand.name}
+            </p>
+            <p className="text-xs text-muted-foreground mb-1 font-mono">
+              Product ID: {product.id}
+            </p>
+            <p className="text-xs text-muted-foreground mb-1 font-mono">
+              Brand ID: {product.brand.id}
             </p>
             <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
               {product.recipient_description}
