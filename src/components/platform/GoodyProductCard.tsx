@@ -67,6 +67,15 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             </Badge>
           </div>
 
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              Variable Price: 
+            </p>
+            <Badge variant={product.price_is_variable ? "secondary" : "outline"} className="text-xs">
+              {product.price_is_variable ? "Yes" : "No"}
+            </Badge>
+          </div>
+
           {product.variants.length > 0 && (
             <p className="text-xs text-muted-foreground">
               {product.variants.length} variants available
