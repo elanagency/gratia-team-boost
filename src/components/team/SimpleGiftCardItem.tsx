@@ -13,19 +13,19 @@ interface SimpleGiftCardItemProps {
 export const SimpleGiftCardItem = ({ reward, onClick }: SimpleGiftCardItemProps) => {
   return (
     <div 
-      className="cursor-pointer transition-all duration-200 hover:bg-muted/50 rounded-lg p-2" 
+      className="cursor-pointer transition-all duration-300 hover:bg-muted/50 hover:scale-105 rounded-lg p-2" 
       onClick={onClick}
     >
       <div className="flex flex-col items-center text-center space-y-3">
-        <div className="w-[214px] h-[134px] flex items-center justify-center">
+        <div className="w-[214px] h-[134px] flex items-center justify-center rounded-xl overflow-hidden">
           {reward.image_url ? (
             <img 
               src={reward.image_url} 
               alt={reward.name} 
-              className="w-full h-full object-contain rounded-lg"
+              className="w-full h-full object-contain rounded-xl"
             />
           ) : (
-            <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
+            <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
               <span className="text-xs text-muted-foreground">No image</span>
             </div>
           )}
