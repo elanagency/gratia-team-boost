@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const useSyncGiftCards = () => {
+export const useSyncGiftCards = (environment: string = 'live') => {
   const [isOpen, setIsOpen] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{
     isActive: boolean;
@@ -14,13 +14,14 @@ export const useSyncGiftCards = () => {
 
   // Get sync status with better error handling
   const { data: syncStatus, refetch: refetchStatus } = useQuery({
-    queryKey: ['gift-card-sync-status'],
+    queryKey: ['gift-card-sync-status', environment],
     queryFn: async () => {
       try {
         const { data, error, count } = await supabase
           .from('goody_gift_cards')
           .select('last_synced_at', { count: 'exact' })
           .eq('is_active', true)
+          .eq('environment', environment)
           .limit(1)
           .order('last_synced_at', { ascending: false });
 
@@ -52,7 +53,7 @@ export const useSyncGiftCards = () => {
       
       try {
         const { data, error } = await supabase.functions.invoke('goody-product-service', {
-          body: { method: 'SYNC' }
+          body: { method: 'SYNC', environment }
         });
 
         if (error) {
@@ -85,7 +86,7 @@ export const useSyncGiftCards = () => {
       
       // Invalidate and refresh queries
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['gift-card-sync-status'] }),
+        queryClient.invalidateQueries({ queryKey: ['gift-card-sync-status', environment] }),
         queryClient.invalidateQueries({ queryKey: ['goody-gift-cards'], exact: false }),
         refetchStatus()
       ]).then(() => {
@@ -150,7 +151,7 @@ export const useSyncGiftCards = () => {
       setSyncProgress({ isActive: true, message: 'Testing API connection...' });
       
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
-        body: { method: 'GET', page: 1, per_page: 1 }
+        body: { method: 'GET', page: 1, per_page: 1, environment }
       });
 
       if (error || data?.error) {

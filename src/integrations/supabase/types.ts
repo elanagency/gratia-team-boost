@@ -199,6 +199,7 @@ export type Database = {
           brand_name: string
           created_at: string
           description: string | null
+          environment: string
           goody_product_id: string
           id: string
           image_url: string | null
@@ -214,6 +215,7 @@ export type Database = {
           brand_name: string
           created_at?: string
           description?: string | null
+          environment?: string
           goody_product_id: string
           id?: string
           image_url?: string | null
@@ -229,6 +231,7 @@ export type Database = {
           brand_name?: string
           created_at?: string
           description?: string | null
+          environment?: string
           goody_product_id?: string
           id?: string
           image_url?: string | null

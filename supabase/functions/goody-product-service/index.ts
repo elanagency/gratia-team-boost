@@ -23,6 +23,7 @@ interface GoodyProduct {
     id: string;
     name: string;
     subtitle: string;
+    price_cents: number;
     image_large: {
       url: string;
       width: number;
@@ -46,8 +47,12 @@ interface GoodyProduct {
 const isGiftCard = (product: GoodyProduct): boolean => {
   const searchTerms = ['gift card', 'gift certificate', 'egift'];
   const subtitle = (product.subtitle || '').toLowerCase();
+  const description = (product.recipient_description || '').toLowerCase();
+  const name = (product.name || '').toLowerCase();
 
-  return searchTerms.some(term => subtitle.includes(term));
+  return searchTerms.some(term => 
+    subtitle.includes(term) || description.includes(term) || name.includes(term)
+  );
 };
 
 interface GoodyApiResponse {
@@ -69,18 +74,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const goodyApiKey = Deno.env.get('GOODY_API_KEY');
-    if (!goodyApiKey) {
-      console.error('GOODY_API_KEY environment variable not found');
-      throw new Error('GOODY_API_KEY not configured');
-    }
-
-    console.log('GOODY_API_KEY is configured:', goodyApiKey ? 'Yes' : 'No');
+    console.log('GOODY_API_KEY is configured:', Deno.env.get('GOODY_API_KEY') ? 'Yes' : 'No');
+    console.log('GOODY_API_KEY_SANDBOX is configured:', Deno.env.get('GOODY_API_KEY_SANDBOX') ? 'Yes' : 'No');
 
     // Handle GET and POST requests for fetching products
     if (req.method === 'GET' || req.method === 'POST') {
       let pageNum = 1;
       let perPage = 50;
+      let environment = 'live';
       let isProductFetch = true;
       let fetchAll = false;
       
@@ -88,58 +89,71 @@ serve(async (req) => {
         const url = new URL(req.url);
         pageNum = parseInt(url.searchParams.get('page') || '1');
         perPage = parseInt(url.searchParams.get('per_page') || '50');
+        environment = url.searchParams.get('environment') || 'live';
         fetchAll = url.searchParams.get('fetch_all') === 'true';
-        } else if (req.method === 'POST') {
-          try {
-            const body = await req.json();
+      } else if (req.method === 'POST') {
+        try {
+          const body = await req.json();
+          environment = body.environment || 'live';
+          
+          // Determine base URL and API key based on environment
+          const isLive = environment === 'live';
+          const baseUrl = isLive ? 'https://api.ongoody.com' : 'https://api.sandbox.ongoody.com';
+          const apiKey = isLive ? Deno.env.get('GOODY_API_KEY') : Deno.env.get('GOODY_API_KEY_SANDBOX');
+
+          if (!apiKey) {
+            console.error(`${isLive ? 'GOODY_API_KEY' : 'GOODY_API_KEY_SANDBOX'} environment variable not found`);
+            throw new Error(`${isLive ? 'GOODY_API_KEY' : 'GOODY_API_KEY_SANDBOX'} not configured`);
+          }
+          
+          // Handle SYNC method
+          if (body.method === 'SYNC') {
+            console.log(`Starting gift card sync for ${environment} environment...`);
+            return await handleSyncGiftCards(supabase, baseUrl, apiKey, environment);
+          }
+          
+          // Handle LOAD_FROM_IDS method  
+          if (body.method === 'LOAD_FROM_IDS') {
+            console.log('Loading products from saved IDs...');
+            return await handleLoadFromSavedIds(supabase, baseUrl, apiKey, body.product_ids, environment);
+          }
+          
+          // Handle LOAD_FROM_DB method  
+          if (body.method === 'LOAD_FROM_DB') {
+            console.log(`Loading products from database for ${environment} environment...`);
+            return await handleLoadFromDatabase(supabase, body.page || 1, body.per_page || 20, environment);
+          }
+          
+          // Check if this is a product fetch request
+          if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier && !body.method)) {
+            // This is a product fetch request
+            pageNum = body.page || 1;
+            perPage = body.per_page || 50;
+            fetchAll = body.fetch_all || false;
+          } else {
+            // This is an add products request
+            isProductFetch = false;
+            const { productIds, pointsMultiplier = 1 } = body;
             
-            // Handle SYNC method
-            if (body.method === 'SYNC') {
-              return await handleSyncGiftCards(goodyApiKey, supabase);
+            if (!Array.isArray(productIds) || productIds.length === 0) {
+              throw new Error('Product IDs are required');
             }
-            
-            // Handle LOAD_FROM_SAVED_IDS method  
-            if (body.method === 'LOAD_FROM_SAVED_IDS') {
-              const { page = 1, perPage: requestPerPage = 50 } = body;
-              return await handleLoadFromSavedIds(goodyApiKey, supabase, page, requestPerPage);
-            }
-            
-            // Handle LOAD_FROM_DATABASE method  
-            if (body.method === 'LOAD_FROM_DATABASE') {
-              const { page = 1, perPage: requestPerPage = 50 } = body;
-              return await handleLoadFromDatabase(supabase, page, requestPerPage);
-            }
-            
-            // Check if this is a product fetch request or add products request
-            if (body.method === 'GET' || (!body.productIds && !body.pointsMultiplier && !body.method)) {
-              // This is a product fetch request
-              pageNum = body.page || 1;
-              perPage = body.per_page || 50;
-              fetchAll = body.fetch_all || false;
-            } else {
-              // This is an add products request
-              isProductFetch = false;
-              const { productIds, pointsMultiplier = 1 } = body;
-              
-              if (!Array.isArray(productIds) || productIds.length === 0) {
-                throw new Error('Product IDs are required');
+
+            console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
+
+            // Return success since we're not storing products in DB anymore
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                message: `Product settings will be managed through platform settings`,
+                productIds: productIds 
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200 
               }
-
-              console.log(`Adding ${productIds.length} products with points multiplier: ${pointsMultiplier}`);
-
-              // For now, return success since we're not storing products in DB anymore
-              return new Response(
-                JSON.stringify({ 
-                  success: true, 
-                  message: `Product settings will be managed through platform settings`,
-                  productIds: productIds 
-                }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200 
-                }
-              );
-            }
+            );
+          }
         } catch (parseError) {
           console.error('Error parsing request body:', parseError);
           throw new Error('Invalid request body');
@@ -147,8 +161,18 @@ serve(async (req) => {
       }
 
       if (isProductFetch) {
+        // Determine base URL and API key based on environment
+        const isLive = environment === 'live';
+        const baseUrl = isLive ? 'https://api.ongoody.com' : 'https://api.sandbox.ongoody.com';
+        const apiKey = isLive ? Deno.env.get('GOODY_API_KEY') : Deno.env.get('GOODY_API_KEY_SANDBOX');
+
+        if (!apiKey) {
+          console.error(`${isLive ? 'GOODY_API_KEY' : 'GOODY_API_KEY_SANDBOX'} environment variable not found`);
+          throw new Error(`${isLive ? 'GOODY_API_KEY' : 'GOODY_API_KEY_SANDBOX'} not configured`);
+        }
+
         if (fetchAll) {
-          console.log('Fetching all Goody products across all pages...');
+          console.log(`Fetching all Goody products from ${environment} environment across all pages...`);
           const allProducts: GoodyProduct[] = [];
           let currentPage = 1;
           let totalCount = 0;
@@ -157,10 +181,10 @@ serve(async (req) => {
             console.log(`Fetching page ${currentPage}...`);
             
             const goodyResponse = await fetch(
-              `https://api.ongoody.com/v1/products?page=${currentPage}&per_page=${perPage}`,
+              `${baseUrl}/v1/products?page=${currentPage}&per_page=${perPage}`,
               {
                 headers: {
-                  'Authorization': `Bearer ${goodyApiKey}`,
+                  'Authorization': `Bearer ${apiKey}`,
                   'Content-Type': 'application/json',
                 },
               }
@@ -193,7 +217,7 @@ serve(async (req) => {
             currentPage++;
           }
           
-          console.log(`Successfully fetched all ${allProducts.length} products from Goody across ${currentPage} pages`);
+          console.log(`Successfully fetched all ${allProducts.length} products from Goody ${environment} environment across ${currentPage} pages`);
 
           return new Response(
             JSON.stringify({
@@ -208,14 +232,14 @@ serve(async (req) => {
             }
           );
         } else {
-          console.log(`Fetching Goody catalog - page: ${pageNum}, per_page: ${perPage}`);
-          console.log(`Using API key starting with: ${goodyApiKey.substring(0, 10)}...`);
+          console.log(`Fetching Goody catalog from ${environment} - page: ${pageNum}, per_page: ${perPage}`);
+          console.log(`Using API key starting with: ${apiKey.substring(0, 10)}...`);
 
           const goodyResponse = await fetch(
-            `https://api.ongoody.com/v1/products?page=${pageNum}&per_page=${perPage}`,
+            `${baseUrl}/v1/products?page=${pageNum}&per_page=${perPage}`,
             {
               headers: {
-                'Authorization': `Bearer ${goodyApiKey}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
               },
             }
@@ -279,8 +303,8 @@ serve(async (req) => {
 });
 
 // Enhanced function to sync all gift cards with improved error handling and retry logic
-async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
-  console.log('Starting enhanced gift card sync process...');
+async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey: string, environment: string = 'live') {
+  console.log(`Starting enhanced gift card sync process for ${environment} environment...`);
   
   const allGiftCards = [];
   let page = 1;
@@ -291,12 +315,12 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
   const retryDelay = 1000; // 1 second base delay
 
   // Validate API key first
-  if (!goodyApiKey || goodyApiKey.trim() === '') {
-    console.error('GOODY_API_KEY is empty or invalid');
+  if (!apiKey || apiKey.trim() === '') {
+    console.error(`API key for ${environment} is empty or invalid`);
     return new Response(
       JSON.stringify({ 
         error: 'API Configuration Error', 
-        details: 'GOODY_API_KEY is not properly configured. Please check your edge function secrets.',
+        details: `API key for ${environment} environment is not properly configured. Please check your edge function secrets.`,
         error_code: 'MISSING_API_KEY'
       }),
       { status: 400, headers: corsHeaders }
@@ -306,9 +330,9 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
   // Test API connectivity first
   try {
     console.log('Testing API connectivity...');
-    const testResponse = await fetch('https://api.ongoody.com/v1/products?page=1&per_page=1', {
+    const testResponse = await fetch(`${baseUrl}/v1/products?page=1&per_page=1`, {
       headers: {
-        'Authorization': `Bearer ${goodyApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json',
       },
     });
@@ -321,7 +345,7 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
         return new Response(
           JSON.stringify({ 
             error: 'Authentication Failed', 
-            details: 'Invalid GOODY_API_KEY. Please verify your API key in the edge function secrets.',
+            details: `Invalid API key for ${environment} environment. Please verify your API key in the edge function secrets.`,
             error_code: 'INVALID_API_KEY'
           }),
           { status: 401, headers: corsHeaders }
@@ -355,9 +379,9 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
       console.log(`Fetching page ${page}... (attempt ${retryCount + 1})`);
       
       try {
-        const response = await fetch(`https://api.ongoody.com/v1/products?page=${page}&per_page=50`, {
+        const response = await fetch(`${baseUrl}/v1/products?page=${page}&per_page=50`, {
           headers: {
-            'Authorization': `Bearer ${goodyApiKey}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Accept': 'application/json',
           },
           signal: AbortSignal.timeout(30000), // 30 second timeout
@@ -416,7 +440,7 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'No gift cards found in the catalog',
+          message: `No gift cards found in the ${environment} catalog`,
           total_found: 0,
           total_saved: 0,
           sync_timestamp: new Date().toISOString()
@@ -432,11 +456,12 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
           goody_product_id: product.id,
           name: product.name || 'Unknown Product',
           brand_name: product.brand?.name || 'Unknown Brand',
-          price: product.price || 0,
+          price: product.variants?.[0]?.price_cents || 0,
           image_url: product.images?.[0]?.image_large?.url || product.variants?.[0]?.image_large?.url || null,
           description: product.recipient_description || '',
           subtitle: product.subtitle || '',
           product_data: product, // Store full product JSON
+          environment: environment,
           last_synced_at: new Date().toISOString(),
           is_active: true
         };
@@ -448,15 +473,15 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
 
     console.log(`Prepared ${giftCardRecords.length} valid records for database insertion`);
 
-    // Clear existing records and insert new ones with transaction-like behavior
+    // Clear existing records for this environment and insert new ones
     try {
       const { error: deleteError } = await supabaseClient
         .from('goody_gift_cards')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        .eq('environment', environment);
 
       if (deleteError) {
-        console.error('Error clearing existing gift card records:', deleteError);
+        console.error(`Error clearing existing ${environment} gift card records:`, deleteError);
         throw new Error(`Database cleanup failed: ${deleteError.message}`);
       }
 
@@ -472,7 +497,9 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
         try {
           const { error: insertError } = await supabaseClient
             .from('goody_gift_cards')
-            .insert(batch);
+            .upsert(batch, { 
+              onConflict: 'goody_product_id,environment' 
+            });
 
           if (insertError) {
             console.error(`Error inserting batch ${batchNumber}:`, insertError);
@@ -496,23 +523,23 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Gift card sync completed successfully`,
+          message: `Gift card sync completed successfully for ${environment} environment`,
           total_found: allGiftCards.length,
           total_saved: insertedCount,
           failed_batches: failedBatches,
           sync_timestamp: new Date().toISOString(),
-          pages_processed: page - 1
+          environment: environment
         }),
         { headers: corsHeaders }
       );
 
     } catch (dbError) {
-      console.error('Database operation failed:', dbError);
+      console.error('Database operation error:', dbError);
       return new Response(
-        JSON.stringify({ 
-          error: 'Database Error', 
+        JSON.stringify({
+          success: false,
+          error: 'Database Error',
           details: `Failed to save gift cards to database: ${dbError.message}`,
-          total_found: allGiftCards.length,
           error_code: 'DATABASE_ERROR'
         }),
         { status: 500, headers: corsHeaders }
@@ -520,174 +547,198 @@ async function handleSyncGiftCards(goodyApiKey: string, supabaseClient: any) {
     }
 
   } catch (error) {
-    console.error('Critical error during gift card sync:', error);
+    console.error('Sync process error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Sync Failed', 
+      JSON.stringify({
+        success: false,
+        error: 'Sync Failed',
         details: error.message,
         total_found: allGiftCards.length,
-        pages_processed: page - 1,
-        error_code: 'SYNC_FAILED'
+        sync_timestamp: new Date().toISOString()
       }),
       { status: 500, headers: corsHeaders }
     );
   }
 }
 
-// New function to load products from saved IDs
-async function handleLoadFromSavedIds(goodyApiKey: string, supabaseClient: any, page: number, perPage: number) {
+async function handleLoadFromSavedIds(supabaseClient: any, baseUrl: string, apiKey: string, productIds?: string[], environment: string = 'live'): Promise<Response> {
+  console.log(`Loading products from saved IDs for ${environment} environment...`);
+  
   try {
-    // Get saved gift card IDs with pagination
-    const { data: savedGiftCards, error: fetchError, count } = await supabaseClient
-      .from('goody_gift_cards')
-      .select('goody_product_id', { count: 'exact' })
-      .eq('is_active', true)
-      .order('name')
-      .range((page - 1) * perPage, page * perPage - 1);
+    // Get saved product IDs from our database if not provided
+    if (!productIds) {
+      const { data: savedProducts, error: fetchError } = await supabaseClient
+        .from('goody_gift_cards')
+        .select('goody_product_id')
+        .eq('is_active', true)
+        .eq('environment', environment);
 
-    if (fetchError) {
-      console.error('Error fetching saved gift card IDs:', fetchError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch saved gift card IDs' }),
-        { status: 500, headers: corsHeaders }
-      );
+      if (fetchError) {
+        console.error('Error fetching saved product IDs:', fetchError);
+        throw new Error(`Failed to fetch saved product IDs: ${fetchError.message}`);
+      }
+
+      productIds = savedProducts?.map(p => p.goody_product_id) || [];
     }
 
-    if (!savedGiftCards || savedGiftCards.length === 0) {
+    if (!productIds || productIds.length === 0) {
       return new Response(
         JSON.stringify({
           data: [],
           list_meta: { total_count: 0 },
-          message: 'No synced gift cards found. Please sync first.'
+          message: `No saved product IDs found for ${environment} environment`
         }),
         { headers: corsHeaders }
       );
     }
 
-    // Fetch product details for each saved ID
-    const products = [];
+    console.log(`Fetching details for ${productIds.length} saved products from Goody API...`);
     
-    for (const savedCard of savedGiftCards) {
-      try {
-        const response = await fetch(`https://api.ongoody.com/v1/products/${savedCard.goody_product_id}`, {
-          headers: {
-            'Authorization': `Bearer ${goodyApiKey}`,
-            'Accept': 'application/json',
-          },
-        });
+    const products: GoodyProduct[] = [];
+    const batchSize = 10; // Process in smaller batches to avoid overwhelming the API
+    
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      const batch = productIds.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (productId) => {
+        try {
+          const response = await fetch(`${baseUrl}/v1/products/${productId}`, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Accept': 'application/json',
+            },
+          });
 
-        if (response.ok) {
-          const product = await response.json();
-          products.push(product);
-        } else {
-          console.error(`Failed to fetch product ${savedCard.goody_product_id}: ${response.status}`);
+          if (response.ok) {
+            const product = await response.json();
+            return product;
+          } else {
+            console.warn(`Failed to fetch product ${productId}: ${response.status}`);
+            return null;
+          }
+        } catch (error) {
+          console.warn(`Error fetching product ${productId}:`, error);
+          return null;
         }
-      } catch (error) {
-        console.error(`Error fetching product ${savedCard.goody_product_id}:`, error);
-      }
+      });
 
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 50));
+      const batchResults = await Promise.all(batchPromises);
+      products.push(...batchResults.filter(p => p !== null));
+      
+      // Small delay between batches
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    console.log(`Loaded ${products.length} products from saved IDs for page ${page}`);
+    console.log(`Successfully loaded ${products.length} products from ${productIds.length} IDs`);
 
     return new Response(
       JSON.stringify({
         data: products,
-        list_meta: { total_count: count || 0 }
+        list_meta: { total_count: products.length }
       }),
       { headers: corsHeaders }
     );
 
   } catch (error) {
-    console.error('Error loading from saved IDs:', error);
+    console.error('Error in handleLoadFromSavedIds:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to load from saved IDs' }),
+      JSON.stringify({
+        error: 'Failed to load products from saved IDs',
+        details: error.message
+      }),
       { status: 500, headers: corsHeaders }
     );
   }
 }
 
-// New function to load products directly from database
-async function handleLoadFromDatabase(supabaseClient: any, page: number, perPage: number) {
+async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, perPage: number = 20, environment: string = 'live'): Promise<Response> {
+  console.log(`Loading products from database for ${environment} environment - page ${page}, perPage ${perPage}`);
+  
   try {
-    const offset = (page - 1) * perPage;
-    
-    // Get total count
-    const { count, error: countError } = await supabaseClient
-      .from('goody_gift_cards')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage - 1;
 
-    if (countError) {
-      console.error('Error counting gift cards:', countError);
-      throw countError;
-    }
-
-    // Get paginated products from database
-    const { data: giftCards, error: fetchError } = await supabaseClient
+    const { data: products, error, count } = await supabaseClient
       .from('goody_gift_cards')
-      .select('product_data')
+      .select(`
+        goody_product_id,
+        name,
+        brand_name,
+        subtitle,
+        description,
+        image_url,
+        price,
+        environment
+      `, { count: 'exact' })
       .eq('is_active', true)
-      .range(offset, offset + perPage - 1)
-      .order('created_at', { ascending: true });
+      .eq('environment', environment)
+      .order('name')
+      .range(startIndex, endIndex);
 
-    if (fetchError) {
-      console.error('Error fetching gift cards from database:', fetchError);
-      throw fetchError;
+    if (error) {
+      console.error('Database query error:', error);
+      throw new Error(`Database query failed: ${error.message}`);
     }
 
-    // Extract and optimize products from stored JSON data
-    const products = giftCards
-      .map(card => {
-        const product = card.product_data;
-        if (!product) return null;
-        
-        // Optimize product data by keeping only essential fields
-        return {
-          id: product.id,
-          name: product.name,
-          brand: product.brand,
-          subtitle: product.subtitle,
-          recipient_description: product.recipient_description,
-          price: product.price,
-          price_is_variable: product.price_is_variable,
-          // Keep only the first image and variant to reduce size
-          images: product.images ? [product.images[0]].filter(Boolean) : [],
-          variants: product.variants ? [product.variants[0]].filter(Boolean) : []
-        };
-      })
-      .filter(product => product !== null);
+    // Transform to match expected format
+    const transformedProducts = products?.map(product => ({
+      id: product.goody_product_id,
+      name: product.name,
+      brand: { 
+        name: product.brand_name,
+        id: '',
+        shipping_price: 0
+      },
+      subtitle: product.subtitle,
+      description: product.description,
+      images: product.image_url ? [{ 
+        id: '',
+        image_large: { 
+          url: product.image_url,
+          width: 400,
+          height: 400
+        }
+      }] : [],
+      variants: [{
+        id: '',
+        name: product.name,
+        subtitle: product.subtitle || '',
+        price_cents: product.price || 0,
+        image_large: {
+          url: product.image_url || '',
+          width: 400,
+          height: 400
+        }
+      }],
+      price: product.price || 0,
+      environment: product.environment
+    })) || [];
 
-    console.log(`Loaded ${products.length} products from database for page ${page}`);
+    console.log(`Loaded ${transformedProducts.length} products from database for page ${page}`);
     
-    const response = {
-      data: products,
-      list_meta: { total_count: count || 0 }
-    };
-    
-    const responseStr = JSON.stringify(response);
-    console.log(`Response size: ${responseStr.length} characters`);
-    
-    // Check if response is too large (>6MB is typical edge function limit)
-    if (responseStr.length > 6000000) {
-      console.warn(`Response size (${responseStr.length}) may be too large`);
-    }
+    const responseSize = JSON.stringify(transformedProducts).length;
+    console.log(`Response size: ${responseSize} characters`);
 
-  return new Response(responseStr, { 
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status: 200 
-  });
+    return new Response(
+      JSON.stringify({
+        data: transformedProducts,
+        list_meta: { 
+          total_count: count || 0,
+          current_page: page,
+          per_page: perPage,
+          environment: environment
+        }
+      }),
+      { headers: corsHeaders }
+    );
 
   } catch (error) {
     console.error('Error in handleLoadFromDatabase:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to load products from database', details: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({
+        error: 'Failed to load products from database',
+        details: error.message
+      }),
+      { status: 500, headers: corsHeaders }
     );
   }
 }
