@@ -793,7 +793,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
           environment: environment
         }
       }),
-      { headers: corsHeaders }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
@@ -895,7 +895,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
           environment: environment
         }
       }),
-      { headers: corsHeaders }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

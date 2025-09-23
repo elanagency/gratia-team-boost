@@ -67,27 +67,27 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
           throw new Error(`Failed to fetch products: ${error.message}`);
         }
 
-        // Add detailed logging to debug response structure
-        console.log('Full response from edge function:', JSON.stringify(data, null, 2));
-        console.log('Response data structure:', {
-          hasData: !!data,
-          hasDataProperty: !!data?.data,
-          dataType: typeof data?.data,
-          dataLength: Array.isArray(data?.data) ? data?.data.length : 'not array',
-          hasListMeta: !!data?.list_meta,
-          totalCount: data?.list_meta?.total_count,
-          fullDataKeys: data ? Object.keys(data) : 'no data'
-        });
-
-        if (data?.error) {
-          console.error('API error:', data.error);
-          throw new Error(data.details || data.error);
+        // Handle case where response might be a JSON string instead of an object
+        let responseData = data;
+        if (typeof data === 'string') {
+          try {
+            responseData = JSON.parse(data);
+            console.log('Parsed JSON string response successfully');
+          } catch (parseError) {
+            console.error('Failed to parse JSON string response:', parseError);
+            throw new Error('Invalid JSON response from server');
+          }
         }
 
-        console.log(`Received ${data?.data?.length || 0} products for ${environment} environment`);
+        if (responseData?.error) {
+          console.error('API error:', responseData.error);
+          throw new Error(responseData.details || responseData.error);
+        }
+
+        console.log(`Received ${responseData?.data?.length || 0} products for ${environment} environment`);
         return {
-          products: data?.data || [],
-          totalCount: data?.list_meta?.total_count || 0
+          products: responseData?.data || [],
+          totalCount: responseData?.list_meta?.total_count || 0
         };
       } catch (error) {
         console.error('Error fetching products:', error);
