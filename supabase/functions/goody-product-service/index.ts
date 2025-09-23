@@ -537,10 +537,10 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
 
     console.log(`Prepared ${productRecords.length} valid records for database insertion`);
 
-    // Clear existing records for this environment and insert new ones
+    // Step 1: Clear existing records for this environment and insert new ones to goody_products
     try {
       const { error: deleteError } = await supabaseClient
-        .from('goody_gift_cards')
+        .from('goody_products')
         .delete()
         .eq('environment', dbEnvironment);
 
@@ -560,7 +560,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
         
         try {
           const { error: insertError } = await supabaseClient
-            .from('goody_gift_cards')
+            .from('goody_products')
             .upsert(batch, { 
               onConflict: 'goody_product_id,environment' 
             });
@@ -570,7 +570,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
             failedBatches++;
           } else {
             insertedCount += batch.length;
-            console.log(`Inserted batch ${batchNumber}: ${batch.length} records`);
+            console.log(`Inserted batch ${batchNumber}: ${batch.length} records to goody_products`);
           }
         } catch (batchError) {
           console.error(`Batch ${batchNumber} insertion failed:`, batchError);
@@ -582,21 +582,57 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
       }
 
       const totalBatches = Math.ceil(productRecords.length / batchSize);
-      console.log(`Database insertion complete. Inserted: ${insertedCount}, Failed batches: ${failedBatches}/${totalBatches}`);
+      console.log(`Step 1 complete. Inserted: ${insertedCount} products to goody_products, Failed batches: ${failedBatches}/${totalBatches}`);
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Product sync completed successfully for ${environment} environment (saved as ${dbEnvironment} in database)`,
-          total_found: allProducts.length,
-          total_saved: insertedCount,
-          failed_batches: failedBatches,
-          sync_timestamp: new Date().toISOString(),
-          environment: environment,
-          db_environment: dbEnvironment
-        }),
-        { headers: corsHeaders }
-      );
+      // Step 2: Sync gift cards from goody_products to goody_gift_cards
+      console.log(`Step 2: Syncing gift cards from goody_products to goody_gift_cards for ${environment} environment...`);
+      
+      try {
+        const { data: giftCardSyncCount, error: giftCardSyncError } = await supabaseClient
+          .rpc('sync_gift_cards_from_products', { target_environment: dbEnvironment });
+
+        if (giftCardSyncError) {
+          console.error('Gift card sync error:', giftCardSyncError);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Gift card sync failed',
+              details: giftCardSyncError.message,
+              total_products_synced: insertedCount
+            }),
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        console.log(`Step 2 complete. Synced ${giftCardSyncCount} gift cards to goody_gift_cards`);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Two-step sync completed successfully for ${environment} environment`,
+            total_products_found: allProducts.length,
+            total_products_saved: insertedCount,
+            gift_cards_synced: giftCardSyncCount,
+            failed_batches: failedBatches,
+            sync_timestamp: new Date().toISOString(),
+            environment: environment,
+            db_environment: dbEnvironment
+          }),
+          { headers: corsHeaders }
+        );
+
+      } catch (syncError) {
+        console.error('Unexpected error during gift card sync:', syncError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Gift card sync failed',
+            details: syncError.message,
+            total_products_synced: insertedCount
+          }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
 
     } catch (dbError) {
       console.error('Database operation error:', dbError);

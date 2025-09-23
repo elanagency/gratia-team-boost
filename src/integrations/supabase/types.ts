@@ -251,6 +251,63 @@ export type Database = {
         }
         Relationships: []
       }
+      goody_products: {
+        Row: {
+          brand_id: string | null
+          brand_name: string
+          created_at: string
+          description: string | null
+          environment: string
+          goody_product_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          last_synced_at: string
+          name: string
+          price: number | null
+          price_is_variable: boolean
+          product_data: Json | null
+          subtitle: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_id?: string | null
+          brand_name: string
+          created_at?: string
+          description?: string | null
+          environment?: string
+          goody_product_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          last_synced_at?: string
+          name: string
+          price?: number | null
+          price_is_variable?: boolean
+          product_data?: Json | null
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string | null
+          brand_name?: string
+          created_at?: string
+          description?: string | null
+          environment?: string
+          goody_product_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          last_synced_at?: string
+          name?: string
+          price?: number | null
+          price_is_variable?: boolean
+          product_data?: Json | null
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monthly_points_allocations: {
         Row: {
           allocation_date: string
@@ -645,6 +702,10 @@ export type Database = {
       should_allocate_monthly_points: {
         Args: { target_company_id: string }
         Returns: boolean
+      }
+      sync_gift_cards_from_products: {
+        Args: { target_environment?: string }
+        Returns: number
       }
       transfer_points_between_users: {
         Args: {

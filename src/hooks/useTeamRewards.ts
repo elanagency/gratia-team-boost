@@ -47,7 +47,7 @@ export const useTeamRewards = () => {
     enabled: !!companyId
   });
 
-  const { products, isLoading, error } = useGoodyProducts(1, true, true, 100, companyEnvironment || 'live');
+  const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, companyEnvironment || 'live', false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
 
