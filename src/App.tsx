@@ -17,6 +17,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
 
 import GiftCardsCatalog from "./pages/admin/GiftCardsCatalog";
+import GiftCardsCatalogNew from "./pages/admin/GiftCardsCatalogNew";
 
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
@@ -99,6 +100,8 @@ const App = () => (
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />
+                <Route path="gift-cards-old" element={<GiftCardsCatalog />} />
+                <Route path="gift-cards-new" element={<GiftCardsCatalogNew />} />
               </Route>
               
               {/* Redirect old team dashboard routes to unified dashboard */}

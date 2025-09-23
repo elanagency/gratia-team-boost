@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Settings, User, LogOut } from "lucide-react";
+import { LayoutDashboard, Settings, User, LogOut, Gift } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,12 +26,24 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
       icon: LayoutDashboard,
       path: "/dashboard"
     },
-    // Only show Settings for admin users
-    ...(isAdmin ? [{
-      name: "Settings",
-      icon: Settings,
-      path: "/dashboard/settings"
-    }] : [])
+    // Only show admin-specific items for admin users
+    ...(isAdmin ? [
+      {
+        name: "Gift Cards (NEW)",
+        icon: Gift,
+        path: "/dashboard/gift-cards-new"
+      },
+      {
+        name: "Gift Cards (OLD)",
+        icon: Gift,
+        path: "/dashboard/gift-cards-old"
+      },
+      {
+        name: "Settings",
+        icon: Settings,
+        path: "/dashboard/settings"
+      }
+    ] : [])
   ];
   
   const isActive = (path: string) => {
