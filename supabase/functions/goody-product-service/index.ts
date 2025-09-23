@@ -517,6 +517,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
           brand_name: product.brand?.name || 'Unknown Brand',
           brand_id: product.brand?.id || null,
           price: product.variants?.[0]?.price_cents || 0,
+          price_is_variable: product.price_is_variable || false,
           image_url: product.images?.[0]?.image_large?.url || product.variants?.[0]?.image_large?.url || null,
           description: product.recipient_description || '',
           subtitle: product.subtitle || '',
@@ -775,6 +776,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
         }
       }],
       price: product.price || 0,
+      price_is_variable: product.price_is_variable || false,
       environment: product.environment
     })) || [];
 
@@ -877,6 +879,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
         }
       }],
       price: product.price || 0,
+      price_is_variable: product.price_is_variable || false,
       environment: product.environment
     })) || [];
 

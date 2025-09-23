@@ -15,6 +15,7 @@ export interface AdminReward {
   brand_name: string;
   brand_id: string;
   price: number;
+  price_is_variable: boolean;
 }
 
 export const useAdminRewardCatalog = (environment: 'live' | 'sandbox' = 'live') => {
@@ -38,7 +39,8 @@ export const useAdminRewardCatalog = (environment: 'live' | 'sandbox' = 'live') 
       product_url: '',
       brand_name: product.brand?.name || '',
       brand_id: product.brand?.id || '',
-      price: product.price
+      price: product.price,
+      price_is_variable: product.price_is_variable || false
     };
   });
 

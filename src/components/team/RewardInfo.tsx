@@ -69,44 +69,78 @@ export const RewardInfo = ({
         </p>
       )}
       
-      {/* Dollar Amount Selection Grid */}
+      {/* Amount Selection */}
       <div className="mb-6">
-        <Label className="text-sm font-medium mb-3 block">Select Amount</Label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {dollarAmounts.map((amount) => {
-            const pointsNeeded = getPointsForAmount(amount);
-            const canAfford = pointsNeeded <= userPoints;
-            const isSelected = selectedAmount === amount;
-            
-            return (
-              <button
-                key={amount}
-                onClick={() => setSelectedAmount(amount)}
-                disabled={!canAfford || isLoadingPoints}
-                className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-left ${
-                  isSelected 
-                    ? 'border-primary bg-primary/5' 
-                    : canAfford 
-                      ? 'border-border hover:border-primary/50 hover:bg-muted/50' 
-                      : 'border-border bg-muted/30 opacity-50 cursor-not-allowed'
-                }`}
-              >
-                {isSelected && (
-                  <Check className="absolute top-2 right-2 h-4 w-4 text-primary" />
-                )}
-                <div className="font-semibold text-lg">${amount}</div>
-                <div className="text-sm text-muted-foreground">
-                  {pointsNeeded.toLocaleString()} points
-                </div>
-                {!canAfford && !isLoadingPoints && (
-                  <div className="text-xs text-destructive mt-1">
-                    Need {(pointsNeeded - userPoints).toLocaleString()} more
+        <Label className="text-sm font-medium mb-3 block">
+          {reward.price_is_variable ? "Select Amount" : "Price"}
+        </Label>
+        
+        {reward.price_is_variable ? (
+          // Variable pricing: Show 4 dollar amount options
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {dollarAmounts.map((amount) => {
+              const pointsNeeded = getPointsForAmount(amount);
+              const canAfford = pointsNeeded <= userPoints;
+              const isSelected = selectedAmount === amount;
+              
+              return (
+                <button
+                  key={amount}
+                  onClick={() => setSelectedAmount(amount)}
+                  disabled={!canAfford || isLoadingPoints}
+                  className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                    isSelected 
+                      ? 'border-primary bg-primary/5' 
+                      : canAfford 
+                        ? 'border-border hover:border-primary/50 hover:bg-muted/50' 
+                        : 'border-border bg-muted/30 opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  {isSelected && (
+                    <Check className="absolute top-2 right-2 h-4 w-4 text-primary" />
+                  )}
+                  <div className="font-semibold text-lg">${amount}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {pointsNeeded.toLocaleString()} points
                   </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                  {!canAfford && !isLoadingPoints && (
+                    <div className="text-xs text-destructive mt-1">
+                      Need {(pointsNeeded - userPoints).toLocaleString()} more
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          // Fixed pricing: Show single price option
+          <div className="max-w-sm">
+            <button
+              onClick={() => setSelectedAmount(reward.price / 100)} // Convert cents to dollars
+              disabled={!userPoints || reward.points_cost > userPoints || isLoadingPoints}
+              className={`relative w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                selectedAmount === (reward.price / 100)
+                  ? 'border-primary bg-primary/5' 
+                  : reward.points_cost <= userPoints
+                    ? 'border-border hover:border-primary/50 hover:bg-muted/50' 
+                    : 'border-border bg-muted/30 opacity-50 cursor-not-allowed'
+              }`}
+            >
+              {selectedAmount === (reward.price / 100) && (
+                <Check className="absolute top-2 right-2 h-4 w-4 text-primary" />
+              )}
+              <div className="font-semibold text-lg">${(reward.price / 100).toFixed(2)}</div>
+              <div className="text-sm text-muted-foreground">
+                {reward.points_cost.toLocaleString()} points
+              </div>
+              {reward.points_cost > userPoints && !isLoadingPoints && (
+                <div className="text-xs text-destructive mt-1">
+                  Need {(reward.points_cost - userPoints).toLocaleString()} more points
+                </div>
+              )}
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Email Input */}

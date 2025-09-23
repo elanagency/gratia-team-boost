@@ -15,6 +15,7 @@ export interface TeamReward {
   product_url: string;
   brand_name: string;
   price: number;
+  price_is_variable: boolean;
   created_at?: string;
 }
 
@@ -45,6 +46,7 @@ export const useTeamRewards = () => {
       product_url: '',
       brand_name: product.brand?.name || '',
       price: product.price,
+      price_is_variable: product.price_is_variable || false,
       created_at: new Date().toISOString()
     };
   });

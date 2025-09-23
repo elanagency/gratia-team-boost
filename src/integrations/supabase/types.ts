@@ -208,6 +208,7 @@ export type Database = {
           last_synced_at: string
           name: string
           price: number | null
+          price_is_variable: boolean
           product_data: Json | null
           subtitle: string | null
           updated_at: string
@@ -225,6 +226,7 @@ export type Database = {
           last_synced_at?: string
           name: string
           price?: number | null
+          price_is_variable?: boolean
           product_data?: Json | null
           subtitle?: string | null
           updated_at?: string
@@ -242,6 +244,7 @@ export type Database = {
           last_synced_at?: string
           name?: string
           price?: number | null
+          price_is_variable?: boolean
           product_data?: Json | null
           subtitle?: string | null
           updated_at?: string
