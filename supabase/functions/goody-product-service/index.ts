@@ -740,6 +740,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
         description,
         image_url,
         price,
+        price_is_variable,
         environment
       `, { count: 'exact' })
       .eq('is_active', true)
