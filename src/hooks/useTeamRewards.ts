@@ -2,6 +2,9 @@ import { useGoodyProducts, GoodyProduct } from "./useGoodyProducts";
 import { usePlatformRewardSettings } from "./usePlatformRewardSettings";
 import { usePlatformSettings } from "./usePlatformSettings";
 import { calculatePointsFromPrice } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface TeamReward {
   id: string;
@@ -20,7 +23,31 @@ export interface TeamReward {
 }
 
 export const useTeamRewards = () => {
-  const { products, isLoading, error } = useGoodyProducts(1, true, true, 100);
+  const { companyId } = useAuth();
+  
+  // Fetch company environment
+  const { data: companyEnvironment, isLoading: isLoadingEnvironment } = useQuery({
+    queryKey: ['company-environment', companyId],
+    queryFn: async () => {
+      if (!companyId) return 'live'; // Default fallback
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('environment')
+        .eq('id', companyId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching company environment:', error);
+        return 'live'; // Default fallback
+      }
+      
+      return data?.environment || 'live';
+    },
+    enabled: !!companyId
+  });
+
+  const { products, isLoading, error } = useGoodyProducts(1, true, true, 100, companyEnvironment || 'live');
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
 
@@ -54,7 +81,7 @@ export const useTeamRewards = () => {
   return {
     rewards,
     categories: [], // No categories for now, using Goody's structure
-    isLoading: isLoading || isLoadingBlacklist || isLoadingSettings,
+    isLoading: isLoading || isLoadingBlacklist || isLoadingSettings || isLoadingEnvironment,
     error
   };
 };
