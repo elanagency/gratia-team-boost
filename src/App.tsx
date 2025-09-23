@@ -29,6 +29,7 @@ import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import CompaniesManagement from "./pages/platform/CompaniesManagement";
 import PlatformGiftCardsCatalog from "./pages/platform/PlatformGiftCardsCatalog";
+import PlatformGiftCardsCatalogNew from "./pages/platform/PlatformGiftCardsCatalogNew";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
 import SubscriptionMigration from "./pages/platform/SubscriptionMigration";
@@ -87,6 +88,7 @@ const App = () => (
                 <Route index element={<PlatformDashboard />} />
                 <Route path="companies" element={<CompaniesManagement />} />
                 <Route path="gift-cards" element={<PlatformGiftCardsCatalog />} />
+                <Route path="gift-cards-new" element={<PlatformGiftCardsCatalogNew />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
                 <Route path="migration" element={<SubscriptionMigration />} />
