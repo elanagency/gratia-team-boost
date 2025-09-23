@@ -21,8 +21,7 @@ interface PlatformSidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/platform-admin', icon: BarChart3 },
   { name: 'Companies', href: '/platform-admin/companies', icon: Building2 },
-  { name: 'Gift Cards (OLD)', href: '/platform-admin/gift-cards', icon: Gift },
-  { name: 'Gift Cards (NEW)', href: '/platform-admin/gift-cards-new', icon: Gift },
+  { name: 'Gift Cards', href: '/platform-admin/gift-cards', icon: Gift },
   { name: 'Transactions', href: '/platform-admin/transactions', icon: CreditCard },
   { name: 'Migration', href: '/platform-admin/migration', icon: ArrowUpDown },
   { name: 'Settings', href: '/platform-admin/settings', icon: Settings },

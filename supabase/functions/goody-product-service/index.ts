@@ -390,12 +390,16 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
     );
   }
 
+  const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
+  let progressLogCounter = 0;
+  const maxPages = 100; // Safety limit to prevent infinite loops (10,000 products max)
+
   try {
-    while (hasMorePages) {
+    while (hasMorePages && page <= maxPages) {
       console.log(`Fetching page ${page}... (attempt ${retryCount + 1})`);
       
       try {
-        const response = await fetch(`${baseUrl}/v1/products?page=${page}&per_page=50`, {
+        const response = await fetch(`${baseUrl}/v1/products?page=${page}&per_page=100`, {
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Accept': 'application/json',
@@ -414,25 +418,48 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
           throw new Error('Invalid response structure from Goody API');
         }
 
-        const giftCards = data.data.filter(isGiftCard);
+        console.log(`Page ${page}: ${data.data.length} total products received`);
+
+        // Check for natural termination - no more products returned
+        if (data.data.length === 0) {
+          console.log(`Reached end of available products at page ${page} - API returned 0 results`);
+          hasMorePages = false;
+          break;
+        }
+
+        // Use brand ID filtering for more reliable gift card detection
+        const giftCards = data.data.filter((product: GoodyProduct) => 
+          product.brand && product.brand.id === GIFT_CARD_BRAND_ID
+        );
+        
+        console.log(`Page ${page}: ${giftCards.length} gift cards found from brand ID ${GIFT_CARD_BRAND_ID}`);
         
         allGiftCards.push(...giftCards);
         totalFetched += data.data.length;
         
         console.log(`Fetched ${data.data.length} products from page ${page}. Found ${giftCards.length} gift cards. Total gift cards so far: ${allGiftCards.length}`);
         
-        if (data.data.length < 50) {
-          hasMorePages = false;
-        } else {
-          page++;
+        // Progress logging every 10 pages
+        progressLogCounter++;
+        if (progressLogCounter % 10 === 0) {
+          console.log(`Progress: Processed ${page} pages, ${totalFetched} total products, found ${allGiftCards.length} gift cards so far`);
         }
+        
+        // Check if there are more pages (less than 100 means we're at the end)
+        hasMorePages = data.data.length === 100;
+        page++;
 
         // Reset retry count on success
         retryCount = 0;
 
-        // Progressive delay to avoid rate limiting
-        const delay = Math.min(100 + (page * 10), 500);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        // Small delay to be respectful to the API
+        if (page % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay every 50 pages
+        } else {
+          // Progressive delay to avoid rate limiting
+          const delay = Math.min(50 + (page * 5), 200);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
 
       } catch (pageError) {
         console.error(`Error fetching page ${page}:`, pageError);
@@ -448,6 +475,13 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
           throw new Error(`Failed to fetch page ${page}: ${pageError.message}`);
         }
       }
+    }
+
+    // Log final aggregation results
+    if (page > maxPages) {
+      console.log(`SAFETY LIMIT REACHED: Stopped at ${maxPages} pages (${totalFetched} products). Consider increasing maxPages if needed.`);
+    } else {
+      console.log(`NATURAL TERMINATION: API returned 0 results at page ${page}`);
     }
 
     console.log(`Sync fetch complete. Found ${allGiftCards.length} gift cards out of ${totalFetched} total products.`);

@@ -29,11 +29,6 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
     // Only show admin-specific items for admin users
     ...(isAdmin ? [
       {
-        name: "Gift Cards (NEW)",
-        icon: Gift,
-        path: "/dashboard/gift-cards-new"
-      },
-      {
         name: "Gift Cards (OLD)",
         icon: Gift,
         path: "/dashboard/gift-cards-old"

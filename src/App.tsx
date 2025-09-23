@@ -17,7 +17,6 @@ import Dashboard from "./pages/admin/Dashboard";
 import TeamManagement from "./pages/admin/TeamManagement";
 
 import GiftCardsCatalog from "./pages/admin/GiftCardsCatalog";
-import GiftCardsCatalogNew from "./pages/admin/GiftCardsCatalogNew";
 
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
@@ -29,7 +28,6 @@ import PlatformAdminLayout from "./pages/platform/PlatformAdminLayout";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import CompaniesManagement from "./pages/platform/CompaniesManagement";
 import PlatformGiftCardsCatalog from "./pages/platform/PlatformGiftCardsCatalog";
-import PlatformGiftCardsCatalogNew from "./pages/platform/PlatformGiftCardsCatalogNew";
 import TransactionsOverview from "./pages/platform/TransactionsOverview";
 import PlatformSettings from "./pages/platform/PlatformSettings";
 import SubscriptionMigration from "./pages/platform/SubscriptionMigration";
@@ -88,7 +86,6 @@ const App = () => (
                 <Route index element={<PlatformDashboard />} />
                 <Route path="companies" element={<CompaniesManagement />} />
                 <Route path="gift-cards" element={<PlatformGiftCardsCatalog />} />
-                <Route path="gift-cards-new" element={<PlatformGiftCardsCatalogNew />} />
                 <Route path="transactions" element={<TransactionsOverview />} />
                 <Route path="settings" element={<PlatformSettings />} />
                 <Route path="migration" element={<SubscriptionMigration />} />
@@ -103,7 +100,6 @@ const App = () => (
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />
                 <Route path="gift-cards-old" element={<GiftCardsCatalog />} />
-                <Route path="gift-cards-new" element={<GiftCardsCatalogNew />} />
               </Route>
               
               {/* Redirect old team dashboard routes to unified dashboard */}
