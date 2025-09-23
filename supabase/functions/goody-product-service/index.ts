@@ -770,62 +770,77 @@ async function handleDirectGiftCardLoad(
   try {
     const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
     
-    console.log(`Direct API loading gift cards for ${environment} environment - page ${page}, perPage ${perPage}`);
+    console.log(`Direct API loading gift cards for ${environment} environment - aggregating multiple pages`);
     
-    // Fetch all products without brand filtering (API brand filter is unreliable)
-    const goodyResponse = await fetch(
-      `${baseUrl}/v1/products?page=${page}&per_page=${perPage}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!goodyResponse.ok) {
-      const errorText = await goodyResponse.text();
-      console.error('Goody API error response:', errorText);
+    let allFilteredProducts: GoodyProduct[] = [];
+    let currentPage = 1;
+    let totalProcessed = 0;
+    let hasMorePages = true;
+    const maxPages = 10; // Safety limit to prevent infinite loops
+    
+    while (hasMorePages && currentPage <= maxPages) {
+      console.log(`Fetching page ${currentPage} from Goody API...`);
       
-      if (goodyResponse.status === 401) {
-        throw new Error(`Goody API authentication failed. Status: ${goodyResponse.status}`);
-      }
-      
-      throw new Error(`Goody API error: ${goodyResponse.status} - ${errorText}`);
-    }
+      // Fetch products without brand filtering (API brand filter is unreliable)
+      const goodyResponse = await fetch(
+        `${baseUrl}/v1/products?page=${currentPage}&per_page=100`, // Use max per_page for efficiency
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    const goodyData = await goodyResponse.json();
-    console.log(`Raw API response: ${goodyData.data?.length || 0} total products`);
-    
-    // Client-side filtering for the specific gift card brand ID
-    const allProducts = goodyData.data || [];
-    const filteredProducts = allProducts.filter(product => 
-      product.brand && product.brand.id === GIFT_CARD_BRAND_ID
-    );
-    
-    console.log(`Filtered products: ${filteredProducts.length} gift cards from brand ID ${GIFT_CARD_BRAND_ID} (out of ${allProducts.length} total products)`);
-    
-    // Log products that don't match for debugging
-    const nonMatchingProducts = allProducts.filter(product => 
-      !product.brand || product.brand.id !== GIFT_CARD_BRAND_ID
-    );
-    if (nonMatchingProducts.length > 0) {
-      console.log(`Non-matching products found: ${nonMatchingProducts.length} products from other brands`);
-      console.log(`Sample non-matching brand IDs:`, nonMatchingProducts.slice(0, 3).map(p => ({
-        productId: p.id,
-        brandId: p.brand?.id,
-        brandName: p.brand?.name
-      })));
+      if (!goodyResponse.ok) {
+        const errorText = await goodyResponse.text();
+        console.error('Goody API error response:', errorText);
+        
+        if (goodyResponse.status === 401) {
+          throw new Error(`Goody API authentication failed. Status: ${goodyResponse.status}`);
+        }
+        
+        throw new Error(`Goody API error: ${goodyResponse.status} - ${errorText}`);
+      }
+
+      const goodyData = await goodyResponse.json();
+      const pageProducts = goodyData.data || [];
+      totalProcessed += pageProducts.length;
+      
+      console.log(`Page ${currentPage}: ${pageProducts.length} total products received`);
+      
+      // Client-side filtering for the specific gift card brand ID
+      const filteredPageProducts = pageProducts.filter((product: GoodyProduct) => 
+        product.brand && product.brand.id === GIFT_CARD_BRAND_ID
+      );
+      
+      console.log(`Page ${currentPage}: ${filteredPageProducts.length} gift cards found from brand ID ${GIFT_CARD_BRAND_ID}`);
+      
+      allFilteredProducts = allFilteredProducts.concat(filteredPageProducts);
+      
+      // Check if there are more pages
+      hasMorePages = pageProducts.length === 100; // If we got less than max per_page, we're at the end
+      currentPage++;
     }
+    
+    console.log(`Aggregation complete: ${allFilteredProducts.length} total gift cards from ${currentPage - 1} pages (${totalProcessed} total products processed)`);
+    
+    // Apply requested pagination to the filtered results
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    const paginatedProducts = allFilteredProducts.slice(startIndex, endIndex);
+    
+    console.log(`Returning page ${page} with ${paginatedProducts.length} gift cards (${startIndex + 1}-${startIndex + paginatedProducts.length} of ${allFilteredProducts.length} total)`);
     
     return new Response(
       JSON.stringify({
-        data: filteredProducts,
+        data: paginatedProducts,
         list_meta: {
-          total_count: goodyData.list_meta?.total_count || filteredProducts.length,
+          total_count: allFilteredProducts.length,
           current_page: page,
           per_page: perPage,
-          environment: environment
+          environment: environment,
+          total_pages: Math.ceil(allFilteredProducts.length / perPage)
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
