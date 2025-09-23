@@ -509,6 +509,9 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
     }
 
     // Prepare product records for database with full product data including brand_id
+    // Map sandbox environment to 'test' for database storage
+    const dbEnvironment = environment === 'sandbox' ? 'test' : environment;
+    
     const productRecords = allProducts.map(product => {
       try {
         return {
@@ -522,7 +525,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
           description: product.recipient_description || '',
           subtitle: product.subtitle || '',
           product_data: product, // Store full product JSON
-          environment: environment,
+          environment: dbEnvironment,
           last_synced_at: new Date().toISOString(),
           is_active: true
         };
@@ -539,7 +542,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
       const { error: deleteError } = await supabaseClient
         .from('goody_gift_cards')
         .delete()
-        .eq('environment', environment);
+        .eq('environment', dbEnvironment);
 
       if (deleteError) {
         console.error(`Error clearing existing ${environment} product records:`, deleteError);
@@ -584,12 +587,13 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Product sync completed successfully for ${environment} environment`,
+          message: `Product sync completed successfully for ${environment} environment (saved as ${dbEnvironment} in database)`,
           total_found: allProducts.length,
           total_saved: insertedCount,
           failed_batches: failedBatches,
           sync_timestamp: new Date().toISOString(),
-          environment: environment
+          environment: environment,
+          db_environment: dbEnvironment
         }),
         { headers: corsHeaders }
       );
