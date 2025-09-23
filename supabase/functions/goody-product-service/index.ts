@@ -721,6 +721,10 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
   
   const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
   
+  // Map environment for database query - sandbox maps to test in database
+  const dbEnvironment = environment === 'sandbox' ? 'test' : environment;
+  console.log(`Mapped environment ${environment} to database environment ${dbEnvironment}`);
+  
   try {
     const startIndex = (page - 1) * perPage;
     const endIndex = startIndex + perPage - 1;
@@ -739,7 +743,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
         environment
       `, { count: 'exact' })
       .eq('is_active', true)
-      .eq('environment', environment)
+      .eq('environment', dbEnvironment)
       .eq('brand_id', GIFT_CARD_BRAND_ID)
       .order('name')
       .range(startIndex, endIndex);
