@@ -392,7 +392,7 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
 
   const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
   let progressLogCounter = 0;
-  const maxPages = 100; // Safety limit to prevent infinite loops (10,000 products max)
+  const maxPages = 60; // Safety limit to prevent infinite loops
 
   try {
     while (hasMorePages && page <= maxPages) {
@@ -427,22 +427,20 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
           break;
         }
 
-        // Use brand ID filtering for more reliable gift card detection
-        const giftCards = data.data.filter((product: GoodyProduct) => 
-          product.brand && product.brand.id === GIFT_CARD_BRAND_ID
-        );
+        // Store all products - filtering will be done at query time
+        const allProducts = data.data;
         
-        console.log(`Page ${page}: ${giftCards.length} gift cards found from brand ID ${GIFT_CARD_BRAND_ID}`);
+        console.log(`Page ${page}: ${allProducts.length} products stored`);
         
-        allGiftCards.push(...giftCards);
+        allGiftCards.push(...allProducts);
         totalFetched += data.data.length;
         
-        console.log(`Fetched ${data.data.length} products from page ${page}. Found ${giftCards.length} gift cards. Total gift cards so far: ${allGiftCards.length}`);
+        console.log(`Fetched ${data.data.length} products from page ${page}. Total products so far: ${allGiftCards.length}`);
         
         // Progress logging every 10 pages
         progressLogCounter++;
         if (progressLogCounter % 10 === 0) {
-          console.log(`Progress: Processed ${page} pages, ${totalFetched} total products, found ${allGiftCards.length} gift cards so far`);
+          console.log(`Progress: Processed ${page} pages, ${totalFetched} total products, stored ${allGiftCards.length} products so far`);
         }
         
         // Check if there are more pages (less than 100 means we're at the end)
@@ -484,7 +482,7 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
       console.log(`NATURAL TERMINATION: API returned 0 results at page ${page}`);
     }
 
-    console.log(`Sync fetch complete. Found ${allGiftCards.length} gift cards out of ${totalFetched} total products.`);
+    console.log(`Sync fetch complete. Found ${allGiftCards.length} products out of ${totalFetched} total products.`);
 
     if (allGiftCards.length === 0) {
       return new Response(
@@ -499,13 +497,14 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
       );
     }
 
-    // Prepare gift card records for database with full product data
+    // Prepare product records for database with full product data including brand_id
     const giftCardRecords = allGiftCards.map(product => {
       try {
         return {
           goody_product_id: product.id,
           name: product.name || 'Unknown Product',
           brand_name: product.brand?.name || 'Unknown Brand',
+          brand_id: product.brand?.id || null,
           price: product.variants?.[0]?.price_cents || 0,
           image_url: product.images?.[0]?.image_large?.url || product.variants?.[0]?.image_large?.url || null,
           description: product.recipient_description || '',
@@ -573,7 +572,7 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Gift card sync completed successfully for ${environment} environment`,
+          message: `Product sync completed successfully for ${environment} environment`,
           total_found: allGiftCards.length,
           total_saved: insertedCount,
           failed_batches: failedBatches,
@@ -589,7 +588,7 @@ async function handleSyncGiftCards(supabaseClient: any, baseUrl: string, apiKey:
         JSON.stringify({
           success: false,
           error: 'Database Error',
-          details: `Failed to save gift cards to database: ${dbError.message}`,
+          details: `Failed to save products to database: ${dbError.message}`,
           error_code: 'DATABASE_ERROR'
         }),
         { status: 500, headers: corsHeaders }
@@ -713,6 +712,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
         goody_product_id,
         name,
         brand_name,
+        brand_id,
         subtitle,
         description,
         image_url,
@@ -721,6 +721,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
       `, { count: 'exact' })
       .eq('is_active', true)
       .eq('environment', environment)
+      .eq('brand_id', '84b0c3a9-b51c-4f0c-babe-117a0c6b353b')
       .order('name')
       .range(startIndex, endIndex);
 
@@ -735,7 +736,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
       name: product.name,
       brand: { 
         name: product.brand_name,
-        id: '',
+        id: product.brand_id || '',
         shipping_price: 0
       },
       subtitle: product.subtitle,

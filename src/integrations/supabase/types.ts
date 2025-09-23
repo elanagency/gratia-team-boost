@@ -196,6 +196,7 @@ export type Database = {
       }
       goody_gift_cards: {
         Row: {
+          brand_id: string | null
           brand_name: string
           created_at: string
           description: string | null
@@ -212,6 +213,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_id?: string | null
           brand_name: string
           created_at?: string
           description?: string | null
@@ -228,6 +230,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_id?: string | null
           brand_name?: string
           created_at?: string
           description?: string | null
