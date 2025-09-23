@@ -67,6 +67,18 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
           throw new Error(`Failed to fetch products: ${error.message}`);
         }
 
+        // Add detailed logging to debug response structure
+        console.log('Full response from edge function:', JSON.stringify(data, null, 2));
+        console.log('Response data structure:', {
+          hasData: !!data,
+          hasDataProperty: !!data?.data,
+          dataType: typeof data?.data,
+          dataLength: Array.isArray(data?.data) ? data?.data.length : 'not array',
+          hasListMeta: !!data?.list_meta,
+          totalCount: data?.list_meta?.total_count,
+          fullDataKeys: data ? Object.keys(data) : 'no data'
+        });
+
         if (data?.error) {
           console.error('API error:', data.error);
           throw new Error(data.details || data.error);
