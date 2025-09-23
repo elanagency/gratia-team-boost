@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-import { ShippingInfoDialog } from "./ShippingInfoDialog";
+import { EmailConfirmationDialog } from "./EmailConfirmationDialog";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 
@@ -21,15 +21,8 @@ interface RewardDetailsProps {
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [shippingInfo, setShippingInfo] = useState({
-    name: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "",
-    phone: ""
-  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(user?.email || '');
 
   const hasEnoughPoints = recognitionPoints >= reward.points_cost;
 
@@ -48,71 +41,46 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   };
 
   const handleSubmitRedemption = async () => {
-    // Validate shipping info
-    if (!shippingInfo.name || !shippingInfo.address || !shippingInfo.city || 
-        !shippingInfo.state || !shippingInfo.zipCode || !shippingInfo.country || !shippingInfo.phone) {
-      toast.error("Please fill in all shipping information including phone number");
+    // Validate email
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
+    if (!isValidEmail) {
+      toast.error("Please enter a valid email address");
       return;
     }
+
+    setIsProcessing(true);
     
     try {
-      // Parse name into first and last
-      const nameParts = shippingInfo.name.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      // Get user email from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user?.id)
-        .single();
-
-      const shippingAddress = {
-        firstName: firstName || profile?.first_name || '',
-        lastName: lastName || profile?.last_name || '',
-        email: user?.email || '',
-        address1: shippingInfo.address,
-        address2: '',
-        city: shippingInfo.city,
-        state: shippingInfo.state,
-        zipCode: shippingInfo.zipCode,
-        country: shippingInfo.country
-      };
-
-      const response = await supabase.functions.invoke('goody-redemption-service', {
+      const { data, error } = await supabase.functions.invoke('goody-redemption-service', {
         body: {
           rewardId: reward.id,
           rewardName: reward.name,
           pointsCost: reward.points_cost,
-          shippingAddress
+          recipientEmail: recipientEmail
         }
       });
 
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        throw error;
       }
 
-      const result = response.data;
-      if (!result.success) {
-        throw new Error(result.error || 'Redemption failed');
+      if (data?.success) {
+        toast.success(`Successfully redeemed ${reward.name}! Gift link sent to ${recipientEmail}`);
+        setIsDialogOpen(false);
+        onClose(); // Close the reward details view
+      } else {
+        throw new Error(data?.error || 'Redemption failed');
       }
-
-      toast.success(`Redemption successful! Gift link: ${result.redemption.giftLink}`);
-      setIsDialogOpen(false);
-      onClose();
     } catch (error: any) {
       console.error('Redemption error:', error);
-      toast.error(error.message || "Failed to submit redemption request");
+      toast.error(error.message || 'Failed to redeem reward');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setShippingInfo(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRecipientEmail(e.target.value);
   };
 
   const isRedeemDisabled = reward.stock === 0 || 
@@ -141,7 +109,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
             reward={reward}
             onRedeem={handleConfirmRedeem}
             isRedeemDisabled={isRedeemDisabled}
-            isProcessing={false} // redeemReward.isPending - to be implemented
+            isProcessing={isProcessing}
             userPoints={recognitionPoints}
             hasEnoughPoints={hasEnoughPoints}
             isLoadingPoints={isLoadingPoints}
@@ -149,13 +117,13 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
         </div>
       </Card>
       
-      <ShippingInfoDialog
+      <EmailConfirmationDialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        shippingInfo={shippingInfo}
-        onShippingInfoChange={handleInputChange}
+        recipientEmail={recipientEmail}
+        onEmailChange={handleEmailChange}
         onSubmit={handleSubmitRedemption}
-        isProcessing={false} // redeemReward.isPending - to be implemented
+        isProcessing={isProcessing}
       />
     </div>
   );

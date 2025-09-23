@@ -10,17 +10,7 @@ interface RedemptionRequest {
   rewardId: string;
   rewardName: string;
   pointsCost: number;
-  shippingAddress: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    address1: string;
-    address2?: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
+  recipientEmail: string;
 }
 
 serve(async (req) => {
@@ -54,7 +44,7 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    const { rewardId, rewardName, pointsCost, shippingAddress }: RedemptionRequest = await req.json();
+    const { rewardId, rewardName, pointsCost, recipientEmail }: RedemptionRequest = await req.json();
 
     // Get user's profile and company information
     const { data: profile, error: profileError } = await supabase
@@ -127,9 +117,9 @@ serve(async (req) => {
       from_name: `${profile.first_name} ${profile.last_name}`.trim(),
       send_method: "link_multiple_custom_list",
       recipients: [{
-        first_name: shippingAddress.firstName,
-        last_name: shippingAddress.lastName,
-        email: shippingAddress.email
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: recipientEmail
       }],
       cart: {
         items: [{
@@ -203,7 +193,7 @@ serve(async (req) => {
         reward_name: rewardName,
         points_spent: pointsCost,
         status: 'created',
-        shipping_address: shippingAddress,
+        shipping_address: { email: recipientEmail },
         goody_order_id: order.id,
         goody_order_batch_id: goodyResult.id,
         individual_gift_link: order.individual_gift_link
