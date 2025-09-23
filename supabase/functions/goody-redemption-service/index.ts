@@ -9,7 +9,7 @@ const corsHeaders = {
 interface RedemptionRequest {
   rewardId: string;
   rewardName: string;
-  pointsCost: number;
+  dollarAmount: number;
   recipientEmail: string;
 }
 
@@ -44,7 +44,27 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    const { rewardId, rewardName, pointsCost, recipientEmail }: RedemptionRequest = await req.json();
+    const { rewardId, rewardName, dollarAmount, recipientEmail }: RedemptionRequest = await req.json();
+    
+    // Get platform settings for point exchange rate
+    const { data: exchangeRateSetting, error: settingError } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'points_to_dollar_exchange_rate')
+      .maybeSingle();
+
+    if (settingError) {
+      console.error('Error fetching exchange rate:', settingError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch exchange rate' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const exchangeRate = exchangeRateSetting?.value ? parseFloat(JSON.parse(exchangeRateSetting.value.toString())) : 0.01;
+    const pointsCost = Math.round(dollarAmount / exchangeRate);
+    
+    console.log('Dollar amount:', dollarAmount, 'Exchange rate:', exchangeRate, 'Points cost:', pointsCost);
 
     // Get user's profile and company information
     const { data: profile, error: profileError } = await supabase
@@ -116,6 +136,7 @@ serve(async (req) => {
     const orderBatchPayload = {
       from_name: `${profile.first_name} ${profile.last_name}`.trim(),
       send_method: "link_multiple_custom_list",
+      card_id: "d75ffebf-0c71-417c-84f2-32a6b49deea9", // Default card design
       recipients: [{
         first_name: profile.first_name,
         last_name: profile.last_name,
@@ -124,7 +145,8 @@ serve(async (req) => {
       cart: {
         items: [{
           product_id: rewardId,
-          quantity: 1
+          quantity: 1,
+          variable_price: dollarAmount * 100 // Convert to cents
         }]
       },
       message: "Congratulations on your reward redemption!"
@@ -192,6 +214,7 @@ serve(async (req) => {
         reward_id: rewardId,
         reward_name: rewardName,
         points_spent: pointsCost,
+        dollar_amount: dollarAmount,
         status: 'created',
         shipping_address: { email: recipientEmail },
         goody_order_id: order.id,
@@ -223,7 +246,7 @@ serve(async (req) => {
         sender_profile_id: user.id,
         recipient_profile_id: user.id,
         points: -pointsCost,
-        description: `Redeemed ${rewardName} for ${pointsCost} points`
+        description: `Redeemed $${dollarAmount} ${rewardName} for ${pointsCost} points`
       }]);
 
     if (transactionError) {
