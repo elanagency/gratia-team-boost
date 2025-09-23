@@ -770,13 +770,14 @@ async function handleDirectGiftCardLoad(
   try {
     const GIFT_CARD_BRAND_ID = '84b0c3a9-b51c-4f0c-babe-117a0c6b353b';
     
-    console.log(`Direct API loading gift cards for ${environment} environment - aggregating multiple pages`);
+    console.log(`Direct API loading gift cards for ${environment} environment - fetching ALL pages until 0 results`);
     
     let allFilteredProducts: GoodyProduct[] = [];
     let currentPage = 1;
     let totalProcessed = 0;
     let hasMorePages = true;
-    const maxPages = 10; // Safety limit to prevent infinite loops
+    const maxPages = 100; // Safety limit to prevent infinite loops (10,000 products max)
+    let progressLogCounter = 0;
     
     while (hasMorePages && currentPage <= maxPages) {
       console.log(`Fetching page ${currentPage} from Goody API...`);
@@ -809,6 +810,13 @@ async function handleDirectGiftCardLoad(
       
       console.log(`Page ${currentPage}: ${pageProducts.length} total products received`);
       
+      // Check for natural termination - no more products returned
+      if (pageProducts.length === 0) {
+        console.log(`Reached end of available products at page ${currentPage} - API returned 0 results`);
+        hasMorePages = false;
+        break;
+      }
+      
       // Client-side filtering for the specific gift card brand ID
       const filteredPageProducts = pageProducts.filter((product: GoodyProduct) => 
         product.brand && product.brand.id === GIFT_CARD_BRAND_ID
@@ -818,9 +826,27 @@ async function handleDirectGiftCardLoad(
       
       allFilteredProducts = allFilteredProducts.concat(filteredPageProducts);
       
-      // Check if there are more pages
-      hasMorePages = pageProducts.length === 100; // If we got less than max per_page, we're at the end
+      // Progress logging every 10 pages
+      progressLogCounter++;
+      if (progressLogCounter % 10 === 0) {
+        console.log(`Progress: Processed ${currentPage} pages, ${totalProcessed} total products, found ${allFilteredProducts.length} gift cards so far`);
+      }
+      
+      // Check if there are more pages (less than 100 means we're at the end)
+      hasMorePages = pageProducts.length === 100;
       currentPage++;
+      
+      // Small delay to be respectful to the API
+      if (currentPage % 50 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay every 50 pages
+      }
+    }
+    
+    // Log final aggregation results
+    if (currentPage > maxPages) {
+      console.log(`SAFETY LIMIT REACHED: Stopped at ${maxPages} pages (${totalProcessed} products). Consider increasing maxPages if needed.`);
+    } else {
+      console.log(`NATURAL TERMINATION: API returned 0 results at page ${currentPage}`);
     }
     
     console.log(`Aggregation complete: ${allFilteredProducts.length} total gift cards from ${currentPage - 1} pages (${totalProcessed} total products processed)`);
