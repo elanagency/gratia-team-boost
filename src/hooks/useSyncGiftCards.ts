@@ -53,7 +53,7 @@ export const useSyncGiftCards = (environment: string = 'live') => {
       
       try {
         const { data, error } = await supabase.functions.invoke('goody-product-service', {
-          body: { method: 'SYNC', environment }
+          body: { method: 'GET_GOODY_PRODUCTS', environment }
         });
 
         if (error) {
@@ -151,7 +151,7 @@ export const useSyncGiftCards = (environment: string = 'live') => {
       setSyncProgress({ isActive: true, message: 'Testing API connection...' });
       
       const { data, error } = await supabase.functions.invoke('goody-product-service', {
-        body: { method: 'GET', page: 1, per_page: 1, environment }
+        body: { method: 'GET_GIFT_CARDS_FROM_DB', page: 1, per_page: 1, environment }
       });
 
       if (error || data?.error) {

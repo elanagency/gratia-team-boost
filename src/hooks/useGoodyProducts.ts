@@ -49,7 +49,8 @@ export const useGoodyProducts = (page: number = 1, enabled: boolean = true, useS
         if (useDirectAPI) {
           method = 'DIRECT_API_LOAD';
         } else if (useSavedIds) {
-          method = 'LOAD_FROM_DB';
+          // Use new admin-specific method for gift cards catalog
+          method = 'GET_GIFT_CARDS_FROM_DB';
         }
         
         const { data, error } = await supabase.functions.invoke('goody-product-service', {
