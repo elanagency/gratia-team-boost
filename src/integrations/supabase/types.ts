@@ -471,6 +471,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          dollar_amount: number | null
           goody_order_batch_id: string | null
           goody_order_id: string | null
           id: string
@@ -487,6 +488,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          dollar_amount?: number | null
           goody_order_batch_id?: string | null
           goody_order_id?: string | null
           id?: string
@@ -503,6 +505,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          dollar_amount?: number | null
           goody_order_batch_id?: string | null
           goody_order_id?: string | null
           id?: string
