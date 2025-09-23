@@ -56,12 +56,54 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
     }
     
     try {
-      // Redemption system will be implemented when backend is ready
-      toast.success("Redemption request submitted successfully!");
+      // Parse name into first and last
+      const nameParts = shippingInfo.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Get user email from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user?.id)
+        .single();
+
+      const shippingAddress = {
+        firstName: firstName || profile?.first_name || '',
+        lastName: lastName || profile?.last_name || '',
+        email: user?.email || '',
+        address1: shippingInfo.address,
+        address2: '',
+        city: shippingInfo.city,
+        state: shippingInfo.state,
+        zipCode: shippingInfo.zipCode,
+        country: shippingInfo.country
+      };
+
+      const response = await supabase.functions.invoke('goody-redemption-service', {
+        body: {
+          rewardId: reward.id,
+          rewardName: reward.name,
+          pointsCost: reward.points_cost,
+          shippingAddress
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || 'Redemption failed');
+      }
+
+      toast.success(`Redemption successful! Gift link: ${result.redemption.giftLink}`);
       setIsDialogOpen(false);
       onClose();
-    } catch (error) {
-      toast.error("Failed to submit redemption request");
+    } catch (error: any) {
+      console.error('Redemption error:', error);
+      toast.error(error.message || "Failed to submit redemption request");
     }
   };
 

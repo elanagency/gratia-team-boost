@@ -52,9 +52,14 @@ export const RedemptionHistory = () => {
                     <p className="text-sm font-medium text-[#F572FF]">
                       {redemption.points_spent} points
                     </p>
-                    {redemption.goody_product_id && (
+                    {redemption.reward?.name && (
                       <p className="text-xs text-gray-400">
-                        Product ID: {redemption.goody_product_id}
+                        Reward: {redemption.reward.name}
+                      </p>
+                    )}
+                    {redemption.external_order_id && (
+                      <p className="text-xs text-blue-600">
+                        Gift link available
                       </p>
                     )}
                   </div>

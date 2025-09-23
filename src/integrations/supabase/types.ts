@@ -461,6 +461,57 @@ export type Database = {
           },
         ]
       }
+      redemptions: {
+        Row: {
+          company_id: string
+          created_at: string
+          goody_order_batch_id: string | null
+          goody_order_id: string | null
+          id: string
+          individual_gift_link: string | null
+          points_spent: number
+          redemption_date: string
+          reward_id: string
+          reward_name: string
+          shipping_address: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          goody_order_batch_id?: string | null
+          goody_order_id?: string | null
+          id?: string
+          individual_gift_link?: string | null
+          points_spent: number
+          redemption_date?: string
+          reward_id: string
+          reward_name: string
+          shipping_address?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          goody_order_batch_id?: string | null
+          goody_order_id?: string | null
+          id?: string
+          individual_gift_link?: string | null
+          points_spent?: number
+          redemption_date?: string
+          reward_id?: string
+          reward_name?: string
+          shipping_address?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_events: {
         Row: {
           amount_charged: number | null

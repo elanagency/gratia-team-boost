@@ -33,8 +33,44 @@ export const useRedemptions = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      // Return empty array until redemption system is implemented
-      return [];
+      const { data, error } = await supabase
+        .from('redemptions')
+        .select(`
+          id,
+          user_id,
+          reward_id,
+          reward_name,
+          points_spent,
+          status,
+          shipping_address,
+          individual_gift_link,
+          redemption_date,
+          updated_at
+        `)
+        .eq('user_id', user.id)
+        .order('redemption_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching redemptions:', error);
+        throw error;
+      }
+
+      return data.map(redemption => ({
+        id: redemption.id,
+        user_id: redemption.user_id,
+        reward_id: redemption.reward_id,
+        points_spent: redemption.points_spent,
+        status: redemption.status,
+        shipping_address: redemption.shipping_address,
+        external_cart_id: null,
+        external_order_id: redemption.individual_gift_link,
+        redemption_date: redemption.redemption_date,
+        updated_at: redemption.updated_at,
+        reward: {
+          name: redemption.reward_name,
+          image_url: null
+        }
+      }));
     },
     enabled: !!user
   });
