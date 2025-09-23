@@ -17,7 +17,7 @@ export const SimpleGiftCardItem = ({ reward, onClick }: SimpleGiftCardItemProps)
       onClick={onClick}
     >
       <div className="flex flex-col items-center text-center space-y-3">
-        <div className="w-40 h-40 flex items-center justify-center">
+        <div className="w-[214px] h-[134px] flex items-center justify-center">
           {reward.image_url ? (
             <img 
               src={reward.image_url} 
