@@ -55,7 +55,7 @@ export const useTeamRewards = () => {
 
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, companyEnvironment || 'live', false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
-  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
+  const { getSetting, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
 
   // Filter out blacklisted products (team members only see enabled products)
   const enabledProducts = products?.filter(product => 
@@ -63,9 +63,11 @@ export const useTeamRewards = () => {
   ) || [];
 
   // Convert GoodyProducts to TeamRewards with proper points calculation
-  // Only calculate points after settings are loaded to ensure correct exchange rate
-  const rewards: TeamReward[] = isLoadingSettings ? [] : enabledProducts.map((product: GoodyProduct) => {
-    const exchangeRate = getSetting('point_exchange_rate') || '0.01';
+  // Only calculate points after settings are loaded and ensure we have valid settings
+  const exchangeRate = getSetting('point_exchange_rate');
+  const hasValidSettings = !isLoadingSettings && !isSettingsError && exchangeRate;
+  
+  const rewards: TeamReward[] = hasValidSettings ? enabledProducts.map((product: GoodyProduct) => {
     const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
     
     return {
@@ -83,12 +85,12 @@ export const useTeamRewards = () => {
       price_is_variable: product.price_is_variable || false,
       created_at: new Date().toISOString()
     };
-  });
+  }) : [];
 
   return {
     rewards,
     categories: [], // No categories for now, using Goody's structure
     isLoading: isLoading || isLoadingBlacklist || isLoadingSettings || isLoadingEnvironment,
-    error
+    error: error || (isSettingsError ? new Error('Settings failed to load') : null)
   };
 };

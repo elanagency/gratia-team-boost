@@ -14,7 +14,7 @@ interface PlatformSetting {
 export const usePlatformSettings = () => {
   const queryClient = useQueryClient();
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading, error, isError } = useQuery({
     queryKey: ['platform-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -87,6 +87,8 @@ export const usePlatformSettings = () => {
   return {
     settings,
     isLoading,
+    error,
+    isError,
     updateSetting: updateSettingMutation.mutate,
     isUpdating: updateSettingMutation.isPending,
     getSetting,

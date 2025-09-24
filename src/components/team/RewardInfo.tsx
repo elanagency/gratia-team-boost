@@ -26,15 +26,17 @@ export const RewardInfo = ({
 }: RewardInfoProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
-  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
+  const { getSetting, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
   
-  // Only calculate points after settings are loaded
-  const exchangeRate = isLoadingSettings ? '0.01' : (getSetting('point_exchange_rate') || '0.01');
+  // Get exchange rate without fallback - will be empty string if not loaded or missing
+  const exchangeRate = getSetting('point_exchange_rate');
+  const hasValidSettings = !isLoadingSettings && !isSettingsError && exchangeRate;
   
   const dollarAmounts = [10, 20, 50, 100];
   
   // Calculate points for each dollar amount
   const getPointsForAmount = (dollarAmount: number) => {
+    if (!hasValidSettings) return 0;
     return calculatePointsFromPrice(dollarAmount * 100, exchangeRate); // Convert to cents
   };
   
@@ -42,13 +44,30 @@ export const RewardInfo = ({
   const selectedAmountPoints = selectedAmount ? getPointsForAmount(selectedAmount) : 0;
   const hasEnoughPointsForSelected = selectedAmountPoints <= userPoints;
   
-  const isRedeemDisabled = !selectedAmount || !isValidEmail || isLoadingPoints || isLoadingSettings || !hasEnoughPointsForSelected || isProcessing;
+  const isRedeemDisabled = !hasValidSettings || !selectedAmount || !isValidEmail || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
   
   const handleRedeem = () => {
     if (selectedAmount && isValidEmail && hasEnoughPointsForSelected) {
       onRedeem(selectedAmount, recipientEmail);
     }
   };
+  // Show error state if settings failed to load or are missing
+  if (isSettingsError || (!isLoadingSettings && !exchangeRate)) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-2xl font-bold">{reward.name}</h2>
+        </div>
+        <Alert className="border-destructive/50 bg-destructive/10">
+          <AlertCircle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive">
+            A problem occurred, try again later
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-start mb-4">
