@@ -8,19 +8,30 @@ interface SimpleGiftCardGridProps {
   onSelectReward: (reward: TeamReward) => void;
   isLoading: boolean;
   searchTerm: string;
+  error?: Error | null;
 }
 
 export const SimpleGiftCardGrid = ({ 
   rewards, 
   onSelectReward, 
   isLoading, 
-  searchTerm 
+  searchTerm,
+  error 
 }: SimpleGiftCardGridProps) => {
   if (isLoading) {
     return (
       <div className="flex justify-center my-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-12 text-center">
+        <h3 className="text-lg font-medium text-foreground">A problem occurred</h3>
+        <p className="text-muted-foreground mt-2">Try again later</p>
+      </Card>
     );
   }
 

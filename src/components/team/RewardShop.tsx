@@ -11,7 +11,7 @@ export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedReward, setSelectedReward] = useState<TeamReward | null>(null);
   
-  const { rewards, isLoading } = useTeamRewards();
+  const { rewards, isLoading, error } = useTeamRewards();
   
   // Filter rewards based on search term
   const filteredRewards = rewards.filter(reward => 
@@ -51,6 +51,7 @@ export const RewardShop = () => {
         onSelectReward={handleSelectReward}
         isLoading={isLoading}
         searchTerm={searchTerm}
+        error={error}
       />
       
       {/* Modal */}
