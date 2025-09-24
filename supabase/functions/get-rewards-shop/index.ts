@@ -72,10 +72,9 @@ serve(async (req) => {
       .eq('key', 'point_exchange_rate')
       .single();
 
-    const exchangeRate = settingError ? '0.03' : (settingData?.value as string || '0.03');
-    const rate = parseFloat(exchangeRate);
+    const rate = settingError ? 0.03 : (settingData?.value || 0.03);
 
-    console.log(`Exchange rate: ${exchangeRate}`);
+    console.log(`Exchange rate: ${rate}`);
 
     // Get gift cards for the environment
     const { data: giftCardsData, error: giftCardsError } = await supabase
@@ -121,7 +120,7 @@ serve(async (req) => {
         success: true,
         data: {
           giftCards,
-          exchangeRate,
+          exchangeRate: rate,
           userContext: {
             companyId,
             environment
