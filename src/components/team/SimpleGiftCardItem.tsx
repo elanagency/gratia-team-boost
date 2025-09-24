@@ -9,11 +9,11 @@ interface SimpleGiftCardItemProps {
 export const SimpleGiftCardItem = ({ reward, onClick }: SimpleGiftCardItemProps) => {
   return (
     <div 
-      className="cursor-pointer transition-all duration-300 hover:bg-muted/50 hover:scale-105 rounded-lg p-2" 
+      className="cursor-pointer transition-all duration-300 hover:bg-muted/50 hover:scale-[1.02] rounded-lg p-2" 
       onClick={onClick}
     >
-      <div className="flex flex-col items-center text-center space-y-3">
-        <div className="w-[214px] h-[134px] flex items-center justify-center rounded-xl overflow-hidden">
+      <div className="flex flex-col items-center text-center space-y-2">
+        <div className="w-full aspect-[16/10] min-h-[140px] sm:min-h-[160px] flex items-center justify-center rounded-xl overflow-hidden">
           {reward.image_url ? (
             <img 
               src={reward.image_url} 
@@ -27,7 +27,7 @@ export const SimpleGiftCardItem = ({ reward, onClick }: SimpleGiftCardItemProps)
           )}
         </div>
         
-        <h3 className="font-medium text-sm leading-tight line-clamp-2">
+        <h3 className="font-medium text-sm leading-tight line-clamp-2 px-1">
           {reward.name}
         </h3>
       </div>
