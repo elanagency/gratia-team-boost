@@ -151,11 +151,11 @@ serve(async (req) => {
     // Get pricing from platform settings
     const { data: pricingSetting } = await supabaseService
       .from('platform_settings')
-      .select('value')
-      .eq('key', 'member_monthly_price_cents')
+      .select('monthly_price_per_team_member_in_cents')
+      .eq('key', 'platform_settings')
       .single();
     
-    const MONTHLY_PRICE_PER_EMPLOYEE = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
+    const MONTHLY_PRICE_PER_EMPLOYEE = pricingSetting?.monthly_price_per_team_member_in_cents || 299;
     logStep("Pricing retrieved", { MONTHLY_PRICE_PER_EMPLOYEE });
 
     // Determine environment and get appropriate customer ID

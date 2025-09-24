@@ -221,11 +221,11 @@ serve(async (req: Request) => {
     // Get pricing from platform settings
     const { data: pricingSetting, error: pricingError } = await supabaseAdmin
       .from('platform_settings')
-      .select('value')
-      .eq('key', 'member_monthly_price_cents')
+      .select('monthly_price_per_team_member_in_cents')
+      .eq('key', 'platform_settings')
       .single();
     
-    if (pricingError || !pricingSetting?.value) {
+    if (pricingError || !pricingSetting?.monthly_price_per_team_member_in_cents) {
       console.error("[CHECK-SUBSCRIPTION-STATUS] Pricing not configured:", pricingError);
       return new Response(
         JSON.stringify({ error: "Pricing configuration not found" }),
@@ -233,7 +233,7 @@ serve(async (req: Request) => {
       );
     }
     
-    const unitPrice = parseInt(JSON.parse(pricingSetting.value));
+    const unitPrice = pricingSetting.monthly_price_per_team_member_in_cents;
 
     const subscribedQuantity = subscriptionDetails?.quantity || currentUsedSlots;
     

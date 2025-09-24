@@ -156,11 +156,11 @@ serve(async (req: Request) => {
     // Get pricing from platform settings
     const { data: pricingSetting } = await supabaseAdmin
       .from('platform_settings')
-      .select('value')
-      .eq('key', 'member_monthly_price_cents')
+      .select('monthly_price_per_team_member_in_cents')
+      .eq('key', 'platform_settings')
       .single();
     
-    const unitPrice = pricingSetting?.value ? parseInt(JSON.parse(pricingSetting.value)) : 299;
+    const unitPrice = pricingSetting?.monthly_price_per_team_member_in_cents || 299;
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Pricing calculation:", {
       teamSlots,

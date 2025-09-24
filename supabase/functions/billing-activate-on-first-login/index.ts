@@ -105,12 +105,11 @@ Deno.serve(async (req) => {
     // Get pricing from platform settings
     const { data: pricingData } = await supabase
       .from('platform_settings')
-      .select('value')
-      .eq('key', 'member_monthly_price_cents')
+      .select('monthly_price_per_team_member_in_cents')
+      .eq('key', 'platform_settings')
       .single();
 
-    const pricePerMemberCents = pricingData?.value ? 
-      parseInt(JSON.parse(pricingData.value)) : 1000; // Default $10.00
+    const pricePerMemberCents = pricingData?.monthly_price_per_team_member_in_cents || 1000; // Default $10.00
 
     // Get appropriate Stripe key and customer ID
     const stripeKey = await getStripeKey(supabase, companyId);
