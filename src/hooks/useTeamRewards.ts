@@ -78,7 +78,9 @@ export const useTeamRewards = () => {
   });
   
   const rewards: TeamReward[] = hasValidSettings ? enabledProducts.map((product: GoodyProduct) => {
-    const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
+    // For variable pricing products, don't calculate a fixed points cost since it's dynamic
+    const isVariablePrice = product.price_is_variable || false;
+    const pointsCost = isVariablePrice ? 0 : calculatePointsFromPrice(product.price, exchangeRate);
     
     return {
       id: product.id,
@@ -92,7 +94,7 @@ export const useTeamRewards = () => {
       product_url: '',
       brand_name: product.brand?.name || '',
       price: product.price,
-      price_is_variable: product.price_is_variable || false,
+      price_is_variable: isVariablePrice,
       created_at: new Date().toISOString()
     };
   }) : [];

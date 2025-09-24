@@ -776,6 +776,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
         image_url,
         price,
         price_is_variable,
+        product_data,
         environment
       `, { count: 'exact' })
       .eq('is_active', true)
@@ -790,39 +791,46 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
     }
 
     // Transform to match expected format
-    const transformedProducts = products?.map(product => ({
-      id: product.goody_product_id,
-      name: product.name,
-      brand: { 
-        name: product.brand_name,
-        id: product.brand_id || '',
-        shipping_price: 0
-      },
-      subtitle: product.subtitle,
-      description: product.description,
-      images: product.image_url ? [{ 
-        id: '',
-        image_large: { 
-          url: product.image_url,
-          width: 400,
-          height: 400
-        }
-      }] : [],
-      variants: [{
-        id: '',
+    const transformedProducts = products?.map(product => {
+      // Extract price and price_is_variable from product_data if available
+      const productData = product.product_data || {};
+      const actualPrice = productData.price || product.price || 0;
+      const isVariablePrice = productData.price_is_variable || product.price_is_variable || false;
+      
+      return {
+        id: product.goody_product_id,
         name: product.name,
-        subtitle: product.subtitle || '',
-        price_cents: product.price || 0,
-        image_large: {
-          url: product.image_url || '',
-          width: 400,
-          height: 400
-        }
-      }],
-      price: product.price || 0,
-      price_is_variable: product.price_is_variable || false,
-      environment: product.environment
-    })) || [];
+        brand: { 
+          name: product.brand_name,
+          id: product.brand_id || '',
+          shipping_price: 0
+        },
+        subtitle: product.subtitle,
+        description: product.description,
+        images: product.image_url ? [{ 
+          id: '',
+          image_large: { 
+            url: product.image_url,
+            width: 400,
+            height: 400
+          }
+        }] : [],
+        variants: [{
+          id: '',
+          name: product.name,
+          subtitle: product.subtitle || '',
+          price_cents: actualPrice,
+          image_large: {
+            url: product.image_url || '',
+            width: 400,
+            height: 400
+          }
+        }],
+        price: actualPrice,
+        price_is_variable: isVariablePrice,
+        environment: product.environment
+      };
+    }) || [];
 
     console.log(`Loaded ${transformedProducts.length} gift cards from database for admin catalog page ${page}`);
     
