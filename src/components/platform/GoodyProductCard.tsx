@@ -30,36 +30,36 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
 
   return (
     <Card className={`transition-all ${isDisabled ? 'ring-2 ring-red-500 bg-red-50/50 opacity-75' : 'bg-green-50/30'}`}>
-      <CardContent className="p-4">
-        <div className="space-y-3">
+      <CardContent className="p-3 lg:p-4">
+        <div className="space-y-2 lg:space-y-3">
           {imageUrl && (
             <img 
               src={imageUrl} 
               alt={product.name}
-              className="w-full h-32 object-cover rounded"
+              className="w-full h-24 lg:h-32 object-cover rounded"
             />
           )}
           
           <div>
-            <h4 className="font-medium text-sm line-clamp-2 mb-1">
+            <h4 className="font-medium text-xs lg:text-sm line-clamp-2 mb-1">
               {product.name}
             </h4>
             <p className="text-xs text-muted-foreground mb-1">
               Brand: {product.brand.name}
             </p>
-            <p className="text-xs text-muted-foreground mb-1 font-mono">
+            <p className="text-xs text-muted-foreground mb-1 font-mono hidden lg:block">
               Product ID: {product.id}
             </p>
-            <p className="text-xs text-muted-foreground mb-1 font-mono">
+            <p className="text-xs text-muted-foreground mb-1 font-mono hidden lg:block">
               Brand ID: {product.brand.id}
             </p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 hidden sm:block">
               {product.recipient_description}
             </p>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">
+            <span className="text-xs lg:text-sm font-medium">
               ${(product.price / 100).toFixed(2)}
             </span>
             <Badge variant={isDisabled ? "destructive" : "default"} className="text-xs">
@@ -67,7 +67,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 hidden lg:flex">
             <p className="text-xs text-muted-foreground">
               Variable Price: 
             </p>
@@ -77,7 +77,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
           </div>
 
           {product.variants.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground hidden lg:block">
               {product.variants.length} variants available
             </p>
           )}

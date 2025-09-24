@@ -71,21 +71,21 @@ export const PlatformStatsCards = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
       {statsCards.map((stat) => {
         const Icon = stat.icon;
         return (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-xs lg:text-sm font-medium text-gray-600">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`p-1 lg:p-2 rounded-lg ${stat.bgColor}`}>
+                <Icon className={`h-3 w-3 lg:h-4 lg:w-4 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg lg:text-2xl font-bold">
                 {isLoading ? "..." : stat.value}
               </div>
             </CardContent>

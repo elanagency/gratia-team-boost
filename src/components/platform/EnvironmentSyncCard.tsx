@@ -33,19 +33,19 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
         <div className="flex items-center gap-3">
           <Icon className="h-5 w-5" />
           <div>
-            <CardTitle className="text-lg">
+            <CardTitle className="text-base lg:text-lg">
               {isLive ? 'Production' : 'Test'} Catalog
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               {isLive ? 'Live gift cards for production use' : 'Test gift cards for development'}
             </CardDescription>
           </div>
         </div>
-        <Badge variant={isLive ? "default" : "secondary"}>
+        <Badge variant={isLive ? "default" : "secondary"} className="w-fit">
           {environment.toUpperCase()}
         </Badge>
       </CardHeader>
@@ -73,13 +73,13 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={handleSync}
             disabled={isLoading}
             size="sm"
             variant="default"
-            className="flex-1"
+            className="flex-1 sm:min-w-0"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             {isLoading ? 'Syncing...' : 'Sync Catalog'}
@@ -90,6 +90,7 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
             disabled={isLoading}
             size="sm"
             variant="outline"
+            className="sm:w-auto"
           >
             Test API
           </Button>

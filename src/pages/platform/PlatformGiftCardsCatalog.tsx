@@ -45,17 +45,17 @@ const PlatformGiftCardsCatalog = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gift Cards Catalog</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Gift Cards Catalog</h1>
+          <p className="text-sm lg:text-base text-muted-foreground">
             Manage platform gift card catalogs for test and production environments
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
             <Wifi className="h-4 w-4 text-green-500" />
             Live Updates
           </div>
@@ -63,15 +63,16 @@ const PlatformGiftCardsCatalog = () => {
             variant="outline"
             onClick={refreshCatalog}
             disabled={isLoading}
+            size="sm"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>
 
       {/* Environment Sync Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <EnvironmentSyncCard environment="test" />
         <EnvironmentSyncCard environment="live" />
       </div>
@@ -89,15 +90,15 @@ const PlatformGiftCardsCatalog = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeEnvironment} className="space-y-6">
+        <TabsContent value={activeEnvironment} className="space-y-4 lg:space-y-6">
           {/* Summary Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Total Products</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalCount || 0}</div>
+                <div className="text-xl lg:text-2xl font-bold">{totalCount || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   {activeEnvironment === 'live' ? 'Production' : 'Test'} environment
                 </p>
@@ -106,10 +107,10 @@ const PlatformGiftCardsCatalog = () => {
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Enabled</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Enabled</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-xl lg:text-2xl font-bold text-green-600">
                   {enabledCount}
                 </div>
               </CardContent>
@@ -117,10 +118,10 @@ const PlatformGiftCardsCatalog = () => {
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Disabled</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Disabled</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-xl lg:text-2xl font-bold text-red-600">
                   {disabledCount}
                 </div>
               </CardContent>
@@ -128,10 +129,10 @@ const PlatformGiftCardsCatalog = () => {
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Filtered Results</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Filtered Results</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-xl lg:text-2xl font-bold">
                   {filteredProducts.length}
                 </div>
               </CardContent>
@@ -139,7 +140,7 @@ const PlatformGiftCardsCatalog = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
             <div className="flex-1">
               <Input
                 placeholder="Search gift cards..."
@@ -149,7 +150,7 @@ const PlatformGiftCardsCatalog = () => {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -162,10 +163,10 @@ const PlatformGiftCardsCatalog = () => {
 
           {/* Products Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Card key={i} className="p-4">
-                  <Skeleton className="h-40 w-full mb-4" />
+                  <Skeleton className="h-32 lg:h-40 w-full mb-4" />
                   <Skeleton className="h-4 w-3/4 mb-2" />
                   <Skeleton className="h-4 w-1/2" />
                 </Card>
@@ -187,7 +188,7 @@ const PlatformGiftCardsCatalog = () => {
               </CardDescription>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
               {filteredProducts.map((product) => (
                 <GoodyProductCard
                   key={`${product.id}-${activeEnvironment}`}
