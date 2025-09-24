@@ -178,3 +178,6 @@ verify_jwt = true
 
 [functions.send-invitation-email]
 verify_jwt = true
+
+[functions.get-rewards-shop]
+verify_jwt = true
