@@ -21,12 +21,12 @@ interface GiftCardModalProps {
 }
 
 export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCardModalProps) => {
-  const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
+  const { user, recognitionPoints, isLoading: isLoadingPoints, firstName, lastName } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!reward) return null;
 
-  const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
+  const handleRedeem = async (dollarAmount: number, recipientEmail: string, recipientFirstName: string, recipientLastName: string) => {
     if (!user) {
       toast.error("You must be logged in to redeem rewards");
       return;
@@ -37,10 +37,12 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCar
     try {
       const { data, error } = await supabase.functions.invoke('goody-redemption-service', {
         body: {
-          rewardId: reward.id,
+          rewardId: reward.external_id,
           rewardName: reward.name,
           dollarAmount: dollarAmount,
-          recipientEmail: recipientEmail
+          recipientEmail: recipientEmail,
+          recipientFirstName: recipientFirstName,
+          recipientLastName: recipientLastName
         }
       });
 
@@ -83,6 +85,8 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCar
               userPoints={recognitionPoints}
               isLoadingPoints={isLoadingPoints}
               exchangeRate={exchangeRate}
+              currentUserFirstName={firstName}
+              currentUserLastName={lastName}
             />
           </div>
         </Card>

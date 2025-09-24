@@ -11,6 +11,8 @@ interface RedemptionRequest {
   rewardName: string;
   dollarAmount: number;
   recipientEmail: string;
+  recipientFirstName: string;
+  recipientLastName: string;
 }
 
 serve(async (req) => {
@@ -44,7 +46,7 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    const { rewardId, rewardName, dollarAmount, recipientEmail }: RedemptionRequest = await req.json();
+    const { rewardId, rewardName, dollarAmount, recipientEmail, recipientFirstName, recipientLastName }: RedemptionRequest = await req.json();
     
     // Get platform settings for point exchange rate and card ID
     const { data: settings, error: settingError } = await supabase
@@ -62,8 +64,6 @@ serve(async (req) => {
     }
 
     const exchangeRate = settings?.point_exchange_rate || 0.03;
-    // Default card ID - could be made configurable via platform settings
-    const defaultCardId = "d75ffebf-0c71-417c-84f2-32a6b49deea9";
     console.log('Exchange rate retrieved:', exchangeRate);
     const pointsCost = Math.round(dollarAmount / exchangeRate);
     
@@ -139,10 +139,9 @@ serve(async (req) => {
     const orderBatchPayload = {
       from_name: `${profile.first_name} ${profile.last_name}`.trim(),
       send_method: "link_multiple_custom_list",
-      card_id: defaultCardId,
       recipients: [{
-        first_name: profile.first_name,
-        last_name: profile.last_name,
+        first_name: recipientFirstName,
+        last_name: recipientLastName,
         email: recipientEmail
       }],
       cart: {

@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 
 interface RewardInfoProps {
   reward: GiftCard;
-  onRedeem: (amount: number, email: string) => void;
+  onRedeem: (amount: number, email: string, firstName: string, lastName: string) => void;
   isProcessing: boolean;
   userPoints: number;
   isLoadingPoints: boolean;
   exchangeRate: string;
+  currentUserFirstName?: string;
+  currentUserLastName?: string;
 }
 
 export const RewardInfo = ({
@@ -22,10 +24,14 @@ export const RewardInfo = ({
   isProcessing,
   userPoints,
   isLoadingPoints,
-  exchangeRate
+  exchangeRate,
+  currentUserFirstName = "",
+  currentUserLastName = ""
 }: RewardInfoProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientFirstName, setRecipientFirstName] = useState(currentUserFirstName);
+  const [recipientLastName, setRecipientLastName] = useState(currentUserLastName);
   
   const dollarAmounts = [10, 20, 50, 100];
   const rate = parseFloat(exchangeRate);
@@ -36,14 +42,16 @@ export const RewardInfo = ({
   };
   
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
+  const isValidFirstName = recipientFirstName.trim().length > 0;
+  const isValidLastName = recipientLastName.trim().length > 0;
   const selectedAmountPoints = selectedAmount ? getPointsForAmount(selectedAmount) : 0;
   const hasEnoughPointsForSelected = selectedAmountPoints <= userPoints;
   
-  const isRedeemDisabled = !selectedAmount || !isValidEmail || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
+  const isRedeemDisabled = !selectedAmount || !isValidEmail || !isValidFirstName || !isValidLastName || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
   
   const handleRedeem = () => {
-    if (selectedAmount && isValidEmail && hasEnoughPointsForSelected) {
-      onRedeem(selectedAmount, recipientEmail);
+    if (selectedAmount && isValidEmail && isValidFirstName && isValidLastName && hasEnoughPointsForSelected) {
+      onRedeem(selectedAmount, recipientEmail, recipientFirstName.trim(), recipientLastName.trim());
     }
   };
   // Show error state if settings failed to load or are missing
@@ -158,22 +166,56 @@ export const RewardInfo = ({
         )}
       </div>
       
-      {/* Email Input */}
-      <div className="mb-6">
-        <Label htmlFor="recipient-email" className="text-sm font-medium mb-2 block">
-          Recipient Email
-        </Label>
-        <Input
-          id="recipient-email"
-          type="email"
-          value={recipientEmail}
-          onChange={(e) => setRecipientEmail(e.target.value)}
-          placeholder="Enter recipient email address"
-          className="w-full"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          The gift link will be sent to this email address
-        </p>
+      {/* Recipient Information */}
+      <div className="mb-6 space-y-4">
+        <Label className="text-sm font-medium block">Recipient Information</Label>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="recipient-first-name" className="text-sm font-medium mb-1 block">
+              First Name
+            </Label>
+            <Input
+              id="recipient-first-name"
+              type="text"
+              value={recipientFirstName}
+              onChange={(e) => setRecipientFirstName(e.target.value)}
+              placeholder="First name"
+              className="w-full"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="recipient-last-name" className="text-sm font-medium mb-1 block">
+              Last Name
+            </Label>
+            <Input
+              id="recipient-last-name"
+              type="text"
+              value={recipientLastName}
+              onChange={(e) => setRecipientLastName(e.target.value)}
+              placeholder="Last name"
+              className="w-full"
+            />
+          </div>
+        </div>
+        
+        <div>
+          <Label htmlFor="recipient-email" className="text-sm font-medium mb-1 block">
+            Email Address
+          </Label>
+          <Input
+            id="recipient-email"
+            type="email"
+            value={recipientEmail}
+            onChange={(e) => setRecipientEmail(e.target.value)}
+            placeholder="Enter recipient email address"
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            The gift link will be sent to this email address
+          </p>
+        </div>
       </div>
       
       {/* Insufficient Points Alert for Selected Amount */}
@@ -194,6 +236,7 @@ export const RewardInfo = ({
         {isProcessing ? "Processing..." : 
          isLoadingPoints ? "Loading..." :
          !selectedAmount ? "Select Amount" :
+         !isValidFirstName || !isValidLastName ? "Enter Recipient Name" :
          !isValidEmail ? "Enter Valid Email" :
          !hasEnoughPointsForSelected ? "Insufficient Points" :
          "Redeem Gift Card"}
