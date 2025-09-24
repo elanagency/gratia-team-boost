@@ -77,7 +77,7 @@ export const useTeamRewards = () => {
   const rewards: TeamReward[] = hasValidSettings ? enabledProducts.map((product: GoodyProduct) => {
     // For variable pricing products, don't calculate a fixed points cost since it's dynamic
     const isVariablePrice = product.price_is_variable || false;
-    const pointsCost = isVariablePrice ? 0 : calculatePointsFromPrice(product.price, pointExchangeRate);
+    const pointsCost = isVariablePrice ? 0 : calculatePointsFromPrice(product.price, pointExchangeRate.toString());
     
     return {
       id: product.id,

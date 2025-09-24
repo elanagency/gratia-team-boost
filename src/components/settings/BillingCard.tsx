@@ -45,7 +45,7 @@ export const BillingCard = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const { user, companyId } = useAuth();
-  const { memberPriceInCents, isLoading: isPricingLoading } = usePlatformSettings();
+  const { memberPriceInCents, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
 
 
   const fetchCompanyData = async () => {
@@ -126,8 +126,11 @@ export const BillingCard = () => {
 
       const teamMembers = memberCount || 0;
       
-      // Use pricing from the platform settings hook
-      const amountPerMember = memberPriceInCents || 299;
+      // Use pricing from the platform settings hook - throw error if not available
+      if (!memberPriceInCents) {
+        throw new Error('Platform pricing settings not available');
+      }
+      const amountPerMember = memberPriceInCents;
       
       if (company?.stripe_subscription_id) {
         // Try to get subscription details from check-subscription-status
@@ -177,15 +180,8 @@ export const BillingCard = () => {
       console.error('Error fetching subscription status:', error);
       toast.error('Failed to fetch subscription status');
       
-      // Set fallback state
-      setSubscriptionStatus({
-        has_subscription: false,
-        status: 'inactive',
-        team_members: 0,
-        next_billing_date: null,
-        amount_per_member: memberPriceInCents || 299,
-        monthly_cost: 0
-      });
+      // Set error state - no fallback values
+      setSubscriptionStatus(null);
       setHasExistingSubscription(false);
     } finally {
       setIsLoading(false);
@@ -292,6 +288,38 @@ export const BillingCard = () => {
         </div>
         <div className="p-6 flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isPricingError || !memberPriceInCents) {
+    return (
+      <Card className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Billing Overview</h2>
+        </div>
+        <div className="p-6">
+          <div className="text-center text-destructive">
+            <p className="font-medium">Error loading platform pricing settings</p>
+            <p className="text-sm mt-2">Unable to load billing information. Please contact support.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!subscriptionStatus) {
+    return (
+      <Card className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Billing Overview</h2>
+        </div>
+        <div className="p-6">
+          <div className="text-center text-destructive">
+            <p className="font-medium">Error loading subscription data</p>
+            <p className="text-sm mt-2">Unable to fetch billing information. Please try refreshing the page.</p>
+          </div>
         </div>
       </Card>
     );

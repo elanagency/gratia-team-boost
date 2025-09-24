@@ -27,7 +27,7 @@ export const useAdminRewardCatalog = (environment: 'live' | 'test' = 'live') => 
   const hasValidSettings = !isLoadingSettings && !isSettingsError && pointExchangeRate;
   
   const rewards: AdminReward[] = hasValidSettings ? (products || []).map((product: GoodyProduct) => {
-    const pointsCost = calculatePointsFromPrice(product.price, pointExchangeRate);
+    const pointsCost = calculatePointsFromPrice(product.price, pointExchangeRate.toString());
     
     return {
       id: product.id,

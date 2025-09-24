@@ -16,7 +16,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
   const { pointExchangeRate, isLoading: isLoadingSettings } = usePlatformSettings();
   
   const isDisabled = blacklistedProducts.has(product.id);
-  const pointsCost = calculatePointsFromPrice(product.price, pointExchangeRate);
+  const pointsCost = pointExchangeRate ? calculatePointsFromPrice(product.price, pointExchangeRate.toString()) : 0;
   const imageUrl = product.images[0]?.image_large?.url || '';
 
   const handleToggleDisable = () => {

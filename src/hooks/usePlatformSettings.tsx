@@ -88,10 +88,10 @@ export const usePlatformSettings = () => {
   // Helper functions for backward compatibility
   const getSetting = useCallback((key: string) => {
     if (key === 'point_exchange_rate') {
-      return settings?.point_exchange_rate?.toString() || '0.03';
+      return settings?.point_exchange_rate?.toString();
     }
     if (key === 'member_monthly_price_cents') {
-      return settings?.monthly_price_per_team_member_in_cents?.toString() || '299';
+      return settings?.monthly_price_per_team_member_in_cents?.toString();
     }
     return null;
   }, [settings]);
@@ -106,8 +106,8 @@ export const usePlatformSettings = () => {
 
   return {
     settings,
-    pointExchangeRate: (settings as any)?.point_exchange_rate || 0.03,
-    memberPriceInCents: (settings as any)?.monthly_price_per_team_member_in_cents || 299,
+    pointExchangeRate: settings?.point_exchange_rate,
+    memberPriceInCents: settings?.monthly_price_per_team_member_in_cents,
     isLoading,
     error,
     isError,
