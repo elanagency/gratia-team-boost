@@ -76,12 +76,16 @@ serve(async (req) => {
 
     console.log(`Exchange rate: ${rate}`);
 
-    // Get gift cards for the environment
+    // Get gift cards for the environment, excluding blacklisted products
     const { data: giftCardsData, error: giftCardsError } = await supabase
       .from('goody_gift_cards')
-      .select('*')
+      .select(`
+        *,
+        platform_product_blacklist!left(goody_product_id)
+      `)
       .eq('environment', environment)
       .eq('is_active', true)
+      .is('platform_product_blacklist.goody_product_id', null)
       .order('name');
 
     if (giftCardsError) {
