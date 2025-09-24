@@ -46,22 +46,24 @@ serve(async (req) => {
 
     const { rewardId, rewardName, dollarAmount, recipientEmail }: RedemptionRequest = await req.json();
     
-    // Get platform settings for point exchange rate
-    const { data: exchangeRateSetting, error: settingError } = await supabase
+    // Get platform settings for point exchange rate and card ID
+    const { data: settings, error: settingError } = await supabase
       .from('platform_settings')
       .select('point_exchange_rate')
       .eq('key', 'platform_settings')
       .maybeSingle();
 
     if (settingError) {
-      console.error('Error fetching exchange rate:', settingError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch exchange rate' }), {
+      console.error('Error fetching platform settings:', settingError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch platform settings' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const exchangeRate = exchangeRateSetting?.point_exchange_rate || 0.03;
+    const exchangeRate = settings?.point_exchange_rate || 0.03;
+    // Default card ID - could be made configurable via platform settings
+    const defaultCardId = "d75ffebf-0c71-417c-84f2-32a6b49deea9";
     console.log('Exchange rate retrieved:', exchangeRate);
     const pointsCost = Math.round(dollarAmount / exchangeRate);
     
@@ -137,7 +139,7 @@ serve(async (req) => {
     const orderBatchPayload = {
       from_name: `${profile.first_name} ${profile.last_name}`.trim(),
       send_method: "link_multiple_custom_list",
-      card_id: "d75ffebf-0c71-417c-84f2-32a6b49deea9", // Default card design
+      card_id: defaultCardId,
       recipients: [{
         first_name: profile.first_name,
         last_name: profile.last_name,
@@ -154,6 +156,7 @@ serve(async (req) => {
     };
 
     console.log('Creating order batch with payload:', JSON.stringify(orderBatchPayload, null, 2));
+    const startTime = Date.now();
 
     const goodyResponse = await fetch(`${goodyBaseUrl}/v1/order_batches`, {
       method: 'POST',
@@ -163,6 +166,9 @@ serve(async (req) => {
       },
       body: JSON.stringify(orderBatchPayload)
     });
+
+    const processingTime = Date.now() - startTime;
+    console.log(`Goody API call completed in ${processingTime}ms`);
 
     if (!goodyResponse.ok) {
       const errorText = await goodyResponse.text();
@@ -177,7 +183,19 @@ serve(async (req) => {
     }
 
     const goodyResult = await goodyResponse.json();
-    console.log('Goody order batch created:', goodyResult.id);
+    console.log('Goody order batch created:', goodyResult.id, 'Status:', goodyResult.status);
+
+    // Validate order batch status
+    if (goodyResult.status !== 'completed') {
+      console.error('Order batch not completed immediately:', goodyResult.status);
+      return new Response(JSON.stringify({ 
+        error: 'Order processing failed',
+        details: `Order batch status: ${goodyResult.status}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const order = goodyResult.orders_preview?.[0];
     if (!order) {
@@ -188,9 +206,20 @@ serve(async (req) => {
       });
     }
 
-    console.log('Order created:', order.id, 'Gift link:', order.individual_gift_link);
+    // Validate order has gift link
+    if (!order.individual_gift_link) {
+      console.error('Order created but no gift link available');
+      return new Response(JSON.stringify({ error: 'Gift link not available' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Order created successfully:', order.id, 'Gift link:', order.individual_gift_link);
 
     // Start database transaction
+    console.log('Processing database updates...');
+    
     // First, deduct points from user
     const { error: pointsError } = await supabase
       .from('profiles')
@@ -199,8 +228,11 @@ serve(async (req) => {
 
     if (pointsError) {
       console.error('Failed to deduct points:', pointsError);
-      // Note: In a real scenario, you'd want to cancel the Goody order here
-      return new Response(JSON.stringify({ error: 'Failed to process point deduction' }), {
+      console.log('TODO: Implement Goody order cancellation for order batch:', goodyResult.id);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to process point deduction',
+        details: 'Points could not be deducted from account' 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -227,13 +259,24 @@ serve(async (req) => {
 
     if (redemptionError) {
       console.error('Failed to create redemption record:', redemptionError);
+      console.log('Rolling back points deduction...');
+      
       // Rollback points deduction
-      await supabase
+      const { error: rollbackError } = await supabase
         .from('profiles')
         .update({ points: profile.points })
         .eq('id', user.id);
       
-      return new Response(JSON.stringify({ error: 'Failed to save redemption' }), {
+      if (rollbackError) {
+        console.error('Failed to rollback points:', rollbackError);
+      }
+      
+      console.log('TODO: Implement Goody order cancellation for order batch:', goodyResult.id);
+      
+      return new Response(JSON.stringify({ 
+        error: 'Failed to save redemption',
+        details: 'Database transaction failed, points have been restored' 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -256,6 +299,7 @@ serve(async (req) => {
     }
 
     console.log('Redemption completed successfully:', redemption.id);
+    console.log('Total processing time:', Date.now() - startTime, 'ms');
 
     return new Response(JSON.stringify({
       success: true,
@@ -263,7 +307,9 @@ serve(async (req) => {
         id: redemption.id,
         giftLink: redemption.individual_gift_link,
         status: redemption.status,
-        rewardName: redemption.reward_name
+        rewardName: redemption.reward_name,
+        goodyOrderId: redemption.goody_order_id,
+        processingTimeMs: Date.now() - startTime
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
