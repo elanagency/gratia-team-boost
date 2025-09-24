@@ -106,8 +106,8 @@ export const usePlatformSettings = () => {
 
   return {
     settings,
-    pointExchangeRate: settings?.point_exchange_rate || 0.03,
-    memberPriceInCents: settings?.monthly_price_per_team_member_in_cents || 299,
+    pointExchangeRate: (settings as any)?.point_exchange_rate || 0.03,
+    memberPriceInCents: (settings as any)?.monthly_price_per_team_member_in_cents || 299,
     isLoading,
     error,
     isError,

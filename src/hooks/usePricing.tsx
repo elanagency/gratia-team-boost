@@ -18,11 +18,11 @@ export const usePricing = () => {
         throw error;
       }
 
-      if (!data?.monthly_price_per_team_member_in_cents) {
+      if (!data?.monthly_price_per_team_member_in_cents && !(data as any)?.monthly_price_per_team_member_in_cents) {
         throw new Error('Pricing configuration not found in platform settings');
       }
 
-      return data.monthly_price_per_team_member_in_cents;
+      return (data as any).monthly_price_per_team_member_in_cents || data.monthly_price_per_team_member_in_cents;
     },
     staleTime: 1000 * 30, // 30 seconds
   });

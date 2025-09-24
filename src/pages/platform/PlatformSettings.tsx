@@ -52,7 +52,7 @@ const PlatformSettings = () => {
 
   // Memoize the initial form values to prevent infinite loop
   const initialFormValues = useMemo(() => {
-    if (!settings || settings.length === 0) return null;
+    if (!settings) return null;
     
     return {
       pointRate: getSetting('point_exchange_rate'),

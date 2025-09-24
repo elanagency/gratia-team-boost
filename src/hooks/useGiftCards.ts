@@ -49,16 +49,16 @@ export const useGiftCards = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('value')
-        .eq('key', 'point_exchange_rate')
+        .select('point_exchange_rate')
+        .eq('key', 'platform_settings')
         .single();
-        
+         
       if (error) {
         console.error('Error fetching exchange rate:', error);
         return '0.03'; // fallback
       }
       
-      return data?.value as string || '0.03';
+      return (data as any)?.point_exchange_rate?.toString() || '0.03';
     }
   });
 

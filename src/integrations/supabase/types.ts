@@ -376,24 +376,27 @@ export type Database = {
           description: string | null
           id: string
           key: string
+          monthly_price_per_team_member_in_cents: number | null
+          point_exchange_rate: number | null
           updated_at: string
-          value: Json
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           key: string
+          monthly_price_per_team_member_in_cents?: number | null
+          point_exchange_rate?: number | null
           updated_at?: string
-          value: Json
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           key?: string
+          monthly_price_per_team_member_in_cents?: number | null
+          point_exchange_rate?: number | null
           updated_at?: string
-          value?: Json
         }
         Relationships: []
       }
