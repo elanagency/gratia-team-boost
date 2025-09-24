@@ -13,15 +13,15 @@ export const SimpleGiftCardItem = ({ reward, onClick }: SimpleGiftCardItemProps)
       onClick={onClick}
     >
       <div className="flex flex-col items-center text-center space-y-2">
-        <div className="w-full aspect-[16/10] min-h-[140px] sm:min-h-[160px] flex items-center justify-center rounded-xl overflow-hidden">
+        <div className="w-full aspect-[16/10] min-h-[140px] sm:min-h-[160px] flex items-center justify-center rounded-[10px] overflow-hidden">
           {reward.image_url ? (
             <img 
               src={reward.image_url} 
               alt={reward.name} 
-              className="w-full h-full object-contain rounded-xl"
+              className="w-full h-full object-contain rounded-[10px]"
             />
           ) : (
-            <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
+            <div className="w-full h-full bg-muted rounded-[10px] flex items-center justify-center">
               <span className="text-xs text-muted-foreground">No image</span>
             </div>
           )}
