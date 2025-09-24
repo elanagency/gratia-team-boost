@@ -49,8 +49,8 @@ serve(async (req) => {
     // Get platform settings for point exchange rate
     const { data: exchangeRateSetting, error: settingError } = await supabase
       .from('platform_settings')
-      .select('value')
-      .eq('key', 'points_to_dollar_exchange_rate')
+      .select('point_exchange_rate')
+      .eq('key', 'platform_settings')
       .maybeSingle();
 
     if (settingError) {
@@ -61,7 +61,8 @@ serve(async (req) => {
       });
     }
 
-    const exchangeRate = exchangeRateSetting?.value ? parseFloat(JSON.parse(exchangeRateSetting.value.toString())) : 0.01;
+    const exchangeRate = exchangeRateSetting?.point_exchange_rate || 0.03;
+    console.log('Exchange rate retrieved:', exchangeRate);
     const pointsCost = Math.round(dollarAmount / exchangeRate);
     
     console.log('Dollar amount:', dollarAmount, 'Exchange rate:', exchangeRate, 'Points cost:', pointsCost);
