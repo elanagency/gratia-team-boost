@@ -9,18 +9,6 @@ interface RealTimeStatusProps {
 
 export const RealTimeStatus = ({ isConnected = true, className }: RealTimeStatusProps) => {
   return (
-    <div className={cn("flex items-center gap-1 text-sm text-muted-foreground", className)}>
-      {isConnected ? (
-        <>
-          <Wifi className="h-4 w-4 text-green-500" />
-          Live Updates
-        </>
-      ) : (
-        <>
-          <WifiOff className="h-4 w-4 text-red-500" />
-          Disconnected
-        </>
-      )}
-    </div>
+    null
   );
 };
