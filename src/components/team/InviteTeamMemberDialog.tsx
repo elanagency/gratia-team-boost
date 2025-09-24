@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PlusCircle, Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamMembers, useAllCompanyMembers } from "@/hooks/useCompanyMembers";
-import { usePricing } from "@/hooks/usePricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { useDepartments } from "@/hooks/useDepartments";
 import InviteForm from "./InviteForm";
 
@@ -32,7 +32,8 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
   const { companyMembers: allMembers } = useAllCompanyMembers();
-  const { pricePerMember } = usePricing();
+  const { memberPriceInCents } = usePlatformSettings();
+  const pricePerMember = (memberPriceInCents / 100).toFixed(2);
   const { refetch: refetchDepartments } = useDepartments();
 
   // Check for duplicate email

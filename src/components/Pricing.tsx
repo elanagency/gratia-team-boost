@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
-import { usePricing } from "@/hooks/usePricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 const Pricing = () => {
-  const { pricePerMember } = usePricing();
+  const { memberPriceInCents } = usePlatformSettings();
+  const pricePerMember = (memberPriceInCents / 100).toFixed(2);
   
   return <section id="pricing" className="py-20 px-4">
       <div className="container mx-auto max-w-6xl">

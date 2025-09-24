@@ -5,7 +5,7 @@ import { ExternalLink, Users, CreditCard, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { usePricing } from "@/hooks/usePricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -45,7 +45,7 @@ export const BillingCard = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const { user, companyId } = useAuth();
-  const { pricePerMemberCents, pricePerMember, isLoading: isPricingLoading } = usePricing();
+  const { memberPriceInCents, isLoading: isPricingLoading } = usePlatformSettings();
 
 
   const fetchCompanyData = async () => {
@@ -126,8 +126,8 @@ export const BillingCard = () => {
 
       const teamMembers = memberCount || 0;
       
-      // Use pricing from the dedicated hook (always up-to-date from platform settings)
-      const amountPerMember = pricePerMemberCents || 299;
+      // Use pricing from the platform settings hook
+      const amountPerMember = memberPriceInCents || 299;
       
       if (company?.stripe_subscription_id) {
         // Try to get subscription details from check-subscription-status
@@ -183,14 +183,14 @@ export const BillingCard = () => {
         status: 'inactive',
         team_members: 0,
         next_billing_date: null,
-        amount_per_member: pricePerMemberCents || 299,
+        amount_per_member: memberPriceInCents || 299,
         monthly_cost: 0
       });
       setHasExistingSubscription(false);
     } finally {
       setIsLoading(false);
     }
-  }, [user, companyId, pricePerMemberCents]);
+  }, [user, companyId, memberPriceInCents]);
 
   useEffect(() => {
     if (!isPricingLoading) {
@@ -316,7 +316,7 @@ export const BillingCard = () => {
               {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
             </div>
             <div className="text-sm text-muted-foreground">
-              ${pricePerMember} per member/month
+              ${(memberPriceInCents / 100).toFixed(2)} per member/month
             </div>
           </div>
 

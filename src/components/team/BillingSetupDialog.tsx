@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { CreditCard, Shield, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { usePricing } from "@/hooks/usePricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface BillingSetupDialogProps {
   onSetupComplete: () => void;
@@ -23,7 +23,8 @@ interface BillingSetupDialogProps {
 const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetupDialogProps) => {
   const [isSettingUp, setIsSettingUp] = useState(false);
   const { companyId, user, firstName, lastName } = useAuth();
-  const { pricePerMember } = usePricing();
+  const { memberPriceInCents } = usePlatformSettings();
+  const pricePerMember = (memberPriceInCents / 100).toFixed(2);
 
   const handleSetupBilling = async () => {
     if (!companyId || !user) {
