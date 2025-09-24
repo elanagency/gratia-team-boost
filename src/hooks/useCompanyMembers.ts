@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -35,6 +35,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
   } = options;
 
   const { user, companyId } = useAuth();
+  const queryClient = useQueryClient();
   const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0, billing_ready: false });
 
   const {
@@ -198,7 +199,9 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       if (profileError) throw profileError;
 
       toast.success("Team member updated successfully.");
-      refetch();
+      
+      // Invalidate all company-members queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['company-members'] });
     } catch (error) {
       console.error("Error in updateMember:", error);
       toast.error("Failed to update team member");
@@ -220,7 +223,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       if (error) throw error;
 
       toast.success("Team member removed successfully.");
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['company-members'] });
     } catch (error) {
       console.error("Error in removeMember:", error);
       toast.error("Failed to remove team member");
