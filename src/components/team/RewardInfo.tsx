@@ -28,7 +28,7 @@ export const RewardInfo = ({
   const [recipientEmail, setRecipientEmail] = useState("");
   const { getSetting } = usePlatformSettings();
   
-  const exchangeRate = getSetting('points_to_dollar_exchange_rate') || '0.01';
+  const exchangeRate = getSetting('point_exchange_rate') || '0.01';
   
   const dollarAmounts = [10, 20, 50, 100];
   

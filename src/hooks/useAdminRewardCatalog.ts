@@ -24,7 +24,7 @@ export const useAdminRewardCatalog = (environment: 'live' | 'test' = 'live') => 
 
   // Convert GoodyProducts to AdminRewards with proper points calculation
   const rewards: AdminReward[] = (products || []).map((product: GoodyProduct) => {
-    const exchangeRate = getSetting('points_to_dollar_exchange_rate') || '0.01';
+    const exchangeRate = getSetting('point_exchange_rate') || '0.01';
     const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
     
     return {
