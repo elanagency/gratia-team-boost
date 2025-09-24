@@ -18,7 +18,7 @@ export interface AdminReward {
   price_is_variable: boolean;
 }
 
-export const useAdminRewardCatalog = (environment: 'live' | 'sandbox' = 'live') => {
+export const useAdminRewardCatalog = (environment: 'live' | 'test' = 'live') => {
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, environment, false, true);
   const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
 

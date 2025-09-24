@@ -7,7 +7,7 @@ import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
 import { format } from "date-fns";
 
 interface EnvironmentSyncCardProps {
-  environment: 'sandbox' | 'live';
+  environment: 'test' | 'live';
 }
 
 export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) => {
@@ -38,7 +38,7 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
           <Icon className="h-5 w-5" />
           <div>
             <CardTitle className="text-lg">
-              {isLive ? 'Production' : 'Sandbox'} Catalog
+              {isLive ? 'Production' : 'Test'} Catalog
             </CardTitle>
             <CardDescription>
               {isLive ? 'Live gift cards for production use' : 'Test gift cards for development'}

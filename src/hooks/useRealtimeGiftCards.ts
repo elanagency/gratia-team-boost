@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UseRealtimeGiftCardsProps {
-  environment?: 'live' | 'sandbox';
+  environment?: 'live' | 'test';
   enabled?: boolean;
 }
 

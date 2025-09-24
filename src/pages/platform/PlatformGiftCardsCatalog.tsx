@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const PlatformGiftCardsCatalog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeEnvironment, setActiveEnvironment] = useState<'sandbox' | 'live'>('live');
+  const [activeEnvironment, setActiveEnvironment] = useState<'test' | 'live'>('live');
   
   const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100, activeEnvironment, false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
@@ -51,7 +51,7 @@ const PlatformGiftCardsCatalog = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gift Cards Catalog</h1>
           <p className="text-muted-foreground">
-            Manage platform gift card catalogs for sandbox and production environments
+            Manage platform gift card catalogs for test and production environments
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -72,16 +72,16 @@ const PlatformGiftCardsCatalog = () => {
 
       {/* Environment Sync Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <EnvironmentSyncCard environment="sandbox" />
+        <EnvironmentSyncCard environment="test" />
         <EnvironmentSyncCard environment="live" />
       </div>
 
       {/* Environment Tabs */}
-      <Tabs value={activeEnvironment} onValueChange={(value) => setActiveEnvironment(value as 'sandbox' | 'live')}>
+      <Tabs value={activeEnvironment} onValueChange={(value) => setActiveEnvironment(value as 'test' | 'live')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sandbox" className="flex items-center gap-2">
+          <TabsTrigger value="test" className="flex items-center gap-2">
             <TestTube className="h-4 w-4" />
-            Sandbox Catalog
+            Test Catalog
           </TabsTrigger>
           <TabsTrigger value="live" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -99,7 +99,7 @@ const PlatformGiftCardsCatalog = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{totalCount || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {activeEnvironment === 'live' ? 'Production' : 'Sandbox'} environment
+                  {activeEnvironment === 'live' ? 'Production' : 'Test'} environment
                 </p>
               </CardContent>
             </Card>

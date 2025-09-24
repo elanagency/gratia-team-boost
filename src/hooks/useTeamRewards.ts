@@ -50,7 +50,7 @@ export const useTeamRewards = () => {
   });
 
   // Enable real-time updates for gift cards and company environment
-  useRealtimeGiftCards({ environment: (companyEnvironment as 'live' | 'sandbox') || 'live', enabled: !!companyId });
+  useRealtimeGiftCards({ environment: (companyEnvironment as 'live' | 'test') || 'live', enabled: !!companyId });
   useRealtimeCompanyEnvironment();
 
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, companyEnvironment || 'live', false, true);
