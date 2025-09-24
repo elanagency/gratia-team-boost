@@ -26,9 +26,10 @@ export const RewardInfo = ({
 }: RewardInfoProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
-  const { getSetting } = usePlatformSettings();
+  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
   
-  const exchangeRate = getSetting('point_exchange_rate') || '0.01';
+  // Only calculate points after settings are loaded
+  const exchangeRate = isLoadingSettings ? '0.01' : (getSetting('point_exchange_rate') || '0.01');
   
   const dollarAmounts = [10, 20, 50, 100];
   
@@ -41,7 +42,7 @@ export const RewardInfo = ({
   const selectedAmountPoints = selectedAmount ? getPointsForAmount(selectedAmount) : 0;
   const hasEnoughPointsForSelected = selectedAmountPoints <= userPoints;
   
-  const isRedeemDisabled = !selectedAmount || !isValidEmail || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
+  const isRedeemDisabled = !selectedAmount || !isValidEmail || isLoadingPoints || isLoadingSettings || !hasEnoughPointsForSelected || isProcessing;
   
   const handleRedeem = () => {
     if (selectedAmount && isValidEmail && hasEnoughPointsForSelected) {

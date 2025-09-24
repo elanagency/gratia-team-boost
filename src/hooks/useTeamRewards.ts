@@ -63,7 +63,8 @@ export const useTeamRewards = () => {
   ) || [];
 
   // Convert GoodyProducts to TeamRewards with proper points calculation
-  const rewards: TeamReward[] = enabledProducts.map((product: GoodyProduct) => {
+  // Only calculate points after settings are loaded to ensure correct exchange rate
+  const rewards: TeamReward[] = isLoadingSettings ? [] : enabledProducts.map((product: GoodyProduct) => {
     const exchangeRate = getSetting('point_exchange_rate') || '0.01';
     const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
     
