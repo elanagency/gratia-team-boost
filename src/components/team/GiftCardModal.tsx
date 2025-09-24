@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { GiftCard } from "@/hooks/useGiftCards";
+import { GiftCard } from "@/hooks/useRewardsShop";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,9 +17,10 @@ interface GiftCardModalProps {
   reward: GiftCard | null;
   isOpen: boolean;
   onClose: () => void;
+  exchangeRate: string;
 }
 
-export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) => {
+export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCardModalProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -81,6 +82,7 @@ export const GiftCardModal = ({ reward, isOpen, onClose }: GiftCardModalProps) =
               isProcessing={isProcessing}
               userPoints={recognitionPoints}
               isLoadingPoints={isLoadingPoints}
+              exchangeRate={exchangeRate}
             />
           </div>
         </Card>

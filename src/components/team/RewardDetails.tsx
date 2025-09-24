@@ -2,22 +2,25 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { TeamReward } from "@/hooks/useTeamRewards";
+import { GiftCard } from "@/hooks/useRewardsShop";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface RewardDetailsProps {
-  reward: TeamReward;
+  reward: GiftCard;
   onClose: () => void;
 }
 
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { getSetting } = usePlatformSettings();
+  const exchangeRate = getSetting('point_exchange_rate') || '0.03';
 
   const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
     if (!user) {
@@ -79,6 +82,7 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
             isProcessing={isProcessing}
             userPoints={recognitionPoints}
             isLoadingPoints={isLoadingPoints}
+            exchangeRate={exchangeRate}
           />
         </div>
       </Card>

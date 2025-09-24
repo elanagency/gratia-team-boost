@@ -1,5 +1,5 @@
 import React from "react";
-import { GiftCard } from "@/hooks/useGiftCards";
+import { GiftCard } from "@/hooks/useRewardsShop";
 import { SimpleGiftCardItem } from "./SimpleGiftCardItem";
 import { Card } from "@/components/ui/card";
 

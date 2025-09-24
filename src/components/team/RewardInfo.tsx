@@ -3,18 +3,17 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Check } from "lucide-react";
-import { TeamReward } from "@/hooks/useTeamRewards";
+import { GiftCard } from "@/hooks/useRewardsShop";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { usePlatformSettings } from "@/hooks/usePlatformSettings";
-import { calculatePointsFromPrice } from "@/lib/utils";
 
 interface RewardInfoProps {
-  reward: TeamReward;
+  reward: GiftCard;
   onRedeem: (amount: number, email: string) => void;
   isProcessing: boolean;
   userPoints: number;
   isLoadingPoints: boolean;
+  exchangeRate: string;
 }
 
 export const RewardInfo = ({
@@ -22,29 +21,25 @@ export const RewardInfo = ({
   onRedeem,
   isProcessing,
   userPoints,
-  isLoadingPoints
+  isLoadingPoints,
+  exchangeRate
 }: RewardInfoProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
-  const { getSetting, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
-  
-  // Get exchange rate without fallback - will be empty string if not loaded or missing
-  const exchangeRate = getSetting('point_exchange_rate');
-  const hasValidSettings = !isLoadingSettings && !isSettingsError && exchangeRate;
   
   const dollarAmounts = [10, 20, 50, 100];
+  const rate = parseFloat(exchangeRate);
   
   // Calculate points for each dollar amount
   const getPointsForAmount = (dollarAmount: number) => {
-    if (!hasValidSettings) return 0;
-    return calculatePointsFromPrice(dollarAmount * 100, exchangeRate); // Convert to cents
+    return Math.ceil((dollarAmount * 100) / rate); // Convert to cents and calculate points
   };
   
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
   const selectedAmountPoints = selectedAmount ? getPointsForAmount(selectedAmount) : 0;
   const hasEnoughPointsForSelected = selectedAmountPoints <= userPoints;
   
-  const isRedeemDisabled = !hasValidSettings || !selectedAmount || !isValidEmail || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
+  const isRedeemDisabled = !selectedAmount || !isValidEmail || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
   
   const handleRedeem = () => {
     if (selectedAmount && isValidEmail && hasEnoughPointsForSelected) {
@@ -52,7 +47,7 @@ export const RewardInfo = ({
     }
   };
   // Show error state if settings failed to load or are missing
-  if (isSettingsError || (!isLoadingSettings && !exchangeRate)) {
+  if (!exchangeRate) {
     return (
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">

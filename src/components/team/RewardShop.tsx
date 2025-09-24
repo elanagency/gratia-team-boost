@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useGiftCards, GiftCard } from "@/hooks/useGiftCards";
+import { useRewardsShop, GiftCard } from "@/hooks/useRewardsShop";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedReward, setSelectedReward] = useState<GiftCard | null>(null);
   
-  const { giftCards, isLoading, error } = useGiftCards();
+  const { giftCards, exchangeRate, isLoading, error } = useRewardsShop();
   
   // Filter rewards based on search term
   const filteredRewards = giftCards.filter(reward => 
@@ -59,6 +59,7 @@ export const RewardShop = () => {
         reward={selectedReward}
         isOpen={!!selectedReward}
         onClose={handleCloseDetails}
+        exchangeRate={exchangeRate}
       />
     </div>
   );
