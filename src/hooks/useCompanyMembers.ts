@@ -11,6 +11,7 @@ export interface CompanyMember {
   user_id: string;
   points: number;
   department?: string;
+  department_id?: string;
   status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
   is_admin: boolean;
@@ -63,6 +64,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
           is_admin,
           points,
           department,
+          department_id,
           status,
           first_login_at
         `, { count: 'exact' })
@@ -121,6 +123,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
           user_id: profile.id,
           points: profile.points || 0,
           department: profile.department || '',
+          department_id: profile.department_id || undefined,
           status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at,
           is_admin: profile.is_admin || false
@@ -172,7 +175,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
     }
   }, [companyId, membersData, includeAdmins]);
 
-  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department: string | null }) => {
+  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department?: string | null; department_id?: string | null }) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
 
@@ -187,7 +190,8 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
         .update({
           first_name: firstName,
           last_name: lastName,
-          department: updateData.department
+          department: updateData.department,
+          department_id: updateData.department_id
         })
         .eq('id', memberId);
 

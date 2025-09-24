@@ -18,6 +18,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
 }) => {
   const [name, setName] = useState(member.name);
   const [department, setDepartment] = useState(member.department || "");
+  const [departmentId, setDepartmentId] = useState<string | undefined>(member.department_id || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateMember } = useTeamMembers();
 
@@ -29,7 +30,8 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
     try {
       await updateMember(member.id, {
         name: name.trim(),
-        department: department.trim() || null
+        department: department.trim() || null,
+        department_id: departmentId || null
       });
       onSuccess();
     } catch (error) {
@@ -73,7 +75,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
         </Label>
         <NewDepartmentCombobox
           value={department}
-          onChange={setDepartment}
+          onChange={(name, id) => {
+            setDepartment(name);
+            setDepartmentId(id);
+          }}
           placeholder="Select or create department"
         />
       </div>

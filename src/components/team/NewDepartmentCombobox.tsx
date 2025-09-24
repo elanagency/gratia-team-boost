@@ -19,7 +19,7 @@ import { useDepartmentManagement } from "@/hooks/useDepartmentManagement";
 
 interface NewDepartmentComboboxProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, departmentId?: string) => void;
   placeholder?: string;
 }
 
@@ -32,8 +32,9 @@ const NewDepartmentCombobox = ({
   const [inputValue, setInputValue] = useState("");
   const { departments, isLoading, createDepartment } = useDepartmentManagement();
 
-  const handleSelect = (selectedValue: string) => {
-    onChange(selectedValue === value ? "" : selectedValue);
+  const handleSelect = (selectedValue: string, departmentId?: string) => {
+    const newValue = selectedValue === value ? "" : selectedValue;
+    onChange(newValue, departmentId);
     setOpen(false);
     setInputValue("");
   };
@@ -43,7 +44,7 @@ const NewDepartmentCombobox = ({
     
     try {
       const newDepartment = await createDepartment.mutateAsync(inputValue.trim());
-      onChange(newDepartment.name);
+      onChange(newDepartment.name, newDepartment.id);
       setOpen(false);
       setInputValue("");
     } catch (error) {
@@ -92,7 +93,7 @@ const NewDepartmentCombobox = ({
                   <CommandItem
                     key={dept.id}
                     value={dept.name}
-                    onSelect={() => handleSelect(dept.name)}
+                    onSelect={() => handleSelect(dept.name, dept.id)}
                   >
                     <Check
                       className={cn(
