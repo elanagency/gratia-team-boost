@@ -45,7 +45,7 @@ export const BillingCard = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const { user, companyId } = useAuth();
-  const { pricePerMemberCents, isLoading: isPricingLoading } = usePricing();
+  const { pricePerMemberCents, pricePerMember, isLoading: isPricingLoading } = usePricing();
 
 
   const fetchCompanyData = async () => {
@@ -127,7 +127,7 @@ export const BillingCard = () => {
       const teamMembers = memberCount || 0;
       
       // Use pricing from the dedicated hook (always up-to-date from platform settings)
-      const amountPerMember = pricePerMemberCents;
+      const amountPerMember = pricePerMemberCents || 299;
       
       if (company?.stripe_subscription_id) {
         // Try to get subscription details from check-subscription-status
@@ -161,14 +161,14 @@ export const BillingCard = () => {
         });
         setHasExistingSubscription(true);
       } else {
-        // No subscription
+        // No subscription - show current team members for cost estimation
         setSubscriptionStatus({
           has_subscription: false,
           status: 'inactive',
-          team_members: 0,
+          team_members: teamMembers,
           next_billing_date: null,
-          amount_per_member: pricePerMemberCents,
-          monthly_cost: 0
+          amount_per_member: amountPerMember,
+          monthly_cost: amountPerMember * teamMembers
         });
 
         setHasExistingSubscription(false);
@@ -183,7 +183,7 @@ export const BillingCard = () => {
         status: 'inactive',
         team_members: 0,
         next_billing_date: null,
-        amount_per_member: pricePerMemberCents,
+        amount_per_member: pricePerMemberCents || 299,
         monthly_cost: 0
       });
       setHasExistingSubscription(false);
@@ -316,7 +316,7 @@ export const BillingCard = () => {
               {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
             </div>
             <div className="text-sm text-muted-foreground">
-              ${(pricePerMemberCents / 100).toFixed(2)} per member/month
+              ${pricePerMember} per member/month
             </div>
           </div>
 
