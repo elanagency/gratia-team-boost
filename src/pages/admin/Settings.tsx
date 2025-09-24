@@ -3,6 +3,7 @@ import React from "react";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
 import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
 import { BillingCard } from "@/components/settings/BillingCard";
+import SlackNotificationsCard from "@/components/settings/SlackNotificationsCard";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
 
 const Settings = () => {
@@ -15,6 +16,7 @@ const Settings = () => {
         <DepartmentManagement />
         <TeamManagementCard />
         <BillingCard />
+        <SlackNotificationsCard />
       </div>
     </div>
   );
