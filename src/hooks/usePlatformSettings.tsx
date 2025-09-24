@@ -20,6 +20,7 @@ export const usePlatformSettings = () => {
       const { data, error } = await supabase
         .from('platform_settings')
         .select('point_exchange_rate, monthly_price_per_team_member_in_cents')
+        .eq('key', 'platform_settings')
         .single();
 
       if (error) {
@@ -38,7 +39,8 @@ export const usePlatformSettings = () => {
         .update({ 
           point_exchange_rate: rate,
           updated_at: new Date().toISOString()
-        });
+        })
+        .eq('key', 'platform_settings');
 
       if (error) {
         console.error('Error updating point exchange rate:', error);
@@ -64,7 +66,8 @@ export const usePlatformSettings = () => {
         .update({ 
           monthly_price_per_team_member_in_cents: priceInCents,
           updated_at: new Date().toISOString()
-        });
+        })
+        .eq('key', 'platform_settings');
 
       if (error) {
         console.error('Error updating member price:', error);
@@ -82,6 +85,25 @@ export const usePlatformSettings = () => {
     },
   });
 
+  // Helper functions for backward compatibility
+  const getSetting = useCallback((key: string) => {
+    if (key === 'point_exchange_rate') {
+      return settings?.point_exchange_rate?.toString() || '0.03';
+    }
+    if (key === 'member_monthly_price_cents') {
+      return settings?.monthly_price_per_team_member_in_cents?.toString() || '299';
+    }
+    return null;
+  }, [settings]);
+
+  const updateSetting = useCallback(({ key, value }: { key: string; value: string }) => {
+    if (key === 'point_exchange_rate') {
+      updatePointExchangeRateMutation.mutate(parseFloat(value));
+    } else if (key === 'member_monthly_price_cents') {
+      updateMemberPriceMutation.mutate(parseInt(value));
+    }
+  }, [updatePointExchangeRateMutation, updateMemberPriceMutation]);
+
   return {
     settings,
     pointExchangeRate: settings?.point_exchange_rate || 0.03,
@@ -93,5 +115,9 @@ export const usePlatformSettings = () => {
     updateMemberPrice: updateMemberPriceMutation.mutate,
     isUpdatingRate: updatePointExchangeRateMutation.isPending,
     isUpdatingPrice: updateMemberPriceMutation.isPending,
+    // Backward compatibility methods
+    getSetting,
+    updateSetting,
+    isUpdating: updatePointExchangeRateMutation.isPending || updateMemberPriceMutation.isPending,
   };
 };

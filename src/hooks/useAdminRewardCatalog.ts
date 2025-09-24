@@ -20,15 +20,14 @@ export interface AdminReward {
 
 export const useAdminRewardCatalog = (environment: 'live' | 'test' = 'live') => {
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, environment, false, true);
-  const { getSetting, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
+  const { pointExchangeRate, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
 
   // Convert GoodyProducts to AdminRewards with proper points calculation
   // Only calculate points after settings are loaded and ensure we have valid settings
-  const exchangeRate = getSetting('point_exchange_rate');
-  const hasValidSettings = !isLoadingSettings && !isSettingsError && exchangeRate;
+  const hasValidSettings = !isLoadingSettings && !isSettingsError && pointExchangeRate;
   
   const rewards: AdminReward[] = hasValidSettings ? (products || []).map((product: GoodyProduct) => {
-    const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
+    const pointsCost = calculatePointsFromPrice(product.price, pointExchangeRate);
     
     return {
       id: product.id,

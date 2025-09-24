@@ -8,6 +8,7 @@ export const usePricing = () => {
       const { data, error } = await supabase
         .from('platform_settings')
         .select('monthly_price_per_team_member_in_cents')
+        .eq('key', 'platform_settings')
         .single();
 
       if (error) {

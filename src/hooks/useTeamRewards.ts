@@ -55,7 +55,7 @@ export const useTeamRewards = () => {
 
   const { products, isLoading, error } = useGoodyProducts(1, true, false, 100, companyEnvironment || 'live', false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
-  const { getSetting, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
+  const { pointExchangeRate, isLoading: isLoadingSettings, isError: isSettingsError } = usePlatformSettings();
 
   // Filter out blacklisted products (team members only see enabled products)
   const enabledProducts = products?.filter(product => 
@@ -64,13 +64,10 @@ export const useTeamRewards = () => {
 
   // Convert GoodyProducts to TeamRewards with proper points calculation
   // Only calculate points after settings are loaded and ensure we have valid settings
-  const exchangeRate = getSetting('point_exchange_rate');
-  const rate = parseFloat(exchangeRate || '');
-  const hasValidSettings = !isLoadingSettings && !isSettingsError && exchangeRate && rate > 0;
+  const hasValidSettings = !isLoadingSettings && !isSettingsError && pointExchangeRate && pointExchangeRate > 0;
   
   console.log('useTeamRewards debug:', {
-    exchangeRate,
-    rate,
+    pointExchangeRate,
     isLoadingSettings,
     isSettingsError,
     hasValidSettings,
@@ -80,7 +77,7 @@ export const useTeamRewards = () => {
   const rewards: TeamReward[] = hasValidSettings ? enabledProducts.map((product: GoodyProduct) => {
     // For variable pricing products, don't calculate a fixed points cost since it's dynamic
     const isVariablePrice = product.price_is_variable || false;
-    const pointsCost = isVariablePrice ? 0 : calculatePointsFromPrice(product.price, exchangeRate);
+    const pointsCost = isVariablePrice ? 0 : calculatePointsFromPrice(product.price, pointExchangeRate);
     
     return {
       id: product.id,

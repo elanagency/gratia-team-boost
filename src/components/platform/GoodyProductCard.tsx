@@ -13,11 +13,10 @@ interface GoodyProductCardProps {
 
 export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
   const { blacklistedProducts, addToBlacklist, removeFromBlacklist, isUpdating } = usePlatformRewardSettings();
-  const { getSetting, isLoading: isLoadingSettings } = usePlatformSettings();
+  const { pointExchangeRate, isLoading: isLoadingSettings } = usePlatformSettings();
   
   const isDisabled = blacklistedProducts.has(product.id);
-  const exchangeRate = getSetting('point_exchange_rate');
-  const pointsCost = calculatePointsFromPrice(product.price, exchangeRate);
+  const pointsCost = calculatePointsFromPrice(product.price, pointExchangeRate);
   const imageUrl = product.images[0]?.image_large?.url || '';
 
   const handleToggleDisable = () => {

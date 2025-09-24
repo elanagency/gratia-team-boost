@@ -19,8 +19,8 @@ interface RewardDetailsProps {
 export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { getSetting } = usePlatformSettings();
-  const exchangeRate = getSetting('point_exchange_rate') || '0.03';
+  const { pointExchangeRate } = usePlatformSettings();
+  const exchangeRate = pointExchangeRate?.toString() || '0.03';
 
   const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
     if (!user) {
