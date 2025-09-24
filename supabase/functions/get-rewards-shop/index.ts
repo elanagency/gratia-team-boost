@@ -76,17 +76,28 @@ serve(async (req) => {
 
     console.log(`Exchange rate: ${rate}`);
 
+    // Get blacklisted product IDs first
+    const { data: blacklistData } = await supabase
+      .from('platform_product_blacklist')
+      .select('goody_product_id');
+
+    const blacklistedProductIds = blacklistData?.map(item => item.goody_product_id) || [];
+
+    console.log(`Found ${blacklistedProductIds.length} blacklisted products`);
+
     // Get gift cards for the environment, excluding blacklisted products
-    const { data: giftCardsData, error: giftCardsError } = await supabase
+    let giftCardsQuery = supabase
       .from('goody_gift_cards')
-      .select(`
-        *,
-        platform_product_blacklist!left(goody_product_id)
-      `)
+      .select('*')
       .eq('environment', environment)
-      .eq('is_active', true)
-      .is('platform_product_blacklist.goody_product_id', null)
-      .order('name');
+      .eq('is_active', true);
+
+    // Apply blacklist filter if there are blacklisted products
+    if (blacklistedProductIds.length > 0) {
+      giftCardsQuery = giftCardsQuery.not('goody_product_id', 'in', `(${blacklistedProductIds.join(',')})`);
+    }
+
+    const { data: giftCardsData, error: giftCardsError } = await giftCardsQuery.order('name');
 
     if (giftCardsError) {
       console.error('Error fetching gift cards:', giftCardsError);
