@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { TeamReward } from "@/hooks/useTeamRewards";
+import { GiftCard } from "@/hooks/useGiftCards";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 
 interface GiftCardModalProps {
-  reward: TeamReward | null;
+  reward: GiftCard | null;
   isOpen: boolean;
   onClose: () => void;
 }

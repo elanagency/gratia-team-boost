@@ -1,12 +1,8 @@
 import React from "react";
+import { GiftCard } from "@/hooks/useGiftCards";
 
 interface SimpleGiftCardItemProps {
-  reward: {
-    id: string;
-    name: string;
-    image_url: string;
-    brand_name?: string;
-  };
+  reward: GiftCard;
   onClick: () => void;
 }
 

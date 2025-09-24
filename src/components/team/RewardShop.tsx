@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useTeamRewards, TeamReward } from "@/hooks/useTeamRewards";
+import { useGiftCards, GiftCard } from "@/hooks/useGiftCards";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,17 @@ import { Search } from "lucide-react";
 
 export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedReward, setSelectedReward] = useState<TeamReward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<GiftCard | null>(null);
   
-  const { rewards, isLoading, error } = useTeamRewards();
+  const { giftCards, isLoading, error } = useGiftCards();
   
   // Filter rewards based on search term
-  const filteredRewards = rewards.filter(reward => 
+  const filteredRewards = giftCards.filter(reward => 
     reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  const handleSelectReward = (reward: TeamReward) => {
+  const handleSelectReward = (reward: GiftCard) => {
     setSelectedReward(reward);
   };
 

@@ -1,11 +1,11 @@
 import React from "react";
-import { TeamReward } from "@/hooks/useTeamRewards";
+import { GiftCard } from "@/hooks/useGiftCards";
 import { SimpleGiftCardItem } from "./SimpleGiftCardItem";
 import { Card } from "@/components/ui/card";
 
 interface SimpleGiftCardGridProps {
-  rewards: TeamReward[];
-  onSelectReward: (reward: TeamReward) => void;
+  rewards: GiftCard[];
+  onSelectReward: (reward: GiftCard) => void;
   isLoading: boolean;
   searchTerm: string;
   error?: Error | null;
