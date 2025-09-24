@@ -32,7 +32,7 @@ export const RewardInfo = ({
   
   // Calculate points for each dollar amount
   const getPointsForAmount = (dollarAmount: number) => {
-    return Math.ceil((dollarAmount * 100) / rate); // Convert to cents and calculate points
+    return Math.ceil(dollarAmount / rate);
   };
   
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
