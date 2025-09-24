@@ -32,11 +32,17 @@ export const usePlatformSettings = () => {
   });
 
   const updateSettingMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+    mutationFn: async ({ key, value }: { key: string; value: any }) => {
+      // Parse numeric strings as actual numbers for proper JSONB storage
+      let parsedValue = value;
+      if (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '') {
+        parsedValue = Number(value);
+      }
+      
       const { error } = await supabase
         .from('platform_settings')
         .update({ 
-          value: JSON.stringify(value),
+          value: JSON.stringify(parsedValue),
           updated_at: new Date().toISOString()
         })
         .eq('key', key);
