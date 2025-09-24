@@ -7,9 +7,8 @@ export const usePricing = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('value')
-        .eq('key', 'member_monthly_price_cents')
-        .maybeSingle();
+        .select('monthly_price_per_team_member_in_cents')
+        .single();
 
       if (error) {
         console.error('Error fetching pricing:', error);
@@ -18,11 +17,11 @@ export const usePricing = () => {
         throw error;
       }
 
-      if (!data?.value) {
+      if (!data?.monthly_price_per_team_member_in_cents) {
         throw new Error('Pricing configuration not found in platform settings');
       }
 
-      return parseInt(JSON.parse(data.value.toString()));
+      return data.monthly_price_per_team_member_in_cents;
     },
     staleTime: 1000 * 30, // 30 seconds
   });

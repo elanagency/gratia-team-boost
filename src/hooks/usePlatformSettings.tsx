@@ -19,77 +19,79 @@ export const usePlatformSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('*')
-        .order('key');
+        .select('point_exchange_rate, monthly_price_per_team_member_in_cents')
+        .single();
 
       if (error) {
         console.error('Error fetching platform settings:', error);
         throw error;
       }
 
-      return data as PlatformSetting[];
+      return data;
     },
   });
 
-  const updateSettingMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: any }) => {
-      // Parse numeric strings as actual numbers for proper JSONB storage
-      let parsedValue = value;
-      if (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '') {
-        parsedValue = Number(value);
-      }
-      
+  const updatePointExchangeRateMutation = useMutation({
+    mutationFn: async (rate: number) => {
       const { error } = await supabase
         .from('platform_settings')
         .update({ 
-          value: JSON.stringify(parsedValue),
+          point_exchange_rate: rate,
           updated_at: new Date().toISOString()
-        })
-        .eq('key', key);
+        });
 
       if (error) {
-        console.error('Error updating platform setting:', error);
+        console.error('Error updating point exchange rate:', error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
       queryClient.invalidateQueries({ queryKey: ['pricing'] });
-      toast.success('Settings updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['rewards-shop'] });
+      toast.success('Point exchange rate updated successfully');
     },
     onError: (error) => {
-      console.error('Failed to update settings:', error);
-      toast.error('Failed to update settings');
+      console.error('Failed to update point exchange rate:', error);
+      toast.error('Failed to update point exchange rate');
     },
   });
 
-  const getSetting = useCallback((key: string): string => {
-    const setting = settings?.find(s => s.key === key);
-    if (!setting) return '';
-    
-    // Handle different value formats
-    if (typeof setting.value === 'string') {
-      // Try to parse as JSON first
-      try {
-        const parsed = JSON.parse(setting.value);
-        return String(parsed);
-      } catch (error) {
-        // If parsing fails, return the raw string value
-        return setting.value;
+  const updateMemberPriceMutation = useMutation({
+    mutationFn: async (priceInCents: number) => {
+      const { error } = await supabase
+        .from('platform_settings')
+        .update({ 
+          monthly_price_per_team_member_in_cents: priceInCents,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error updating member price:', error);
+        throw error;
       }
-    }
-    
-    // Fallback to string conversion
-    return String(setting.value || '');
-  }, [settings]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['pricing'] });
+      toast.success('Member price updated successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to update member price:', error);
+      toast.error('Failed to update member price');
+    },
+  });
 
   return {
     settings,
+    pointExchangeRate: settings?.point_exchange_rate || 0.03,
+    memberPriceInCents: settings?.monthly_price_per_team_member_in_cents || 299,
     isLoading,
     error,
     isError,
-    updateSetting: updateSettingMutation.mutate,
-    isUpdating: updateSettingMutation.isPending,
-    getSetting,
+    updatePointExchangeRate: updatePointExchangeRateMutation.mutate,
+    updateMemberPrice: updateMemberPriceMutation.mutate,
+    isUpdatingRate: updatePointExchangeRateMutation.isPending,
+    isUpdatingPrice: updateMemberPriceMutation.isPending,
   };
 };
