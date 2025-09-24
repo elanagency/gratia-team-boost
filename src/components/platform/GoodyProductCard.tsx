@@ -47,13 +47,13 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             <p className="text-xs text-muted-foreground mb-1">
               Brand: {product.brand.name}
             </p>
-            <p className="text-xs text-muted-foreground mb-1 font-mono hidden lg:block">
+            <p className="text-xs text-muted-foreground mb-1 font-mono">
               Product ID: {product.id}
             </p>
-            <p className="text-xs text-muted-foreground mb-1 font-mono hidden lg:block">
+            <p className="text-xs text-muted-foreground mb-1 font-mono">
               Brand ID: {product.brand.id}
             </p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 hidden sm:block">
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
               {product.recipient_description}
             </p>
           </div>
@@ -67,7 +67,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2 hidden lg:flex">
+          <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">
               Variable Price: 
             </p>
@@ -77,7 +77,7 @@ export const GoodyProductCard = ({ product }: GoodyProductCardProps) => {
           </div>
 
           {product.variants.length > 0 && (
-            <p className="text-xs text-muted-foreground hidden lg:block">
+            <p className="text-xs text-muted-foreground">
               {product.variants.length} variants available
             </p>
           )}
