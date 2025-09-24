@@ -34,7 +34,7 @@ export const RedeemablePointsBox = ({ className = "" }: RedeemablePointsBoxProps
       <Coins className="h-4 w-4 text-white mr-2" />
       <div className="flex flex-col items-start">
         <span className="text-xs text-white/80 hidden sm:inline">Redeemable Points</span>
-        <span className="font-bold text-white">{recognitionPoints}</span>
+        <span className="font-bold text-white">{recognitionPoints?.toLocaleString() || 0}</span>
       </div>
     </button>
   );
