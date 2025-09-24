@@ -6,7 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function calculatePointsFromPrice(priceInCents: number, exchangeRate: string, multiplier: number = 1): number {
-  const rate = parseFloat(exchangeRate) || 0.01; // Default fallback
+  const rate = parseFloat(exchangeRate);
+  if (!rate || rate <= 0) {
+    return 0; // Return 0 if invalid exchange rate
+  }
   const priceInDollars = priceInCents / 100;
   return Math.round((priceInDollars / rate) * multiplier);
 }
