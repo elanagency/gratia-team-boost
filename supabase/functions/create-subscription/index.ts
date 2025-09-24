@@ -148,10 +148,10 @@ serve(async (req) => {
       throw new Error("No billable team members found");
     }
 
-    // Get pricing from platform settings
+    // Get pricing from platform settings and Stripe price IDs
     const { data: pricingSetting } = await supabaseService
       .from('platform_settings')
-      .select('monthly_price_per_team_member_in_cents')
+      .select('monthly_price_per_team_member_in_cents, stripe_price_id_live, stripe_price_id_test')
       .eq('key', 'platform_settings')
       .single();
     
@@ -168,6 +168,13 @@ serve(async (req) => {
     const environment = envSetting?.value ? JSON.parse(envSetting.value) : 'test';
     const customerIdField = environment === 'live' ? 'stripe_customer_id_live' : 'stripe_customer_id_test';
     const updateField = environment === 'live' ? { stripe_customer_id_live: null } : { stripe_customer_id_test: null };
+    
+    // Get the appropriate Stripe price ID for this environment
+    const stripePriceId = environment === 'live' 
+      ? pricingSetting?.stripe_price_id_live 
+      : pricingSetting?.stripe_price_id_test;
+    
+    logStep("Environment and price ID determined", { environment, stripePriceId });
     
     // Create or get Stripe customer
     let customerId = environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
@@ -213,32 +220,41 @@ serve(async (req) => {
       nextBillingDate: nextBillingDate.toISOString()
     });
 
-    // First create a product and price
-    logStep("Creating Stripe product");
-    const product = await stripe.products.create({
-      name: "Team Member Subscription",
-      description: "Monthly subscription per team member",
-    });
+    // Use existing Stripe price or create fallback
+    let finalPriceId = stripePriceId;
+    
+    if (!stripePriceId) {
+      logStep("No price ID found in platform settings, creating fallback product and price");
+      
+      const product = await stripe.products.create({
+        name: "Team Member Subscription (Fallback)",
+        description: "Monthly subscription per team member",
+      });
 
-    logStep("Creating Stripe price");
-    const price = await stripe.prices.create({
-      currency: "usd",
-      unit_amount: MONTHLY_PRICE_PER_EMPLOYEE,
-      recurring: {
-        interval: "month",
-      },
-      product: product.id,
-    });
+      const price = await stripe.prices.create({
+        currency: "usd",
+        unit_amount: MONTHLY_PRICE_PER_EMPLOYEE,
+        recurring: {
+          interval: "month",
+          usage_type: "licensed",
+        },
+        billing_scheme: "per_unit",
+        product: product.id,
+      });
 
-    logStep("Product and price created", { productId: product.id, priceId: price.id });
+      finalPriceId = price.id;
+      logStep("Fallback product and price created", { productId: product.id, priceId: price.id });
+    } else {
+      logStep("Using existing price ID from platform settings", { priceId: finalPriceId });
+    }
 
-    // Create subscription with the created price
-    logStep("Creating subscription");
+    // Create subscription with per-unit billing
+    logStep("Creating subscription with per-unit billing");
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [
         {
-          price: price.id,
+          price: finalPriceId,
           quantity: employeeCount,
         },
       ],
@@ -247,6 +263,7 @@ serve(async (req) => {
       metadata: {
         company_id: companyId,
         initial_employee_count: employeeCount.toString(),
+        environment: environment,
       },
     });
 

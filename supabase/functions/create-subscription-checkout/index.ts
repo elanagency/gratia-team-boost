@@ -153,18 +153,26 @@ serve(async (req: Request) => {
       }
     }
 
-    // Get pricing from platform settings
+    // Get pricing from platform settings and Stripe price IDs
     const { data: pricingSetting } = await supabaseAdmin
       .from('platform_settings')
-      .select('monthly_price_per_team_member_in_cents')
+      .select('monthly_price_per_team_member_in_cents, stripe_price_id_live, stripe_price_id_test')
       .eq('key', 'platform_settings')
       .single();
     
     const unitPrice = pricingSetting?.monthly_price_per_team_member_in_cents || 299;
+    
+    // Determine which price ID to use based on environment
+    const environment = companyData.environment || 'test';
+    const stripePriceId = environment === 'live' 
+      ? pricingSetting?.stripe_price_id_live 
+      : pricingSetting?.stripe_price_id_test;
 
     console.log("[CREATE-SUBSCRIPTION-CHECKOUT] Pricing calculation:", {
       teamSlots,
       unitPrice,
+      stripePriceId,
+      environment,
       hasExistingSubscription: !!existingSubscription
     });
 
@@ -220,24 +228,18 @@ serve(async (req: Request) => {
     // Create new checkout session for new subscriptions
     const baseUrl = origin || "http://localhost:3000";
     
-    // Prepare checkout session configuration
+    // Prepare checkout session configuration with reusable price ID
+    if (!stripePriceId) {
+      throw new Error('No Stripe price ID found in platform settings. Please sync Stripe pricing first.');
+    }
+    
     const checkoutConfig: any = {
       customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            unit_amount: unitPrice,
-            recurring: {
-              interval: "month",
-            },
-            product_data: {
-              name: "Team Slots",
-              description: `${teamSlots} team slots for your organization`,
-            },
-          },
+          price: stripePriceId,
           quantity: teamSlots,
         },
       ],
@@ -256,7 +258,8 @@ serve(async (req: Request) => {
       customer: customerId,
       email_will_be_prepopulated: true,
       teamSlots,
-      unitPrice
+      stripePriceId,
+      environment
     });
 
     const session = await stripe.checkout.sessions.create(checkoutConfig);

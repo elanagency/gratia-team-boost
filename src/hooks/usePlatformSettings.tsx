@@ -19,7 +19,7 @@ export const usePlatformSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('point_exchange_rate, monthly_price_per_team_member_in_cents')
+        .select('point_exchange_rate, monthly_price_per_team_member_in_cents, stripe_product_id_live, stripe_product_id_test, stripe_price_id_live, stripe_price_id_test')
         .eq('key', 'platform_settings')
         .single();
 
@@ -104,20 +104,47 @@ export const usePlatformSettings = () => {
     }
   }, [updatePointExchangeRateMutation, updateMemberPriceMutation]);
 
+  const syncStripePricingMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('sync-stripe-pricing');
+      
+      if (error) {
+        console.error('Error syncing Stripe pricing:', error);
+        throw error;
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
+      toast.success('Stripe pricing synced successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to sync Stripe pricing:', error);
+      toast.error('Failed to sync Stripe pricing');
+    },
+  });
+
   return {
     settings,
     pointExchangeRate: settings?.point_exchange_rate,
     memberPriceInCents: settings?.monthly_price_per_team_member_in_cents,
+    stripeProductIdLive: settings?.stripe_product_id_live,
+    stripeProductIdTest: settings?.stripe_product_id_test,
+    stripePriceIdLive: settings?.stripe_price_id_live,
+    stripePriceIdTest: settings?.stripe_price_id_test,
     isLoading,
     error,
     isError,
     updatePointExchangeRate: updatePointExchangeRateMutation.mutate,
     updateMemberPrice: updateMemberPriceMutation.mutate,
+    syncStripePricing: syncStripePricingMutation.mutate,
     isUpdatingRate: updatePointExchangeRateMutation.isPending,
     isUpdatingPrice: updateMemberPriceMutation.isPending,
+    isSyncingStripe: syncStripePricingMutation.isPending,
     // Backward compatibility methods
     getSetting,
     updateSetting,
-    isUpdating: updatePointExchangeRateMutation.isPending || updateMemberPriceMutation.isPending,
+    isUpdating: updatePointExchangeRateMutation.isPending || updateMemberPriceMutation.isPending || syncStripePricingMutation.isPending,
   };
 };

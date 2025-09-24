@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Settings2 } from "lucide-react";
+import { Shield, Settings2, RefreshCw, ExternalLink } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -33,7 +33,19 @@ interface PlatformConfigForm {
 const PlatformSettings = () => {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   
-  const { settings, isLoading, updateSetting, isUpdating, getSetting } = usePlatformSettings();
+  const { 
+    settings, 
+    isLoading, 
+    updateSetting, 
+    isUpdating, 
+    getSetting,
+    syncStripePricing,
+    isSyncingStripe,
+    stripeProductIdLive,
+    stripeProductIdTest,
+    stripePriceIdLive,
+    stripePriceIdTest
+  } = usePlatformSettings();
   const { 
     platformAdmins, 
     isLoading: isLoadingAdmins, 
@@ -73,6 +85,11 @@ const PlatformSettings = () => {
     // Update each setting
     updateSetting({ key: 'point_exchange_rate', value: data.pointRate });
     updateSetting({ key: 'member_monthly_price_cents', value: (parseFloat(data.memberPrice) * 100).toString() });
+    
+    // Automatically sync Stripe pricing after updating prices
+    setTimeout(() => {
+      syncStripePricing();
+    }, 1000);
   };
 
   const handleAddAdmin = () => {
@@ -140,15 +157,71 @@ const PlatformSettings = () => {
                   )}
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="bg-[#F572FF] hover:bg-[#E061EE]"
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Saving...' : 'Save Configuration'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  type="submit" 
+                  className="bg-[#F572FF] hover:bg-[#E061EE]"
+                  disabled={isUpdating || isSyncingStripe}
+                >
+                  {isUpdating ? 'Saving...' : 'Save Configuration'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => syncStripePricing()}
+                  disabled={isSyncingStripe}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isSyncingStripe ? 'animate-spin' : ''}`} />
+                  {isSyncingStripe ? 'Syncing...' : 'Sync Stripe'}
+                </Button>
+              </div>
             </form>
           </Form>
+          
+          {/* Stripe Integration Status */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-gray-900 mb-3">Stripe Integration Status</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="text-sm font-medium text-gray-700 mb-2">Live Environment</h5>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Product ID:</span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
+                      {stripeProductIdLive || 'Not set'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Price ID:</span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
+                      {stripePriceIdLive || 'Not set'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h5 className="text-sm font-medium text-gray-700 mb-2">Test Environment</h5>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Product ID:</span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
+                      {stripeProductIdTest || 'Not set'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Price ID:</span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border">
+                      {stripePriceIdTest || 'Not set'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-gray-500">
+              <ExternalLink className="h-3 w-3 inline mr-1" />
+              These IDs are automatically created and updated when you change pricing above.
+            </div>
+          </div>
         </CardContent>
       </Card>
 
