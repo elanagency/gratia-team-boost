@@ -18,7 +18,7 @@ const PlatformGiftCardsCatalog = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeEnvironment, setActiveEnvironment] = useState<'sandbox' | 'live'>('live');
   
-  const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100, activeEnvironment);
+  const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100, activeEnvironment, false, true);
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   
   // Enable real-time updates for the active environment
