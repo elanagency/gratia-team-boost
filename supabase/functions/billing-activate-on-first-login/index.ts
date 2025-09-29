@@ -130,11 +130,11 @@ Deno.serve(async (req) => {
     const priceIdField = isTestMode ? 'stripe_price_id_test' : 'stripe_price_id_live';
     const { data: settingsData } = await supabase
       .from('platform_settings')
-      .select(priceIdField)
+      .select(`${priceIdField}`)
       .eq('key', 'platform_settings')
       .single();
 
-    const priceId = settingsData?.[priceIdField];
+    const priceId = settingsData?.[priceIdField as keyof typeof settingsData];
     
     if (!priceId) {
       throw new Error(`No Stripe price ID found for ${environment} environment. Please sync Stripe pricing first.`);
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in billing-activate-on-first-login:', error);
     return Response.json({
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, {
       status: 500,
       headers: corsHeaders
