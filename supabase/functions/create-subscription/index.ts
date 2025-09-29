@@ -295,8 +295,7 @@ serve(async (req) => {
         amount_charged: proratedAmount,
         metadata: {
           subscription_id: subscription.id,
-          product_id: product.id,
-          price_id: price.id,
+          price_id: finalPriceId,
           prorated_days: daysRemaining,
           total_days: daysInMonth,
         },

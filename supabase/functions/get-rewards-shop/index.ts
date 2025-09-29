@@ -61,7 +61,7 @@ serve(async (req) => {
     }
 
     const companyId = userData.company_id;
-    const environment = userData.companies.environment || 'live';
+    const environment = (userData.companies && userData.companies[0]?.environment) || 'live';
 
     console.log(`User company: ${companyId}, environment: ${environment}`);
 
@@ -153,7 +153,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'Internal server error'
+        error: (error instanceof Error ? error.message : 'Internal server error')
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

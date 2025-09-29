@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in billing-start-on-invite:', error);
     return Response.json({
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, {
       status: 500,
       headers: corsHeaders

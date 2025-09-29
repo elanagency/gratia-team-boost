@@ -90,7 +90,9 @@ serve(async (req) => {
       const userIds = usersToBackup.map(u => u.id)
       const { data: authData } = await supabase.auth.admin.listUsers()
       const emailMap = authData.users.reduce((acc, authUser) => {
-        acc[authUser.id] = authUser.email
+        if (authUser.email) {
+          acc[authUser.id] = authUser.email;
+        }
         return acc
       }, {} as Record<string, string>)
 
@@ -166,7 +168,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error deleting company:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to delete company', details: error.message }),
+      JSON.stringify({ error: 'Failed to delete company', details: error instanceof Error ? error.message : 'Unknown error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

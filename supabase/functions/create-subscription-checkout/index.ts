@@ -162,8 +162,15 @@ serve(async (req: Request) => {
     
     const unitPrice = pricingSetting?.monthly_price_per_team_member_in_cents || 299;
     
+    // Get company data to determine environment
+    const { data: companyData } = await supabaseAdmin
+      .from('companies')
+      .select('environment')
+      .eq('id', companyId)
+      .single();
+    
     // Determine which price ID to use based on environment
-    const environment = companyData.environment || 'test';
+    const environment = companyData?.environment || 'test';
     const stripePriceId = environment === 'live' 
       ? pricingSetting?.stripe_price_id_live 
       : pricingSetting?.stripe_price_id_test;

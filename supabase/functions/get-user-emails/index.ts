@@ -52,16 +52,18 @@ serve(async (req) => {
     const userEmails = users.users
       .filter(user => userIds.includes(user.id))
       .reduce((acc, user) => {
-        acc[user.id] = user.email;
+        if (user.email) {
+          acc[user.id] = user.email;
+        }
         return acc;
-      }, {});
+      }, {} as Record<string, string>);
     
     return new Response(JSON.stringify({ emails: userEmails }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error occurred' }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
