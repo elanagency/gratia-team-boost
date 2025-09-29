@@ -126,53 +126,18 @@ Deno.serve(async (req) => {
       throw new Error('No Stripe customer ID found');
     }
 
-    // Create price if it doesn't exist
-    let priceId: string;
-    try {
-      // Try to find existing price
-      const prices = await stripe.prices.list({
-        product: 'team_member_subscription',
-        unit_amount: pricePerMemberCents,
-        currency: 'usd',
-        recurring: { interval: 'month' },
-        active: true,
-        limit: 1
-      });
+    // Get reusable price ID from platform_settings
+    const priceIdField = isTestMode ? 'stripe_price_id_test' : 'stripe_price_id_live';
+    const { data: settingsData } = await supabase
+      .from('platform_settings')
+      .select(priceIdField)
+      .eq('key', 'platform_settings')
+      .single();
 
-      if (prices.data.length > 0) {
-        priceId = prices.data[0].id;
-      } else {
-        // Create new price
-        const price = await stripe.prices.create({
-          product_data: {
-            name: 'Team Member Subscription',
-            id: 'team_member_subscription'
-          },
-          unit_amount: pricePerMemberCents,
-          currency: 'usd',
-          recurring: { interval: 'month' },
-          metadata: {
-            environment,
-            companyId
-          }
-        });
-        priceId = price.id;
-      }
-    } catch (error) {
-      // If product doesn't exist, create it with the price
-      const price = await stripe.prices.create({
-        product_data: {
-          name: 'Team Member Subscription'
-        },
-        unit_amount: pricePerMemberCents,
-        currency: 'usd',
-        recurring: { interval: 'month' },
-        metadata: {
-          environment,
-          companyId
-        }
-      });
-      priceId = price.id;
+    const priceId = settingsData?.[priceIdField];
+    
+    if (!priceId) {
+      throw new Error(`No Stripe price ID found for ${environment} environment. Please sync Stripe pricing first.`);
     }
 
     // Calculate billing cycle anchor for the 1st of next month
