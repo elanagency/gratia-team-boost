@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
           .update(updateData)
           .eq('key', 'platform_settings');
 
-        results[environment] = {
+        (results as any)[environment] = {
           product_id: product.id,
           price_id: price.id,
           price_amount: priceInCents,
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
 
       } catch (error) {
         console.error(`Error processing ${environment} environment:`, error);
-        results.errors.push(`${environment}: ${error.message}`);
+        results.errors.push(`${environment}: ${getErrorMessage(error)}`);
       }
     }
 
@@ -168,7 +169,7 @@ Deno.serve(async (req) => {
     console.error('Sync Stripe pricing error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

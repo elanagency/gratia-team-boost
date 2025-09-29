@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -316,12 +317,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in goody-redemption-service:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error.message 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createErrorResponse(error, 'Internal server error', 500, corsHeaders);
   }
 });

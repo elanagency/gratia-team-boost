@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -319,8 +320,8 @@ serve(async (req) => {
     console.error('Edge function error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        details: error.toString()
+        error: getErrorMessage(error) || 'Internal server error',
+        details: getErrorMessage(error)
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -395,7 +396,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
     return new Response(
       JSON.stringify({ 
         error: 'Network Error', 
-        details: `Unable to connect to Goody API: ${error.message}`,
+        details: `Unable to connect to Goody API: ${getErrorMessage(error)}`,
         error_code: 'NETWORK_ERROR'
       }),
       { status: 503, headers: corsHeaders }
@@ -481,7 +482,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
           continue; // Retry the same page
         } else {
           console.error(`Failed to fetch page ${page} after ${maxRetries} attempts, stopping sync`);
-          throw new Error(`Failed to fetch page ${page}: ${pageError.message}`);
+          throw new Error(`Failed to fetch page ${page}: ${getErrorMessage(pageError)}`);
         }
       }
     }
@@ -627,7 +628,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
           JSON.stringify({
             success: false,
             error: 'Gift card sync failed',
-            details: syncError.message,
+            details: getErrorMessage(syncError),
             total_products_synced: insertedCount
           }),
           { status: 500, headers: corsHeaders }
@@ -640,7 +641,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
         JSON.stringify({
           success: false,
           error: 'Database Error',
-          details: `Failed to save products to database: ${dbError.message}`,
+          details: `Failed to save products to database: ${getErrorMessage(dbError)}`,
           error_code: 'DATABASE_ERROR'
         }),
         { status: 500, headers: corsHeaders }
@@ -653,7 +654,7 @@ async function getGoodyProducts(supabaseClient: any, baseUrl: string, apiKey: st
       JSON.stringify({
         success: false,
         error: 'Sync Failed',
-        details: error.message,
+        details: getErrorMessage(error),
         total_found: allProducts.length,
         sync_timestamp: new Date().toISOString()
       }),
@@ -679,7 +680,7 @@ async function handleLoadFromSavedIds(supabaseClient: any, baseUrl: string, apiK
         throw new Error(`Failed to fetch saved product IDs: ${fetchError.message}`);
       }
 
-      productIds = savedProducts?.map(p => p.goody_product_id) || [];
+      productIds = savedProducts?.map((p: any) => p.goody_product_id) || [];
     }
 
     if (!productIds || productIds.length === 0) {
@@ -744,7 +745,7 @@ async function handleLoadFromSavedIds(supabaseClient: any, baseUrl: string, apiK
     return new Response(
       JSON.stringify({
         error: 'Failed to load products from saved IDs',
-        details: error.message
+        details: getErrorMessage(error)
       }),
       { status: 500, headers: corsHeaders }
     );
@@ -791,7 +792,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
     }
 
     // Transform to match expected format
-    const transformedProducts = products?.map(product => {
+    const transformedProducts = products?.map((product: any) => {
       // Extract price and price_is_variable from product_data if available
       const productData = product.product_data || {};
       const actualPrice = productData.price || product.price || 0;
@@ -855,7 +856,7 @@ async function getGiftCardsProductsFromDB(supabaseClient: any, page: number = 1,
     return new Response(
       JSON.stringify({
         error: 'Failed to load gift cards from database',
-        details: error.message
+        details: getErrorMessage(error)
       }),
       { status: 500, headers: corsHeaders }
     );
@@ -901,7 +902,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
     }
 
     // Transform to match expected format
-    const transformedProducts = products?.map(product => ({
+    const transformedProducts = products?.map((product: any) => ({
       id: product.goody_product_id,
       name: product.name,
       brand: { 
@@ -958,7 +959,7 @@ async function handleLoadFromDatabase(supabaseClient: any, page: number = 1, per
     return new Response(
       JSON.stringify({
         error: 'Failed to load products from database',
-        details: error.message
+        details: getErrorMessage(error)
       }),
       { status: 500, headers: corsHeaders }
     );
@@ -1083,7 +1084,7 @@ async function handleDirectGiftCardLoad(
     return new Response(
       JSON.stringify({
         error: 'Failed to load gift cards directly from API',
-        details: error.message
+        details: getErrorMessage(error)
       }),
       { status: 500, headers: corsHeaders }
     );

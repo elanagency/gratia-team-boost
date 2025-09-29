@@ -1,6 +1,7 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14.21.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@14.21.0";
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -166,18 +167,9 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    logStep('Error occurred', { error: error.message });
+    logStep('Error occurred', { error: getErrorMessage(error) });
     console.error('Error in get-payment-method-details:', error);
     
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to fetch payment method details',
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    return createErrorResponse(error, 'Failed to fetch payment method details', 500, corsHeaders);
   }
 })

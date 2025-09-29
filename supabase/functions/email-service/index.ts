@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -238,15 +239,6 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error("[EMAIL-SERVICE] Error:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: "Failed to send email",
-        details: error.message 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return createErrorResponse(error, "Failed to send email", 500, corsHeaders);
   }
 });

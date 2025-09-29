@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getErrorMessage, createErrorResponse } from "../_shared/error-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,7 +96,7 @@ serve(async (req) => {
             try {
               stripeSubscription = await stripe.subscriptions.retrieve(company.stripe_subscription_id);
             } catch (error) {
-              logStep("Error fetching Stripe subscription", { companyId: company.id, error: error.message });
+              logStep("Error fetching Stripe subscription", { companyId: company.id, error: getErrorMessage(error) });
             }
           }
 
@@ -111,7 +112,7 @@ serve(async (req) => {
             estimatedCostChange: (currentMembers * pricePerMember) - ((stripeSubscription?.items?.data[0]?.quantity || 0) * pricePerMember),
           });
         } catch (error) {
-          logStep("Error analyzing company", { companyId: company.id, error: error.message });
+          logStep("Error analyzing company", { companyId: company.id, error: getErrorMessage(error) });
         }
       }
 
@@ -217,12 +218,12 @@ serve(async (req) => {
             status: 'migrated',
           });
         } catch (error) {
-          logStep("Failed to migrate company", { companyId: company.id, error: error.message });
+          logStep("Failed to migrate company", { companyId: company.id, error: getErrorMessage(error) });
           results.push({
             companyId: company.id,
             companyName: company.name,
             status: 'failed',
-            error: error.message,
+            error: getErrorMessage(error),
           });
         }
       }
@@ -235,10 +236,7 @@ serve(async (req) => {
     throw new Error("Invalid action specified");
 
   } catch (error) {
-    logStep("Migration error", { error: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logStep("Migration error", { error: getErrorMessage(error) });
+    return createErrorResponse(error, "Migration failed", 500, corsHeaders);
   }
 });
