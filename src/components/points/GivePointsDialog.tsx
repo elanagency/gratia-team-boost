@@ -168,9 +168,26 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       // Rollback the optimistic update
       optimisticAuth.rollbackOptimisticPoints();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       // Confirm optimistic changes and refresh all relevant data
       optimisticAuth.confirmOptimisticPoints();
+      
+      // Send Slack notification for recognition (don't fail the transfer if notification fails)
+      try {
+        await supabase.functions.invoke('send-slack-notification', {
+          body: {
+            company_id: companyId,
+            notification_type: 'recognition',
+            sender_name: `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim(),
+            recipient_name: variables.member.name,
+            points: variables.points,
+            message: variables.description
+          }
+        });
+      } catch (slackError) {
+        console.error('Failed to send Slack notification:', slackError);
+        // Continue even if Slack notification fails
+      }
       
       // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['userPoints'] });

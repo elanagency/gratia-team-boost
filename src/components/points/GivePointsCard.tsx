@@ -308,6 +308,23 @@ export function GivePointsCard() {
         if (!result?.success) {
           throw new Error(result?.error || "Failed to transfer points");
         }
+
+        // Send Slack notification for recognition (don't fail the transfer if notification fails)
+        try {
+          await supabase.functions.invoke('send-slack-notification', {
+            body: {
+              company_id: companyId,
+              notification_type: 'recognition',
+              sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
+              recipient_name: mention.name,
+              points: totalPointsToGive,
+              message: text
+            }
+          });
+        } catch (slackError) {
+          console.error('Failed to send Slack notification:', slackError);
+          // Continue even if Slack notification fails
+        }
       }
 
       toast.success(`Successfully gave ${totalPointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
