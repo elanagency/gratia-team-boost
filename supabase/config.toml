@@ -181,3 +181,15 @@ verify_jwt = true
 
 [functions.get-rewards-shop]
 verify_jwt = true
+
+[functions.slack-oauth-callback]
+verify_jwt = true
+
+[functions.get-slack-channels]
+verify_jwt = true
+
+[functions.send-slack-notification]
+verify_jwt = false
+
+[functions.slack-oauth-url]
+verify_jwt = false

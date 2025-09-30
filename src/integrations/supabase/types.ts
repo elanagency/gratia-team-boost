@@ -596,6 +596,56 @@ export type Database = {
         }
         Relationships: []
       }
+      slack_integrations: {
+        Row: {
+          access_token: string
+          bot_token: string
+          company_id: string
+          created_at: string
+          default_channel_id: string | null
+          default_channel_name: string | null
+          id: string
+          notification_settings: Json | null
+          updated_at: string
+          workspace_id: string
+          workspace_name: string
+        }
+        Insert: {
+          access_token: string
+          bot_token: string
+          company_id: string
+          created_at?: string
+          default_channel_id?: string | null
+          default_channel_name?: string | null
+          id?: string
+          notification_settings?: Json | null
+          updated_at?: string
+          workspace_id: string
+          workspace_name: string
+        }
+        Update: {
+          access_token?: string
+          bot_token?: string
+          company_id?: string
+          created_at?: string
+          default_channel_id?: string | null
+          default_channel_name?: string | null
+          id?: string
+          notification_settings?: Json | null
+          updated_at?: string
+          workspace_id?: string
+          workspace_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slack_integrations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_events: {
         Row: {
           amount_charged: number | null
