@@ -117,6 +117,12 @@ serve(async (req) => {
 
     console.log('Company environment:', company.environment);
 
+    // Debug environment variables (filtered for security)
+    const envKeys = Object.keys(Deno.env.toObject()).filter(key => 
+      key.includes('GOODY') || key.includes('API_KEY')
+    );
+    console.log('Available Goody-related env vars:', envKeys);
+
     // Determine which API key and base URL to use
     const isLive = company.environment === 'live';
     const goodyApiKey = isLive 
@@ -126,9 +132,34 @@ serve(async (req) => {
       ? 'https://api.ongoody.com'
       : 'https://api.sandbox.ongoody.com';
 
+    // Enhanced debugging for API key retrieval
+    if (!isLive) {
+      const sandboxKey = Deno.env.get('GOODY_API_KEY_SANDBOX');
+      console.log('Sandbox API key debug:');
+      console.log('- Type:', typeof sandboxKey);
+      console.log('- Value exists:', sandboxKey !== null && sandboxKey !== undefined);
+      console.log('- Length:', sandboxKey ? sandboxKey.length : 0);
+      console.log('- First 10 chars:', sandboxKey ? sandboxKey.substring(0, 10) + '...' : 'null');
+    } else {
+      const liveKey = Deno.env.get('GOODY_API_KEY');
+      console.log('Live API key debug:');
+      console.log('- Type:', typeof liveKey);
+      console.log('- Value exists:', liveKey !== null && liveKey !== undefined);
+      console.log('- Length:', liveKey ? liveKey.length : 0);
+      console.log('- First 10 chars:', liveKey ? liveKey.substring(0, 10) + '...' : 'null');
+    }
+
     if (!goodyApiKey) {
-      console.error('Missing Goody API key for environment:', company.environment);
-      return new Response(JSON.stringify({ error: 'API configuration error' }), {
+      const envType = isLive ? 'live' : 'test';
+      const expectedKey = isLive ? 'GOODY_API_KEY' : 'GOODY_API_KEY_SANDBOX';
+      console.error(`Missing Goody API key for environment: ${envType}`);
+      console.error(`Expected environment variable: ${expectedKey}`);
+      console.error(`Available environment variables with GOODY: ${envKeys.join(', ')}`);
+      
+      return new Response(JSON.stringify({ 
+        error: 'API configuration error',
+        details: `Missing ${expectedKey} for ${envType} environment`
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
