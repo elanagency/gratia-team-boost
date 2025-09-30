@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slack, Bell, Users, Calendar, TrendingUp, LogOut } from "lucide-react";
+import { Slack, Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,6 +24,16 @@ const SlackNotificationsCard = () => {
   } = useSlackIntegration();
 
   const [isConnecting, setIsConnecting] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState(false);
+
+  const inviteCommand = "/invite @Grattia";
+
+  const handleCopyCommand = () => {
+    navigator.clipboard.writeText(inviteCommand);
+    setCopiedCommand(true);
+    toast.success("Command copied to clipboard!");
+    setTimeout(() => setCopiedCommand(false), 2000);
+  };
 
   // Handle OAuth callback
   useEffect(() => {
@@ -198,6 +208,76 @@ const SlackNotificationsCard = () => {
             </div>
 
             <Separator />
+
+            {/* Bot Invitation Instructions */}
+            {integration?.default_channel_id && (
+              <>
+                <div className="space-y-4 p-4 rounded-lg bg-blue-50/50 border border-blue-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Info className="h-4 w-4 text-blue-700" />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">Add Grattia Bot to Your Channel</h4>
+                        <p className="text-sm text-blue-700">
+                          For notifications to work, the Grattia bot must be invited to <strong>#{integration?.default_channel_name}</strong>
+                        </p>
+                      </div>
+
+                      {/* Copy Command Button */}
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-white border border-blue-300 rounded text-sm font-mono text-gray-900">
+                          {inviteCommand}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyCommand}
+                          className="flex-shrink-0"
+                        >
+                          {copiedCommand ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Step-by-step Instructions */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-blue-900">How to add the bot:</p>
+                        <ol className="text-sm text-blue-700 space-y-1.5 ml-4 list-decimal">
+                          <li>Open your Slack workspace and go to <strong>#{integration?.default_channel_name}</strong></li>
+                          <li>Click the copy button above to copy the invite command</li>
+                          <li>Paste the command in the channel's message box</li>
+                          <li>Press Enter to invite the Grattia bot</li>
+                          <li>The bot will join and you'll start receiving notifications</li>
+                        </ol>
+                      </div>
+
+                      {/* Troubleshooting */}
+                      <div className="pt-2 border-t border-blue-200">
+                        <p className="text-xs text-blue-600 flex items-start gap-2">
+                          <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong>Not working?</strong> Make sure you have permission to add apps to the channel. If you're not a channel admin, ask an admin to run the invite command.
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+              </>
+            )}
 
             {/* Notification Types */}
             <div className="space-y-4">
