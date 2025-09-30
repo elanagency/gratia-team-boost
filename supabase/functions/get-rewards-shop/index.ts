@@ -60,8 +60,12 @@ serve(async (req) => {
       throw new Error('User profile not found or inactive');
     }
 
+    // Debug: Log the raw structure to understand the join result
+    console.log('Raw userData structure:', JSON.stringify(userData, null, 2));
+
     const companyId = userData.company_id;
-    const environment = (userData.companies && userData.companies[0]?.environment) || 'live';
+    // Fix: companies is an object when using !inner join, not an array
+    const environment = (userData.companies as any)?.environment || 'live';
 
     console.log(`User company: ${companyId}, environment: ${environment}`);
 
