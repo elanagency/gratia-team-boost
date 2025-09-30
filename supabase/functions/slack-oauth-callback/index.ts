@@ -48,11 +48,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { code } = await req.json();
+    const { code, redirect_uri } = await req.json();
 
     if (!code) {
       return new Response(
         JSON.stringify({ error: 'Missing authorization code' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!redirect_uri) {
+      return new Response(
+        JSON.stringify({ error: 'Missing redirect_uri' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -69,6 +76,7 @@ Deno.serve(async (req) => {
         client_id: SLACK_CLIENT_ID!,
         client_secret: SLACK_CLIENT_SECRET!,
         code,
+        redirect_uri,
       }),
     });
 

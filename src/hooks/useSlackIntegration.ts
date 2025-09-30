@@ -83,9 +83,9 @@ export const useSlackIntegration = () => {
 
   // Connect to Slack (OAuth callback)
   const connectSlack = useMutation({
-    mutationFn: async (code: string) => {
+    mutationFn: async ({ code, redirect_uri }: { code: string; redirect_uri: string }) => {
       const { data, error } = await supabase.functions.invoke('slack-oauth-callback', {
-        body: { code },
+        body: { code, redirect_uri },
       });
 
       if (error) throw error;

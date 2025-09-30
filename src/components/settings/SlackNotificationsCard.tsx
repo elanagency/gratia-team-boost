@@ -32,7 +32,8 @@ const SlackNotificationsCard = () => {
     
     if (code && !isConnecting) {
       setIsConnecting(true);
-      connectSlack.mutate(code, {
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      connectSlack.mutate({ code, redirect_uri: redirectUri }, {
         onSettled: () => {
           setIsConnecting(false);
           // Clean up URL
