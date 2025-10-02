@@ -172,6 +172,17 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       // Confirm optimistic changes and refresh all relevant data
       optimisticAuth.confirmOptimisticPoints();
       
+      // Parse the description to get clean text for Slack (in case it contains HTML)
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = variables.description;
+      
+      // Remove mention and point balloon elements if present
+      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"]');
+      balloonElements.forEach(el => el.remove());
+      
+      // Get clean text without HTML formatting
+      const cleanMessageText = (tempDiv.textContent || tempDiv.innerText || variables.description).trim();
+      
       // Send Slack notification for recognition (don't fail the transfer if notification fails)
       try {
         await supabase.functions.invoke('send-slack-notification', {
@@ -181,7 +192,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
             sender_name: `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim(),
             recipient_name: variables.member.name,
             points: variables.points,
-            message: variables.description
+            message: cleanMessageText
           }
         });
       } catch (slackError) {

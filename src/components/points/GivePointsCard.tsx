@@ -292,6 +292,17 @@ export function GivePointsCard() {
       const editorElement = document.querySelector('[contenteditable="true"]');
       const structuredMessage = editorElement?.innerHTML || text;
       
+      // Parse the structured message to get clean text for Slack
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = structuredMessage;
+      
+      // Remove mention and point balloon elements before extracting clean text
+      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"]');
+      balloonElements.forEach(el => el.remove());
+      
+      // Get clean text without HTML formatting
+      const cleanMessageText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+      
       // Use the proper transfer_points_between_users function for each mentioned person
       for (const mention of mentions) {
         const { data, error } = await supabase.rpc('transfer_points_between_users', {
@@ -318,7 +329,7 @@ export function GivePointsCard() {
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
               recipient_name: mention.name,
               points: totalPointsToGive,
-              message: text
+              message: cleanMessageText
             }
           });
         } catch (slackError) {
