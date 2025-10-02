@@ -128,7 +128,7 @@ const LoginTest = () => {
                   className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
                   disabled={isSendingOtp}
                 >
-                  {isSendingOtp ? "Sending..." : "Send OTP Code"}
+                  {isSendingOtp ? "Sending..." : "Login"}
                 </Button>
                 
                 <div className="text-center mt-4">
