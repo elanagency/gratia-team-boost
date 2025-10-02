@@ -14,10 +14,6 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import UnifiedDashboardLayout from "./pages/dashboard/UnifiedDashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
-import TeamManagement from "./pages/admin/TeamManagement";
-
-import GiftCardsCatalog from "./pages/admin/GiftCardsCatalog";
-
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 
@@ -94,12 +90,10 @@ const App = () => (
               {/* Unified Dashboard routes for all users */}
               <Route path="/dashboard" element={<UnifiedDashboardLayout />}>
                 <Route index element={<Dashboard />} />
-                <Route path="team" element={<TeamManagement />} />
                 <Route path="gift-cards" element={<GiftCardShop />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<ProfileSettings />} />
-                <Route path="gift-cards-old" element={<GiftCardsCatalog />} />
               </Route>
               
               {/* Redirect old team dashboard routes to unified dashboard */}
