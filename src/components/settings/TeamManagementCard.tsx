@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle } from "lucide-react";
-import { useTeamMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
+import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import TeamInviteManager from "@/components/team/TeamInviteManager";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
@@ -28,7 +28,13 @@ export const TeamManagementCard = () => {
     companyId,
     totalPages,
     totalMembers
-  } = useTeamMembers(currentPage, 10);
+  } = useCompanyMembers({
+    includeCurrentUser: true,
+    includeAdmins: true,
+    page: currentPage,
+    pageSize: 10,
+    activeOnly: true
+  });
   
   const { isVerifying } = usePaymentVerification(fetchTeamMembers);
 
