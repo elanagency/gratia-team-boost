@@ -63,8 +63,8 @@ const LoginTest = () => {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (otp.length !== 6) {
       toast.error("Please enter the complete 6-digit code");
@@ -89,6 +89,13 @@ const LoginTest = () => {
       setIsVerifying(false);
     }
   };
+
+  // Auto-verify when OTP is complete
+  useEffect(() => {
+    if (otp.length === 6 && !isVerifying) {
+      handleVerifyOtp();
+    }
+  }, [otp]);
 
   return (
     <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
