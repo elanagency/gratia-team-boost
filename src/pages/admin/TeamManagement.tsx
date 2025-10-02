@@ -21,7 +21,7 @@ const TeamManagement = () => {
     totalPages
   } = useCompanyMembers({
     includeCurrentUser: false,
-    includeAdmins: false,
+    includeAdmins: true,
     page: currentPage,
     pageSize: 10,
     activeOnly: !showDeactivated
