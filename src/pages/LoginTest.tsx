@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -18,18 +18,25 @@ const LoginTest = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const { user } = useAuth();
+  const { user, isPlatformAdmin, isAdmin, isAdminLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard");
-  }
+  useEffect(() => {
+    // If user is already logged in, redirect based on role
+    if (user && !isAdminLoading) {
+      if (isPlatformAdmin) {
+        navigate("/platform-admin");
+      } else if (isAdmin) {
+        navigate("/dashboard");
+      } else {
+        navigate("/dashboard-team");
+      }
+    }
+  }, [user, isPlatformAdmin, isAdmin, isAdminLoading, navigate]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate email
     const result = emailSchema.safeParse(email);
     if (!result.success) {
       toast.error("Please enter a valid email address");
@@ -50,7 +57,6 @@ const LoginTest = () => {
       setIsOtpSent(true);
       toast.success("OTP sent! Check your email for the 6-digit code");
     } catch (error: any) {
-      console.error("Error sending OTP:", error);
       toast.error(error.message || "Failed to send OTP");
     } finally {
       setIsSendingOtp(false);
@@ -67,7 +73,7 @@ const LoginTest = () => {
 
     setIsVerifying(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: "email",
@@ -76,21 +82,8 @@ const LoginTest = () => {
       if (error) throw error;
 
       toast.success("Login successful!");
-      
-      // Redirect based on user role
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_platform_admin, is_admin")
-        .eq("id", data.user?.id)
-        .single();
-
-      if (profile?.is_platform_admin) {
-        navigate("/platform-admin");
-      } else {
-        navigate("/dashboard");
-      }
+      // Auth state change will handle redirection based on user role
     } catch (error: any) {
-      console.error("Error verifying OTP:", error);
       toast.error(error.message || "Invalid OTP code");
     } finally {
       setIsVerifying(false);
@@ -98,100 +91,112 @@ const LoginTest = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-grattia-purple-dark via-grattia-purple-medium to-grattia-purple-dark">
+    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
       <Navbar />
       
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-white/20">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">OTP Login Test</h1>
-              <p className="text-gray-300">Passwordless authentication with email OTP</p>
-            </div>
-
+      <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Roboto' }}>
+              {!isOtpSent ? "Welcome back" : "Enter your code"}
+            </h1>
+            <p className="text-gray-300 text-lg">
+              {!isOtpSent ? "Sign in with OTP to continue" : `We sent a code to ${email}`}
+            </p>
+          </div>
+          
+          <div className="mt-10">
             {!isOtpSent ? (
               <form onSubmit={handleSendOtp} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
-                    Email Address
+                    Work Email
                   </label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    placeholder="john@example.com"
+                    className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white"
                     required
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full bg-grattia-purple-light hover:bg-grattia-purple-light/90"
+                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
                   disabled={isSendingOtp}
                 >
                   {isSendingOtp ? "Sending..." : "Send OTP Code"}
                 </Button>
+                
+                <div className="text-center mt-4">
+                  <p className="text-sm text-gray-400">
+                    Prefer password login?{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/login")}
+                      className="text-[#F572FF] hover:underline"
+                    >
+                      Sign in with password
+                    </button>
+                  </p>
+                </div>
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-4">
                     Enter 6-Digit Code
                   </label>
-                  <p className="text-sm text-gray-300 mb-4">
-                    We sent a code to {email}
-                  </p>
-                  <div className="flex justify-center">
+                  <div className="flex justify-center mb-6">
                     <InputOTP
                       maxLength={6}
                       value={otp}
                       onChange={(value) => setOtp(value)}
                     >
                       <InputOTPGroup>
-                        <InputOTPSlot index={0} className="bg-white/10 border-white/20 text-white" />
-                        <InputOTPSlot index={1} className="bg-white/10 border-white/20 text-white" />
-                        <InputOTPSlot index={2} className="bg-white/10 border-white/20 text-white" />
-                        <InputOTPSlot index={3} className="bg-white/10 border-white/20 text-white" />
-                        <InputOTPSlot index={4} className="bg-white/10 border-white/20 text-white" />
-                        <InputOTPSlot index={5} className="bg-white/10 border-white/20 text-white" />
+                        <InputOTPSlot index={0} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
+                        <InputOTPSlot index={1} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
+                        <InputOTPSlot index={2} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
+                        <InputOTPSlot index={3} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
+                        <InputOTPSlot index={4} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
+                        <InputOTPSlot index={5} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white w-12 h-12 text-lg" />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
+                  <p className="text-sm text-gray-400 text-center mb-4">
+                    Code expires after 60 seconds
+                  </p>
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full bg-grattia-purple-light hover:bg-grattia-purple-light/90"
+                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
                   disabled={isVerifying || otp.length !== 6}
                 >
                   {isVerifying ? "Verifying..." : "Verify & Login"}
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-white hover:bg-white/10"
-                  onClick={() => {
-                    setIsOtpSent(false);
-                    setOtp("");
-                  }}
-                >
-                  Use different email
-                </Button>
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOtpSent(false);
+                      setOtp("");
+                    }}
+                    className="text-sm text-[#F572FF] hover:underline"
+                  >
+                    Use different email
+                  </button>
+                </div>
               </form>
             )}
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-300">
-                Note: OTP codes expire after 60 seconds
-              </p>
-            </div>
           </div>
         </div>
-      </main>
-
+      </div>
+      
       <Footer />
     </div>
   );
