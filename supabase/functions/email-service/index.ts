@@ -22,7 +22,7 @@ const getBrevoTemplateId = (type: string): number => {
     case 'invitation':
       return 8;  // Team member invitation template
     case 'welcome':
-      return 9;  // Admin signup welcome template
+      return 5;  // Admin signup welcome template
     default:
       throw new Error(`Unsupported email type: ${type}`);
   }

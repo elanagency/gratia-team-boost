@@ -97,6 +97,27 @@ const SignUpForm = () => {
         throw verifyError;
       }
 
+      // Send welcome email via Brevo template ID 5
+      try {
+        const firstName = signupData.fullName.split(" ")[0] || signupData.fullName;
+        
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: signupData.email,
+            firstName: firstName,
+            companyName: signupData.companyName
+          }
+        });
+        
+        if (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+        } else {
+          console.log("Welcome email sent successfully");
+        }
+      } catch (emailError) {
+        console.error("Welcome email error:", emailError);
+      }
+
       toast.success("Account created successfully!");
       navigate("/admin");
     } catch (error: any) {
