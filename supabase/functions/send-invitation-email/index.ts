@@ -68,12 +68,8 @@ serve(async (req: Request) => {
         type: 'invitation',
         to: email,
         toName: name,
-        data: {
-          companyName,
-          isNewUser,
-          password,
-          origin,
-          email // Pass email to template data
+        templateParams: {
+          fname: name  // Brevo template ID 8 expects 'fname' parameter
         }
       }
     });
