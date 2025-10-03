@@ -52,10 +52,20 @@ const SignUpForm = () => {
     try {
       setSignupData(data);
       
+      // Parse full name into first and last name
+      const nameParts = data.fullName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin`
+          emailRedirectTo: `${window.location.origin}/admin`,
+          data: {
+            firstName: firstName,
+            lastName: lastName,
+            companyName: data.companyName
+          }
         }
       });
 
@@ -85,24 +95,6 @@ const SignUpForm = () => {
 
       if (verifyError) {
         throw verifyError;
-      }
-
-      // Split full name into first and last name
-      const nameParts = signupData.fullName.split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      // Update user metadata
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          firstName: firstName,
-          lastName: lastName,
-          companyName: signupData.companyName
-        }
-      });
-
-      if (updateError) {
-        throw updateError;
       }
 
       toast.success("Account created successfully!");
