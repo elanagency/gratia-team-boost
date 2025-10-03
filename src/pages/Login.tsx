@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -16,14 +16,16 @@ import { useAuth } from "@/context/AuthContext";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const Login = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
   const { user, isPlatformAdmin, isAdmin, isAdminLoading } = useAuth();
   
@@ -50,31 +52,71 @@ const Login = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
   const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
+    setIsSendingOtp(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
-        password: data.password,
+        options: {
+          shouldCreateUser: false,
+        },
       });
       
       if (error) {
         throw error;
       }
       
+      setUserEmail(data.email);
+      setIsOtpSent(true);
+      toast.success("Check your email for the login code!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send login code");
+      console.error("OTP send error:", error);
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (otp.length !== 6) {
+      toast.error("Please enter the complete 6-digit code");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: userEmail,
+        token: otp,
+        type: 'email',
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast.success("Login successful!");
       // Auth state change will handle redirection based on user role
     } catch (error: any) {
-      toast.error(error.message || "Failed to sign in");
-      console.error("Login error:", error);
+      toast.error(error.message || "Invalid code. Please try again.");
+      console.error("OTP verification error:", error);
+      setOtp("");
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   };
+
+  // Auto-verify when OTP is complete
+  useEffect(() => {
+    if (otp.length === 6 && !isVerifying) {
+      handleVerifyOtp();
+    }
+  }, [otp]);
 
   return (
     <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
@@ -87,78 +129,97 @@ const Login = () => {
               Welcome back
             </h1>
             <p className="text-gray-300 text-lg">
-              Sign in to your account to continue
+              {isOtpSent ? "Enter the code sent to your email" : "Sign in to your account to continue"}
             </p>
           </div>
           
           <div className="mt-10">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Work Email</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="john@example.com" 
-                          className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
+            {!isOtpSent ? (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Work Email</FormLabel>
+                        <FormControl>
                           <Input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
-                            className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white pr-10" 
+                            type="email" 
+                            placeholder="john@example.com" 
+                            className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" 
                             {...field} 
                           />
-                          <button 
-                            type="button"
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex items-center justify-end">
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={isSendingOtp}
+                    className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+                  >
+                    {isSendingOtp ? "Sending code..." : "Continue"}
+                  </Button>
+                  
+                  <div className="text-center mt-4">
+                    <p className="text-sm text-gray-400">
+                      Don't have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => navigate("/signup")}
+                        className="text-[#F572FF] hover:underline"
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                  </div>
+                </form>
+              </Form>
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">
+                    Enter 6-digit code
+                  </label>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={(value) => setOtp(value)}
+                      disabled={isVerifying}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        <InputOTPSlot index={1} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        <InputOTPSlot index={2} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        <InputOTPSlot index={3} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        <InputOTPSlot index={4} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        <InputOTPSlot index={5} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center mt-2">
+                    Code sent to {userEmail}
+                  </p>
+                </div>
+
+                <div className="text-center">
                   <button
                     type="button"
-                    onClick={() => navigate("/forgot-password")}
+                    onClick={() => {
+                      setIsOtpSent(false);
+                      setOtp("");
+                      setUserEmail("");
+                    }}
                     className="text-sm text-[#F572FF] hover:underline"
                   >
-                    Forgot password?
+                    Use a different email
                   </button>
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
-                >
-                  {isLoading ? "Logging in..." : "Log In"}
-                </Button>
-                
+
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-400">
                     Don't have an account?{" "}
@@ -171,8 +232,8 @@ const Login = () => {
                     </button>
                   </p>
                 </div>
-              </form>
-            </Form>
+              </div>
+            )}
           </div>
         </div>
       </div>
