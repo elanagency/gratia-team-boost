@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import PasswordField from "./PasswordField";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -20,9 +20,6 @@ const formSchema = z.object({
   }),
   email: z.string().email({
     message: "Please enter a valid email address."
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters."
   })
 });
 
@@ -31,11 +28,14 @@ type FormValues = {
   fullName: string;
   companyName: string;
   email: string;
-  password: string;
 };
 
 const SignUpForm = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [signupData, setSignupData] = useState<{ fullName: string; companyName: string; email: string } | null>(null);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
@@ -43,28 +43,19 @@ const SignUpForm = () => {
     defaultValues: {
       fullName: "",
       companyName: "",
-      email: "",
-      password: ""
+      email: ""
     }
   });
 
   const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
+    setIsSendingOtp(true);
     try {
-      // Split full name into first and last name
-      const nameParts = data.fullName.split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      const { data: authData, error } = await supabase.auth.signUp({
+      setSignupData(data);
+      
+      const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
-        password: data.password,
         options: {
-          data: {
-            firstName: firstName,
-            lastName: lastName,
-            companyName: data.companyName
-          }
+          emailRedirectTo: `${window.location.origin}/admin`
         }
       });
 
@@ -72,15 +63,69 @@ const SignUpForm = () => {
         throw error;
       }
 
-      toast.success("Account created successfully!");
+      setIsOtpSent(true);
+      toast.success("We've sent a 6-digit code to your email");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send verification code");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
 
-      // Redirect to admin dashboard after successful signup
+  const handleVerifyOtp = async () => {
+    if (!signupData || otp.length !== 6) return;
+    
+    setIsVerifying(true);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: signupData.email,
+        token: otp,
+        type: 'email'
+      });
+
+      if (verifyError) {
+        throw verifyError;
+      }
+
+      // Split full name into first and last name
+      const nameParts = signupData.fullName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      // Update user metadata
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          firstName: firstName,
+          lastName: lastName,
+          companyName: signupData.companyName
+        }
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      toast.success("Account created successfully!");
       navigate("/admin");
     } catch (error: any) {
-      toast.error(error.message || "An error occurred during signup");
+      toast.error(error.message || "Invalid verification code");
+      setOtp("");
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
+  };
+
+  // Auto-verify when OTP is complete
+  useEffect(() => {
+    if (otp.length === 6) {
+      handleVerifyOtp();
+    }
+  }, [otp]);
+
+  const handleUseDifferentEmail = () => {
+    setIsOtpSent(false);
+    setOtp("");
+    setSignupData(null);
   };
 
   return (
@@ -88,92 +133,142 @@ const SignUpForm = () => {
       {/* Header for Sign Up */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Roboto' }}>
-          Create your account
+          {isOtpSent ? "Check your email" : "Create your account"}
         </h1>
         <p className="text-gray-300 text-lg">
-          Join us and start recognizing your team
+          {isOtpSent ? `We sent a 6-digit code to ${signupData?.email}` : "Join us and start recognizing your team"}
         </p>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="fullName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white">Full legal name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Jane Doe"
-                    className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white">Company name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Acme Inc."
-                    className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white">Company email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="you@company.com"
-                    className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <PasswordField control={form.control} />
-          
-          <Button
-            type="submit"
-            className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white h-12 text-base"
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating Account..." : "Sign up for free"}
-          </Button>
-          
-          <div className="text-center">
-            <p className="text-sm text-gray-400 mt-6">
-              By signing up, you agree to our{" "}
-              <Link to="/terms" className="text-[#F572FF] hover:underline">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link to="/privacy" className="text-[#F572FF] hover:underline">
-                Privacy Policy
-              </Link>
-            </p>
+      {!isOtpSent ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Full legal name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Jane Doe"
+                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Company name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Acme Inc."
+                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Company email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="you@company.com"
+                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <Button
+              type="submit"
+              className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white h-12 text-base"
+              disabled={isSendingOtp}
+            >
+              {isSendingOtp ? "Sending Code..." : "Continue"}
+            </Button>
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mt-6">
+                By signing up, you agree to our{" "}
+                <Link to="/terms" className="text-[#F572FF] hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-[#F572FF] hover:underline">
+                  Privacy Policy
+                </Link>
+              </p>
+              
+              <p className="text-sm text-gray-400 mt-4">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="text-[#F572FF] hover:underline"
+                >
+                  Log in
+                </button>
+              </p>
+            </div>
+          </form>
+        </Form>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={setOtp}
+              disabled={isVerifying}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                <InputOTPSlot index={1} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                <InputOTPSlot index={2} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                <InputOTPSlot index={3} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                <InputOTPSlot index={4} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                <InputOTPSlot index={5} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          {isVerifying && (
+            <p className="text-center text-gray-400 text-sm">
+              Verifying your code...
+            </p>
+          )}
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={handleUseDifferentEmail}
+              className="text-[#F572FF] hover:underline text-sm"
+              disabled={isVerifying}
+            >
+              Use a different email
+            </button>
+          </div>
+
+          <div className="text-center">
             <p className="text-sm text-gray-400 mt-4">
               Already have an account?{" "}
               <button
@@ -185,8 +280,8 @@ const SignUpForm = () => {
               </button>
             </p>
           </div>
-        </form>
-      </Form>
+        </div>
+      )}
     </div>
   );
 };
