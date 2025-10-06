@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRedemptions } from "@/hooks/useRedemptions";
 import { format } from "date-fns";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const RedemptionHistory = () => {
@@ -56,8 +56,16 @@ export const RedemptionHistory = () => {
             <Card key={redemption.id} className="p-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="flex gap-4 mb-3 sm:mb-0">
-                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                    <span className="text-gray-400 text-xs">Gift</span>
+                  <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {redemption.reward?.image_url ? (
+                      <img 
+                        src={redemption.reward.image_url} 
+                        alt={redemption.reward.name || "Gift card"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Gift className="text-muted-foreground" size={24} />
+                    )}
                   </div>
                   
                   <div>
