@@ -40,25 +40,30 @@ export function MonthlyLeaderboardCard() {
         return;
       }
       
-      // Fetch point transactions for current month, grouped by recipient
+      // Fetch only positive peer-to-peer recognition transactions for current month
       const { data: transactions, error: transactionsError } = await supabase
         .from('point_transactions')
         .select(`
           recipient_profile_id,
+          sender_profile_id,
           points
         `)
         .eq('company_id', companyId)
         .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', `${currentMonth}-31T23:59:59`);
+        .lt('created_at', `${currentMonth}-31T23:59:59`)
+        .gt('points', 0); // Only positive points
       
       if (transactionsError) throw transactionsError;
       
       // Group points by recipient and calculate totals
-      const pointsByUser = transactions?.reduce((acc, transaction) => {
-        const userId = transaction.recipient_profile_id;
-        acc[userId] = (acc[userId] || 0) + transaction.points;
-        return acc;
-      }, {} as Record<string, number>) || {};
+      // Exclude self-transactions
+      const pointsByUser = transactions
+        ?.filter(t => t.sender_profile_id !== t.recipient_profile_id)
+        .reduce((acc, transaction) => {
+          const userId = transaction.recipient_profile_id;
+          acc[userId] = (acc[userId] || 0) + transaction.points;
+          return acc;
+        }, {} as Record<string, number>) || {};
       
       // Format leaderboard with all active members, including those with 0 points
       const formattedLeaderboard: LeaderboardMember[] = profiles

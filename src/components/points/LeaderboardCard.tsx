@@ -52,21 +52,25 @@ export function LeaderboardCard() {
       const adminOnlyCheck = profiles.length === 1 && profiles[0].is_admin;
       setIsOnlyAdmin(adminOnlyCheck);
       
-      // Fetch all point transactions for this company
+      // Fetch only positive peer-to-peer recognition transactions
       const { data: transactions, error: transactionsError } = await supabase
         .from('point_transactions')
-        .select('recipient_profile_id, points')
-        .eq('company_id', companyId);
-      
+        .select('recipient_profile_id, sender_profile_id, points')
+        .eq('company_id', companyId)
+        .gt('points', 0); // Only positive points
+
       if (transactionsError) throw transactionsError;
-      
+
       // Calculate total recognition points received for each user
+      // Exclude self-transactions (these could be system grants)
       const pointsMap = new Map<string, number>();
       if (transactions?.length) {
-        transactions.forEach(transaction => {
-          const currentPoints = pointsMap.get(transaction.recipient_profile_id) || 0;
-          pointsMap.set(transaction.recipient_profile_id, currentPoints + transaction.points);
-        });
+        transactions
+          .filter(t => t.sender_profile_id !== t.recipient_profile_id) // Exclude self-transactions
+          .forEach(transaction => {
+            const currentPoints = pointsMap.get(transaction.recipient_profile_id) || 0;
+            pointsMap.set(transaction.recipient_profile_id, currentPoints + transaction.points);
+          });
       }
       
       // Format leaderboard with all active members, sorted by recognition points
