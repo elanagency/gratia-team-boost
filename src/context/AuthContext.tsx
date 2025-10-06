@@ -3,6 +3,7 @@ import { createContext, useContext, ReactNode, useEffect } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const authData = useOptimizedAuth();
   
   // Helper function to check if company has existing subscription and update quantity if needed
@@ -150,6 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.error('Error updating invitation status:', updateError);
             } else {
               console.log('Updated user invitation status to active and allocated 100 monthly points');
+              // Invalidate user profile query to refresh points and status
+              queryClient.invalidateQueries({ queryKey: ['user-profile', profile.id] });
               
               // Check if this is the first non-admin member login to activate billing
               if (profile.company_id && !profile.is_admin) {
@@ -207,6 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.error('Error updating first login status:', updateError);
             } else {
               console.log('Updated first login and allocated 100 monthly points');
+              // Invalidate user profile query to refresh points and status
+              queryClient.invalidateQueries({ queryKey: ['user-profile', profile.id] });
               
               // Check if this is the first non-admin member login to activate billing
               if (profile.company_id && !profile.is_admin) {

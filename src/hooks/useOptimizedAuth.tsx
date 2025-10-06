@@ -40,7 +40,6 @@ export const useOptimizedAuth = () => {
         .from('profiles')
         .select('first_name, last_name, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
         .eq('id', userId)
-        .eq('status', 'active')
         .maybeSingle();
 
       if (profileError) throw profileError;
