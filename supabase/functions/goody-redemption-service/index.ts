@@ -215,38 +215,31 @@ serve(async (req) => {
 
     const goodyResult = await goodyResponse.json();
     console.log('Goody order batch created:', goodyResult.id, 'Status:', goodyResult.status);
+    console.log('Full Goody response:', JSON.stringify(goodyResult, null, 2));
 
-    // Validate order batch status
-    if (goodyResult.status !== 'completed') {
-      console.error('Order batch not completed immediately:', goodyResult.status);
+    // In async processing mode, we accept orders without immediate completion
+    const isTestEnvironment = company.environment === 'test';
+    const orderBatchId = goodyResult.id;
+    
+    if (!orderBatchId) {
+      console.error('No order batch ID received from Goody');
       return new Response(JSON.stringify({ 
-        error: 'Order processing failed',
-        details: `Order batch status: ${goodyResult.status}` 
+        error: 'Failed to create order batch',
+        details: 'No order batch ID in response' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const order = goodyResult.orders_preview?.[0];
-    if (!order) {
-      console.error('No order created in batch');
-      return new Response(JSON.stringify({ error: 'Failed to create order' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Try to extract order and gift link (may not be available immediately)
+    const order = goodyResult.orders_preview?.[0] || goodyResult.orders?.[0];
+    const orderId = order?.id || null;
+    const giftLink = order?.individual_gift_link || order?.gift_link || null;
 
-    // Validate order has gift link
-    if (!order.individual_gift_link) {
-      console.error('Order created but no gift link available');
-      return new Response(JSON.stringify({ error: 'Gift link not available' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Order created successfully:', order.id, 'Gift link:', order.individual_gift_link);
+    console.log('Order batch created:', orderBatchId);
+    console.log('Order ID:', orderId || 'Will be provided via webhook');
+    console.log('Gift link:', giftLink ? 'Available immediately' : 'Will be provided via webhook');
 
     // Start database transaction
     console.log('Processing database updates...');
@@ -269,7 +262,7 @@ serve(async (req) => {
       });
     }
 
-    // Create redemption record
+    // Create redemption record with pending status (webhook will update when ready)
     const { data: redemption, error: redemptionError } = await supabase
       .from('redemptions')
       .insert([{
@@ -279,11 +272,11 @@ serve(async (req) => {
         reward_name: rewardName,
         points_spent: pointsCost,
         dollar_amount: dollarAmount,
-        status: 'created',
+        status: giftLink ? 'completed' : 'pending', // Mark as pending if no immediate gift link
         shipping_address: { email: recipientEmail },
-        goody_order_id: order.id,
-        goody_order_batch_id: goodyResult.id,
-        individual_gift_link: order.individual_gift_link
+        goody_order_id: orderId,
+        goody_order_batch_id: orderBatchId,
+        individual_gift_link: giftLink // May be null, webhook will update
       }])
       .select()
       .single();
@@ -329,18 +322,25 @@ serve(async (req) => {
       // Note: This is for audit only, so we don't rollback the entire transaction
     }
 
-    console.log('Redemption completed successfully:', redemption.id);
+    console.log('Redemption initiated successfully:', redemption.id);
+    console.log('Status:', redemption.status);
     console.log('Total processing time:', Date.now() - startTime, 'ms');
+
+    const responseMessage = giftLink 
+      ? 'Gift card ready immediately!' 
+      : 'Redemption initiated! Your gift card will be ready shortly.';
 
     return new Response(JSON.stringify({
       success: true,
+      message: responseMessage,
       redemption: {
         id: redemption.id,
         giftLink: redemption.individual_gift_link,
         status: redemption.status,
         rewardName: redemption.reward_name,
         goodyOrderId: redemption.goody_order_id,
-        processingTimeMs: Date.now() - startTime
+        processingTimeMs: Date.now() - startTime,
+        isPending: !giftLink
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

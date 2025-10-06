@@ -1,7 +1,8 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 
 export interface Redemption {
   id: string;
@@ -22,6 +23,7 @@ export interface Redemption {
 
 export const useRedemptions = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     data: redemptions = [],
@@ -74,6 +76,36 @@ export const useRedemptions = () => {
     },
     enabled: !!user
   });
+
+  // Subscribe to real-time updates for redemptions
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('Setting up real-time subscription for redemptions');
+    
+    const channel = supabase
+      .channel('redemptions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'redemptions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Redemption updated via webhook:', payload);
+          // Invalidate query to refetch redemptions
+          queryClient.invalidateQueries({ queryKey: ['redemptions', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   return {
     redemptions,
