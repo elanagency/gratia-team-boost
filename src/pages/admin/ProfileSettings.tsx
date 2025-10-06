@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { RedemptionHistory } from "@/components/team/RedemptionHistory";
 
 const ProfileSettings = () => {
   const { user, firstName, lastName, isLoading, isAdmin } = useAuth();
@@ -115,6 +116,18 @@ const ProfileSettings = () => {
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>🎁 My Redemption History</CardTitle>
+          <CardDescription>
+            View all your gift card redemptions and their status
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RedemptionHistory />
         </CardContent>
       </Card>
     </div>
