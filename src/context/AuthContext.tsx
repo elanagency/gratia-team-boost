@@ -137,6 +137,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (profile) {
+          // Block deactivated users from accessing the platform
+          if (profile.status === 'deactivated') {
+            console.log('Deactivated user attempted to access platform, signing out');
+            await supabase.auth.signOut();
+            toast.error("Your account has been deactivated. Please contact your administrator.");
+            navigate("/login");
+            return;
+          }
+
           // Handle invited users becoming active
           if (profile.status === 'invited') {
             const { error: updateError } = await supabase

@@ -96,7 +96,7 @@ const Login = () => {
 
     setIsVerifying(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      const { data: authData, error } = await supabase.auth.verifyOtp({
         email: userEmail,
         token: otp,
         type: 'email',
@@ -104,6 +104,30 @@ const Login = () => {
 
       if (error) {
         throw error;
+      }
+
+      // Check user status immediately after OTP verification
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error checking user status:", profileError);
+          throw profileError;
+        }
+
+        // Block deactivated users
+        if (profileData?.status === 'deactivated') {
+          console.log("Deactivated user attempted to login, signing out");
+          await supabase.auth.signOut();
+          toast.error("Your account has been deactivated. Please contact your administrator.");
+          setOtp("");
+          setIsVerifying(false);
+          return;
+        }
       }
 
       toast.success("Login successful!");

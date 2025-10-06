@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
-
+import { toast } from "sonner";
 import { DashboardTopNavigation } from "@/components/dashboard/DashboardTopNavigation";
 
 const UnifiedDashboardLayout = () => {
@@ -14,7 +14,8 @@ const UnifiedDashboardLayout = () => {
     isAdminLoading,
     signOut,
     isAdmin,
-    isPlatformAdmin
+    isPlatformAdmin,
+    status
   } = useAuth();
   
   useEffect(() => {
@@ -24,6 +25,15 @@ const UnifiedDashboardLayout = () => {
       console.log("Admin loading status:", isAdminLoading);
     }
   }, [user, isAdmin, isAdminLoading]);
+  
+  // Check for deactivated status and block access
+  useEffect(() => {
+    if (user && !isLoading && !isAdminLoading && status === 'deactivated') {
+      console.log("Deactivated user detected in dashboard, signing out");
+      toast.error("Your account has been deactivated. Please contact your administrator.");
+      signOut();
+    }
+  }, [user, isLoading, isAdminLoading, status, signOut]);
   
   // Show loading spinner if either main loading or admin status is loading
   if (isLoading || isAdminLoading) {
