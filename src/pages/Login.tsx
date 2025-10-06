@@ -64,11 +64,17 @@ const Login = () => {
           shouldCreateUser: false,
         },
       });
-      
+
       if (error) {
+        // Check if the error is because the user doesn't exist
+        if (error.message.includes('Signups not allowed') || error.message.includes('otp_disabled')) {
+          toast.error("We can't find an account with this email address");
+          setIsSendingOtp(false);
+          return;
+        }
         throw error;
       }
-      
+
       setUserEmail(data.email);
       setIsOtpSent(true);
       toast.success("Check your email for the login code!");
