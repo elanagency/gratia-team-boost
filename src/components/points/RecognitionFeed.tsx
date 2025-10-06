@@ -91,14 +91,26 @@ export function RecognitionFeed() {
         return;
       }
 
-      // Filter out system/cron job transactions by description patterns only
+      // Filter out system/cron job transactions, redemptions, and self-transactions
       const filteredTransactions = transactionsData.filter(transaction => {
+        // 1. Exclude self-transactions (redemptions, refunds, etc.)
+        if (transaction.sender_profile_id === transaction.recipient_profile_id) {
+          return false;
+        }
+        
+        // 2. Exclude negative or zero point transactions (redemptions deduct points)
+        if (transaction.points <= 0) {
+          return false;
+        }
+        
+        // 3. Exclude system/automated transactions by description pattern
         const systemDescriptionPatterns = [
           /monthly allocation/i,
           /system grant/i,
           /platform admin granted/i,
           /automated allocation/i,
-          /scheduled points/i
+          /scheduled points/i,
+          /redeemed/i  // Catch any redemption-related transactions
         ];
         
         const isSystemTransaction = systemDescriptionPatterns.some(pattern => 
