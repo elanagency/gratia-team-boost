@@ -187,7 +187,7 @@ const Login = () => {
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-white text-center block">
                     Enter 6-digit code
                   </label>
                   <div className="flex justify-center">
