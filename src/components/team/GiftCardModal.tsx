@@ -18,9 +18,15 @@ interface GiftCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   exchangeRate: string;
+  onRedemptionSuccess?: (data: {
+    brandName: string;
+    dollarAmount: number;
+    pointsSpent: number;
+    giftLink?: string;
+  }) => void;
 }
 
-export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCardModalProps) => {
+export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedemptionSuccess }: GiftCardModalProps) => {
   const { user, recognitionPoints, isLoading: isLoadingPoints, firstName, lastName } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -51,7 +57,18 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate }: GiftCar
       }
 
       if (data?.success) {
-        toast.success(`Successfully redeemed $${dollarAmount} ${reward.name}! Gift link sent to ${recipientEmail}`);
+        const pointsSpent = Math.ceil(dollarAmount / parseFloat(exchangeRate));
+        
+        // Call success callback if provided
+        if (onRedemptionSuccess) {
+          onRedemptionSuccess({
+            brandName: reward.name,
+            dollarAmount: dollarAmount,
+            pointsSpent: pointsSpent,
+            giftLink: data.giftLink
+          });
+        }
+        
         onClose();
       } else {
         throw new Error(data?.error || 'Redemption failed');

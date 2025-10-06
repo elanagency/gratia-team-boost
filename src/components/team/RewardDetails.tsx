@@ -10,25 +10,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { RewardImage } from "./RewardImage";
 import { RewardInfo } from "./RewardInfo";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
-import { RedemptionSuccessDialog } from "./RedemptionSuccessDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface RewardDetailsProps {
   reward: GiftCard;
   onClose: () => void;
-}
-
-export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
-  const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [redemptionData, setRedemptionData] = useState<{
+  onRedemptionSuccess?: (data: {
     brandName: string;
     dollarAmount: number;
     pointsSpent: number;
     giftLink?: string;
-  } | null>(null);
+  }) => void;
+}
+
+export const RewardDetails = ({ reward, onClose, onRedemptionSuccess }: RewardDetailsProps) => {
+  const { user, recognitionPoints, isLoading: isLoadingPoints } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
   const { pointExchangeRate } = usePlatformSettings();
   const exchangeRate = pointExchangeRate?.toString() || '0.03';
+  const queryClient = useQueryClient();
 
   const handleRedeem = async (dollarAmount: number, recipientEmail: string) => {
     if (!user) {
@@ -55,14 +55,19 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
       if (data?.success) {
         const pointsSpent = Math.ceil(dollarAmount / parseFloat(exchangeRate));
         
-        setRedemptionData({
-          brandName: reward.name,
-          dollarAmount: dollarAmount,
-          pointsSpent: pointsSpent,
-          giftLink: data.giftLink
-        });
+        // Invalidate user profile to refetch points
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
         
-        setShowSuccessDialog(true);
+        // Call success callback if provided
+        if (onRedemptionSuccess) {
+          onRedemptionSuccess({
+            brandName: reward.name,
+            dollarAmount: dollarAmount,
+            pointsSpent: pointsSpent,
+            giftLink: data.giftLink
+          });
+        }
+        
         onClose();
       } else {
         throw new Error(data?.error || 'Redemption failed');
@@ -76,46 +81,33 @@ export const RewardDetails = ({ reward, onClose }: RewardDetailsProps) => {
   };
 
   return (
-    <>
-      <div className="space-y-6">
-        <Button 
-          variant="ghost" 
-          onClick={onClose} 
-          className="mb-4 hover:bg-transparent pl-0"
-        >
-          <ArrowLeft className="mr-2" size={18} />
-          Back to Rewards
-        </Button>
-        
-        <Card className="overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <RewardImage 
-              imageUrl={reward.image_url} 
-              rewardName={reward.name} 
-            />
-            
-            <RewardInfo
-              reward={reward}
-              onRedeem={handleRedeem}
-              isProcessing={isProcessing}
-              userPoints={recognitionPoints}
-              isLoadingPoints={isLoadingPoints}
-              exchangeRate={exchangeRate}
-            />
-          </div>
-        </Card>
-      </div>
-
-      {redemptionData && (
-        <RedemptionSuccessDialog
-          open={showSuccessDialog}
-          onOpenChange={setShowSuccessDialog}
-          brandName={redemptionData.brandName}
-          dollarAmount={redemptionData.dollarAmount}
-          pointsSpent={redemptionData.pointsSpent}
-          giftLink={redemptionData.giftLink}
-        />
-      )}
-    </>
+    <div className="space-y-6">
+      <Button 
+        variant="ghost" 
+        onClick={onClose} 
+        className="mb-4 hover:bg-transparent pl-0"
+      >
+        <ArrowLeft className="mr-2" size={18} />
+        Back to Rewards
+      </Button>
+      
+      <Card className="overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          <RewardImage 
+            imageUrl={reward.image_url} 
+            rewardName={reward.name} 
+          />
+          
+          <RewardInfo
+            reward={reward}
+            onRedeem={handleRedeem}
+            isProcessing={isProcessing}
+            userPoints={recognitionPoints}
+            isLoadingPoints={isLoadingPoints}
+            exchangeRate={exchangeRate}
+          />
+        </div>
+      </Card>
+    </div>
   );
 };
