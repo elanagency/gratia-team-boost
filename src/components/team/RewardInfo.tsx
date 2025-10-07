@@ -33,7 +33,7 @@ export const RewardInfo = ({
   const [recipientFirstName, setRecipientFirstName] = useState(currentUserFirstName);
   const [recipientLastName, setRecipientLastName] = useState(currentUserLastName);
   
-  const dollarAmounts = [10, 20, 50, 100];
+  const dollarAmounts = [15, 20, 25, 30];
   const rate = parseFloat(exchangeRate);
   
   // Calculate points for each dollar amount
