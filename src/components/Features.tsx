@@ -4,39 +4,39 @@ import { Gift, Users, TrendingUp, Award, Sparkles, Heart } from 'lucide-react';
 const Features = () => {
   const features = [
     {
-      icon: Gift,
-      title: "Instant Recognition",
-      description: "Send points in real-time to celebrate wins, big and small.",
+      icon: Users,
+      title: "Peer-to-Peer Recognition",
+      description: "Empower employees to give instant kudos and appreciation to their colleagues.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
     },
     {
-      icon: Users,
-      title: "Team Collaboration",
-      description: "Foster teamwork and strengthen connections across your organization.",
+      icon: Gift,
+      title: "Points & Gift Cards",
+      description: "Employees earn points for recognition, redeemable for a wide range of gift cards.",
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
     },
     {
       icon: TrendingUp,
-      title: "Track Impact",
-      description: "Measure engagement and see how recognition drives performance.",
+      title: "Real-time HR Analytics",
+      description: "HR personnel gain insights into team collaboration and recognition trends.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
     },
     {
       icon: Award,
-      title: "Reward Store",
-      description: "Choose from hundreds of gift cards and experiences to redeem.",
+      title: "Team Celebrations",
+      description: "Celebrate wins together with team-wide shoutouts and achievements.",
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
     },
     {
       icon: Sparkles,
-      title: "Custom Programs",
-      description: "Tailor recognition programs to match your company culture.",
+      title: "Social Recognition Feed",
+      description: "Create a vibrant culture of appreciation with a dynamic recognition feed.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
     },
     {
-      icon: Heart,
-      title: "Employee Wellness",
-      description: "Boost morale and create a positive workplace environment.",
+      icon: Award,
+      title: "Custom Badges",
+      description: "Design unique badges that reflect your company values and culture.",
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
     }
   ];
@@ -52,10 +52,10 @@ const Features = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Why Teams Love <span className="text-gradient">Grattia</span>
+            Everything You Need to <span className="text-gradient">Spread the Love</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Everything you need to build a culture of recognition and appreciation
+            Powerful features designed to make employee recognition effortless and enjoyable
           </p>
         </motion.div>
         
