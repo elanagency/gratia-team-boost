@@ -1,6 +1,9 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import HowItWorks from "@/components/HowItWorks";
+import SlackIntegration from "@/components/SlackIntegration";
+import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 
@@ -11,6 +14,9 @@ const Index = () => {
       <main>
         <Hero />
         <Features />
+        <HowItWorks />
+        <SlackIntegration />
+        <Pricing />
         <CTA />
       </main>
       <Footer />

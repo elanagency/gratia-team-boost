@@ -1,50 +1,89 @@
-
-const steps = [
-  {
-    number: 1,
-    title: "Give Recognition",
-    description: "Instantly send points with a personal message"
-  },
-  {
-    number: 2,
-    title: "Collect Points",
-    description: "Watch your points grow with each recognition"
-  },
-  {
-    number: 3,
-    title: "Choose Rewards",
-    description: "Browse our curated reward catalog"
-  },
-  {
-    number: 4,
-    title: "Redeem & Enjoy",
-    description: "Get your rewards instantly delivered"
-  }
-];
+import { motion } from 'framer-motion';
+import { UserPlus, Heart, TrendingUp } from 'lucide-react';
 
 const HowItWorks = () => {
+  const steps = [
+    {
+      icon: UserPlus,
+      title: 'Set Up Your Team',
+      description: 'Invite your team members in minutes. Simple onboarding, zero hassle!',
+      gradient: 'from-[#FC36FF] to-[#7F38B7]',
+    },
+    {
+      icon: Heart,
+      title: 'Start Recognizing',
+      description: 'Empower employees to send kudos and earn points for every appreciation.',
+      gradient: 'from-[#7A1BF7] to-[#00C2FF]',
+    },
+    {
+      icon: TrendingUp,
+      title: 'Watch Engagement Soar',
+      description: 'See morale boost, productivity rise, and culture transform with real-time analytics!',
+      gradient: 'from-[#00E5A1] to-[#00C2FF]',
+    },
+  ];
+
   return (
-    <section id="how-it-works" className="py-20 px-4">
-      <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-            Simple & Effective
+    <section className="py-24 px-4 bg-[#0F0533] relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 right-10 w-64 h-64 bg-[#7A1BF7]/20 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            Get Started in
+            <span className="block text-gradient">3 Simple Steps</span>
           </h2>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            No complex setup, no training needed. Just pure recognition magic! ✨
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, index) => (
-            <div 
-              key={step.number} 
-              className="flex flex-col items-center justify-between border border-grattia-purple-light/20 rounded-2xl p-8 relative overflow-hidden animate-scale-in min-h-[240px] h-full"
-              style={{ animationDelay: `${index * 100}ms` }}
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.2, duration: 0.6 }}
+              className="relative"
             >
-              <div className="w-12 h-12 rounded-full bg-grattia-pink flex items-center justify-center text-white font-semibold text-lg mb-4">
-                {step.number}
+              <div className="card-gradient p-8 rounded-3xl border border-white/50 shadow-lg text-center relative">
+                <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-br from-[#FC36FF] to-[#7A1BF7] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {index + 1}
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ duration: 0.3 }}
+                  className={`inline-flex p-6 rounded-3xl bg-gradient-to-br ${step.gradient} mb-6 shadow-xl`}
+                >
+                  <step.icon className="w-12 h-12 text-white" />
+                </motion.div>
+
+                <h3 className="text-2xl font-bold mb-4 text-white">{step.title}</h3>
+                <p className="text-gray-300 leading-relaxed">{step.description}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-white text-center">{step.title}</h3>
-              <p className="text-gray-300 text-center flex-1">{step.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
