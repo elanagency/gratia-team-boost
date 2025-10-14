@@ -1,25 +1,44 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 
 const CTA = () => {
   return (
-    <section className="py-20 px-4 relative overflow-hidden">
-      {/* Animated background gradient */}
+    <section className="py-24 px-4 relative overflow-hidden bg-gradient-to-br from-[#FC36FF] via-[#7F38B7] to-[#7A1BF7]">
+      {/* Animated radial gradient overlays */}
       <motion.div
         animate={{ 
           scale: [1, 1.2, 1],
-          rotate: [0, 90, 0]
+          opacity: [0.3, 0.5, 0.3]
         }}
         transition={{ 
-          duration: 20,
+          duration: 8,
           repeat: Infinity,
-          ease: "linear"
+          ease: "easeInOut"
         }}
-        className="absolute inset-0 bg-gradient-to-r from-[#FC36FF]/20 via-[#7A1BF7]/20 to-[#FC36FF]/20 blur-3xl"
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+        }}
+      />
+      <motion.div
+        animate={{ 
+          scale: [1.2, 1, 1.2],
+          opacity: [0.2, 0.4, 0.2]
+        }}
+        transition={{ 
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+        }}
       />
       
-      <div className="max-w-4xl mx-auto text-center relative z-10">
+      <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -31,31 +50,40 @@ const CTA = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-block mb-6"
+            animate={{ y: [0, -10, 0] }}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-sm font-medium text-white mb-6"
           >
-            <span className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FC36FF]/20 to-[#7A1BF7]/20 border border-[#FC36FF]/30 text-sm font-medium text-white">
-              🚀 Start Today
-            </span>
+            <Sparkles className="w-4 h-4" />
+            Join the Movement Toward Better Workplace Culture
           </motion.div>
           
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Ready to Transform Your{' '}
-            <span className="text-gradient">Team Culture</span>?
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+            Ready to Transform Your <span className="block">Workplace Culture?</span>
           </h2>
           
-          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-            Join hundreds of companies using Grattia to build stronger, more engaged teams through meaningful recognition.
+          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
+            Start making your team feel valued today.
           </p>
           
-          <Link to="/signup">
-            <Button 
-              className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-8 py-6 text-lg rounded-full shadow-2xl hover:shadow-[#FC36FF]/50 transition-all duration-300"
-            >
-              Get Started for Free
-            </Button>
-          </Link>
+          <div className="pt-4">
+            <Link to="/signup">
+              <Button 
+                className="bg-white text-[#7A1BF7] hover:bg-gray-100 px-8 py-6 text-lg rounded-full shadow-2xl transition-all duration-300"
+              >
+                Let's Do It!
+              </Button>
+            </Link>
+          </div>
         </motion.div>
       </div>
+
+      {/* Bottom fade to background */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0F0533] to-transparent"
+      />
     </section>
   );
 };
