@@ -1,13 +1,9 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import ProductAnimation from '@/components/ProductAnimation';
 
 const Hero = () => {
-  const handleGetStarted = () => {
-    toast.info("🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀");
-  };
-
   return (
     <section className="relative min-h-screen flex items-center px-4 py-20 overflow-hidden pt-32 lg:pt-20">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -60,13 +56,14 @@ const Hero = () => {
             transition={{ delay: 0.5, duration: 0.6 }}
             className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
           >
-            <Button
-              onClick={handleGetStarted}
-              size="lg"
-              className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Get Started
-            </Button>
+            <Link to="/signup">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Get Started
+              </Button>
+            </Link>
           </motion.div>
         </motion.div>
 

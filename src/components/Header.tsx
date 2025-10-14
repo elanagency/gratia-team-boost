@@ -1,11 +1,8 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
-  const handleAuthAction = () => {
-    toast.info("🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀");
-  };
 
   return (
     <motion.header
@@ -24,19 +21,21 @@ const Header = () => {
             />
           </div>
           <div className="flex items-center gap-4">
-            <Button
-              onClick={handleAuthAction}
-              variant="ghost"
-              className="text-white hover:bg-white/10"
-            >
-              Login
-            </Button>
-            <Button
-              onClick={handleAuthAction}
-              className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-5 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Sign Up
-            </Button>
+            <Link to="/login">
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-white/10"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link to="/signup">
+              <Button
+                className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-5 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Sign Up
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
