@@ -145,7 +145,7 @@ const SignUpForm = () => {
     <div className="mt-8">
       {/* Header for Sign Up */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Roboto' }}>
+        <h1 className="text-3xl font-bold text-white mb-2">
           {isOtpSent ? "Check your email" : "Create your account"}
         </h1>
         <p className="text-gray-300 text-lg">
