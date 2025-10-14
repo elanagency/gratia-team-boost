@@ -7,37 +7,37 @@ const Features = () => {
       icon: Zap,
       title: "Peer-to-Peer Recognition",
       description: "Empower employees to give instant kudos and appreciation to their colleagues.",
-      gradient: "from-[#00D4FF] to-[#9333EA]"
+      gradient: "from-[#9333EA] to-[#7A1BF7]"
     },
     {
       icon: Gift,
       title: "Points & Gift Cards",
       description: "Employees earn points for recognition, redeemable for a wide range of gift cards.",
-      gradient: "from-[#9333EA] to-[#00D4FF]"
+      gradient: "from-[#9333EA] to-[#00C2FF]"
     },
     {
       icon: BarChart3,
       title: "Real-time HR Analytics",
       description: "HR personnel gain insights into team collaboration and recognition trends.",
-      gradient: "from-[#00D4FF] to-[#9333EA]"
+      gradient: "from-[#00E5A1] to-[#00C2FF]"
     },
     {
       icon: Users,
       title: "Team Celebrations",
       description: "Celebrate wins together with team-wide shoutouts and achievements.",
-      gradient: "from-[#9333EA] to-[#00D4FF]"
+      gradient: "from-[#00E5A1] to-[#9333EA]"
     },
     {
       icon: MessageCircle,
       title: "Social Recognition Feed",
       description: "Create a vibrant culture of appreciation with a dynamic recognition feed.",
-      gradient: "from-[#00D4FF] to-[#9333EA]"
+      gradient: "from-[#9333EA] to-[#7A1BF7]"
     },
     {
       icon: Star,
       title: "Custom Badges",
       description: "Design unique badges that reflect your company values and culture.",
-      gradient: "from-[#9333EA] to-[#00D4FF]"
+      gradient: "from-[#9333EA] to-[#00C2FF]"
     }
   ];
 
