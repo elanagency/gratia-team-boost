@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { Gift, Users, TrendingUp, Award, Sparkles, Heart } from 'lucide-react';
+import { Zap, Gift, BarChart3, Users, MessageCircle, Star } from 'lucide-react';
 
 const Features = () => {
   const features = [
     {
-      icon: Users,
+      icon: Zap,
       title: "Peer-to-Peer Recognition",
       description: "Empower employees to give instant kudos and appreciation to their colleagues.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
@@ -16,25 +16,25 @@ const Features = () => {
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
     },
     {
-      icon: TrendingUp,
+      icon: BarChart3,
       title: "Real-time HR Analytics",
       description: "HR personnel gain insights into team collaboration and recognition trends.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
     },
     {
-      icon: Award,
+      icon: Users,
       title: "Team Celebrations",
       description: "Celebrate wins together with team-wide shoutouts and achievements.",
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
     },
     {
-      icon: Sparkles,
+      icon: MessageCircle,
       title: "Social Recognition Feed",
       description: "Create a vibrant culture of appreciation with a dynamic recognition feed.",
       gradient: "from-[#FC36FF] to-[#7A1BF7]"
     },
     {
-      icon: Award,
+      icon: Star,
       title: "Custom Badges",
       description: "Design unique badges that reflect your company values and culture.",
       gradient: "from-[#7A1BF7] to-[#FC36FF]"
