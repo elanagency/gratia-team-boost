@@ -1,36 +1,89 @@
-
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import ProductAnimation from './ProductAnimation';
 
 const Hero = () => {
   return (
-    <section className="relative py-20 px-4 overflow-hidden">
-      {/* Background gradient effect */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-grattia-purple/30 via-transparent to-transparent"></div>
-      </div>
+    <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+      {/* Animated background orbs */}
+      <motion.div
+        animate={{ 
+          scale: [1, 1.2, 1],
+          x: [0, 50, 0],
+          y: [0, 30, 0]
+        }}
+        transition={{ 
+          duration: 20,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute top-20 right-0 w-96 h-96 bg-gradient-to-r from-[#FC36FF]/30 to-[#7A1BF7]/30 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{ 
+          scale: [1, 1.3, 1],
+          x: [0, -50, 0],
+          y: [0, -30, 0]
+        }}
+        transition={{ 
+          duration: 25,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute bottom-20 left-0 w-[500px] h-[500px] bg-gradient-to-r from-[#7A1BF7]/20 to-[#FC36FF]/20 rounded-full blur-3xl"
+      />
       
-      {/* Glowing orb effects */}
-      <div className="absolute top-32 right-10 w-64 h-64 rounded-full bg-grattia-pink/10 blur-3xl"></div>
-      <div className="absolute bottom-32 left-10 w-96 h-96 rounded-full bg-grattia-purple/20 blur-3xl"></div>
-      
-      <div className="container mx-auto max-w-6xl relative z-10 pt-20 pb-16 text-center">
-        <div className="animate-fade-in">
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-6">
-            Recognize & Reward
-            <br />
-            <span className="text-white">Your Team</span>
-          </h1>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left column - Text content */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="text-center lg:text-left"
+          >
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6"
+            >
+              Recognize & Reward{' '}
+              <span className="text-gradient">Your Team</span> 🎉
+            </motion.h1>
+            
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-xl md:text-2xl hero-text-color mb-10 max-w-xl mx-auto lg:mx-0"
+            >
+              Build a culture of appreciation with instant peer recognition and meaningful rewards that make your team feel valued.
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <Link to="/signup">
+                <Button className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-8 py-6 text-lg rounded-full shadow-2xl hover:shadow-[#FC36FF]/50 transition-all duration-300">
+                  Get Started for Free
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
           
-          <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10">
-            Build a culture of appreciation with instant peer recognition and meaningful rewards that make your team feel valued.
-          </p>
-          
-          <Link to="/signup">
-            <Button className="grattia-button text-lg py-6 px-10">
-              Get Started
-            </Button>
-          </Link>
+          {/* Right column - Product animation */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
+            className="hidden lg:block"
+          >
+            <ProductAnimation />
+          </motion.div>
         </div>
       </div>
     </section>

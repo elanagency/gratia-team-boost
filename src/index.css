@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -88,8 +88,26 @@
   body {
     @apply bg-[#f7f8fa] text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: "Roboto", sans-serif;
+    font-family: "Poppins", sans-serif;
   }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#FC36FF] via-[#7F38B7] to-[#7A1BF7];
+  }
+  
+  .card-gradient {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20;
+  }
+}
+
+.hero-text-color {
+  @apply text-gray-300;
+}
+
+main {
+  overflow-x: hidden;
 }
 
 /* Custom button for Grattia */
