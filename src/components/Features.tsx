@@ -7,37 +7,37 @@ const Features = () => {
       icon: Zap,
       title: "Peer-to-Peer Recognition",
       description: "Empower employees to give instant kudos and appreciation to their colleagues.",
-      gradient: "from-[#FC36FF] to-[#7A1BF7]"
+      gradient: "from-[#00D4FF] to-[#9333EA]"
     },
     {
       icon: Gift,
       title: "Points & Gift Cards",
       description: "Employees earn points for recognition, redeemable for a wide range of gift cards.",
-      gradient: "from-[#7A1BF7] to-[#FC36FF]"
+      gradient: "from-[#9333EA] to-[#00D4FF]"
     },
     {
       icon: BarChart3,
       title: "Real-time HR Analytics",
       description: "HR personnel gain insights into team collaboration and recognition trends.",
-      gradient: "from-[#FC36FF] to-[#7A1BF7]"
+      gradient: "from-[#00D4FF] to-[#9333EA]"
     },
     {
       icon: Users,
       title: "Team Celebrations",
       description: "Celebrate wins together with team-wide shoutouts and achievements.",
-      gradient: "from-[#7A1BF7] to-[#FC36FF]"
+      gradient: "from-[#9333EA] to-[#00D4FF]"
     },
     {
       icon: MessageCircle,
       title: "Social Recognition Feed",
       description: "Create a vibrant culture of appreciation with a dynamic recognition feed.",
-      gradient: "from-[#FC36FF] to-[#7A1BF7]"
+      gradient: "from-[#00D4FF] to-[#9333EA]"
     },
     {
       icon: Star,
       title: "Custom Badges",
       description: "Design unique badges that reflect your company values and culture.",
-      gradient: "from-[#7A1BF7] to-[#FC36FF]"
+      gradient: "from-[#9333EA] to-[#00D4FF]"
     }
   ];
 
@@ -52,7 +52,8 @@ const Features = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Everything You Need to <span className="text-gradient">Spread the Love</span>
+            Everything You Need to<br />
+            <span className="text-gradient">Spread the Love</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Powerful features designed to make employee recognition effortless and enjoyable
