@@ -1,9 +1,9 @@
-
 import React from "react";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
 import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
 import { BillingCard } from "@/components/settings/BillingCard";
 import SlackNotificationsCard from "@/components/settings/SlackNotificationsCard";
+import TeamsNotificationsCard from "@/components/settings/TeamsNotificationsCard";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
 
 const Settings = () => {
@@ -17,6 +17,7 @@ const Settings = () => {
         <TeamManagementCard />
         <BillingCard />
         <SlackNotificationsCard />
+        <TeamsNotificationsCard />
       </div>
     </div>
   );

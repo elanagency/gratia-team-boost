@@ -199,3 +199,6 @@ verify_jwt = false
 
 [functions.goody-webhook]
 verify_jwt = false
+
+[functions.send-teams-notification]
+verify_jwt = false

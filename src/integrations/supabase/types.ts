@@ -690,6 +690,44 @@ export type Database = {
           },
         ]
       }
+      teams_integrations: {
+        Row: {
+          channel_name: string | null
+          company_id: string
+          created_at: string
+          id: string
+          notification_settings: Json | null
+          updated_at: string
+          webhook_url: string
+        }
+        Insert: {
+          channel_name?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          notification_settings?: Json | null
+          updated_at?: string
+          webhook_url: string
+        }
+        Update: {
+          channel_name?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          notification_settings?: Json | null
+          updated_at?: string
+          webhook_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_integrations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -732,10 +770,7 @@ export type Database = {
         Args: { company_id: string }
         Returns: number
       }
-      get_platform_setting: {
-        Args: { setting_key: string }
-        Returns: string
-      }
+      get_platform_setting: { Args: { setting_key: string }; Returns: string }
       get_stripe_active_member_count: {
         Args: { company_id: string }
         Returns: number
@@ -744,22 +779,10 @@ export type Database = {
         Args: { user_id?: string }
         Returns: boolean
       }
-      is_company_admin: {
-        Args: { company_id: string }
-        Returns: boolean
-      }
-      is_company_member: {
-        Args: { company_id: string }
-        Returns: boolean
-      }
-      is_member_of_company: {
-        Args: { company_id: string }
-        Returns: boolean
-      }
-      is_platform_admin: {
-        Args: { user_id?: string }
-        Returns: boolean
-      }
+      is_company_admin: { Args: { company_id: string }; Returns: boolean }
+      is_company_member: { Args: { company_id: string }; Returns: boolean }
+      is_member_of_company: { Args: { company_id: string }; Returns: boolean }
+      is_platform_admin: { Args: { user_id?: string }; Returns: boolean }
       is_platform_admin_with_company_check: {
         Args: { user_id?: string }
         Returns: boolean
