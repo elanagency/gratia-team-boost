@@ -199,6 +199,23 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         console.error('Failed to send Slack notification:', slackError);
         // Continue even if Slack notification fails
       }
+
+      // Send Teams notification for recognition (don't fail the transfer if notification fails)
+      try {
+        await supabase.functions.invoke('send-teams-notification', {
+          body: {
+            company_id: companyId,
+            notification_type: 'recognition',
+            sender_name: `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim(),
+            recipient_name: variables.member.name,
+            points: variables.points,
+            message: cleanMessageText
+          }
+        });
+      } catch (teamsError) {
+        console.error('Failed to send Teams notification:', teamsError);
+        // Continue even if Teams notification fails
+      }
       
       // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['userPoints'] });
