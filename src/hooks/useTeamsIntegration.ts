@@ -80,9 +80,9 @@ export function useTeamsIntegration() {
           channel_name: channelName || null,
           notification_settings: {
             recognition_notifications: true,
-            point_allocation_alerts: true,
-            team_milestones: true,
-            weekly_monthly_summaries: true,
+            point_allocation_alerts: false,
+            team_milestones: false,
+            weekly_monthly_summaries: false,
           },
         }, {
           onConflict: 'company_id',
