@@ -217,6 +217,7 @@ export function useTeamsIntegration() {
     updateChannelName: updateChannelName.mutate,
     disconnectTeams: disconnectTeams.mutate,
     testConnection: testConnection.mutate,
+    testConnectionAsync: testConnection.mutateAsync,
     isConnecting: connectTeams.isPending,
     isUpdating: updateNotificationSettings.isPending || updateChannelName.isPending,
     isDisconnecting: disconnectTeams.isPending,
