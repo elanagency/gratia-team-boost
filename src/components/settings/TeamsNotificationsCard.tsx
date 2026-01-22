@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, ExternalLink, Send, Unlink } from 'lucide-react';
 import { useTeamsIntegration } from '@/hooks/useTeamsIntegration';
 import { TeamsTestDiagnostics, type TeamsTestDiagnosticsData } from '@/components/settings/teams/TeamsTestDiagnostics';
+import { TeamsNotificationToggleRow } from '@/components/settings/TeamsNotificationToggleRow';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,65 +252,41 @@ export default function TeamsNotificationsCard() {
               <h4 className="font-medium">Notification Types</h4>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="recognition">Recognition Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      When team members give each other points
-                    </p>
-                  </div>
-                  <Switch
-                    id="recognition"
-                    checked={integration?.notification_settings?.recognition_notifications ?? true}
-                    onCheckedChange={(checked) => handleToggle('recognition_notifications', checked)}
-                    disabled={isUpdating}
-                  />
-                </div>
+                <TeamsNotificationToggleRow
+                  id="recognition"
+                  title="Recognition Notifications"
+                  description="When team members give each other points"
+                  checked={integration?.notification_settings?.recognition_notifications ?? true}
+                  onCheckedChange={(checked) => handleToggle('recognition_notifications', checked)}
+                  disabled={isUpdating}
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="allocation">Point Allocation Alerts</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Monthly point allocations and resets
-                    </p>
-                  </div>
-                  <Switch
-                    id="allocation"
-                    checked={integration?.notification_settings?.point_allocation_alerts ?? true}
-                    onCheckedChange={(checked) => handleToggle('point_allocation_alerts', checked)}
-                    disabled={isUpdating}
-                  />
-                </div>
+                <TeamsNotificationToggleRow
+                  id="allocation"
+                  title="Point Allocation Alerts"
+                  description="Monthly point allocations and resets (not available yet)"
+                  checked={false}
+                  disabled
+                  comingSoon
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="milestones">Team Milestones</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Team achievements and milestones
-                    </p>
-                  </div>
-                  <Switch
-                    id="milestones"
-                    checked={integration?.notification_settings?.team_milestones ?? true}
-                    onCheckedChange={(checked) => handleToggle('team_milestones', checked)}
-                    disabled={isUpdating}
-                  />
-                </div>
+                <TeamsNotificationToggleRow
+                  id="milestones"
+                  title="Team Milestones"
+                  description="Team achievements and milestones (not available yet)"
+                  checked={false}
+                  disabled
+                  comingSoon
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="summaries">Weekly/Monthly Summaries</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Periodic recognition summaries
-                    </p>
-                  </div>
-                  <Switch
-                    id="summaries"
-                    checked={integration?.notification_settings?.weekly_monthly_summaries ?? true}
-                    onCheckedChange={(checked) => handleToggle('weekly_monthly_summaries', checked)}
-                    disabled={isUpdating}
-                  />
-                </div>
+                <TeamsNotificationToggleRow
+                  id="summaries"
+                  title="Weekly/Monthly Summaries"
+                  description="Periodic recognition summaries (not available yet)"
+                  checked={false}
+                  disabled
+                  comingSoon
+                />
               </div>
             </div>
           </div>
