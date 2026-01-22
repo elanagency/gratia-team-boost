@@ -10,6 +10,7 @@ import { Loader2, ExternalLink, Send, Unlink } from 'lucide-react';
 import { useTeamsIntegration } from '@/hooks/useTeamsIntegration';
 import { TeamsTestDiagnostics, type TeamsTestDiagnosticsData } from '@/components/settings/teams/TeamsTestDiagnostics';
 import { TeamsNotificationToggleRow } from '@/components/settings/TeamsNotificationToggleRow';
+import { TeamsWebhookSetupInstructions } from '@/components/settings/teams/TeamsWebhookSetupInstructions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,15 +123,7 @@ export default function TeamsNotificationsCard() {
               </button>
               
               {showInstructions && (
-                <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  <li>1. Open Microsoft Teams and go to the channel where you want notifications</li>
-                  <li>2. Click the "•••" menu next to the channel name</li>
-                  <li>3. Select "Connectors" (or "Workflows" in newer Teams)</li>
-                  <li>4. Search for "Incoming Webhook" and click "Configure"</li>
-                  <li>5. Give it a name (e.g., "Grattia") and optionally add an image</li>
-                  <li>6. Click "Create" and copy the webhook URL</li>
-                  <li>7. Paste the URL below</li>
-                </ol>
+                <TeamsWebhookSetupInstructions />
               )}
             </div>
 
@@ -173,15 +166,6 @@ export default function TeamsNotificationsCard() {
               </Button>
             </div>
 
-            <a
-              href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Microsoft's official webhook documentation
-            </a>
           </div>
         ) : (
           <div className="space-y-6">
