@@ -92,6 +92,13 @@ Deno.serve(async (req) => {
     const teamsMessage = buildTeamsMessage(payload);
     console.log('Sending Teams message:', JSON.stringify(teamsMessage));
 
+    let webhookHost: string | undefined;
+    try {
+      webhookHost = new URL(teamsIntegration.webhook_url).host;
+    } catch {
+      webhookHost = undefined;
+    }
+
     // Send to Microsoft Teams webhook
     const teamsResponse = await fetch(teamsIntegration.webhook_url, {
       method: 'POST',
@@ -101,25 +108,56 @@ Deno.serve(async (req) => {
       body: JSON.stringify(teamsMessage),
     });
 
+    const responseText = await teamsResponse.text();
+    const responsePreview = responseText?.slice(0, 1500);
+    console.log(
+      'Teams webhook response:',
+      JSON.stringify({
+        ok: teamsResponse.ok,
+        status: teamsResponse.status,
+        statusText: teamsResponse.statusText,
+        webhookHost,
+        responsePreview,
+      })
+    );
+
     if (!teamsResponse.ok) {
-      const errorText = await teamsResponse.text();
-      console.error('Teams webhook error:', errorText);
+      console.error('Teams webhook error:', responsePreview);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to send Teams notification' }),
+        JSON.stringify({
+          success: false,
+          delivered: false,
+          error: 'Failed to send Teams notification',
+          http_status: teamsResponse.status,
+          response_body_preview: responsePreview,
+          webhook_host: webhookHost,
+          message_preview: teamsMessage,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
     console.log('Teams notification sent successfully');
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({
+        success: true,
+        delivered: true,
+        http_status: teamsResponse.status,
+        response_body_preview: responsePreview,
+        webhook_host: webhookHost,
+        message_preview: teamsMessage,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in send-teams-notification:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({
+        success: false,
+        delivered: false,
+        error: error?.message ?? String(error),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

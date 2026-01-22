@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, ExternalLink, Send, Unlink } from 'lucide-react';
 import { useTeamsIntegration } from '@/hooks/useTeamsIntegration';
+import { TeamsTestDiagnostics, type TeamsTestDiagnosticsData } from '@/components/settings/teams/TeamsTestDiagnostics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,7 @@ export default function TeamsNotificationsCard() {
     connectTeams,
     updateNotificationSettings,
     disconnectTeams,
-    testConnection,
+    testConnectionAsync,
     isConnecting,
     isUpdating,
     isDisconnecting,
@@ -49,6 +50,7 @@ export default function TeamsNotificationsCard() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [channelName, setChannelName] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [lastTest, setLastTest] = useState<TeamsTestDiagnosticsData | null>(null);
 
   const handleConnect = () => {
     if (!webhookUrl.trim()) return;
@@ -59,6 +61,20 @@ export default function TeamsNotificationsCard() {
 
   const handleToggle = (key: string, value: boolean) => {
     updateNotificationSettings({ [key]: value });
+  };
+
+  const handleTest = async () => {
+    setLastTest(null);
+    try {
+      const data = await testConnectionAsync();
+      // Expecting the edge function to return details; fall back gracefully.
+      setLastTest({
+        delivered: true,
+        ...(typeof data === 'object' && data ? (data as Record<string, unknown>) : {}),
+      } as TeamsTestDiagnosticsData);
+    } catch {
+      setLastTest({ delivered: false });
+    }
   };
 
   if (isLoading) {
@@ -182,7 +198,7 @@ export default function TeamsNotificationsCard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => testConnection()}
+                  onClick={handleTest}
                   disabled={isTesting}
                 >
                   {isTesting ? (
@@ -227,6 +243,8 @@ export default function TeamsNotificationsCard() {
             </div>
 
             <Separator />
+
+            <TeamsTestDiagnostics data={lastTest} />
 
             {/* Notification settings */}
             <div className="space-y-4">
