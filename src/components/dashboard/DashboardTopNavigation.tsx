@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Settings, User, LogOut } from "lucide-react";
+import { LayoutDashboard, Settings, User, LogOut, BarChart3 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,11 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
     },
     // Only show admin-specific items for admin users
     ...(isAdmin ? [
+      {
+        name: "Analytics",
+        icon: BarChart3,
+        path: "/dashboard/analytics"
+      },
       {
         name: "Settings",
         icon: Settings,
