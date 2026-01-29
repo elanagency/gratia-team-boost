@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { startOfDay, endOfDay, format, eachDayOfInterval, eachWeekOfInterval } from "date-fns";
+import { startOfDay, endOfDay, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, endOfMonth } from "date-fns";
 
 export type MetricType = 'received' | 'sent' | 'engagement' | 'redemptions' | 'logins';
 export type SegmentType = 'none' | 'department' | 'person';
-export type GranularityType = 'daily' | 'weekly';
+export type GranularityType = 'daily' | 'weekly' | 'monthly';
 
 export interface DateRange {
   start: Date;
@@ -330,12 +330,16 @@ async function fetchEngagementData(
 
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
-    : eachWeekOfInterval({ start: startDate, end: endDate });
+    : granularity === 'weekly'
+      ? eachWeekOfInterval({ start: startDate, end: endDate })
+      : eachMonthOfInterval({ start: startDate, end: endDate });
 
   const chartData: ChartDataPoint[] = intervals.map((intervalStart) => {
     const intervalEnd = granularity === 'daily'
       ? endOfDay(intervalStart)
-      : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+      : granularity === 'weekly'
+        ? endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000))
+        : endOfMonth(intervalStart);
 
     const intervalTx = (transactions || []).filter(tx => {
       const txDate = new Date(tx.created_at);
@@ -352,7 +356,7 @@ async function fetchEngagementData(
       : 0;
 
     return {
-      date: format(intervalStart, granularity === 'daily' ? 'MMM d' : 'MMM d'),
+      date: format(intervalStart, granularity === 'monthly' ? 'MMM yyyy' : 'MMM d'),
       value: engagementRate,
       label: `${engagementRate}%`,
     };
@@ -417,12 +421,16 @@ async function fetchRedemptionsData(
 
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
-    : eachWeekOfInterval({ start: startDate, end: endDate });
+    : granularity === 'weekly'
+      ? eachWeekOfInterval({ start: startDate, end: endDate })
+      : eachMonthOfInterval({ start: startDate, end: endDate });
 
   const chartData: ChartDataPoint[] = intervals.map((intervalStart) => {
     const intervalEnd = granularity === 'daily'
       ? endOfDay(intervalStart)
-      : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+      : granularity === 'weekly'
+        ? endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000))
+        : endOfMonth(intervalStart);
 
     const intervalRedemptions = (redemptions || []).filter(r => {
       const rDate = new Date(r.redemption_date);
@@ -432,7 +440,7 @@ async function fetchRedemptionsData(
     const totalPoints = intervalRedemptions.reduce((sum, r) => sum + r.points_spent, 0);
 
     const dataPoint: ChartDataPoint = {
-      date: format(intervalStart, granularity === 'daily' ? 'MMM d' : 'MMM d'),
+      date: format(intervalStart, granularity === 'monthly' ? 'MMM yyyy' : 'MMM d'),
       value: totalPoints,
       label: totalPoints.toLocaleString(),
     };
@@ -512,12 +520,16 @@ async function fetchLoginsData(
 
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
-    : eachWeekOfInterval({ start: startDate, end: endDate });
+    : granularity === 'weekly'
+      ? eachWeekOfInterval({ start: startDate, end: endDate })
+      : eachMonthOfInterval({ start: startDate, end: endDate });
 
   const chartData: ChartDataPoint[] = intervals.map((intervalStart) => {
     const intervalEnd = granularity === 'daily'
       ? endOfDay(intervalStart)
-      : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+      : granularity === 'weekly'
+        ? endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000))
+        : endOfMonth(intervalStart);
 
     const intervalLogins = (loginEvents || []).filter(event => {
       const eventDate = new Date(event.logged_in_at);
@@ -527,7 +539,7 @@ async function fetchLoginsData(
     const loginCount = intervalLogins.length;
 
     const dataPoint: ChartDataPoint = {
-      date: format(intervalStart, granularity === 'daily' ? 'MMM d' : 'MMM d'),
+      date: format(intervalStart, granularity === 'monthly' ? 'MMM yyyy' : 'MMM d'),
       value: loginCount,
       label: loginCount.toLocaleString(),
     };
@@ -572,12 +584,16 @@ function processTransactionData(
 ): Omit<AnalyticsData, 'trend'> {
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
-    : eachWeekOfInterval({ start: startDate, end: endDate });
+    : granularity === 'weekly'
+      ? eachWeekOfInterval({ start: startDate, end: endDate })
+      : eachMonthOfInterval({ start: startDate, end: endDate });
 
   const chartData: ChartDataPoint[] = intervals.map((intervalStart) => {
     const intervalEnd = granularity === 'daily'
       ? endOfDay(intervalStart)
-      : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+      : granularity === 'weekly'
+        ? endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000))
+        : endOfMonth(intervalStart);
 
     const intervalTx = transactions.filter(tx => {
       const txDate = new Date(tx.created_at);
@@ -587,7 +603,7 @@ function processTransactionData(
     const totalPoints = intervalTx.reduce((sum, tx) => sum + tx.points, 0);
 
     const dataPoint: ChartDataPoint = {
-      date: format(intervalStart, granularity === 'daily' ? 'MMM d' : 'MMM d'),
+      date: format(intervalStart, granularity === 'monthly' ? 'MMM yyyy' : 'MMM d'),
       value: totalPoints,
       label: totalPoints.toLocaleString(),
     };
