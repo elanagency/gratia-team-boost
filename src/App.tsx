@@ -17,6 +17,7 @@ import UnifiedDashboardLayout from "./pages/dashboard/UnifiedDashboardLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
+import Analytics from "./pages/admin/Analytics";
 
 import GiftCardShop from "./pages/team/GiftCardShop";
 
@@ -92,6 +93,7 @@ const App = () => (
               {/* Unified Dashboard routes for all users */}
               <Route path="/dashboard" element={<UnifiedDashboardLayout />}>
                 <Route index element={<Dashboard />} />
+                <Route path="analytics" element={<Analytics />} />
                 <Route path="gift-cards" element={<GiftCardShop />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />

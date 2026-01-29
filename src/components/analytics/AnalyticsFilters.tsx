@@ -1,0 +1,166 @@
+import React from "react";
+import { Calendar } from "lucide-react";
+import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import type { DateRange, SegmentType, GranularityType } from "@/hooks/useAnalyticsData";
+
+interface AnalyticsFiltersProps {
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
+  segmentBy: SegmentType;
+  onSegmentChange: (segment: SegmentType) => void;
+  granularity: GranularityType;
+  onGranularityChange: (granularity: GranularityType) => void;
+}
+
+type DatePreset = {
+  label: string;
+  getValue: () => DateRange;
+};
+
+const datePresets: DatePreset[] = [
+  {
+    label: "Last 7 days",
+    getValue: () => ({ start: subDays(new Date(), 7), end: new Date() }),
+  },
+  {
+    label: "Last 30 days",
+    getValue: () => ({ start: subDays(new Date(), 30), end: new Date() }),
+  },
+  {
+    label: "Last 90 days",
+    getValue: () => ({ start: subDays(new Date(), 90), end: new Date() }),
+  },
+  {
+    label: "This month",
+    getValue: () => ({ start: startOfMonth(new Date()), end: new Date() }),
+  },
+  {
+    label: "Last month",
+    getValue: () => {
+      const lastMonth = subMonths(new Date(), 1);
+      return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) };
+    },
+  },
+];
+
+export function AnalyticsFilters({
+  dateRange,
+  onDateRangeChange,
+  segmentBy,
+  onSegmentChange,
+  granularity,
+  onGranularityChange,
+}: AnalyticsFiltersProps) {
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+  const [selectedPreset, setSelectedPreset] = React.useState<string>("Last 30 days");
+
+  const handlePresetSelect = (preset: DatePreset) => {
+    setSelectedPreset(preset.label);
+    onDateRangeChange(preset.getValue());
+  };
+
+  const handleCustomDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (range?.from && range?.to) {
+      setSelectedPreset("Custom");
+      onDateRangeChange({ start: range.from, end: range.to });
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Date Range Selector */}
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "justify-start text-left font-normal min-w-[200px]",
+              !dateRange && "text-muted-foreground"
+            )}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            {selectedPreset === "Custom"
+              ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
+              : selectedPreset}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <div className="flex">
+            <div className="border-r p-2 space-y-1">
+              {datePresets.map((preset) => (
+                <Button
+                  key={preset.label}
+                  variant={selectedPreset === preset.label ? "secondary" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    handlePresetSelect(preset);
+                    setIsCalendarOpen(false);
+                  }}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+            <div className="p-2">
+              <CalendarComponent
+                mode="range"
+                selected={{ from: dateRange.start, to: dateRange.end }}
+                onSelect={handleCustomDateSelect}
+                numberOfMonths={1}
+                disabled={{ after: new Date() }}
+              />
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Segment By Selector */}
+      <Select value={segmentBy} onValueChange={(value) => onSegmentChange(value as SegmentType)}>
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Segment by" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">All</SelectItem>
+          <SelectItem value="department">By Department</SelectItem>
+          <SelectItem value="person">By Person</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Granularity Toggle */}
+      <div className="flex items-center rounded-md border border-input bg-background">
+        <Button
+          variant={granularity === "daily" ? "secondary" : "ghost"}
+          size="sm"
+          className="rounded-r-none"
+          onClick={() => onGranularityChange("daily")}
+        >
+          Daily
+        </Button>
+        <Button
+          variant={granularity === "weekly" ? "secondary" : "ghost"}
+          size="sm"
+          className="rounded-l-none"
+          onClick={() => onGranularityChange("weekly")}
+        >
+          Weekly
+        </Button>
+      </div>
+    </div>
+  );
+}
