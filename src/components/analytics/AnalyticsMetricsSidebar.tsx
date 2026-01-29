@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Users, Gift, ChevronDown, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Gift, ChevronDown, ChevronRight, LogIn } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { MetricType } from "@/hooks/useAnalyticsData";
 
@@ -44,6 +44,14 @@ const metricGroups: MetricGroup[] = [
       { id: "redemptions", label: "Points", icon: <Gift className="h-3.5 w-3.5" />, parent: "redemptions" },
     ],
   },
+  {
+    id: "activity",
+    label: "Activity",
+    icon: <LogIn className="h-4 w-4" />,
+    items: [
+      { id: "logins", label: "Logins", icon: <LogIn className="h-3.5 w-3.5" />, parent: "activity" },
+    ],
+  },
 ];
 
 interface AnalyticsMetricsSidebarProps {
@@ -55,7 +63,7 @@ export function AnalyticsMetricsSidebar({
   selectedMetric,
   onMetricChange,
 }: AnalyticsMetricsSidebarProps) {
-  const [openGroups, setOpenGroups] = React.useState<string[]>(["recognition", "engagement", "redemptions"]);
+  const [openGroups, setOpenGroups] = React.useState<string[]>(["recognition", "engagement", "redemptions", "activity"]);
 
   const toggleGroup = (groupId: string) => {
     setOpenGroups((prev) =>

@@ -25,6 +25,7 @@ const metricLabels: Record<MetricType, string> = {
   sent: "Recognition Sent",
   engagement: "Engagement Rate",
   redemptions: "Points Redeemed",
+  logins: "Login Frequency",
 };
 
 const metricUnits: Record<MetricType, string> = {
@@ -32,6 +33,7 @@ const metricUnits: Record<MetricType, string> = {
   sent: "points",
   engagement: "%",
   redemptions: "points",
+  logins: "logins",
 };
 
 export function AnalyticsChartArea({

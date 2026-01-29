@@ -23,6 +23,7 @@ const metricUnits: Record<MetricType, string> = {
   sent: "pts",
   engagement: "%",
   redemptions: "pts",
+  logins: "logins",
 };
 
 export function AnalyticsDataTable({

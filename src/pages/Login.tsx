@@ -130,6 +130,22 @@ const Login = () => {
         }
       }
 
+      // Record login event for analytics
+      if (authData.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', authData.user.id)
+          .single();
+          
+        if (profile?.company_id) {
+          await supabase.from('login_events').insert({
+            user_id: authData.user.id,
+            company_id: profile.company_id,
+          });
+        }
+      }
+
       toast.success("Login successful!");
       // Auth state change will handle redirection based on user role
     } catch (error: any) {
