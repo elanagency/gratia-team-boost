@@ -147,7 +147,7 @@ export function AnalyticsFilters({
         <Button
           variant={granularity === "daily" ? "secondary" : "ghost"}
           size="sm"
-          className="rounded-r-none"
+          className="rounded-r-none border-r-0"
           onClick={() => onGranularityChange("daily")}
         >
           Daily
@@ -155,10 +155,18 @@ export function AnalyticsFilters({
         <Button
           variant={granularity === "weekly" ? "secondary" : "ghost"}
           size="sm"
-          className="rounded-l-none"
+          className="rounded-none border-r-0"
           onClick={() => onGranularityChange("weekly")}
         >
           Weekly
+        </Button>
+        <Button
+          variant={granularity === "monthly" ? "secondary" : "ghost"}
+          size="sm"
+          className="rounded-l-none"
+          onClick={() => onGranularityChange("monthly")}
+        >
+          Monthly
         </Button>
       </div>
     </div>
