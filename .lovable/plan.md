@@ -1,180 +1,223 @@
 
 
-# Analytics Tab for Company Admins
+# Add Login Frequency Tracking & Analytics Metric
 
 ## Overview
-Add a new "Analytics" tab to the company admin dashboard that provides insights into team recognition activity, redemptions, and engagement metrics. The design follows the RevenueCat pattern with a left sidebar for metric selection and a main chart area with filtering controls.
+Create a new `login_events` table to track user logins, then add a "Login Frequency" metric to the Analytics tab showing the number of logins per day/week.
 
 ---
 
 ## What You'll Get
 
-### Layout (RevenueCat-inspired)
-- **Left Sidebar**: Collapsible list of metric categories with selectable chart options
-- **Main Chart Area**: Large area chart with date range filtering and segment controls
-- **Data Table**: Below the chart showing daily/weekly breakdowns
+### Database
+- New `login_events` table storing each successful login with timestamp and user info
+- RLS policies allowing users to see their own logins and company admins to see company-wide data
 
-### Four Key Metrics
-
-| Metric | Description | Data Source |
-|--------|-------------|-------------|
-| **Recognition Received** | Points received per person/department over time | `point_transactions` (recipient) |
-| **Recognition Sent** | Points given per person/department over time | `point_transactions` (sender) |
-| **Engagement Rate** | Percentage of team members actively giving/receiving recognition | `point_transactions` + `profiles` |
-| **Redemptions** | Points spent on gift cards over time | `redemptions` table |
-
-> Note: "User Activity" (time spent) would require session tracking infrastructure. Instead, "Engagement Rate" provides a meaningful proxy using existing data.
-
-### Filtering Controls
-- **Date Range**: Preset options (Last 7 days, Last 30 days, Last 90 days, This month, Last month) + custom date picker
-- **Segment By**: Department or Individual person
-- **Granularity**: Daily or Weekly view
+### Analytics Integration
+- New "Activity" metric group in the left sidebar with a "Logins" sub-metric
+- Chart showing login count over time (daily/weekly granularity)
+- Supports department/person segmentation like other metrics
 
 ---
 
-## Technical Implementation
+## Implementation Details
 
-### Files to Create
+### 1. Database Migration
 
-```text
-src/pages/admin/Analytics.tsx           # Main Analytics page
-src/components/analytics/
-  ├── AnalyticsMetricsSidebar.tsx      # Left sidebar with metric list
-  ├── AnalyticsChartArea.tsx           # Main chart + controls
-  ├── AnalyticsFilters.tsx             # Date range + segment dropdowns
-  └── AnalyticsDataTable.tsx           # Tabular data below chart
-src/hooks/useAnalyticsData.ts          # Data fetching hook
-```
+Create a new table `login_events`:
 
-### Files to Modify
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | FK to auth.users |
+| `company_id` | uuid | For company-level filtering |
+| `logged_in_at` | timestamptz | When the login occurred |
+| `created_at` | timestamptz | Record creation time |
 
-```text
-src/App.tsx                             # Add /dashboard/analytics route
-src/components/dashboard/
-  DashboardTopNavigation.tsx            # Add Analytics nav item (admin-only)
-```
+**RLS Policies:**
+- Platform admins can view all login events
+- Company admins can view their company's login events
+- Users can view their own login events
 
----
-
-### Route & Navigation
-
-**New route** at `/dashboard/analytics` (admin-only):
-```tsx
-// In App.tsx
-<Route path="analytics" element={<Analytics />} />
-```
-
-**Navigation update** in `DashboardTopNavigation.tsx`:
-```tsx
-const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  ...(isAdmin ? [
-    { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
-    { name: "Settings", icon: Settings, path: "/dashboard/settings" }
-  ] : [])
-];
-```
+**Indexes:**
+- On `company_id` + `logged_in_at` for efficient date-range queries
 
 ---
 
-### UI Components
+### 2. Record Logins After Successful Auth
 
-#### 1. Analytics Page Layout
-```text
-+------------------------------------------------------------------+
-| Analytics                                          [Date Filter] |
-+---------------+--------------------------------------------------+
-|               |                                                  |
-| METRICS       |  [Chart Title]        [Segment ▾] [Granularity] |
-|               |                                                  |
-| Recognition   |  ╭──────────────────────────────────────────╮   |
-| ├ Received    |  │                                          │   |
-| └ Sent        |  │         Area/Line Chart                  │   |
-|               |  │                                          │   |
-| Engagement    |  ╰──────────────────────────────────────────╯   |
-| └ Rate        |                                                  |
-|               |  +------+------+------+------+------+------+    |
-| Redemptions   |  | Date | Value| ...  | ...  | ...  | Avg  |    |
-| └ Points      |  +------+------+------+------+------+------+    |
-|               |  | Jan 1| 245  | ...  | ...  | ...  | 203  |    |
-+---------------+--------------------------------------------------+
-```
+**Where to add the login recording:**
 
-#### 2. Metric Sidebar Items
-Each metric in the left sidebar:
-- Icon + label
-- Selected state highlight (accent color `#F572FF`)
-- Nested sub-metrics (collapsible)
-
-#### 3. Chart Area
-- Recharts `AreaChart` with gradient fill (matching RevenueCat style)
-- Responsive container
-- Tooltip showing exact values on hover
-- Accent color `#F572FF` for primary data series
-
-#### 4. Filters Bar
-- Date range dropdown with presets
-- Custom date picker (using existing Calendar component)
-- Segment dropdown (All, By Department, By Person)
-- Granularity toggle (Daily/Weekly)
-
----
-
-### Data Fetching Hook
+In `src/pages/Login.tsx`, after successful OTP verification (line ~133), insert a record into `login_events`:
 
 ```typescript
-// src/hooks/useAnalyticsData.ts
-export function useAnalyticsData({
-  metric,           // 'received' | 'sent' | 'engagement' | 'redemptions'
-  dateRange,        // { start: Date, end: Date }
-  segmentBy,        // 'none' | 'department' | 'person'
-  granularity,      // 'daily' | 'weekly'
-}) {
-  // Fetch from point_transactions or redemptions based on metric
-  // Group by date and optionally by segment
-  // Return chartData, tableData, summary stats
+// After: toast.success("Login successful!");
+// Insert login event
+if (authData.user) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', authData.user.id)
+    .single();
+    
+  if (profile?.company_id) {
+    await supabase.from('login_events').insert({
+      user_id: authData.user.id,
+      company_id: profile.company_id,
+    });
+  }
 }
 ```
 
-**Queries by metric:**
-
-| Metric | Query |
-|--------|-------|
-| Received | `point_transactions` grouped by `recipient_profile_id`, sum `points` |
-| Sent | `point_transactions` grouped by `sender_profile_id`, sum `points` |
-| Engagement | Count unique senders + recipients / total active members |
-| Redemptions | `redemptions` grouped by date, sum `points_spent` |
+This ensures we only record logins for users with a company association (not platform admins without a company).
 
 ---
 
-### Styling Notes
+### 3. Update Analytics Data Hook
 
-- **Font**: Roboto (already configured)
-- **Accent Color**: `#F572FF` for charts, selected states
-- **Hover States**: Subtle grey (`hover:bg-gray-100`) per project guidelines
-- **Chart Fill**: Gradient from `#F572FF` with low opacity to transparent
-- **Cards**: Use existing `Card` component with consistent borders
+**File:** `src/hooks/useAnalyticsData.ts`
+
+**Changes:**
+
+1. Add `'logins'` to `MetricType`:
+   ```typescript
+   export type MetricType = 'received' | 'sent' | 'engagement' | 'redemptions' | 'logins';
+   ```
+
+2. Add case in the query switch:
+   ```typescript
+   case 'logins':
+     return fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity);
+   ```
+
+3. Create `fetchLoginsData` function:
+   - Query `login_events` with profile joins for department/person segmentation
+   - Group by date intervals (daily/weekly)
+   - Return count of logins per interval
+
+---
+
+### 4. Update Metrics Sidebar
+
+**File:** `src/components/analytics/AnalyticsMetricsSidebar.tsx`
+
+Add new "Activity" group:
+
+```typescript
+{
+  id: "activity",
+  label: "Activity",
+  icon: <LogIn className="h-4 w-4" />,
+  items: [
+    { id: "logins", label: "Logins", icon: <LogIn className="h-3.5 w-3.5" />, parent: "activity" },
+  ],
+},
+```
+
+Import `LogIn` icon from `lucide-react`.
+
+---
+
+### 5. Update Chart Labels
+
+**File:** `src/components/analytics/AnalyticsChartArea.tsx`
+
+Add labels for the new metric:
+
+```typescript
+const metricLabels: Record<MetricType, string> = {
+  // ... existing
+  logins: "Login Frequency",
+};
+
+const metricUnits: Record<MetricType, string> = {
+  // ... existing
+  logins: "logins",
+};
+```
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/[timestamp]_add_login_events.sql` | Database table and RLS policies |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/Login.tsx` | Insert login event after successful OTP verification |
+| `src/hooks/useAnalyticsData.ts` | Add `logins` metric type and fetch function |
+| `src/components/analytics/AnalyticsMetricsSidebar.tsx` | Add Activity group with Logins metric |
+| `src/components/analytics/AnalyticsChartArea.tsx` | Add label/unit for logins metric |
+| `src/components/analytics/AnalyticsDataTable.tsx` | Add label for logins metric (if needed) |
+
+---
+
+## Migration SQL Preview
+
+```sql
+-- Create login_events table
+CREATE TABLE public.login_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  logged_in_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.login_events ENABLE ROW LEVEL SECURITY;
+
+-- Indexes for performance
+CREATE INDEX idx_login_events_company_date 
+  ON public.login_events (company_id, logged_in_at);
+CREATE INDEX idx_login_events_user 
+  ON public.login_events (user_id);
+
+-- RLS Policies
+CREATE POLICY "Users can view own login events"
+  ON public.login_events FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Company admins can view company login events"
+  ON public.login_events FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+      AND profiles.company_id = login_events.company_id
+      AND profiles.is_admin = true
+      AND profiles.status = 'active'
+  ));
+
+CREATE POLICY "Platform admins can view all login events"
+  ON public.login_events FOR SELECT
+  USING (is_platform_admin());
+
+CREATE POLICY "System can insert login events"
+  ON public.login_events FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
 
 ---
 
 ## Implementation Order
 
-1. **Create data hook** (`useAnalyticsData.ts`) - Core data fetching logic
-2. **Create page skeleton** (`Analytics.tsx`) - Basic layout with sidebar + main area
-3. **Build metrics sidebar** (`AnalyticsMetricsSidebar.tsx`) - Metric selection
-4. **Build chart area** (`AnalyticsChartArea.tsx`) - Recharts integration
-5. **Add filters** (`AnalyticsFilters.tsx`) - Date range + segment controls
-6. **Add data table** (`AnalyticsDataTable.tsx`) - Tabular breakdown
-7. **Update routing** - Add route and navigation item
-8. **Polish** - Responsive design, loading states, empty states
+1. **Create database migration** - Set up `login_events` table with RLS
+2. **Update Login.tsx** - Record login events after successful OTP verification
+3. **Update useAnalyticsData.ts** - Add `logins` metric type and fetch function
+4. **Update AnalyticsMetricsSidebar.tsx** - Add Activity group with Logins item
+5. **Update chart components** - Add labels and units for the new metric
+6. **Test end-to-end** - Login as a user, verify event is recorded, check Analytics tab
 
 ---
 
-## Edge Cases & Considerations
+## Edge Cases
 
-- **No data**: Show friendly empty state with guidance
-- **Loading**: Show skeleton placeholders (matching existing patterns)
-- **Mobile**: Stack sidebar above chart, simplify controls
-- **Large datasets**: Limit to last 90 days by default, paginate if needed
-- **RLS**: All queries already respect company-level access via existing policies
+- **Platform admins without company**: Skip recording (they don't have a `company_id`)
+- **First-time users**: Login event still recorded alongside the status update
+- **Failed logins**: No event recorded (we only track successful auths)
+- **Session refresh**: Not recorded (only explicit OTP verification counts)
 
