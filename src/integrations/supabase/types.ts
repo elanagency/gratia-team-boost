@@ -308,6 +308,38 @@ export type Database = {
         }
         Relationships: []
       }
+      login_events: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          logged_in_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          logged_in_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          logged_in_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_points_allocations: {
         Row: {
           allocation_date: string

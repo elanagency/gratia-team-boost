@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { startOfDay, endOfDay, format, startOfWeek, eachDayOfInterval, eachWeekOfInterval } from "date-fns";
 
-export type MetricType = 'received' | 'sent' | 'engagement' | 'redemptions';
+export type MetricType = 'received' | 'sent' | 'engagement' | 'redemptions' | 'logins';
 export type SegmentType = 'none' | 'department' | 'person';
 export type GranularityType = 'daily' | 'weekly';
 
@@ -67,6 +67,8 @@ export function useAnalyticsData({
           return fetchEngagementData(companyId, startDate, endDate, granularity);
         case 'redemptions':
           return fetchRedemptionsData(companyId, startDate, endDate, segmentBy, granularity);
+        case 'logins':
+          return fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity);
         default:
           return { chartData: [], tableData: [], total: 0, average: 0, trend: 0 };
       }
@@ -260,6 +262,99 @@ async function fetchRedemptionsData(
       value: totalPoints,
       label: totalPoints.toLocaleString(),
     };
+  });
+
+  const total = chartData.reduce((sum, d) => sum + d.value, 0);
+  const average = chartData.length > 0 ? Math.round(total / chartData.length) : 0;
+
+  return {
+    chartData,
+    tableData: chartData.map(d => ({ date: d.date, value: d.value })),
+    total,
+    average,
+    trend: 0,
+  };
+}
+
+async function fetchLoginsData(
+  companyId: string,
+  startDate: Date,
+  endDate: Date,
+  segmentBy: SegmentType,
+  granularity: GranularityType
+): Promise<AnalyticsData> {
+  // Query login_events
+  const { data: loginEvents, error } = await supabase
+    .from('login_events')
+    .select('id, logged_in_at, user_id')
+    .eq('company_id', companyId)
+    .gte('logged_in_at', startDate.toISOString())
+    .lte('logged_in_at', endDate.toISOString())
+    .order('logged_in_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching login events:', error);
+    throw error;
+  }
+
+  // If segmenting, fetch profile data for users
+  let profilesMap: Record<string, { first_name: string; last_name: string; department_name: string | null }> = {};
+  
+  if (segmentBy !== 'none' && loginEvents && loginEvents.length > 0) {
+    const uniqueUserIds = [...new Set(loginEvents.map(e => e.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, departments(name)')
+      .in('id', uniqueUserIds);
+    
+    if (profiles) {
+      profiles.forEach((p: any) => {
+        profilesMap[p.id] = {
+          first_name: p.first_name,
+          last_name: p.last_name,
+          department_name: p.departments?.name || null,
+        };
+      });
+    }
+  }
+
+  const intervals = granularity === 'daily'
+    ? eachDayOfInterval({ start: startDate, end: endDate })
+    : eachWeekOfInterval({ start: startDate, end: endDate });
+
+  const chartData: ChartDataPoint[] = intervals.map((intervalStart) => {
+    const intervalEnd = granularity === 'daily'
+      ? endOfDay(intervalStart)
+      : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+
+    const intervalLogins = (loginEvents || []).filter(event => {
+      const eventDate = new Date(event.logged_in_at);
+      return eventDate >= intervalStart && eventDate <= intervalEnd;
+    });
+
+    const loginCount = intervalLogins.length;
+
+    const dataPoint: ChartDataPoint = {
+      date: format(intervalStart, granularity === 'daily' ? 'MMM d' : 'MMM d'),
+      value: loginCount,
+      label: loginCount.toLocaleString(),
+    };
+
+    if (segmentBy !== 'none') {
+      const segments: Record<string, number> = {};
+      intervalLogins.forEach(event => {
+        const profile = profilesMap[event.user_id];
+        if (profile) {
+          const segmentKey = segmentBy === 'department'
+            ? profile.department_name || 'No Department'
+            : `${profile.first_name} ${profile.last_name}`;
+          segments[segmentKey] = (segments[segmentKey] || 0) + 1;
+        }
+      });
+      dataPoint.segments = segments;
+    }
+
+    return dataPoint;
   });
 
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
