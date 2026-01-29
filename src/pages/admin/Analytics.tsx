@@ -66,6 +66,8 @@ const Analytics = () => {
             metric={selectedMetric}
             total={data?.total || 0}
             average={data?.average || 0}
+            trend={data?.trend || 0}
+            segmentBy={segmentBy}
           />
 
           {/* Data Table */}
@@ -74,6 +76,7 @@ const Analytics = () => {
             isLoading={isLoading}
             metric={selectedMetric}
             average={data?.average || 0}
+            segmentBy={segmentBy}
           />
         </div>
       </div>
