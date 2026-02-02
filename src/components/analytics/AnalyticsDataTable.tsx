@@ -1,14 +1,9 @@
 import React, { useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import Papa from "papaparse";
 import type { TableDataRow, MetricType, SegmentType } from "@/hooks/useAnalyticsData";
 
 interface AnalyticsDataTableProps {
@@ -80,6 +75,28 @@ export function AnalyticsDataTable({
 
   const { dates, rows } = useMemo(() => pivotTableData(data, segmentBy), [data, segmentBy]);
 
+  const handleExportCSV = () => {
+    const headerRow = [segmentBy !== 'none' ? 'Segments' : 'Metric', ...dates];
+    
+    const dataRows = rows.map(row => [
+      row.label,
+      ...dates.map(date => row.values[date] || 0)
+    ]);
+    
+    const csvData = [headerRow, ...dataRows];
+    const csv = Papa.unparse(csvData);
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analytics-${metric}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -101,6 +118,17 @@ export function AnalyticsDataTable({
   return (
     <Card>
       <CardContent className="pt-4">
+        <div className="flex justify-end mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
         <div className="rounded-md border overflow-x-auto">
           <table className="w-full caption-bottom text-sm min-w-max">
             <thead className="[&_tr]:border-b">
