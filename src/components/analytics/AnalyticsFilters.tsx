@@ -132,13 +132,13 @@ export function AnalyticsFilters({
 
       {/* Segment By Selector */}
       <Select value={segmentBy} onValueChange={(value) => onSegmentChange(value as SegmentType)}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="Segment by" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="none">All</SelectItem>
-          <SelectItem value="department">By Department</SelectItem>
-          <SelectItem value="person">By Person</SelectItem>
+          <SelectItem value="department">Department</SelectItem>
+          <SelectItem value="person">Person</SelectItem>
         </SelectContent>
       </Select>
 
