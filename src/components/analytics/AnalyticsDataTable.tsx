@@ -58,8 +58,10 @@ function pivotTableData(data: TableDataRow[], segmentBy: SegmentType): { dates: 
     totals[row.date] = (totals[row.date] || 0) + row.value;
   });
   
-  // Build rows: Total first, then segments alphabetically
-  const sortedSegments = Object.keys(segmentMap).sort();
+  // Build rows: Total first, then segments alphabetically (excluding any "Total" segment from data)
+  const sortedSegments = Object.keys(segmentMap)
+    .filter(label => label !== 'Total')
+    .sort();
   const rows: PivotedRow[] = [
     { label: 'Total', values: totals },
     ...sortedSegments.map(label => ({ label, values: segmentMap[label] }))
