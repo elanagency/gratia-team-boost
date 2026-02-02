@@ -1,99 +1,112 @@
 
-# Fix Analytics Table Duplicate Rows and Filter Dropdown
+# Add CSV Export Button to Analytics Data Table
 
 ## Overview
-Address two issues in the Analytics page:
-1. Remove duplicate "Total" rows appearing in the data table
-2. Fix the segment dropdown text truncation and simplify labels
+Add an export button to the analytics data table that allows users to download the current view as a CSV file. The button will be positioned in the table header area.
 
 ---
 
-## Issue Analysis
+## Visual Design
 
-### 1. Duplicate "Total" Rows
-The problem occurs because of conflicting logic between two functions:
-
-**In `useAnalyticsData.ts` (buildTableData function):**
-- When there are no segments for a date, it adds a fallback row with `segmentName: 'Total'`
-
-**In `AnalyticsDataTable.tsx` (pivotTableData function):**
-- It creates a calculated "Total" row by summing all segment values
-- Then it includes ALL segment names from the data, including the "Total" segment
-
-**Result:** Two "Total" rows appear - one calculated (with real data) and one from the fallback (often with zeros).
-
-**Solution:** In `pivotTableData`, filter out any segments named "Total" since we're already calculating a Total row.
-
-### 2. Dropdown Truncation
-Current: `w-[140px]` width is too narrow, shows "By..." when "By Person" is selected
-Current labels: "By Department", "By Person"
-Requested labels: "Department", "Person"
-
-**Solution:** 
-- Change width from `w-[140px]` to `w-[150px]` or remove fixed width
-- Update SelectItem labels to remove "By " prefix
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                                                    [⬇ Export CSV]  │
+├──────────────────┬──────────┬──────────┬──────────┬───────────────┤
+│ Segments         │ Jan 20   │ Jan 21   │ Jan 22   │ ...           │
+├──────────────────┼──────────┼──────────┼──────────┼───────────────┤
+│ Total            │ 50 pts   │ 48 pts   │ 52 pts   │ ...           │
+│ Sales            │ 25 pts   │ 22 pts   │ 28 pts   │ ...           │
+└──────────────────┴──────────┴──────────┴──────────┴───────────────┘
+```
 
 ---
 
-## Changes
+## CSV Output Format
 
-### File 1: `src/components/analytics/AnalyticsDataTable.tsx`
+The CSV will match the table layout:
 
-**Location:** `pivotTableData` function (around line 61-66)
+```csv
+Segments,Jan 20,Jan 21,Jan 22,Jan 23
+Total,50,48,52,45
+Sales,25,22,28,20
+Marketing,15,16,14,15
+Engineering,10,10,10,10
+```
 
-Filter out the "Total" segment name from the sorted segments since we calculate our own Total row:
+- First row: Header with "Segments" (or "Metric") and date columns
+- Subsequent rows: Row label followed by values for each date
+- Values exported as raw numbers (without units like "pts" or "%")
+
+---
+
+## Technical Details
+
+**File:** `src/components/analytics/AnalyticsDataTable.tsx`
+
+### 1. Add imports
 
 ```typescript
-// Build rows: Total first, then segments alphabetically (excluding any "Total" segment from data)
-const sortedSegments = Object.keys(segmentMap)
-  .filter(label => label !== 'Total')
-  .sort();
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Papa from "papaparse";
 ```
 
-### File 2: `src/components/analytics/AnalyticsFilters.tsx`
+### 2. Add export function
 
-**Location:** Segment By Selector (around line 133-143)
+Create a function to convert the pivoted data to CSV and trigger download:
 
-1. Increase width from `w-[140px]` to `w-[160px]`
-2. Change labels from "By Department" / "By Person" to "Department" / "Person"
+```typescript
+const handleExportCSV = () => {
+  // Build CSV data array
+  const headerRow = [segmentBy !== 'none' ? 'Segments' : 'Metric', ...dates];
+  
+  const dataRows = rows.map(row => [
+    row.label,
+    ...dates.map(date => row.values[date] || 0)
+  ]);
+  
+  const csvData = [headerRow, ...dataRows];
+  
+  // Generate CSV string using papaparse
+  const csv = Papa.unparse(csvData);
+  
+  // Create download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `analytics-${metric}-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+```
+
+### 3. Update Card layout
+
+Add a header row with the export button:
 
 ```tsx
-<Select value={segmentBy} onValueChange={(value) => onSegmentChange(value as SegmentType)}>
-  <SelectTrigger className="w-[160px]">
-    <SelectValue placeholder="Segment by" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="none">All</SelectItem>
-    <SelectItem value="department">Department</SelectItem>
-    <SelectItem value="person">Person</SelectItem>
-  </SelectContent>
-</Select>
+<Card>
+  <CardContent className="pt-4">
+    <div className="flex justify-end mb-3">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleExportCSV}
+        className="gap-2"
+      >
+        <Download className="h-4 w-4" />
+        Export CSV
+      </Button>
+    </div>
+    <div className="rounded-md border overflow-x-auto">
+      {/* existing table */}
+    </div>
+  </CardContent>
+</Card>
 ```
-
----
-
-## Visual Result
-
-### Before:
-| Segments | Jan 19 | Jan 20 | ... |
-|----------|--------|--------|-----|
-| Total | 0 pts | 0 pts | 20 pts |
-| Piers Chen | 0 pts | 0 pts | 20 pts |
-| Total | 0 pts | 0 pts | 0 pts |
-
-### After:
-| Segments | Jan 19 | Jan 20 | ... |
-|----------|--------|--------|-----|
-| Total | 0 pts | 0 pts | 20 pts |
-| Piers Chen | 0 pts | 0 pts | 20 pts |
-
-### Dropdown Before:
-- Shows "By..." (truncated)
-- Options: "All", "By Department", "By Person"
-
-### Dropdown After:
-- Shows "Department" or "Person" (full text visible)
-- Options: "All", "Department", "Person"
 
 ---
 
@@ -101,5 +114,4 @@ const sortedSegments = Object.keys(segmentMap)
 
 | File | Changes |
 |------|---------|
-| `src/components/analytics/AnalyticsDataTable.tsx` | Filter out "Total" segment to prevent duplicate row |
-| `src/components/analytics/AnalyticsFilters.tsx` | Increase dropdown width and simplify label text |
+| `src/components/analytics/AnalyticsDataTable.tsx` | Add papaparse import, export function, and export button UI |
