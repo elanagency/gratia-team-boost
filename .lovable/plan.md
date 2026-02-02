@@ -1,197 +1,99 @@
 
-# Horizontal Scrolling Analytics Data Table
+# Fix Analytics Table Duplicate Rows and Filter Dropdown
 
 ## Overview
-Redesign the analytics data table to match RevenueCat's layout with horizontal scrolling, fixed left columns, and simplified display (no average comparisons).
+Address two issues in the Analytics page:
+1. Remove duplicate "Total" rows appearing in the data table
+2. Fix the segment dropdown text truncation and simplify labels
 
 ---
 
-## Visual Transformation
+## Issue Analysis
 
-**Before (vertical scroll):**
-```
-┌─────────────────────────────────────────────┐
-│ Daily Breakdown                             │
-├─────────┬─────────────┬─────────┬───────────┤
-│ Date    │ Department  │ Value   │ vs Avg    │
-├─────────┼─────────────┼─────────┼───────────┤
-│ Jan 3   │ Sales       │ 20 pts  │ +15%      │
-│ Jan 4   │ Sales       │ 18 pts  │ +10%      │
-│ Jan 5   │ Marketing   │ 12 pts  │ -5%       │
-│ ...vertical scrolling...                    │
-└─────────────────────────────────────────────┘
-```
+### 1. Duplicate "Total" Rows
+The problem occurs because of conflicting logic between two functions:
 
-**After (horizontal scroll, RevenueCat style):**
-```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│ ← FIXED COLUMNS →│← SCROLLABLE DATE COLUMNS →                                  │
-├──────────────────┼──────────┬──────────┬──────────┬──────────┬──────────┬──────┤
-│ Segments         │ Jan 20   │ Jan 21   │ Jan 22   │ Jan 23   │ Jan 24   │ ...  │
-├──────────────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────┤
-│ Total            │ 50 pts   │ 48 pts   │ 52 pts   │ 45 pts   │ 55 pts   │ ...  │
-│ Sales            │ 25 pts   │ 22 pts   │ 28 pts   │ 20 pts   │ 30 pts   │ ...  │
-│ Marketing        │ 15 pts   │ 16 pts   │ 14 pts   │ 15 pts   │ 15 pts   │ ...  │
-│ Engineering      │ 10 pts   │ 10 pts   │ 10 pts   │ 10 pts   │ 10 pts   │ ...  │
-└──────────────────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────┘
-                                          ← horizontal scroll →
-```
+**In `useAnalyticsData.ts` (buildTableData function):**
+- When there are no segments for a date, it adds a fallback row with `segmentName: 'Total'`
+
+**In `AnalyticsDataTable.tsx` (pivotTableData function):**
+- It creates a calculated "Total" row by summing all segment values
+- Then it includes ALL segment names from the data, including the "Total" segment
+
+**Result:** Two "Total" rows appear - one calculated (with real data) and one from the fallback (often with zeros).
+
+**Solution:** In `pivotTableData`, filter out any segments named "Total" since we're already calculating a Total row.
+
+### 2. Dropdown Truncation
+Current: `w-[140px]` width is too narrow, shows "By..." when "By Person" is selected
+Current labels: "By Department", "By Person"
+Requested labels: "Department", "Person"
+
+**Solution:** 
+- Change width from `w-[140px]` to `w-[150px]` or remove fixed width
+- Update SelectItem labels to remove "By " prefix
 
 ---
 
-## Changes Summary
+## Changes
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Scroll direction | Vertical | Horizontal |
-| Header row | Date, Segment, Value, vs Avg | Segment name + dates across |
-| Left column | Date | Row labels (Total, segment names) |
-| vs Avg column | Present | Removed |
-| Card title | "Daily Breakdown" or "Breakdown by..." | None (removed) |
-| Fixed columns | None | Left column stays fixed on scroll |
+### File 1: `src/components/analytics/AnalyticsDataTable.tsx`
 
----
+**Location:** `pivotTableData` function (around line 61-66)
 
-## Technical Details
-
-**File:** `src/components/analytics/AnalyticsDataTable.tsx`
-
-### 1. Transform data structure
-
-The current data is organized as rows per date. We need to pivot it so that:
-- Rows represent segments (or "Total" for non-segmented)
-- Columns represent dates
+Filter out the "Total" segment name from the sorted segments since we calculate our own Total row:
 
 ```typescript
-// Transform data for horizontal layout
-interface PivotedData {
-  dates: string[];  // Column headers
-  rows: {
-    label: string;  // Row label (e.g., "Total", "Sales", "Marketing")
-    values: Record<string, number>;  // { "Jan 20": 50, "Jan 21": 48, ... }
-  }[];
-}
+// Build rows: Total first, then segments alphabetically (excluding any "Total" segment from data)
+const sortedSegments = Object.keys(segmentMap)
+  .filter(label => label !== 'Total')
+  .sort();
 ```
 
-### 2. Implement sticky left column with CSS
+### File 2: `src/components/analytics/AnalyticsFilters.tsx`
 
-Use CSS `sticky` positioning to keep the first column fixed:
+**Location:** Segment By Selector (around line 133-143)
 
-```css
-/* First column stays fixed */
-th:first-child,
-td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  background: white; /* or bg-background for dark mode */
-}
-```
-
-### 3. Horizontal scrolling container
-
-Replace vertical scroll container with horizontal:
+1. Increase width from `w-[140px]` to `w-[160px]`
+2. Change labels from "By Department" / "By Person" to "Department" / "Person"
 
 ```tsx
-<div className="overflow-x-auto">
-  <table className="min-w-max">
-    {/* Table content */}
-  </table>
-</div>
+<Select value={segmentBy} onValueChange={(value) => onSegmentChange(value as SegmentType)}>
+  <SelectTrigger className="w-[160px]">
+    <SelectValue placeholder="Segment by" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="none">All</SelectItem>
+    <SelectItem value="department">Department</SelectItem>
+    <SelectItem value="person">Person</SelectItem>
+  </SelectContent>
+</Select>
 ```
-
-### 4. Remove unwanted elements
-
-- Remove `CardHeader` with "Daily Breakdown" / "Breakdown by..." title
-- Remove the "vs Avg" column entirely
-- Remove average calculation logic for comparison
-
-### 5. Update component props
-
-The `average` prop can be removed as it's no longer needed for display.
 
 ---
 
-## Implementation Approach
+## Visual Result
 
-### Data Transformation Logic
+### Before:
+| Segments | Jan 19 | Jan 20 | ... |
+|----------|--------|--------|-----|
+| Total | 0 pts | 0 pts | 20 pts |
+| Piers Chen | 0 pts | 0 pts | 20 pts |
+| Total | 0 pts | 0 pts | 0 pts |
 
-```typescript
-function pivotTableData(data: TableDataRow[], segmentBy: SegmentType) {
-  // Get unique dates in order
-  const dates = [...new Set(data.map(row => row.date))];
-  
-  if (segmentBy === 'none') {
-    // Single "Total" row with values for each date
-    const values: Record<string, number> = {};
-    data.forEach(row => {
-      values[row.date] = row.value;
-    });
-    return {
-      dates,
-      rows: [{ label: 'Total', values }]
-    };
-  }
-  
-  // Group by segment
-  const segmentMap: Record<string, Record<string, number>> = {};
-  const totals: Record<string, number> = {};
-  
-  data.forEach(row => {
-    const segment = row.segmentName || 'Unknown';
-    if (!segmentMap[segment]) segmentMap[segment] = {};
-    segmentMap[segment][row.date] = row.value;
-    totals[row.date] = (totals[row.date] || 0) + row.value;
-  });
-  
-  // Build rows: Total first, then segments
-  const rows = [
-    { label: 'Total', values: totals },
-    ...Object.entries(segmentMap).map(([label, values]) => ({ label, values }))
-  ];
-  
-  return { dates, rows };
-}
-```
+### After:
+| Segments | Jan 19 | Jan 20 | ... |
+|----------|--------|--------|-----|
+| Total | 0 pts | 0 pts | 20 pts |
+| Piers Chen | 0 pts | 0 pts | 20 pts |
 
-### Render Structure
+### Dropdown Before:
+- Shows "By..." (truncated)
+- Options: "All", "By Department", "By Person"
 
-```tsx
-<Card>
-  <CardContent className="pt-4">
-    <div className="rounded-md border overflow-x-auto">
-      <Table className="min-w-max">
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="sticky left-0 z-10 bg-muted/50 font-semibold min-w-[140px]">
-              {segmentBy !== 'none' ? 'Segments' : 'Metric'}
-            </TableHead>
-            {dates.map(date => (
-              <TableHead key={date} className="text-right font-semibold min-w-[80px]">
-                {date}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row, index) => (
-            <TableRow key={row.label}>
-              <TableCell className="sticky left-0 z-10 bg-background font-medium">
-                {row.label}
-              </TableCell>
-              {dates.map(date => (
-                <TableCell key={date} className="text-right">
-                  {(row.values[date] || 0).toLocaleString()}{unit}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  </CardContent>
-</Card>
-```
+### Dropdown After:
+- Shows "Department" or "Person" (full text visible)
+- Options: "All", "Department", "Person"
 
 ---
 
@@ -199,4 +101,5 @@ function pivotTableData(data: TableDataRow[], segmentBy: SegmentType) {
 
 | File | Changes |
 |------|---------|
-| `src/components/analytics/AnalyticsDataTable.tsx` | Complete rewrite to horizontal layout with sticky columns, data pivoting, and removal of average comparison |
+| `src/components/analytics/AnalyticsDataTable.tsx` | Filter out "Total" segment to prevent duplicate row |
+| `src/components/analytics/AnalyticsFilters.tsx` | Increase dropdown width and simplify label text |
