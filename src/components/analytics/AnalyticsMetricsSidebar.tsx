@@ -1,57 +1,20 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Users, Gift, ChevronDown, ChevronRight, LogIn } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Users, Gift, Coins, Send, LogIn } from "lucide-react";
 import type { MetricType } from "@/hooks/useAnalyticsData";
 
 interface MetricItem {
   id: MetricType;
   label: string;
   icon: React.ReactNode;
-  parent?: string;
 }
 
-interface MetricGroup {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  items: MetricItem[];
-}
-
-const metricGroups: MetricGroup[] = [
-  {
-    id: "recognition",
-    label: "Recognition",
-    icon: <TrendingUp className="h-4 w-4" />,
-    items: [
-      { id: "received", label: "Received", icon: <TrendingDown className="h-3.5 w-3.5" />, parent: "recognition" },
-      { id: "sent", label: "Sent", icon: <TrendingUp className="h-3.5 w-3.5" />, parent: "recognition" },
-    ],
-  },
-  {
-    id: "engagement",
-    label: "Engagement",
-    icon: <Users className="h-4 w-4" />,
-    items: [
-      { id: "engagement", label: "Rate", icon: <Users className="h-3.5 w-3.5" />, parent: "engagement" },
-    ],
-  },
-  {
-    id: "redemptions",
-    label: "Redemptions",
-    icon: <Gift className="h-4 w-4" />,
-    items: [
-      { id: "redemptions", label: "Points", icon: <Gift className="h-3.5 w-3.5" />, parent: "redemptions" },
-    ],
-  },
-  {
-    id: "activity",
-    label: "Activity",
-    icon: <LogIn className="h-4 w-4" />,
-    items: [
-      { id: "logins", label: "Logins", icon: <LogIn className="h-3.5 w-3.5" />, parent: "activity" },
-    ],
-  },
+const metrics: MetricItem[] = [
+  { id: "received", label: "Recognition Received", icon: <Coins className="h-4 w-4" /> },
+  { id: "sent", label: "Recognition Sent", icon: <Send className="h-4 w-4" /> },
+  { id: "engagement", label: "Engagement Rate", icon: <Users className="h-4 w-4" /> },
+  { id: "redemptions", label: "Redemptions", icon: <Gift className="h-4 w-4" /> },
+  { id: "logins", label: "User Activity", icon: <LogIn className="h-4 w-4" /> },
 ];
 
 interface AnalyticsMetricsSidebarProps {
@@ -63,20 +26,6 @@ export function AnalyticsMetricsSidebar({
   selectedMetric,
   onMetricChange,
 }: AnalyticsMetricsSidebarProps) {
-  const [openGroups, setOpenGroups] = React.useState<string[]>(["recognition", "engagement", "redemptions", "activity"]);
-
-  const toggleGroup = (groupId: string) => {
-    setOpenGroups((prev) =>
-      prev.includes(groupId)
-        ? prev.filter((id) => id !== groupId)
-        : [...prev, groupId]
-    );
-  };
-
-  const isGroupSelected = (group: MetricGroup) => {
-    return group.items.some((item) => item.id === selectedMetric);
-  };
-
   return (
     <div className="w-56 border-r border-border bg-card h-full">
       <div className="p-4 border-b border-border">
@@ -84,51 +33,22 @@ export function AnalyticsMetricsSidebar({
           Metrics
         </h3>
       </div>
-      <nav className="p-2">
-        {metricGroups.map((group) => (
-          <Collapsible
-            key={group.id}
-            open={openGroups.includes(group.id)}
-            onOpenChange={() => toggleGroup(group.id)}
+      <nav className="p-2 space-y-1">
+        {metrics.map((metric) => (
+          <button
+            key={metric.id}
+            onClick={() => onMetricChange(metric.id)}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm transition-colors",
+              "hover:bg-muted/50",
+              selectedMetric === metric.id
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground"
+            )}
           >
-            <CollapsibleTrigger
-              className={cn(
-                "flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                "hover:bg-muted/50",
-                isGroupSelected(group) && "text-primary"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                {group.icon}
-                <span>{group.label}</span>
-              </div>
-              {openGroups.includes(group.id) ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              )}
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="ml-4 mt-1 space-y-0.5">
-                {group.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => onMetricChange(item.id)}
-                    className={cn(
-                      "flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-sm transition-colors",
-                      "hover:bg-muted/50",
-                      selectedMetric === item.id
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+            {metric.icon}
+            <span>{metric.label}</span>
+          </button>
         ))}
       </nav>
     </div>
