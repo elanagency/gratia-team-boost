@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { TableDataRow, MetricType, SegmentType } from "@/hooks/useAnalyticsData";
 
@@ -15,37 +15,75 @@ interface AnalyticsDataTableProps {
   data: TableDataRow[];
   isLoading: boolean;
   metric: MetricType;
-  average: number;
   segmentBy: SegmentType;
 }
 
 const metricUnits: Record<MetricType, string> = {
-  received: "pts",
-  sent: "pts",
+  received: " pts",
+  sent: " pts",
   engagement: "%",
-  redemptions: "pts",
-  logins: "logins",
+  redemptions: " pts",
+  logins: "",
 };
+
+interface PivotedRow {
+  label: string;
+  values: Record<string, number>;
+}
+
+function pivotTableData(data: TableDataRow[], segmentBy: SegmentType): { dates: string[]; rows: PivotedRow[] } {
+  // Get unique dates in order
+  const dates = [...new Set(data.map(row => row.date))];
+  
+  if (segmentBy === 'none') {
+    // Single "Total" row with values for each date
+    const values: Record<string, number> = {};
+    data.forEach(row => {
+      values[row.date] = row.value;
+    });
+    return {
+      dates,
+      rows: [{ label: 'Total', values }]
+    };
+  }
+  
+  // Group by segment
+  const segmentMap: Record<string, Record<string, number>> = {};
+  const totals: Record<string, number> = {};
+  
+  data.forEach(row => {
+    const segment = row.segmentName || 'Unknown';
+    if (!segmentMap[segment]) segmentMap[segment] = {};
+    segmentMap[segment][row.date] = row.value;
+    totals[row.date] = (totals[row.date] || 0) + row.value;
+  });
+  
+  // Build rows: Total first, then segments alphabetically
+  const sortedSegments = Object.keys(segmentMap).sort();
+  const rows: PivotedRow[] = [
+    { label: 'Total', values: totals },
+    ...sortedSegments.map(label => ({ label, values: segmentMap[label] }))
+  ];
+  
+  return { dates, rows };
+}
 
 export function AnalyticsDataTable({
   data,
   isLoading,
   metric,
-  average,
   segmentBy,
 }: AnalyticsDataTableProps) {
   const unit = metricUnits[metric];
-  const isSegmented = segmentBy !== 'none';
+
+  const { dates, rows } = useMemo(() => pivotTableData(data, segmentBy), [data, segmentBy]);
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
@@ -58,84 +96,38 @@ export function AnalyticsDataTable({
     return null;
   }
 
-  // Calculate segment-specific averages if segmented
-  const segmentAverages: Record<string, number> = {};
-  if (isSegmented) {
-    const segmentTotals: Record<string, { sum: number; count: number }> = {};
-    data.forEach(row => {
-      const key = row.segmentName || 'Total';
-      if (!segmentTotals[key]) {
-        segmentTotals[key] = { sum: 0, count: 0 };
-      }
-      segmentTotals[key].sum += row.value;
-      segmentTotals[key].count += 1;
-    });
-    Object.entries(segmentTotals).forEach(([key, { sum, count }]) => {
-      segmentAverages[key] = count > 0 ? Math.round(sum / count) : 0;
-    });
-  }
-
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {isSegmented ? "Breakdown by " + (segmentBy === 'department' ? "Department" : "Person") : "Daily Breakdown"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="rounded-md border max-h-[300px] overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold">Date</TableHead>
-                {isSegmented && (
-                  <TableHead className="font-semibold">
-                    {segmentBy === 'department' ? 'Department' : 'Person'}
-                  </TableHead>
-                )}
-                <TableHead className="text-right font-semibold">Value</TableHead>
-                <TableHead className="text-right font-semibold">vs Avg</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row, index) => {
-                const compareAvg = isSegmented && row.segmentName 
-                  ? segmentAverages[row.segmentName] || average
-                  : average;
-                const diff = row.value - compareAvg;
-                const diffPercent = compareAvg > 0 ? Math.round((diff / compareAvg) * 100) : 0;
-                const isPositive = diff > 0;
-                const isNeutral = diff === 0;
-
-                return (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{row.date}</TableCell>
-                    {isSegmented && (
-                      <TableCell className="text-muted-foreground">
-                        {row.segmentName || '—'}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right">
-                      {row.value.toLocaleString()}{unit === "%" ? "%" : ` ${unit}`}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span
-                        className={
-                          isNeutral
-                            ? "text-muted-foreground"
-                            : isPositive
-                            ? "text-green-600"
-                            : "text-red-500"
-                        }
-                      >
-                        {isNeutral ? "—" : `${isPositive ? "+" : ""}${diffPercent}%`}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+      <CardContent className="pt-4">
+        <div className="rounded-md border overflow-x-auto">
+          <table className="w-full caption-bottom text-sm min-w-max">
+            <thead className="[&_tr]:border-b">
+              <tr className="border-b transition-colors bg-muted/50">
+                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground sticky left-0 z-10 bg-muted/50 min-w-[140px] border-r border-border/50">
+                  {segmentBy !== 'none' ? 'Segments' : 'Metric'}
+                </th>
+                {dates.map(date => (
+                  <th key={date} className="h-12 px-4 text-right align-middle font-semibold text-muted-foreground min-w-[90px]">
+                    {date}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {rows.map((row) => (
+                <tr key={row.label} className="border-b transition-colors hover:bg-muted/50">
+                  <td className="p-4 align-middle font-medium sticky left-0 z-10 bg-background border-r border-border/50">
+                    {row.label}
+                  </td>
+                  {dates.map(date => (
+                    <td key={date} className="p-4 align-middle text-right">
+                      {(row.values[date] || 0).toLocaleString()}{unit}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </CardContent>
     </Card>

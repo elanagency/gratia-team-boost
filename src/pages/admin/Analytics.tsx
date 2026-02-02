@@ -75,7 +75,6 @@ const Analytics = () => {
             data={data?.tableData || []}
             isLoading={isLoading}
             metric={selectedMetric}
-            average={data?.average || 0}
             segmentBy={segmentBy}
           />
         </div>
