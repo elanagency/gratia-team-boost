@@ -1,136 +1,107 @@
 
-# Add Monthly Granularity to Analytics
+# Simplify Analytics Sidebar Menu
 
 ## Overview
-Add a "Monthly" option to the granularity toggle in the Analytics tab, allowing data to be grouped by month in addition to daily and weekly.
+Flatten the sidebar navigation by removing parent groupings and updating metric labels and icons based on client feedback.
 
 ---
 
-## What You'll Get
+## Changes Summary
 
-- New "Monthly" button in the granularity toggle (alongside Daily and Weekly)
-- Chart data grouped by calendar month
-- Table data showing monthly breakdowns
-- Works with all existing metrics and segmentation options
+| Current Label | New Label | Current Icon | New Icon |
+|---------------|-----------|--------------|----------|
+| Received | Recognition Received | TrendingDown | Coins |
+| Sent | Recognition Sent | TrendingUp | Send |
+| Rate | Engagement Rate | Users | Users (no change) |
+| Points | Redemptions | Gift | Gift (no change) |
+| Logins | User Activity | LogIn | LogIn (no change) |
 
 ---
 
-## Implementation Details
+## Visual Change
 
-### 1. Update Type Definition
-
-**File:** `src/hooks/useAnalyticsData.ts`
-
-Add `'monthly'` to the `GranularityType`:
-
-```typescript
-// Line 8
-export type GranularityType = 'daily' | 'weekly' | 'monthly';
+**Before (nested groups):**
+```
+▼ Recognition
+    Received
+    Sent
+▼ Engagement
+    Rate
+▼ Redemptions
+    Points
+▼ Activity
+    Logins
 ```
 
-### 2. Add Monthly Interval Logic
-
-**File:** `src/hooks/useAnalyticsData.ts`
-
-Import `eachMonthOfInterval` and `endOfMonth` from date-fns (line 4):
-
-```typescript
-import { 
-  startOfDay, 
-  endOfDay, 
-  format, 
-  eachDayOfInterval, 
-  eachWeekOfInterval,
-  eachMonthOfInterval,
-  endOfMonth 
-} from "date-fns";
+**After (flat list):**
+```
+Recognition Received
+Recognition Sent
+Engagement Rate
+Redemptions
+User Activity
 ```
 
-Update all interval generation logic to handle the monthly case. There are 4 locations:
+---
 
-| Function | Lines |
-|----------|-------|
-| `fetchEngagementData` | ~331-339 |
-| `fetchRedemptionsData` | ~418-426 |
-| `fetchLoginsData` | ~513-521 |
-| `processTransactionData` | ~573-581 |
+## Technical Details
 
-Each needs to be updated from:
+**File:** `src/components/analytics/AnalyticsMetricsSidebar.tsx`
+
+### 1. Update imports
+- Add `Coins` and `Send` icons
+- Remove `ChevronDown`, `ChevronRight` (no longer needed for collapsibles)
+- Remove `Collapsible` components import
+
+### 2. Replace grouped structure with flat list
+
 ```typescript
-const intervals = granularity === 'daily'
-  ? eachDayOfInterval({ start: startDate, end: endDate })
-  : eachWeekOfInterval({ start: startDate, end: endDate });
+interface MetricItem {
+  id: MetricType;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const metrics: MetricItem[] = [
+  { id: "received", label: "Recognition Received", icon: <Coins className="h-4 w-4" /> },
+  { id: "sent", label: "Recognition Sent", icon: <Send className="h-4 w-4" /> },
+  { id: "engagement", label: "Engagement Rate", icon: <Users className="h-4 w-4" /> },
+  { id: "redemptions", label: "Redemptions", icon: <Gift className="h-4 w-4" /> },
+  { id: "logins", label: "User Activity", icon: <LogIn className="h-4 w-4" /> },
+];
 ```
 
-To:
-```typescript
-const intervals = granularity === 'daily'
-  ? eachDayOfInterval({ start: startDate, end: endDate })
-  : granularity === 'weekly'
-    ? eachWeekOfInterval({ start: startDate, end: endDate })
-    : eachMonthOfInterval({ start: startDate, end: endDate });
-```
+### 3. Simplify the render logic
 
-And the interval end calculation from:
-```typescript
-const intervalEnd = granularity === 'daily'
-  ? endOfDay(intervalStart)
-  : endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000));
-```
-
-To:
-```typescript
-const intervalEnd = granularity === 'daily'
-  ? endOfDay(intervalStart)
-  : granularity === 'weekly'
-    ? endOfDay(new Date(intervalStart.getTime() + 6 * 24 * 60 * 60 * 1000))
-    : endOfMonth(intervalStart);
-```
-
-Also update the date format for monthly display:
-```typescript
-date: format(intervalStart, 
-  granularity === 'daily' ? 'MMM d' : 
-  granularity === 'weekly' ? 'MMM d' : 
-  'MMM yyyy'
-)
-```
-
-### 3. Update Granularity Toggle UI
-
-**File:** `src/components/analytics/AnalyticsFilters.tsx`
-
-Add a third "Monthly" button to the toggle group (lines 145-163):
+Remove collapsible wrappers and render a simple list of buttons:
 
 ```tsx
-{/* Granularity Toggle */}
-<div className="flex items-center rounded-md border border-input bg-background">
-  <Button
-    variant={granularity === "daily" ? "secondary" : "ghost"}
-    size="sm"
-    className="rounded-r-none border-r-0"
-    onClick={() => onGranularityChange("daily")}
-  >
-    Daily
-  </Button>
-  <Button
-    variant={granularity === "weekly" ? "secondary" : "ghost"}
-    size="sm"
-    className="rounded-none border-r-0"
-    onClick={() => onGranularityChange("weekly")}
-  >
-    Weekly
-  </Button>
-  <Button
-    variant={granularity === "monthly" ? "secondary" : "ghost"}
-    size="sm"
-    className="rounded-l-none"
-    onClick={() => onGranularityChange("monthly")}
-  >
-    Monthly
-  </Button>
-</div>
+<nav className="p-2 space-y-1">
+  {metrics.map((metric) => (
+    <button
+      key={metric.id}
+      onClick={() => onMetricChange(metric.id)}
+      className={cn(
+        "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm transition-colors",
+        "hover:bg-muted/50",
+        selectedMetric === metric.id
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-muted-foreground"
+      )}
+    >
+      {metric.icon}
+      <span>{metric.label}</span>
+    </button>
+  ))}
+</nav>
 ```
+
+### 4. Remove unused code
+- Remove `MetricGroup` interface
+- Remove `metricGroups` array
+- Remove `openGroups` state
+- Remove `toggleGroup` function
+- Remove `isGroupSelected` function
 
 ---
 
@@ -138,22 +109,5 @@ Add a third "Monthly" button to the toggle group (lines 145-163):
 
 | File | Changes |
 |------|---------|
-| `src/hooks/useAnalyticsData.ts` | Add `'monthly'` to type; import `eachMonthOfInterval` and `endOfMonth`; update 4 interval generation blocks |
-| `src/components/analytics/AnalyticsFilters.tsx` | Add "Monthly" button to granularity toggle |
+| `src/components/analytics/AnalyticsMetricsSidebar.tsx` | Replace nested collapsible structure with flat list; update labels and icons |
 
----
-
-## Date Format by Granularity
-
-| Granularity | Format | Example |
-|-------------|--------|---------|
-| Daily | `MMM d` | Jan 15 |
-| Weekly | `MMM d` | Jan 13 (week start) |
-| Monthly | `MMM yyyy` | Jan 2026 |
-
----
-
-## Edge Cases
-
-- **Partial months**: If the date range starts mid-month, the first month interval will still show the full month name but only include data from the selected start date
-- **Short date ranges**: Monthly granularity with a 7-day range will show just 1-2 data points (works correctly but may be less useful)
