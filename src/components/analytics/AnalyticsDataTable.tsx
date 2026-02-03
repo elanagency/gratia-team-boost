@@ -132,8 +132,8 @@ export function AnalyticsDataTable({
         <div className="rounded-md border overflow-x-auto">
           <table className="w-full caption-bottom text-sm min-w-max">
             <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors bg-muted/50">
-                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground sticky left-0 z-10 bg-muted/50 min-w-[140px] border-r border-border/50">
+              <tr className="border-b transition-colors bg-muted">
+                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground sticky left-0 z-10 bg-muted min-w-[140px] border-r border-border/50">
                   {segmentBy !== 'none' ? 'Segments' : 'Metric'}
                 </th>
                 {dates.map(date => (
@@ -146,7 +146,7 @@ export function AnalyticsDataTable({
             <tbody className="[&_tr:last-child]:border-0">
               {rows.map((row) => (
                 <tr key={row.label} className="border-b transition-colors hover:bg-muted/50">
-                  <td className="p-4 align-middle font-medium sticky left-0 z-10 bg-background border-r border-border/50">
+                  <td className="p-4 align-middle font-medium sticky left-0 z-10 bg-card border-r border-border/50">
                     {row.label}
                   </td>
                   {dates.map(date => (
