@@ -195,6 +195,7 @@ async function fetchTransactionTotal(
     .from('point_transactions')
     .select('points')
     .eq('company_id', companyId)
+    .gt('points', 0)  // Only positive transactions (excludes redemptions)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString());
 
@@ -213,6 +214,7 @@ async function fetchEngagementTotal(
     supabase.from('point_transactions')
       .select('sender_profile_id, recipient_profile_id')
       .eq('company_id', companyId)
+      .gt('points', 0)  // Only positive transactions
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString()),
   ]);
@@ -288,6 +290,7 @@ async function fetchTransactionData(
       )
     `)
     .eq('company_id', companyId)
+    .gt('points', 0)  // Only positive transactions (excludes redemptions)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: true });
@@ -322,6 +325,7 @@ async function fetchEngagementData(
     .from('point_transactions')
     .select('sender_profile_id, recipient_profile_id, created_at')
     .eq('company_id', companyId)
+    .gt('points', 0)  // Only positive transactions
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: true });
