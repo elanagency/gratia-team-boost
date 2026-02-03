@@ -1,117 +1,71 @@
 
-# Add CSV Export Button to Analytics Data Table
 
-## Overview
-Add an export button to the analytics data table that allows users to download the current view as a CSV file. The button will be positioned in the table header area.
+# Fix Transparent Background on Sticky Table Columns
 
----
+## Problem
+The left-hand sticky column in the analytics data table has a semi-transparent background (`bg-muted/50`), causing the date column headers and values to bleed through when scrolling horizontally.
 
-## Visual Design
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                                                    [⬇ Export CSV]  │
-├──────────────────┬──────────┬──────────┬──────────┬───────────────┤
-│ Segments         │ Jan 20   │ Jan 21   │ Jan 22   │ ...           │
-├──────────────────┼──────────┼──────────┼──────────┼───────────────┤
-│ Total            │ 50 pts   │ 48 pts   │ 52 pts   │ ...           │
-│ Sales            │ 25 pts   │ 22 pts   │ 28 pts   │ ...           │
-└──────────────────┴──────────┴──────────┴──────────┴───────────────┘
-```
+Looking at the screenshot: "Metric" shows "4" bleeding through from "Jan 4" behind it.
 
 ---
 
-## CSV Output Format
+## Root Cause
 
-The CSV will match the table layout:
+Current styling uses semi-transparent backgrounds:
+- Header cell: `bg-muted/50` (50% opacity)
+- Body cells: `bg-background` (solid, but row hover is `bg-muted/50`)
 
-```csv
-Segments,Jan 20,Jan 21,Jan 22,Jan 23
-Total,50,48,52,45
-Sales,25,22,28,20
-Marketing,15,16,14,15
-Engineering,10,10,10,10
-```
-
-- First row: Header with "Segments" (or "Metric") and date columns
-- Subsequent rows: Row label followed by values for each date
-- Values exported as raw numbers (without units like "pts" or "%")
+When the user scrolls horizontally, the sticky column overlaps the scrolling content, and the transparency allows the underlying content to show through.
 
 ---
 
-## Technical Details
+## Solution
+
+Replace semi-transparent backgrounds with solid colors on the sticky column:
+
+| Element | Current | Fixed |
+|---------|---------|-------|
+| Header sticky cell | `bg-muted/50` | `bg-muted` (solid) |
+| Body sticky cells | `bg-background` | `bg-white` or `bg-card` (explicit solid) |
+
+Also ensure the header row background is solid so it doesn't conflict.
+
+---
+
+## Technical Changes
 
 **File:** `src/components/analytics/AnalyticsDataTable.tsx`
 
-### 1. Add imports
-
-```typescript
-import { Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Papa from "papaparse";
-```
-
-### 2. Add export function
-
-Create a function to convert the pivoted data to CSV and trigger download:
-
-```typescript
-const handleExportCSV = () => {
-  // Build CSV data array
-  const headerRow = [segmentBy !== 'none' ? 'Segments' : 'Metric', ...dates];
-  
-  const dataRows = rows.map(row => [
-    row.label,
-    ...dates.map(date => row.values[date] || 0)
-  ]);
-  
-  const csvData = [headerRow, ...dataRows];
-  
-  // Generate CSV string using papaparse
-  const csv = Papa.unparse(csvData);
-  
-  // Create download
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `analytics-${metric}-${new Date().toISOString().split('T')[0]}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-```
-
-### 3. Update Card layout
-
-Add a header row with the export button:
-
+### Line 135-136 (Header row and sticky header cell)
+Change from:
 ```tsx
-<Card>
-  <CardContent className="pt-4">
-    <div className="flex justify-end mb-3">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleExportCSV}
-        className="gap-2"
-      >
-        <Download className="h-4 w-4" />
-        Export CSV
-      </Button>
-    </div>
-    <div className="rounded-md border overflow-x-auto">
-      {/* existing table */}
-    </div>
-  </CardContent>
-</Card>
+<tr className="border-b transition-colors bg-muted/50">
+  <th className="... sticky left-0 z-10 bg-muted/50 ...">
 ```
+
+To:
+```tsx
+<tr className="border-b transition-colors bg-muted">
+  <th className="... sticky left-0 z-10 bg-muted ...">
+```
+
+### Line 149 (Body sticky cell)
+Change from:
+```tsx
+<td className="p-4 align-middle font-medium sticky left-0 z-10 bg-background border-r border-border/50">
+```
+
+To:
+```tsx
+<td className="p-4 align-middle font-medium sticky left-0 z-10 bg-card border-r border-border/50">
+```
+
+Using `bg-card` ensures it matches the Card component's background and is fully opaque.
 
 ---
 
-## Files to Modify
+## Visual Result
 
-| File | Changes |
-|------|---------|
-| `src/components/analytics/AnalyticsDataTable.tsx` | Add papaparse import, export function, and export button UI |
+**Before:** Dates bleeding through sticky column when scrolling
+**After:** Solid background on sticky column, clean separation when scrolling
+
