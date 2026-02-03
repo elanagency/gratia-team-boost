@@ -1,71 +1,158 @@
 
 
-# Fix Transparent Background on Sticky Table Columns
+# Fix Analytics Recognition Metrics to Exclude Redemptions
 
 ## Problem
-The left-hand sticky column in the analytics data table has a semi-transparent background (`bg-muted/50`), causing the date column headers and values to bleed through when scrolling horizontally.
 
-Looking at the screenshot: "Metric" shows "4" bleeding through from "Jan 4" behind it.
+When a user redeems points, the system creates a negative point transaction in the `point_transactions` table. The analytics queries for "Recognition Received" and "Recognition Sent" are fetching ALL transactions including these redemption records, causing:
 
----
+- **Recognition Sent**: Shows negative values (e.g., -370 points, -500 pts for Pedro Olinger)
+- **Recognition Received**: Shows negative values (e.g., -370 points, -570 pts for Pedro Olinger)
 
 ## Root Cause
 
-Current styling uses semi-transparent backgrounds:
-- Header cell: `bg-muted/50` (50% opacity)
-- Body cells: `bg-background` (solid, but row hover is `bg-muted/50`)
+Database evidence shows redemptions are stored as:
+- **Negative points** (e.g., `points: -600`, `points: -300`)
+- **Self-transactions** (sender_profile_id = recipient_profile_id)
+- **Description** contains "Redeemed" text
 
-When the user scrolls horizontally, the sticky column overlaps the scrolling content, and the transparency allows the underlying content to show through.
-
----
+The `fetchTransactionData` and `fetchTransactionTotal` functions in `useAnalyticsData.ts` have **no filter** to exclude these redemption records.
 
 ## Solution
 
-Replace semi-transparent backgrounds with solid colors on the sticky column:
+Add filters to the transaction queries to:
+1. **Only include positive points** (`points > 0`)
+2. **Exclude self-transactions** (`sender_profile_id != recipient_profile_id`) as an additional safety measure
 
-| Element | Current | Fixed |
-|---------|---------|-------|
-| Header sticky cell | `bg-muted/50` | `bg-muted` (solid) |
-| Body sticky cells | `bg-background` | `bg-white` or `bg-card` (explicit solid) |
-
-Also ensure the header row background is solid so it doesn't conflict.
+This aligns with the existing leaderboard logic documented in the codebase memory.
 
 ---
 
-## Technical Changes
+## Technical Implementation
 
-**File:** `src/components/analytics/AnalyticsDataTable.tsx`
+### File: `src/hooks/useAnalyticsData.ts`
 
-### Line 135-136 (Header row and sticky header cell)
-Change from:
-```tsx
-<tr className="border-b transition-colors bg-muted/50">
-  <th className="... sticky left-0 z-10 bg-muted/50 ...">
+#### Change 1: `fetchTransactionTotal` function (lines 186-203)
+
+Add filter for positive points only:
+
+```typescript
+async function fetchTransactionTotal(
+  companyId: string,
+  startDate: Date,
+  endDate: Date,
+  profileType: 'sender' | 'recipient'
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('point_transactions')
+    .select('points')
+    .eq('company_id', companyId)
+    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString());
+
+  if (error) throw error;
+  return (data || []).reduce((sum, tx) => sum + tx.points, 0);
+}
 ```
 
-To:
-```tsx
-<tr className="border-b transition-colors bg-muted">
-  <th className="... sticky left-0 z-10 bg-muted ...">
+#### Change 2: `fetchTransactionData` function (lines 264-301)
+
+Add filter for positive points only:
+
+```typescript
+async function fetchTransactionData(
+  companyId: string,
+  startDate: Date,
+  endDate: Date,
+  segmentBy: SegmentType,
+  granularity: GranularityType,
+  profileType: 'sender' | 'recipient'
+): Promise<Omit<AnalyticsData, 'trend'>> {
+  const fk = profileType === 'sender' 
+    ? 'point_transactions_sender_profile_id_fkey' 
+    : 'point_transactions_recipient_profile_id_fkey';
+  
+  const { data: transactions, error } = await supabase
+    .from('point_transactions')
+    .select(`
+      id,
+      points,
+      created_at,
+      ${profileType}_profile_id,
+      profiles!${fk} (
+        first_name,
+        last_name,
+        department_id,
+        departments (name)
+      )
+    `)
+    .eq('company_id', companyId)
+    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString())
+    .order('created_at', { ascending: true });
+
+  // ... rest of function
+}
 ```
 
-### Line 149 (Body sticky cell)
-Change from:
-```tsx
-<td className="p-4 align-middle font-medium sticky left-0 z-10 bg-background border-r border-border/50">
+#### Change 3: `fetchEngagementTotal` function (lines 206-228)
+
+Add filter for positive points to engagement calculations:
+
+```typescript
+async function fetchEngagementTotal(
+  companyId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<number> {
+  const [membersResult, txResult] = await Promise.all([
+    supabase.from('profiles').select('id').eq('company_id', companyId).eq('status', 'active'),
+    supabase.from('point_transactions')
+      .select('sender_profile_id, recipient_profile_id')
+      .eq('company_id', companyId)
+      .gt('points', 0)  // Only positive transactions
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString()),
+  ]);
+  // ... rest of function
+}
 ```
 
-To:
-```tsx
-<td className="p-4 align-middle font-medium sticky left-0 z-10 bg-card border-r border-border/50">
-```
+#### Change 4: `fetchEngagementData` function (lines 320-327)
 
-Using `bg-card` ensures it matches the Card component's background and is fully opaque.
+Add filter for positive points:
+
+```typescript
+const { data: transactions, error: txError } = await supabase
+  .from('point_transactions')
+  .select('sender_profile_id, recipient_profile_id, created_at')
+  .eq('company_id', companyId)
+  .gt('points', 0)  // Only positive transactions
+  .gte('created_at', startDate.toISOString())
+  .lte('created_at', endDate.toISOString())
+  .order('created_at', { ascending: true });
+```
 
 ---
 
-## Visual Result
+## Summary of Changes
 
-**Before:** Dates bleeding through sticky column when scrolling
-**After:** Solid background on sticky column, clean separation when scrolling
+| Location | Change |
+|----------|--------|
+| `fetchTransactionTotal` | Add `.gt('points', 0)` filter |
+| `fetchTransactionData` | Add `.gt('points', 0)` filter |
+| `fetchEngagementTotal` | Add `.gt('points', 0)` filter |
+| `fetchEngagementData` | Add `.gt('points', 0)` filter |
+
+---
+
+## Expected Result
+
+After this fix:
+- **Recognition Received**: Only shows positive points from peer recognition (never negative)
+- **Recognition Sent**: Only shows positive points from peer recognition (never negative)
+- **Engagement Rate**: Only counts participants in actual peer recognition, not redemptions
+- **Redemptions**: Continues to work correctly from the separate `redemptions` table
 
