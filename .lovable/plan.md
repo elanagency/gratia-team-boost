@@ -1,164 +1,118 @@
 
 
-# Fix Brand Syncing - Connect to Giftbit API Instead of Goody
+# Fix Brand Sync: Unique Constraint + Currency Mapping
 
-## Root Cause
+## Problem Summary
 
-**The "Sync X Regions" button is calling the wrong API!**
+1. **Missing brands:** 45 brands synced but only 15 visible because the unique constraint `(brand_code, environment)` doesn't include `region_code`, causing regions to overwrite each other
+2. **Wrong currency:** All brands show AUD because the API returns empty `currency_code` and both the database default and code fallback use AUD
 
-Current flow (broken):
+---
+
+## Root Cause Analysis
+
+### Issue 1: Brand Overwriting
+
+The Giftbit API returns the **same brand_codes across different regions**:
+- AU region: `amazonus`, `ikeade`, `bootsgb`... (15 brands)
+- GLBL region: `amazonus`, `ikeade`, `bootsgb`... (15 brands)  
+- US region: `amazonus`, `ikeade`, `bootsgb`... (15 brands)
+
+Current unique constraint: `(brand_code, environment)`
+- When US syncs after AU and GLBL, it overwrites the previous entries
+- Result: Only 15 unique brands remain, all with `region_code: US`
+
+### Issue 2: Currency Hardcoded to AUD
+
+Edge function line 326:
+```typescript
+currency_code: brand.currency_code || 'AUD'  // Fallback to AUD!
 ```
-Sync 59 Regions button → useSyncGiftCards → goody-product-service → Goody API (empty for you)
-```
 
-Required flow:
-```
-Sync 59 Regions button → useSyncGiftbitBrands → giftbit-brand-service → Giftbit API → giftbit_brands table
-```
-
-The `EnvironmentSyncCard` component uses `useSyncGiftCards` hook which calls `goody-product-service` edge function. This is the old Goody API integration, not Giftbit! That's why it returns "no gift cards found" - the Goody catalog is empty.
+The Giftbit testbed API returns `null`/`undefined` for `currency_code`, triggering the fallback.
 
 ---
 
 ## Solution
 
-Create a new hook `useSyncGiftbitBrands` that calls the `giftbit-brand-service` edge function with `SYNC_BRANDS` action for each selected region.
+### 1. Database Migration: Update Unique Constraint
 
----
+Change unique constraint from `(brand_code, environment)` to `(brand_code, region_code, environment)`:
 
-## Implementation Details
+```sql
+-- Drop existing constraint
+ALTER TABLE giftbit_brands 
+DROP CONSTRAINT IF EXISTS giftbit_brands_brand_code_environment_key;
 
-### Phase 1: Create New Sync Hook
-
-**New File: `src/hooks/useSyncGiftbitBrands.ts`**
-
-```typescript
-export const useSyncGiftbitBrands = (environment: 'test' | 'live') => {
-  const giftbitEnv = environment === 'live' ? 'production' : 'testbed';
-  
-  const syncMutation = useMutation({
-    mutationFn: async (selectedRegions: string[]) => {
-      let totalSynced = 0;
-      let totalErrors = 0;
-      
-      // Sync brands for each selected region
-      for (const region of selectedRegions) {
-        const { data, error } = await supabase.functions.invoke('giftbit-brand-service', {
-          body: { 
-            action: 'SYNC_BRANDS', 
-            environment: giftbitEnv,
-            region 
-          }
-        });
-        
-        if (error || !data?.success) {
-          totalErrors++;
-        } else {
-          totalSynced += data.synced || 0;
-        }
-      }
-      
-      return { totalSynced, totalErrors, regionsProcessed: selectedRegions.length };
-    },
-    onSuccess: (result) => {
-      toast.success(`Synced ${result.totalSynced} brands from ${result.regionsProcessed} regions`);
-      // Invalidate giftbit-brands queries
-    }
-  });
-  
-  return { syncBrands: syncMutation.mutate, ... };
-};
+-- Add new constraint including region_code
+ALTER TABLE giftbit_brands 
+ADD CONSTRAINT giftbit_brands_brand_code_region_environment_key 
+UNIQUE (brand_code, region_code, environment);
 ```
 
-### Phase 2: Update EnvironmentSyncCard
+This allows the same brand (e.g., `amazonus`) to exist separately for AU, US, and GLBL regions.
 
-**File: `src/components/platform/EnvironmentSyncCard.tsx`**
+### 2. Edge Function: Fix Currency Derivation
 
-Replace the old hook usage:
+Update `SYNC_BRANDS` case to use the region's currency instead of AUD fallback:
+
 ```typescript
-// OLD (calling Goody API)
-const { syncMutation, ... } = useSyncGiftCards(environment);
-
-// NEW (calling Giftbit API)
-const { syncBrands, isSyncing, progress } = useSyncGiftbitBrands(environment);
-
-const handleSync = () => {
-  syncBrands(selectedRegions); // Pass selected regions to sync
-};
+// Line 326 change:
+// FROM: currency_code: brand.currency_code || 'AUD',
+// TO:
+currency_code: brand.currency_code || REGION_CURRENCIES[region] || 'USD',
 ```
 
-### Phase 3: Update Sync Status Query
+This way:
+- AU region brands → AUD
+- US region brands → USD
+- CA region brands → CAD
+- GLBL region brands → USD (fallback)
 
-The current sync status checks `goody_gift_cards` table. Update to check `giftbit_brands`:
+### 3. Update Upsert Conflict Target
+
+Update the upsert to use the new constraint:
 
 ```typescript
-// Query giftbit_brands for last sync time
-const { data: syncStatus } = useQuery({
-  queryKey: ['giftbit-sync-status', giftbitEnv],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('giftbit_brands')
-      .select('last_synced_at', { count: 'exact' })
-      .eq('environment', giftbitEnv)
-      .order('last_synced_at', { ascending: false })
-      .limit(1);
-    
-    return { lastSynced: data?.[0]?.last_synced_at };
-  }
-});
+// Line 332 change:
+// FROM: { onConflict: 'brand_code,environment' }
+// TO:
+{ onConflict: 'brand_code,region_code,environment' }
 ```
 
 ---
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useSyncGiftbitBrands.ts` | Hook to sync brands via giftbit-brand-service |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/platform/EnvironmentSyncCard.tsx` | Replace useSyncGiftCards with useSyncGiftbitBrands |
+| `supabase/functions/giftbit-brand-service/index.ts` | Fix currency fallback, update upsert conflict target |
 
----
+## Database Migration Required
 
-## API Flow After Fix
+```sql
+-- 1. Drop old unique constraint
+ALTER TABLE giftbit_brands 
+DROP CONSTRAINT IF EXISTS giftbit_brands_brand_code_environment_key;
 
-```text
-User clicks "Sync 59 Regions"
-        ↓
-useSyncGiftbitBrands.syncBrands(['AU', 'US', 'CA', ...])
-        ↓
-For each region:
-  supabase.functions.invoke('giftbit-brand-service', {
-    body: { action: 'SYNC_BRANDS', environment: 'testbed', region: 'AU' }
-  })
-        ↓
-Edge function fetches: GET /papi/v1/brands?region=AU
-        ↓
-Upserts brands into giftbit_brands table
-        ↓
-Returns { success: true, synced: 15 }
-        ↓
-Repeat for next region...
-        ↓
-Toast: "Synced 450 brands from 59 regions"
-        ↓
-Invalidate giftbit-brands query
-        ↓
-Catalog displays synced brands
+-- 2. Add new unique constraint with region_code
+ALTER TABLE giftbit_brands 
+ADD CONSTRAINT giftbit_brands_brand_code_region_environment_key 
+UNIQUE (brand_code, region_code, environment);
+
+-- 3. Clear existing incorrectly-synced data to resync
+DELETE FROM giftbit_brands WHERE environment = 'testbed';
 ```
 
 ---
 
-## Expected Result
+## Expected Result After Fix
 
-After this fix:
-1. "Sync 59 Regions" will call Giftbit API (not Goody)
-2. Brands will be fetched for each selected region
-3. `giftbit_brands` table will be populated
-4. Catalog will display the synced brands
-5. Progress indicator shows which region is being synced
+After re-syncing 3 regions (AU, GLBL, US):
+- **45 brands stored** (15 per region, each as separate row)
+- AU brands → currency: AUD, region_code: AU
+- US brands → currency: USD, region_code: US
+- GLBL brands → currency: USD, region_code: GLBL
+
+Catalog will show all 45 brands with correct regional currency badges.
 
