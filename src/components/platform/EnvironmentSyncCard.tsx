@@ -5,7 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin, CheckCheck, XCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin, CheckCheck, XCircle, Info } from "lucide-react";
 import { useSyncGiftbitBrands } from "@/hooks/useSyncGiftbitBrands";
 import { useAvailableRegions } from "@/hooks/useAvailableRegions";
 import { useSyncRegions } from "@/hooks/useSyncRegions";
@@ -124,6 +125,17 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Testbed Warning */}
+        {!isLive && (
+          <Alert className="border-muted bg-muted/50">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              The Giftbit Test environment (testbed) has limited brand availability. 
+              For full catalog testing, use the Production Catalog.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Region Selection Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
