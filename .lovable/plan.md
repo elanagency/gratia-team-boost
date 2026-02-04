@@ -1,99 +1,172 @@
 
 
-# Save and Use Giftbit Region Icons
+# Region Selection During Onboarding
 
-## Findings
+## Overview
 
-### 1. Brand Count Per Region (15) - This is expected
-The Giftbit **testbed API** genuinely only returns 15 brands per region. This is a limitation of their sandbox environment, not our code. The production API will have the full catalog of gift card brands.
-
-Evidence from edge function logs:
-```
-Syncing 15 brands for region US
-Syncing 15 brands for region AU
-Syncing 15 brands for region GLBL
-```
-
-### 2. Region Icon/Flag Not Being Saved - Bug
-The Giftbit API returns an `image_url` for each region (e.g., flag images like `.../flags/CA@3x.png`), but we're:
-1. Only using this URL to extract the region code (line 68-73)
-2. Not storing the actual image URL in the database
-
-Current database schema for `giftbit_regions`:
-| Column | Type |
-|--------|------|
-| id | uuid |
-| region_code | text |
-| name | text |
-| currency_code | text |
-| environment | text |
-| is_active | boolean |
-| created_at | timestamp |
-
-**Missing:** `image_url` column
+Currently, regions are only assignable by Platform Admins. This plan explores adding **automatic region detection** with **manual override** during company setup, providing a seamless experience for Company Admins.
 
 ---
 
-## Solution
+## Proposed User Flow
 
-### Phase 1: Database Migration
-Add `image_url` column to the `giftbit_regions` table:
-
-```sql
-ALTER TABLE giftbit_regions 
-ADD COLUMN IF NOT EXISTS image_url TEXT;
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      COMPANY ADMIN SIGNUP                       │
+├─────────────────────────────────────────────────────────────────┤
+│  1. User fills signup form (name, company, email)               │
+│  2. OTP verification                                            │
+│  3. Redirect to /admin dashboard                                │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │           REGION SETUP DIALOG (First Login)              │   │
+│  │                                                          │   │
+│  │  "🎉 Welcome to Grattia!"                               │   │
+│  │                                                          │   │
+│  │  We detected you're in:                                  │   │
+│  │  ┌─────────────────────────────────────────────────┐     │   │
+│  │  │  🇦🇺 Australia (AUD)                 ✓ Selected │     │   │
+│  │  └─────────────────────────────────────────────────┘     │   │
+│  │                                                          │   │
+│  │  This determines which gift cards your team can          │   │
+│  │  redeem. You can add more regions later by               │   │
+│  │  contacting support.                                     │   │
+│  │                                                          │   │
+│  │  [ ] Also include Global gift cards (Visa, Mastercard)   │   │
+│  │                                                          │   │
+│  │              [Confirm & Continue]                        │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  4. Region saved to company_regions table                       │
+│  5. User proceeds to dashboard                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 2: Update Edge Function
-Modify the `SYNC_REGIONS` case to save the image_url:
+---
+
+## Technical Approach
+
+### Option A: IP Geolocation Detection (Recommended)
+
+Use a free IP geolocation API to detect the user's country during signup, then confirm/override in a setup dialog.
+
+**API Options (all have free tiers):**
+
+| API | Free Tier | Rate Limit | Response |
+|-----|-----------|------------|----------|
+| ipinfo.io | 50k/month | None | `{country: "AU", region: "Victoria"}` |
+| country.is | Unlimited | 1000/min | `{country: "AU"}` |
+| geoipapi.com | 10k/month | None | `{country_code: "AU", currency_code: "AUD"}` |
+
+**Mapping IP country to Giftbit regions:**
+
+| Country Code | Giftbit Region | Currency |
+|--------------|----------------|----------|
+| AU | AU | AUD |
+| US | US | USD |
+| CA | CA | CAD |
+| GB | GB | GBP |
+| NZ | NZ | NZD |
+| Other | GLOBAL | USD |
+
+### Option B: Manual Selection Only
+
+Skip IP detection and let users choose from a dropdown. Simpler but less magical.
+
+---
+
+## Implementation Plan
+
+### Phase 1: Create Region Setup Dialog Component
+
+**New File:** `src/components/onboarding/RegionSetupDialog.tsx`
+
+- Modal dialog shown on first dashboard visit
+- Auto-detects country via IP (if Option A)
+- Shows detected region with option to change
+- Checkbox for including GLOBAL region
+- Saves to `company_regions` table on confirm
+
+### Phase 2: Add IP Geolocation Hook
+
+**New File:** `src/hooks/useGeoLocation.ts`
 
 ```typescript
-// Line 266-272 change:
-const { error } = await supabase
-  .from('giftbit_regions')
-  .upsert({
-    region_code: regionCode,
-    name: apiRegion.name,
-    image_url: apiRegion.image_url,  // ADD THIS LINE
-    currency_code: currencyCode,
-    environment,
-    is_active: true
-  }, { onConflict: 'region_code,environment' });
+// Uses country.is API (free, no API key required)
+const useGeoLocation = () => {
+  const [country, setCountry] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('https://api.country.is')
+      .then(res => res.json())
+      .then(data => setCountry(data.country)) // "AU", "US", etc.
+      .catch(() => setCountry(null))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  return { country, isLoading };
+};
 ```
 
-### Phase 3: Update Frontend Components
-Update `getRegionFlag()` and region display components to use the stored image URL when available, falling back to emoji flags:
+### Phase 3: Track Region Setup Completion
 
-**Option A - Image-based flags:**
-```tsx
-// If image_url exists, show actual flag image
-{region.image_url ? (
-  <img src={region.image_url} alt={region.name} className="w-4 h-4" />
-) : (
-  <span>{getRegionFlag(region.region_code)}</span>
-)}
+**Database Change:** Add `region_setup_complete` column to `companies` table
+
+```sql
+ALTER TABLE companies 
+ADD COLUMN region_setup_complete BOOLEAN DEFAULT FALSE;
 ```
 
-**Option B - Keep emoji flags (simpler)**
-Keep using emoji flags for consistency and faster load times, but store the image_url for future use.
+This flag determines whether to show the region setup dialog.
+
+### Phase 4: Integrate Dialog into Dashboard
+
+**File:** `src/pages/admin/Dashboard.tsx`
+
+- Query company's `region_setup_complete` status
+- If `false` and user is admin, show `RegionSetupDialog`
+- On confirm, insert region(s) and set `region_setup_complete = true`
+
+### Phase 5: Allow Region Change Before First Team Member
+
+**File:** `src/components/settings/CompanyInformationCard.tsx`
+
+- If no team members have been invited yet, allow region editing
+- Once first member is invited, lock to read-only (current behavior)
 
 ---
 
-## Files to Modify
+## Files to Create/Modify
 
-| File | Changes |
-|------|---------|
-| Database | Add `image_url` column to `giftbit_regions` |
-| `supabase/functions/giftbit-brand-service/index.ts` | Save `apiRegion.image_url` in SYNC_REGIONS |
-| `src/hooks/useAvailableRegions.ts` | Include `image_url` in query results |
-| `src/lib/regionConstants.ts` | Add helper to get region image or fallback to emoji |
+| File | Action | Description |
+|------|--------|-------------|
+| `src/hooks/useGeoLocation.ts` | Create | IP geolocation detection hook |
+| `src/components/onboarding/RegionSetupDialog.tsx` | Create | First-login region selection modal |
+| `src/pages/admin/Dashboard.tsx` | Modify | Show dialog for new companies |
+| `src/components/settings/CompanyInformationCard.tsx` | Modify | Allow editing until first invite |
+| Database migration | Create | Add `region_setup_complete` to companies |
+
+---
+
+## Edge Cases Handled
+
+| Scenario | Behavior |
+|----------|----------|
+| IP detection fails | Default to dropdown selection, pre-select GLOBAL |
+| VPN user (wrong country) | Can manually change in dialog before confirming |
+| User closes dialog without confirming | Dialog reappears on next dashboard visit |
+| User wants to change region later | Contact support (existing flow) |
+| Platform admin overrides | Platform admin can always change via CompanyDetailsCard |
 
 ---
 
 ## Summary
 
-| Issue | Status | Explanation |
-|-------|--------|-------------|
-| Only 15 brands per region | Expected | Giftbit testbed/sandbox limitation. Production will have full catalog. |
-| Region icons not saved | Bug | Will fix by adding `image_url` column and updating sync logic |
+This approach provides:
+1. **Automatic detection** - Reduces friction for new signups
+2. **User confirmation** - Prevents wrong region assignments
+3. **Graceful fallback** - Works even if IP detection fails
+4. **Clean UX** - Happens once on first login, then stays out of the way
+5. **Future flexibility** - Can add more regions via support
 
