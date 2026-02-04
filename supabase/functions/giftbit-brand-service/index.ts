@@ -5,6 +5,128 @@ import { corsHeaders } from "../_shared/cors.ts";
 const GIFTBIT_API_BASE_TESTBED = "https://api-testbed.giftbit.com/papi/v1";
 const GIFTBIT_API_BASE_PRODUCTION = "https://api.giftbit.com/papi/v1";
 
+// Currency mapping for regions
+const REGION_CURRENCIES: Record<string, string> = {
+  'CA': 'CAD',
+  'US': 'USD',
+  'AU': 'AUD',
+  'GB': 'GBP',
+  'NZ': 'NZD',
+  'GLBL': 'USD',
+  'EU': 'EUR',
+  'FR': 'EUR',
+  'DE': 'EUR',
+  'IT': 'EUR',
+  'ES': 'EUR',
+  'NL': 'EUR',
+  'BE': 'EUR',
+  'AT': 'EUR',
+  'IE': 'EUR',
+  'PT': 'EUR',
+  'FI': 'EUR',
+  'GR': 'EUR',
+  'LU': 'EUR',
+  'MT': 'EUR',
+  'SK': 'EUR',
+  'SI': 'EUR',
+  'EE': 'EUR',
+  'LV': 'EUR',
+  'LT': 'EUR',
+  'CY': 'EUR',
+  'HR': 'EUR',
+  'JP': 'JPY',
+  'SG': 'SGD',
+  'HK': 'HKD',
+  'IN': 'INR',
+  'MX': 'MXN',
+  'BR': 'BRL',
+  'ZA': 'ZAR',
+  'AE': 'AED',
+  'SE': 'SEK',
+  'NO': 'NOK',
+  'DK': 'DKK',
+  'CH': 'CHF',
+  'PL': 'PLN',
+  'CZ': 'CZK',
+  'HU': 'HUF',
+  'RO': 'RON',
+  'TR': 'TRY',
+  'KR': 'KRW',
+  'TW': 'TWD',
+  'TH': 'THB',
+  'MY': 'MYR',
+  'PH': 'PHP',
+  'ID': 'IDR',
+  'VN': 'VND',
+  'CL': 'CLP',
+  'CO': 'COP',
+  'AR': 'ARS',
+  'PE': 'PEN',
+};
+
+// Extract region code from image URL or derive from name
+function extractRegionCode(imageUrl: string | undefined, name: string): string {
+  // Extract from image URL like ".../flags/CA@3x.png" → "CA"
+  if (imageUrl) {
+    const match = imageUrl.match(/flags\/([A-Za-z]+)@/);
+    if (match) return match[1].toUpperCase();
+  }
+  
+  // Fallback: derive from name using a mapping
+  const nameMap: Record<string, string> = {
+    'Canada': 'CA',
+    'USA': 'US',
+    'United States': 'US',
+    'Australia': 'AU',
+    'Global': 'GLBL',
+    'United Kingdom': 'GB',
+    'New Zealand': 'NZ',
+    'Japan': 'JP',
+    'Singapore': 'SG',
+    'Hong Kong': 'HK',
+    'India': 'IN',
+    'Mexico': 'MX',
+    'Brazil': 'BR',
+    'South Africa': 'ZA',
+    'Germany': 'DE',
+    'France': 'FR',
+    'Italy': 'IT',
+    'Spain': 'ES',
+    'Netherlands': 'NL',
+    'Belgium': 'BE',
+    'Austria': 'AT',
+    'Ireland': 'IE',
+    'Portugal': 'PT',
+    'Finland': 'FI',
+    'Sweden': 'SE',
+    'Norway': 'NO',
+    'Denmark': 'DK',
+    'Switzerland': 'CH',
+    'Poland': 'PL',
+    'Czech Republic': 'CZ',
+    'Hungary': 'HU',
+    'Romania': 'RO',
+    'Turkey': 'TR',
+    'South Korea': 'KR',
+    'Taiwan': 'TW',
+    'Thailand': 'TH',
+    'Malaysia': 'MY',
+    'Philippines': 'PH',
+    'Indonesia': 'ID',
+    'Vietnam': 'VN',
+    'Chile': 'CL',
+    'Colombia': 'CO',
+    'Argentina': 'AR',
+    'Peru': 'PE',
+    'Europe': 'EU',
+    'European Union': 'EU',
+    'UAE': 'AE',
+    'United Arab Emirates': 'AE',
+  };
+  
+  return nameMap[name] || name.substring(0, 2).toUpperCase();
+}
+
 interface GiftbitBrand {
   brand_code: string;
   name: string;
@@ -18,10 +140,11 @@ interface GiftbitBrand {
   currency_code: string;
 }
 
-interface GiftbitRegion {
-  region_code: string;
+// Giftbit API returns regions with: id, name, image_url
+interface GiftbitApiRegion {
+  id: number;
   name: string;
-  currency_code: string;
+  image_url: string;
 }
 
 serve(async (req) => {
@@ -122,33 +245,44 @@ serve(async (req) => {
         }
         
         const data = await response.json();
-        const regions: GiftbitRegion[] = data.regions || [];
+        // Giftbit API returns: { id, name, image_url } - NOT region_code or currency_code
+        const apiRegions: GiftbitApiRegion[] = data.regions || [];
         
-        console.log(`Syncing ${regions.length} regions to database`);
+        console.log(`Fetched ${apiRegions.length} regions from Giftbit API`);
+        console.log('Sample region:', JSON.stringify(apiRegions[0]));
         
         let syncedCount = 0;
-        for (const region of regions) {
+        let errorCount = 0;
+        
+        for (const apiRegion of apiRegions) {
+          // Extract region code from image_url or derive from name
+          const regionCode = extractRegionCode(apiRegion.image_url, apiRegion.name);
+          const currencyCode = REGION_CURRENCIES[regionCode] || 'USD';
+          
+          console.log(`Processing region: ${apiRegion.name} -> ${regionCode} (${currencyCode})`);
+          
           const { error } = await supabase
             .from('giftbit_regions')
             .upsert({
-              region_code: region.region_code,
-              name: region.name,
-              currency_code: region.currency_code,
+              region_code: regionCode,
+              name: apiRegion.name,
+              currency_code: currencyCode,
               environment,
               is_active: true
             }, { onConflict: 'region_code,environment' });
           
           if (error) {
-            console.error(`Error syncing region ${region.region_code}:`, error);
+            console.error(`Error syncing region ${regionCode}:`, error);
+            errorCount++;
           } else {
             syncedCount++;
           }
         }
         
-        console.log(`Successfully synced ${syncedCount} regions`);
+        console.log(`Successfully synced ${syncedCount} regions, ${errorCount} errors`);
         
         return new Response(
-          JSON.stringify({ success: true, synced: syncedCount }),
+          JSON.stringify({ success: true, synced: syncedCount, errors: errorCount }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

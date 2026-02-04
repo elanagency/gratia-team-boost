@@ -1,35 +1,42 @@
 import { useState } from "react";
-import { useGoodyProducts } from "@/hooks/useGoodyProducts";
+import { useGiftbitBrands, useGiftbitBrandCounts } from "@/hooks/useGiftbitBrands";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 import { useRealtimeGiftCards } from "@/hooks/useRealtimeGiftCards";
+import { useAvailableRegions } from "@/hooks/useAvailableRegions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Globe, TestTube, Wifi } from "lucide-react";
-import { GoodyProductCard } from "@/components/platform/GoodyProductCard";
+import { GiftbitBrandCard } from "@/components/platform/GiftbitBrandCard";
 import { EnvironmentSyncCard } from "@/components/platform/EnvironmentSyncCard";
-import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getRegionFlag } from "@/lib/regionConstants";
 
 const PlatformGiftCardsCatalog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
   const [activeEnvironment, setActiveEnvironment] = useState<'test' | 'live'>('live');
   
-  const { products, totalCount, isLoading, error } = useGoodyProducts(1, true, true, 100, activeEnvironment, false, true);
+  const { brands, totalCount, isLoading, error, refetch } = useGiftbitBrands({ 
+    environment: activeEnvironment,
+    regionFilter: regionFilter === 'all' ? null : regionFilter
+  });
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
+  const { data: brandCounts } = useGiftbitBrandCounts(activeEnvironment);
+  const { regions } = useAvailableRegions(activeEnvironment);
   
   // Enable real-time updates for the active environment
   useRealtimeGiftCards({ environment: activeEnvironment, enabled: true });
 
-  // Filter products based on search term and status
-  const filteredProducts = products?.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter brands based on search term and status
+  const filteredBrands = brands?.filter(brand => {
+    const matchesSearch = brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (brand.description?.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const isDisabled = blacklistedProducts.has(product.id);
+    const isDisabled = blacklistedProducts.has(brand.id);
     
     if (statusFilter === "disabled") return matchesSearch && isDisabled;
     if (statusFilter === "enabled") return matchesSearch && !isDisabled;
@@ -37,12 +44,16 @@ const PlatformGiftCardsCatalog = () => {
   }) || [];
 
   const disabledCount = blacklistedProducts.size;
-  const enabledCount = (products?.length || 0) - disabledCount;
+  const enabledCount = (totalCount || 0) - disabledCount;
 
   const refreshCatalog = () => {
-    // Force refresh for the current environment
-    window.location.reload();
+    refetch();
   };
+
+  // Get unique regions from synced brands
+  const uniqueRegions = brandCounts?.byRegion 
+    ? Object.keys(brandCounts.byRegion).sort()
+    : [];
 
   return (
     <div className="space-y-4 lg:space-y-6">
@@ -51,12 +62,12 @@ const PlatformGiftCardsCatalog = () => {
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Gift Cards Catalog</h1>
           <p className="text-sm lg:text-base text-muted-foreground">
-            Manage platform gift card catalogs for test and production environments
+            Manage Giftbit gift card catalogs for test and production environments
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
-            <Wifi className="h-4 w-4 text-green-500" />
+            <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             Live Updates
           </div>
           <Button
@@ -95,10 +106,10 @@ const PlatformGiftCardsCatalog = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs lg:text-sm font-medium">Total Products</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Total Brands</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl lg:text-2xl font-bold">{totalCount || 0}</div>
+                <div className="text-xl lg:text-2xl font-bold">{brandCounts?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   {activeEnvironment === 'live' ? 'Production' : 'Test'} environment
                 </p>
@@ -110,7 +121,7 @@ const PlatformGiftCardsCatalog = () => {
                 <CardTitle className="text-xs lg:text-sm font-medium">Enabled</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl lg:text-2xl font-bold text-green-600">
+                <div className="text-xl lg:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                   {enabledCount}
                 </div>
               </CardContent>
@@ -121,7 +132,7 @@ const PlatformGiftCardsCatalog = () => {
                 <CardTitle className="text-xs lg:text-sm font-medium">Disabled</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl lg:text-2xl font-bold text-red-600">
+                <div className="text-xl lg:text-2xl font-bold text-destructive">
                   {disabledCount}
                 </div>
               </CardContent>
@@ -129,12 +140,15 @@ const PlatformGiftCardsCatalog = () => {
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs lg:text-sm font-medium">Filtered Results</CardTitle>
+                <CardTitle className="text-xs lg:text-sm font-medium">Regions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-xl lg:text-2xl font-bold">
-                  {filteredProducts.length}
+                  {uniqueRegions.length}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  with synced brands
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -149,6 +163,19 @@ const PlatformGiftCardsCatalog = () => {
                 className="w-full"
               />
             </div>
+            <Select value={regionFilter} onValueChange={setRegionFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                {uniqueRegions.map(code => (
+                  <SelectItem key={code} value={code}>
+                    {getRegionFlag(code)} {code} ({brandCounts?.byRegion[code] || 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
@@ -161,7 +188,7 @@ const PlatformGiftCardsCatalog = () => {
             </Select>
           </div>
 
-          {/* Products Grid */}
+          {/* Brands Grid */}
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -175,24 +202,25 @@ const PlatformGiftCardsCatalog = () => {
           ) : error ? (
             <Card className="p-8 text-center">
               <CardDescription className="text-red-600">
-                Error loading products: {error.message}
+                Error loading brands: {error.message}
               </CardDescription>
             </Card>
-          ) : filteredProducts.length === 0 ? (
+          ) : filteredBrands.length === 0 ? (
             <Card className="p-8 text-center">
               <CardDescription>
-                {products?.length === 0 
-                  ? `No ${activeEnvironment} products found. Try syncing the ${activeEnvironment} catalog first.`
-                  : "No products match your current filters."
+                {brands?.length === 0 
+                  ? `No ${activeEnvironment} brands found. Use the sync controls above to fetch brands from Giftbit.`
+                  : "No brands match your current filters."
                 }
               </CardDescription>
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-              {filteredProducts.map((product) => (
-                <GoodyProductCard
-                  key={`${product.id}-${activeEnvironment}`}
-                  product={product}
+              {filteredBrands.map((brand) => (
+                <GiftbitBrandCard
+                  key={`${brand.id}-${activeEnvironment}`}
+                  brand={brand}
+                  isBlacklisted={blacklistedProducts.has(brand.id)}
                 />
               ))}
             </div>
