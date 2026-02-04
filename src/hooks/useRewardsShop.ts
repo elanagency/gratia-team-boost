@@ -18,6 +18,7 @@ export interface GiftCard {
   min_price_in_cents?: number;
   max_price_in_cents?: number;
   currency_code?: string;
+  region_code?: string;
 }
 
 interface RewardsShopResponse {
@@ -28,7 +29,7 @@ interface RewardsShopResponse {
     userContext: {
       companyId: string;
       environment: 'test' | 'live';
-      region?: string;
+      assignedRegions?: string[];
       provider?: 'goody' | 'giftbit';
     };
   };
