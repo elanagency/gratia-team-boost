@@ -373,6 +373,14 @@ serve(async (req) => {
           console.log(`Page fetched: ${brands.length} brands, total so far: ${allBrands.length}/${totalCount}`);
         }
 
+        // Log informative message for empty results
+        if (allBrands.length === 0) {
+          console.log(`No brands available for region ${region} in ${environment} environment`);
+          if (environment === 'testbed') {
+            console.log('Note: Giftbit testbed has limited brand availability compared to production. This is expected behavior for the sandbox environment.');
+          }
+        }
+
         console.log(`Syncing ${allBrands.length} total brands for region ${region}`);
         
         let syncedCount = 0;
