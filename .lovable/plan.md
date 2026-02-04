@@ -1,165 +1,122 @@
 
-# Fix Giftbit Pagination and Complete Brand Catalog Sync
+
+# Fix Giftbit Brand Sync - Region ID Parameter Bug
 
 ## Problem Summary
 
-You correctly identified that the Giftbit API call has a **pagination limit**. The API returns a **maximum of 20 brands per page by default**, but Australia has **108 brands** available. This explains why:
+When syncing Australia brands on production, **1337 brands were synced instead of the expected ~108** because the Giftbit API is **ignoring the region filter entirely**.
 
-- **Total Brands shows 0 or 20** instead of 108+
-- **Regions shows 0** when no regions have been synced with their complete catalogs
-- Team members only see a fraction of available gift cards
+**Root Cause**: The Giftbit API `/brands` endpoint expects a **numeric region ID** (e.g., `region=4` for Australia), but our code is passing a **string region code** (e.g., `region=AU`). The API ignores invalid parameters and returns **ALL brands globally**.
 
-## Root Cause Analysis
-
-Looking at the current edge function code (`giftbit-brand-service/index.ts`, line 293):
-
-```typescript
-const url = `${apiBase}/brands?region=${region}`;
+**Evidence from API documentation**:
+```
+region (number, optional) - Limits the results to brands that are available 
+in the provided region as per the `id` returned from the `/region` endpoint.
 ```
 
-There is **no pagination handling**. The Giftbit API response includes:
+The `/regions` endpoint returns:
 ```json
-{
-  "limit": 20,      // ← Default page size
-  "offset": 0,      // ← Starting position
-  "total_count": 108 // ← Total available brands
-}
+{ "id": 4, "name": "Australia", "image_url": "...flags/AU@3x.png" }
 ```
 
-But the code ignores these pagination fields and only processes the first 20 results.
+So `region=4` is correct, NOT `region=AU`.
 
 ---
 
 ## Solution
 
-### Step 1: Update Edge Function to Handle Pagination
+### Step 1: Add `giftbit_region_id` column to database
 
-Modify `SYNC_BRANDS` action in `giftbit-brand-service/index.ts` to:
-1. Make initial API call to get `total_count`
-2. Loop through all pages using `offset` parameter
-3. Aggregate all brands before inserting into database
+Add a new column to store the numeric Giftbit API region ID that's needed for filtering brands:
 
-**Updated API call logic:**
+```sql
+ALTER TABLE giftbit_regions 
+ADD COLUMN giftbit_region_id INTEGER;
+```
+
+### Step 2: Update `SYNC_REGIONS` action in edge function
+
+When syncing regions from the Giftbit API, store the numeric `id` field:
+
 ```typescript
-// Fetch ALL brands with pagination
-let allBrands: GiftbitBrand[] = [];
-let offset = 0;
-const limit = 100; // Request more per page for efficiency
-let totalCount = 0;
-
-do {
-  const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
-  console.log(`Fetching brands page: offset=${offset}, limit=${limit}`);
-  
-  const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${apiKey}` }
+// In SYNC_REGIONS action
+const { error } = await supabase
+  .from('giftbit_regions')
+  .upsert({
+    giftbit_region_id: apiRegion.id,  // ← Add this numeric ID
+    region_code: regionCode,
+    name: apiRegion.name,
+    // ... rest
   });
-  
-  const data = await response.json();
-  const brands = data.brands || [];
-  
-  allBrands = allBrands.concat(brands);
-  totalCount = data.total_count || brands.length;
-  offset += limit;
-  
-} while (offset < totalCount);
-
-console.log(`Fetched all ${allBrands.length} brands (total_count: ${totalCount})`);
 ```
 
-### Step 2: Update GET_BRANDS Action Similarly
+### Step 3: Update `SYNC_BRANDS` action to use numeric ID
 
-Apply the same pagination logic to `GET_BRANDS` action for consistency.
+Before fetching brands, look up the numeric region ID:
 
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `supabase/functions/giftbit-brand-service/index.ts` | Add pagination loop for `SYNC_BRANDS` and `GET_BRANDS` actions |
-
----
-
-## Implementation Details
-
-### Before (Current - Only 20 brands):
 ```typescript
 case 'SYNC_BRANDS': {
-  const url = `${apiBase}/brands?region=${region}`;
-  const response = await fetch(url, {...});
-  const data = await response.json();
-  const brands = data.brands || [];  // Only first 20!
-  // ... process brands
-}
-```
+  // Look up the Giftbit region ID from the database
+  const { data: regionData } = await supabase
+    .from('giftbit_regions')
+    .select('giftbit_region_id')
+    .eq('region_code', region)
+    .eq('environment', environment)
+    .single();
 
-### After (All brands with pagination):
-```typescript
-case 'SYNC_BRANDS': {
-  // Fetch ALL brands with pagination
-  let allBrands: GiftbitBrand[] = [];
-  let offset = 0;
-  const limit = 100;
-  let hasMore = true;
-
-  while (hasMore) {
-    const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
-    console.log(`Fetching brands: region=${region}, offset=${offset}`);
-    
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch brands: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    const brands: GiftbitBrand[] = data.brands || [];
-    const totalCount = data.total_count || 0;
-    
-    allBrands = allBrands.concat(brands);
-    offset += limit;
-    hasMore = offset < totalCount;
-    
-    console.log(`Page fetched: ${brands.length} brands, total so far: ${allBrands.length}/${totalCount}`);
+  const giftbitRegionId = regionData?.giftbit_region_id;
+  if (!giftbitRegionId) {
+    throw new Error(`Region ${region} not found. Please sync regions first.`);
   }
 
-  console.log(`Syncing ${allBrands.length} total brands for region ${region}`);
-  
-  // ... upsert allBrands to database
+  // Use the numeric ID in the API call
+  const url = `${apiBase}/brands?region=${giftbitRegionId}&limit=${limit}&offset=${offset}`;
+  // ...
 }
 ```
+
+### Step 4: Apply same fix to `GET_BRANDS` action
+
+Same lookup logic for the GET_BRANDS action.
+
+### Step 5: Clean up incorrect data
+
+Delete the incorrectly synced brands that aren't actually Australian:
+
+```sql
+DELETE FROM giftbit_brands 
+WHERE environment = 'production' 
+AND region_code = 'AU';
+```
+
+---
+
+## Technical Changes
+
+| File | Change |
+|------|--------|
+| Database migration | Add `giftbit_region_id INTEGER` column to `giftbit_regions` table |
+| `supabase/functions/giftbit-brand-service/index.ts` | Update `SYNC_REGIONS` to store numeric ID |
+| `supabase/functions/giftbit-brand-service/index.ts` | Update `SYNC_BRANDS` to look up and use numeric ID |
+| `supabase/functions/giftbit-brand-service/index.ts` | Update `GET_BRANDS` to look up and use numeric ID |
 
 ---
 
 ## Expected Results After Fix
 
-| Metric | Before | After |
-|--------|--------|-------|
-| AU Brands | 20 | 108 |
-| US Brands | 20 | All available |
-| Total Brands stat | 60 | 300+ |
-| Regions with brands | 3 | All synced regions |
+| Metric | Before (Broken) | After (Fixed) |
+|--------|-----------------|---------------|
+| AU Brands | 1337 (all global) | ~108 (only Australian) |
+| Region filter | Ignored | Works correctly |
+| Duplicates | Many (Adidas x18) | None |
 
 ---
 
 ## Post-Implementation Steps
 
-1. **Deploy** the updated edge function
-2. **Re-sync** production brands from Platform Admin:
-   - Navigate to Platform Admin > Gift Cards Catalog
-   - Select Production Catalog tab
-   - Click "Sync Brands" for each region (AU, US, etc.)
-3. **Verify** the stats update to show 108+ for Australia
-4. **Test** team member gift card shop shows full catalog
+1. Run database migration to add `giftbit_region_id` column
+2. Deploy updated edge function
+3. Click **"Refresh Regions"** in Platform Admin to populate the new IDs
+4. Delete incorrect AU brands from database
+5. Click **"Sync 1 Region"** for Australia to get correct brands
 
----
-
-## Technical Notes
-
-- The Giftbit API supports `limit` values up to 100 per request
-- Using `offset` pagination is standard for the Giftbit API
-- No database schema changes required
-- The `get-rewards-shop` edge function will automatically return more brands since it queries from `giftbit_brands` table
