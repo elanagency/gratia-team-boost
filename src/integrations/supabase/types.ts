@@ -73,6 +73,7 @@ export type Database = {
           logo_url: string | null
           name: string
           points_balance: number
+          region_setup_complete: boolean | null
           stripe_customer_id: string | null
           stripe_customer_id_live: string | null
           stripe_customer_id_test: string | null
@@ -97,6 +98,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           points_balance?: number
+          region_setup_complete?: boolean | null
           stripe_customer_id?: string | null
           stripe_customer_id_live?: string | null
           stripe_customer_id_test?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           points_balance?: number
+          region_setup_complete?: boolean | null
           stripe_customer_id?: string | null
           stripe_customer_id_live?: string | null
           stripe_customer_id_test?: string | null
