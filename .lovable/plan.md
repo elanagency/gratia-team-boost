@@ -1,99 +1,164 @@
 
 
-# Improve Gift Cards Catalog Interface with Select All
+# Fix Brand Syncing - Connect to Giftbit API Instead of Goody
 
-## Problem
+## Root Cause
 
-The current interface displays 60+ regions in a 2-column grid, making the cards extremely tall and difficult to use. Users need a way to quickly select/deselect all regions and better visual organization.
+**The "Sync X Regions" button is calling the wrong API!**
 
-## Solution Overview
+Current flow (broken):
+```
+Sync 59 Regions button → useSyncGiftCards → goody-product-service → Goody API (empty for you)
+```
 
-1. Add "Select All" / "Deselect All" toggle button
-2. Constrain the region list to a scrollable container with max height
-3. Add a summary of selected regions count
-4. Improve visual hierarchy with better grouping
+Required flow:
+```
+Sync 59 Regions button → useSyncGiftbitBrands → giftbit-brand-service → Giftbit API → giftbit_brands table
+```
+
+The `EnvironmentSyncCard` component uses `useSyncGiftCards` hook which calls `goody-product-service` edge function. This is the old Goody API integration, not Giftbit! That's why it returns "no gift cards found" - the Goody catalog is empty.
+
+---
+
+## Solution
+
+Create a new hook `useSyncGiftbitBrands` that calls the `giftbit-brand-service` edge function with `SYNC_BRANDS` action for each selected region.
 
 ---
 
 ## Implementation Details
 
-### Changes to `EnvironmentSyncCard.tsx`
+### Phase 1: Create New Sync Hook
 
-**1. Add Select All functionality:**
+**New File: `src/hooks/useSyncGiftbitBrands.ts`**
+
 ```typescript
-const allSelected = selectedRegions.length === displayRegions.length;
-const noneSelected = selectedRegions.length === 0;
-
-const handleSelectAll = () => {
-  if (allSelected) {
-    setSelectedRegions([]);
-  } else {
-    setSelectedRegions(displayRegions.map(r => r.region_code));
-  }
+export const useSyncGiftbitBrands = (environment: 'test' | 'live') => {
+  const giftbitEnv = environment === 'live' ? 'production' : 'testbed';
+  
+  const syncMutation = useMutation({
+    mutationFn: async (selectedRegions: string[]) => {
+      let totalSynced = 0;
+      let totalErrors = 0;
+      
+      // Sync brands for each selected region
+      for (const region of selectedRegions) {
+        const { data, error } = await supabase.functions.invoke('giftbit-brand-service', {
+          body: { 
+            action: 'SYNC_BRANDS', 
+            environment: giftbitEnv,
+            region 
+          }
+        });
+        
+        if (error || !data?.success) {
+          totalErrors++;
+        } else {
+          totalSynced += data.synced || 0;
+        }
+      }
+      
+      return { totalSynced, totalErrors, regionsProcessed: selectedRegions.length };
+    },
+    onSuccess: (result) => {
+      toast.success(`Synced ${result.totalSynced} brands from ${result.regionsProcessed} regions`);
+      // Invalidate giftbit-brands queries
+    }
+  });
+  
+  return { syncBrands: syncMutation.mutate, ... };
 };
 ```
 
-**2. Add scrollable container for regions:**
-- Wrap region grid in a `ScrollArea` component with `max-h-48` (192px)
-- This limits the visible height while allowing scroll access to all regions
+### Phase 2: Update EnvironmentSyncCard
 
-**3. Add header row with selection controls:**
+**File: `src/components/platform/EnvironmentSyncCard.tsx`**
+
+Replace the old hook usage:
+```typescript
+// OLD (calling Goody API)
+const { syncMutation, ... } = useSyncGiftCards(environment);
+
+// NEW (calling Giftbit API)
+const { syncBrands, isSyncing, progress } = useSyncGiftbitBrands(environment);
+
+const handleSync = () => {
+  syncBrands(selectedRegions); // Pass selected regions to sync
+};
+```
+
+### Phase 3: Update Sync Status Query
+
+The current sync status checks `goody_gift_cards` table. Update to check `giftbit_brands`:
+
+```typescript
+// Query giftbit_brands for last sync time
+const { data: syncStatus } = useQuery({
+  queryKey: ['giftbit-sync-status', giftbitEnv],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('giftbit_brands')
+      .select('last_synced_at', { count: 'exact' })
+      .eq('environment', giftbitEnv)
+      .order('last_synced_at', { ascending: false })
+      .limit(1);
+    
+    return { lastSynced: data?.[0]?.last_synced_at };
+  }
+});
+```
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/useSyncGiftbitBrands.ts` | Hook to sync brands via giftbit-brand-service |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/platform/EnvironmentSyncCard.tsx` | Replace useSyncGiftCards with useSyncGiftbitBrands |
+
+---
+
+## API Flow After Fix
+
 ```text
-┌───────────────────────────────────────────────┐
-│ Regions to Sync:    [Select All] [Clear]      │
-│ 3 of 63 selected                              │
-├───────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────┐   │
-│ │ [x] AU Australia   [x] US United States │   │
-│ │ [ ] CA Canada      [ ] GB United Kingdom│   │
-│ │ ...scrollable...                        │   │
-│ └─────────────────────────────────────────┘   │
-└───────────────────────────────────────────────┘
-```
-
-**4. Visual improvements:**
-- Show selected count vs total (e.g., "3 of 63 regions selected")
-- Use `CheckCheck` icon for Select All button
-- Add subtle border around scroll area
-- Compact the region items slightly
-
----
-
-## Technical Changes
-
-### File: `src/components/platform/EnvironmentSyncCard.tsx`
-
-| Change | Description |
-|--------|-------------|
-| Import `ScrollArea` | From `@/components/ui/scroll-area` |
-| Import `CheckCheck` | Lucide icon for select all |
-| Add `handleSelectAll` | Function to toggle all selections |
-| Add `handleClearAll` | Function to clear all selections |
-| Wrap region grid | In `ScrollArea` with `max-h-48` |
-| Add selection header | Shows count and action buttons |
-
-### Updated Region Section Layout
-
-```
-Before:
-- 2-column grid, unlimited height
-- No select all option
-- Takes up entire card height
-
-After:
-- Header row with "Select All" / "Clear" buttons
-- Selection count indicator (X of Y selected)
-- Scrollable region list (max 192px height)
-- Compact region items for better density
+User clicks "Sync 59 Regions"
+        ↓
+useSyncGiftbitBrands.syncBrands(['AU', 'US', 'CA', ...])
+        ↓
+For each region:
+  supabase.functions.invoke('giftbit-brand-service', {
+    body: { action: 'SYNC_BRANDS', environment: 'testbed', region: 'AU' }
+  })
+        ↓
+Edge function fetches: GET /papi/v1/brands?region=AU
+        ↓
+Upserts brands into giftbit_brands table
+        ↓
+Returns { success: true, synced: 15 }
+        ↓
+Repeat for next region...
+        ↓
+Toast: "Synced 450 brands from 59 regions"
+        ↓
+Invalidate giftbit-brands query
+        ↓
+Catalog displays synced brands
 ```
 
 ---
 
-## Expected Outcome
+## Expected Result
 
-1. **Compact cards** - Both Test and Production cards will have a consistent, manageable height
-2. **Quick selection** - "Select All" button enables selecting all 60+ regions in one click
-3. **Clear selection** - "Clear" button to quickly deselect all
-4. **Visual feedback** - "3 of 63 regions selected" indicator
-5. **Scrollable list** - All regions accessible without overwhelming the interface
+After this fix:
+1. "Sync 59 Regions" will call Giftbit API (not Goody)
+2. Brands will be fetched for each selected region
+3. `giftbit_brands` table will be populated
+4. Catalog will display the synced brands
+5. Progress indicator shows which region is being synced
 
