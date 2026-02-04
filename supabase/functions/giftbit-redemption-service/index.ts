@@ -114,7 +114,7 @@ serve(async (req) => {
 
     // Create direct link via Giftbit API
     const giftbitPayload = {
-      brand_code: brandCode,
+      brand_codes: [brandCode],
       price_in_cents: Math.round(dollarAmount * 100),
       id: idempotencyKey,
       expiry: expiry
