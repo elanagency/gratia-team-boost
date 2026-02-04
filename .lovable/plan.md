@@ -1,92 +1,49 @@
 
 
-# Fix Giftbit Brand Sync - Region ID Parameter Bug
+# Fix Testbed Catalog Sync - Giftbit Sandbox Limitation
 
 ## Problem Summary
 
-When syncing Australia brands on production, **1337 brands were synced instead of the expected ~108** because the Giftbit API is **ignoring the region filter entirely**.
+When syncing Australia brands on the **Test Catalog**, the sync shows "No brands found" because:
 
-**Root Cause**: The Giftbit API `/brands` endpoint expects a **numeric region ID** (e.g., `region=4` for Australia), but our code is passing a **string region code** (e.g., `region=AU`). The API ignores invalid parameters and returns **ALL brands globally**.
+1. **Giftbit's testbed environment is a sandbox with very limited brand availability** - it does NOT have the same 108 brands that production has
+2. The 15 brands currently showing in testbed were synced **before** our region filter fix - they're actually global/random brands incorrectly labeled as Australian (notice "IKEA de", "Boots GB", "Auchan FR" are all non-Australian brands)
 
-**Evidence from API documentation**:
-```
-region (number, optional) - Limits the results to brands that are available 
-in the provided region as per the `id` returned from the `/region` endpoint.
-```
-
-The `/regions` endpoint returns:
-```json
-{ "id": 4, "name": "Australia", "image_url": "...flags/AU@3x.png" }
-```
-
-So `region=4` is correct, NOT `region=AU`.
-
----
+The testbed API is correctly returning 0 brands for region-filtered requests because it simply doesn't have region-specific catalogs like production does.
 
 ## Solution
 
-### Step 1: Add `giftbit_region_id` column to database
+### Step 1: Clean up incorrect testbed data
 
-Add a new column to store the numeric Giftbit API region ID that's needed for filtering brands:
+Delete the incorrectly tagged brands that were synced before our fix:
 
 ```sql
-ALTER TABLE giftbit_regions 
-ADD COLUMN giftbit_region_id INTEGER;
+DELETE FROM giftbit_brands WHERE environment = 'testbed';
 ```
 
-### Step 2: Update `SYNC_REGIONS` action in edge function
+### Step 2: Improve error messaging in edge function
 
-When syncing regions from the Giftbit API, store the numeric `id` field:
-
-```typescript
-// In SYNC_REGIONS action
-const { error } = await supabase
-  .from('giftbit_regions')
-  .upsert({
-    giftbit_region_id: apiRegion.id,  // ← Add this numeric ID
-    region_code: regionCode,
-    name: apiRegion.name,
-    // ... rest
-  });
-```
-
-### Step 3: Update `SYNC_BRANDS` action to use numeric ID
-
-Before fetching brands, look up the numeric region ID:
+Update the edge function to provide clearer feedback when a region returns 0 brands, especially for testbed:
 
 ```typescript
-case 'SYNC_BRANDS': {
-  // Look up the Giftbit region ID from the database
-  const { data: regionData } = await supabase
-    .from('giftbit_regions')
-    .select('giftbit_region_id')
-    .eq('region_code', region)
-    .eq('environment', environment)
-    .single();
-
-  const giftbitRegionId = regionData?.giftbit_region_id;
-  if (!giftbitRegionId) {
-    throw new Error(`Region ${region} not found. Please sync regions first.`);
+// In SYNC_BRANDS action, after fetching all brands
+if (allBrands.length === 0) {
+  console.log(`No brands available for region ${region} in ${environment} environment`);
+  
+  // For testbed, this is expected - the sandbox has limited availability
+  if (environment === 'testbed') {
+    console.log('Note: Giftbit testbed has limited brand availability compared to production');
   }
-
-  // Use the numeric ID in the API call
-  const url = `${apiBase}/brands?region=${giftbitRegionId}&limit=${limit}&offset=${offset}`;
-  // ...
 }
 ```
 
-### Step 4: Apply same fix to `GET_BRANDS` action
+### Step 3: Add UI warning for testbed catalog
 
-Same lookup logic for the GET_BRANDS action.
+Show an info message in the Test Catalog UI explaining that the testbed has limited brand availability:
 
-### Step 5: Clean up incorrect data
-
-Delete the incorrectly synced brands that aren't actually Australian:
-
-```sql
-DELETE FROM giftbit_brands 
-WHERE environment = 'production' 
-AND region_code = 'AU';
+```
+ℹ️ The Giftbit Test environment (testbed) has limited brand availability. 
+   For full catalog testing, use the Production Catalog tab.
 ```
 
 ---
@@ -95,28 +52,39 @@ AND region_code = 'AU';
 
 | File | Change |
 |------|--------|
-| Database migration | Add `giftbit_region_id INTEGER` column to `giftbit_regions` table |
-| `supabase/functions/giftbit-brand-service/index.ts` | Update `SYNC_REGIONS` to store numeric ID |
-| `supabase/functions/giftbit-brand-service/index.ts` | Update `SYNC_BRANDS` to look up and use numeric ID |
-| `supabase/functions/giftbit-brand-service/index.ts` | Update `GET_BRANDS` to look up and use numeric ID |
+| Database (migration) | Clean up incorrect testbed brands |
+| `supabase/functions/giftbit-brand-service/index.ts` | Add informative logging for empty region results |
+| `src/components/platform/GiftbitBrandCard.tsx` (or equivalent UI) | Add info banner for testbed limitations |
 
 ---
 
-## Expected Results After Fix
+## Expected Behavior After Fix
 
-| Metric | Before (Broken) | After (Fixed) |
-|--------|-----------------|---------------|
-| AU Brands | 1337 (all global) | ~108 (only Australian) |
-| Region filter | Ignored | Works correctly |
-| Duplicates | Many (Adidas x18) | None |
+| Environment | Behavior |
+|-------------|----------|
+| **Production** | Syncs all 108+ brands for AU correctly (already working) |
+| **Testbed** | Shows info message explaining limited sandbox availability |
+| **Stats** | Testbed shows accurate 0 brands (not incorrect 15) |
 
 ---
 
-## Post-Implementation Steps
+## Why This Happens
 
-1. Run database migration to add `giftbit_region_id` column
-2. Deploy updated edge function
-3. Click **"Refresh Regions"** in Platform Admin to populate the new IDs
-4. Delete incorrect AU brands from database
-5. Click **"Sync 1 Region"** for Australia to get correct brands
+Giftbit's testbed API is a **sandbox environment** meant for:
+- Testing API integration
+- Validating redemption flows
+- Development purposes
+
+It intentionally has a very limited catalog to reduce complexity. The full brand catalogs are only available in the **production API**.
+
+---
+
+## Recommendation
+
+For testing the reward shop UI and redemption flow, you have two options:
+
+1. **Use production catalog for real testing** - This gives you the full 108+ brands to work with
+2. **Manually add a few test brands to testbed** - If you need specific test data
+
+The testbed is really only useful for testing API connectivity and redemption flows, not for catalog browsing.
 
