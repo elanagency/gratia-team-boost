@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Building, Edit, Save, X } from "lucide-react";
+import { Building, Edit, Save, X, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useCompanyRegions } from "@/hooks/useCompanyRegions";
+import { RegionBadge } from "@/components/team/RegionBadge";
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "Company name must be at least 2 characters"),
@@ -35,6 +37,7 @@ export const CompanyInformationCard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const { companyId, isAdmin } = useAuth();
+  const { regionCodes, isLoading: isLoadingRegions } = useCompanyRegions(companyId);
 
   const form = useForm<CompanyFormData>({
     resolver: zodResolver(companyFormSchema),
@@ -284,7 +287,7 @@ export const CompanyInformationCard = () => {
             
             {companyData.logo_url && (
               <div>
-                <Label className="text-sm font-medium text-gray-600">Company Logo</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Company Logo</Label>
                 <div className="mt-2">
                   <img 
                     src={companyData.logo_url} 
@@ -297,9 +300,34 @@ export const CompanyInformationCard = () => {
                 </div>
               </div>
             )}
+
+            {/* Gift Card Regions - Read Only */}
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Gift Card Regions</Label>
+              <div className="mt-2">
+                {isLoadingRegions ? (
+                  <span className="text-sm text-muted-foreground">Loading regions...</span>
+                ) : regionCodes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {regionCodes.map((code) => (
+                      <RegionBadge key={code} regionCode={code} showName size="md" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <RegionBadge regionCode="AU" showName size="md" />
+                    <span className="text-xs text-muted-foreground self-center">(default)</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                <Info className="h-3 w-3" />
+                <span>Contact support to modify available regions</span>
+              </div>
+            </div>
             
             {!isAdmin && (
-              <p className="text-sm text-gray-500 italic">
+              <p className="text-sm text-muted-foreground italic">
                 Only administrators can edit company information.
               </p>
             )}

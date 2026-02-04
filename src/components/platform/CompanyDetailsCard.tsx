@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Building2, Globe, MapPin, Calendar, CreditCard, Users, Receipt, TestTube, AlertTriangle } from "lucide-react";
+import { Building2, Globe, MapPin, Calendar, CreditCard, Users, Receipt, TestTube, AlertTriangle, MapPinned } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CompanyRegionSelector } from "./CompanyRegionSelector";
 
 interface Company {
   id: string;
@@ -201,7 +202,19 @@ const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company, member
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Gift Card Regions */}
+        <div className="border rounded-lg p-4 bg-muted/20">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPinned className="h-4 w-4 text-muted-foreground" />
+              <h4 className="font-medium">Gift Card Regions</h4>
+            </div>
+            <CompanyRegionSelector 
+              companyId={company.id} 
+              environment={currentEnvironment as 'test' | 'live'} 
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">

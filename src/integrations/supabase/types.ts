@@ -167,6 +167,35 @@ export type Database = {
         }
         Relationships: []
       }
+      company_regions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          region_code: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          region_code: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          region_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_regions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           company_id: string

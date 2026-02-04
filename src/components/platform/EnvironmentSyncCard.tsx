@@ -2,15 +2,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { RefreshCw, TestTube, Globe, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { RefreshCw, TestTube, Globe, Clock, Check, X } from "lucide-react";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
+import { useAvailableRegions } from "@/hooks/useAvailableRegions";
 import { format } from "date-fns";
+import { useState } from "react";
+import { getRegionFlag, getRegionName } from "@/lib/regionConstants";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EnvironmentSyncCardProps {
   environment: 'test' | 'live';
 }
 
+// Static regions to use as fallback
+const STATIC_REGIONS = [
+  { region_code: 'AU', name: 'Australia' },
+  { region_code: 'US', name: 'United States' },
+  { region_code: 'CA', name: 'Canada' },
+  { region_code: 'GB', name: 'United Kingdom' },
+  { region_code: 'NZ', name: 'New Zealand' },
+];
+
 export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) => {
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(['AU']);
+  
   const {
     syncStatus,
     syncMutation,
@@ -19,17 +37,58 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
     isLoading
   } = useSyncGiftCards(environment);
 
+  const { regions } = useAvailableRegions(environment);
+  const displayRegions = regions.length > 0 ? regions : STATIC_REGIONS;
+
+  // Get brand counts per region
+  const giftbitEnv = environment === 'live' ? 'production' : 'testbed';
+  const { data: regionCounts = {} } = useQuery({
+    queryKey: ['region-brand-counts', giftbitEnv],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('giftbit_brands')
+        .select('region_code')
+        .eq('environment', giftbitEnv)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching region counts:', error);
+        return {};
+      }
+
+      // Count brands per region
+      const counts: Record<string, number> = {};
+      data?.forEach(brand => {
+        const code = brand.region_code;
+        counts[code] = (counts[code] || 0) + 1;
+      });
+      return counts;
+    },
+    staleTime: 30000
+  });
+
   const isLive = environment === 'live';
-  const icon = isLive ? Globe : TestTube;
-  const Icon = icon;
+  const Icon = isLive ? Globe : TestTube;
   
   const handleSync = () => {
+    // For now, sync all selected regions using the existing mutation
+    // This will be enhanced to sync specific regions when the backend supports it
     syncMutation.mutate();
   };
 
   const handleTest = async () => {
     await testConnection();
   };
+
+  const toggleRegion = (regionCode: string) => {
+    setSelectedRegions(prev => 
+      prev.includes(regionCode)
+        ? prev.filter(r => r !== regionCode)
+        : [...prev, regionCode]
+    );
+  };
+
+  const totalSyncedBrands = Object.values(regionCounts).reduce((sum, count) => sum + count, 0);
 
   return (
     <Card>
@@ -51,10 +110,52 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Region Selection */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Regions to Sync:</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {displayRegions.map((region) => {
+              const code = region.region_code;
+              const flag = getRegionFlag(code);
+              const count = regionCounts[code] || 0;
+              const isSelected = selectedRegions.includes(code);
+              
+              return (
+                <div key={code} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`sync-${environment}-${code}`}
+                    checked={isSelected}
+                    onCheckedChange={() => toggleRegion(code)}
+                    disabled={isLoading}
+                  />
+                  <Label 
+                    htmlFor={`sync-${environment}-${code}`}
+                    className="flex items-center gap-1.5 cursor-pointer text-sm"
+                  >
+                    <span>{flag}</span>
+                    <span>{region.name}</span>
+                    {count > 0 ? (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                        <Check className="h-3 w-3" />
+                        {count}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <X className="h-3 w-3" />
+                        0
+                      </span>
+                    )}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Sync Status */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Products Available:</span>
-          <span className="font-medium">{syncStatus?.count || 0}</span>
+        <div className="flex items-center justify-between text-sm border-t pt-3">
+          <span className="text-muted-foreground">Total Products:</span>
+          <span className="font-medium">{totalSyncedBrands}</span>
         </div>
         
         {syncStatus?.lastSynced && (
@@ -76,13 +177,13 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={handleSync}
-            disabled={isLoading}
+            disabled={isLoading || selectedRegions.length === 0}
             size="sm"
             variant="default"
             className="flex-1 sm:min-w-0"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            {isLoading ? 'Syncing...' : 'Sync Catalog'}
+            {isLoading ? 'Syncing...' : `Sync ${selectedRegions.length} Region${selectedRegions.length !== 1 ? 's' : ''}`}
           </Button>
           
           <Button

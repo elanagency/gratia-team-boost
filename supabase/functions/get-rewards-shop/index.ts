@@ -19,27 +19,7 @@ interface GiftCard {
   min_price_in_cents?: number;
   max_price_in_cents?: number;
   currency_code?: string;
-}
-
-// Get region from request headers (Cloudflare, Vercel, etc.)
-function getRegionFromRequest(req: Request): string {
-  // Try Cloudflare header first
-  const cfCountry = req.headers.get('CF-IPCountry');
-  if (cfCountry) {
-    console.log(`Detected region from CF-IPCountry: ${cfCountry}`);
-    return cfCountry;
-  }
-  
-  // Try Vercel header
-  const vercelCountry = req.headers.get('X-Vercel-IP-Country');
-  if (vercelCountry) {
-    console.log(`Detected region from X-Vercel-IP-Country: ${vercelCountry}`);
-    return vercelCountry;
-  }
-  
-  // Default to Australia for the first customer
-  console.log('No region header found, defaulting to AU');
-  return 'AU';
+  region_code?: string;
 }
 
 serve(async (req) => {
@@ -69,10 +49,7 @@ serve(async (req) => {
 
     console.log(`Fetching rewards shop data for user: ${user.id}`);
 
-    // Detect user's region from request headers
-    const detectedRegion = getRegionFromRequest(req);
-
-    // Single query to get all needed data
+    // Get user profile with company details
     const { data: userData, error: userError } = await supabase
       .from('profiles')
       .select(`
@@ -88,12 +65,30 @@ serve(async (req) => {
     }
 
     const companyId = userData.company_id;
-    // Map company environment to Giftbit environment
     const companyEnvironment = (userData.companies as any)?.environment || 'live';
-    // For now, use testbed for testing. In production, map 'live' -> 'production'
     const giftbitEnvironment = companyEnvironment === 'live' ? 'production' : 'testbed';
 
-    console.log(`User company: ${companyId}, environment: ${companyEnvironment}, giftbit env: ${giftbitEnvironment}, region: ${detectedRegion}`);
+    console.log(`User company: ${companyId}, environment: ${companyEnvironment}, giftbit env: ${giftbitEnvironment}`);
+
+    // Get company's assigned regions from company_regions table
+    const { data: companyRegionsData, error: regionsError } = await supabase
+      .from('company_regions')
+      .select('region_code')
+      .eq('company_id', companyId);
+
+    if (regionsError) {
+      console.error('Error fetching company regions:', regionsError);
+    }
+
+    // Extract region codes or default to AU
+    let assignedRegions: string[] = companyRegionsData?.map(r => r.region_code) || [];
+    
+    if (assignedRegions.length === 0) {
+      console.log('No regions assigned to company, defaulting to AU');
+      assignedRegions = ['AU'];
+    }
+
+    console.log(`Company assigned regions: ${assignedRegions.join(', ')}`);
 
     // Get exchange rate from platform settings
     const { data: settingData } = await supabase
@@ -103,16 +98,14 @@ serve(async (req) => {
       .single();
 
     const rate = settingData?.point_exchange_rate || 0.05;
-
     console.log(`Exchange rate: ${rate}`);
 
-    // Get gift cards from giftbit_brands table
-    // Filter by environment and region
+    // Get gift cards from giftbit_brands table filtered by assigned regions
     const { data: brandsData, error: brandsError } = await supabase
       .from('giftbit_brands')
       .select('*')
       .eq('environment', giftbitEnvironment)
-      .eq('region_code', detectedRegion)
+      .in('region_code', assignedRegions)
       .eq('is_active', true)
       .order('name');
 
@@ -121,25 +114,10 @@ serve(async (req) => {
       throw new Error('Failed to fetch gift cards');
     }
 
-    console.log(`Found ${brandsData?.length || 0} Giftbit brands for region ${detectedRegion}`);
-
-    // If no brands found for the detected region, try AU as fallback
-    let finalBrands = brandsData || [];
-    if (finalBrands.length === 0 && detectedRegion !== 'AU') {
-      console.log('No brands found for detected region, falling back to AU');
-      const { data: auBrands } = await supabase
-        .from('giftbit_brands')
-        .select('*')
-        .eq('environment', giftbitEnvironment)
-        .eq('region_code', 'AU')
-        .eq('is_active', true)
-        .order('name');
-      finalBrands = auBrands || [];
-    }
+    console.log(`Found ${brandsData?.length || 0} Giftbit brands for regions: ${assignedRegions.join(', ')}`);
 
     // Transform brands to GiftCard format for frontend compatibility
-    const giftCards: GiftCard[] = finalBrands.map((brand: any) => {
-      // For variable price, use min price as the base
+    const giftCards: GiftCard[] = (brandsData || []).map((brand: any) => {
       const basePrice = brand.min_price_in_cents ? brand.min_price_in_cents / 100 : 0;
       const pointsCost = brand.price_is_variable ? 0 : Math.ceil(basePrice / rate);
 
@@ -159,7 +137,8 @@ serve(async (req) => {
         created_at: brand.created_at,
         min_price_in_cents: brand.min_price_in_cents,
         max_price_in_cents: brand.max_price_in_cents,
-        currency_code: brand.currency_code || 'AUD'
+        currency_code: brand.currency_code || 'AUD',
+        region_code: brand.region_code
       };
     });
 
@@ -174,7 +153,7 @@ serve(async (req) => {
           userContext: {
             companyId,
             environment: companyEnvironment,
-            region: detectedRegion,
+            assignedRegions,
             provider: 'giftbit'
           }
         }
