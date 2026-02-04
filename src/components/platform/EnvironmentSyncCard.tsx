@@ -6,12 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin, CheckCheck, XCircle } from "lucide-react";
-import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
+import { useSyncGiftbitBrands } from "@/hooks/useSyncGiftbitBrands";
 import { useAvailableRegions } from "@/hooks/useAvailableRegions";
 import { useSyncRegions } from "@/hooks/useSyncRegions";
 import { format } from "date-fns";
 import { useState } from "react";
-import { getRegionFlag, getRegionName } from "@/lib/regionConstants";
+import { getRegionFlag } from "@/lib/regionConstants";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -37,7 +37,7 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
     testConnection,
     syncProgress,
     isLoading
-  } = useSyncGiftCards(environment);
+  } = useSyncGiftbitBrands(environment);
 
   const { regions, refetch: refetchRegions } = useAvailableRegions(environment);
   const { syncRegions, isSyncing: isSyncingRegions } = useSyncRegions(environment);
@@ -75,9 +75,8 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
   const Icon = isLive ? Globe : TestTube;
   
   const handleSync = () => {
-    // For now, sync all selected regions using the existing mutation
-    // This will be enhanced to sync specific regions when the backend supports it
-    syncMutation.mutate();
+    // Sync all selected regions using the Giftbit API
+    syncMutation.mutate(selectedRegions);
   };
 
   const handleTest = async () => {
@@ -181,7 +180,7 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
                       <span>{flag}</span>
                       <span className="truncate max-w-[60px]">{region.name}</span>
                       {count > 0 ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                        <span className="text-primary flex items-center gap-0.5">
                           <Check className="h-2.5 w-2.5" />
                           {count}
                         </span>
