@@ -266,6 +266,7 @@ serve(async (req) => {
             .upsert({
               region_code: regionCode,
               name: apiRegion.name,
+              image_url: apiRegion.image_url,
               currency_code: currencyCode,
               environment,
               is_active: true

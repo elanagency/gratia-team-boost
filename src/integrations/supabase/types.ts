@@ -292,6 +292,7 @@ export type Database = {
           currency_code: string | null
           environment: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           region_code: string
@@ -301,6 +302,7 @@ export type Database = {
           currency_code?: string | null
           environment?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           region_code: string
@@ -310,6 +312,7 @@ export type Database = {
           currency_code?: string | null
           environment?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           region_code?: string
