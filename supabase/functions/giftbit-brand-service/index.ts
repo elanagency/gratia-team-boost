@@ -323,13 +323,13 @@ serve(async (req) => {
               max_price_in_cents: brand.max_price_in_cents,
               allowed_prices_in_cents: brand.allowed_prices_in_cents || [],
               price_is_variable: brand.variable_price ?? true,
-              currency_code: brand.currency_code || 'AUD',
+              currency_code: brand.currency_code || REGION_CURRENCIES[region] || 'USD',
               region_code: region,
               environment,
               is_active: true,
               last_synced_at: new Date().toISOString(),
               brand_data: brand
-            }, { onConflict: 'brand_code,environment' });
+            }, { onConflict: 'brand_code,region_code,environment' });
           
           if (error) {
             console.error(`Error syncing brand ${brand.brand_code}:`, error);
