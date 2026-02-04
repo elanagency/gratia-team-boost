@@ -1,134 +1,90 @@
 
-# Fix Region Setup Dialog - RLS & UX Improvements
+# Enable Production Giftbit Integration
 
-## Issues Identified
+## Overview
 
-### 1. RLS Policy Missing (Root Cause of Save Failure)
-The `company_regions` table only has:
-- SELECT policies for company members
-- ALL policy for platform admins only
-
-**No INSERT policy exists for company admins**, which is why "Failed to save region settings" appears.
-
-### 2. UX Improvements Requested
-Current: Shows dropdown immediately with separate region card
-Requested: Cleaner flow with "Change" button to reveal dropdown
+This plan adds the production Giftbit API key and ensures the entire production gift card flow works correctly - from region selection during onboarding to gift card redemption.
 
 ---
 
-## Solution
+## Step 1: Add the Production API Key Secret
 
-### Phase 1: Fix RLS Policy
+I will add the `GIFTBIT_API_KEY` secret so you can paste your production key. Once approved, a secure input box will appear for you to enter the key.
 
-Add an INSERT policy allowing company admins to add regions for their own company during initial setup:
-
-```sql
-CREATE POLICY "Company admins can insert their own regions during setup"
-ON company_regions
-FOR INSERT
-WITH CHECK (
-  company_id IN (
-    SELECT profiles.company_id
-    FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-    AND profiles.status = 'active'
-  )
-  AND 
-  EXISTS (
-    SELECT 1 FROM companies
-    WHERE companies.id = company_id
-    AND companies.region_setup_complete = false
-  )
-);
-```
-
-This policy ensures:
-- Only company admins can insert
-- Only for their own company
-- Only when `region_setup_complete` is still `false` (prevents future manipulation)
-
-### Phase 2: Redesign Dialog UX
-
-**New Flow:**
-1. Show detected region with flag, name, and currency
-2. Display a "Change" button that reveals a dropdown
-3. Once a region is selected from dropdown, update the display
-4. Keep Global checkbox option
-5. Confirm & Continue button
-
-**Visual Structure:**
-```
-+--------------------------------------------------+
-|  Welcome to Grattia!                             |
-|  Let's set up your reward region to get started. |
-|                                                  |
-|  [MapPin] We detected you're in:                 |
-|                                                  |
-|  +--------------------------------------------+  |
-|  |  [UK Flag]  United Kingdom                 |  |
-|  |             Currency: GBP                  |  |
-|  |                           [Change Button]  |  |
-|  +--------------------------------------------+  |
-|                                                  |
-|  (If "Change" clicked, show dropdown below)      |
-|                                                  |
-|  +--------------------------------------------+  |
-|  | [ ] Also include Global gift cards         |  |
-|  |     Visa, Mastercard, international options|  |
-|  +--------------------------------------------+  |
-|                                                  |
-|            [Confirm & Continue]                  |
-+--------------------------------------------------+
-```
+**Secret Details:**
+| Secret Name | Purpose | Used By |
+|-------------|---------|---------|
+| `GIFTBIT_API_KEY` | Production Giftbit API access | `giftbit-brand-service`, `giftbit-redemption-service` |
 
 ---
 
-## Files to Create/Modify
+## Step 2: Verify Edge Functions Configuration
+
+The edge functions are already correctly configured to use the production key:
+
+**`giftbit-brand-service/index.ts` (line 167-169):**
+```typescript
+const apiKey = environment === 'production' 
+  ? Deno.env.get('GIFTBIT_API_KEY')      // ← Production key
+  : Deno.env.get('GIFTBIT_API_KEY_TESTBED');
+```
+
+**`giftbit-redemption-service/index.ts` (line 77-79):**
+```typescript
+const apiKey = environment === 'production' 
+  ? Deno.env.get('GIFTBIT_API_KEY')      // ← Production key
+  : Deno.env.get('GIFTBIT_API_KEY_TESTBED');
+```
+
+No code changes needed - the logic is already in place.
+
+---
+
+## Step 3: Sync Production Regions
+
+After the secret is added, sync regions for the production environment:
+
+1. Navigate to **Platform Admin > Gift Cards Catalog**
+2. Select the **Production Catalog** tab
+3. Click **Sync Regions** in the Environment Sync Card
+
+This will populate `giftbit_regions` with `environment = 'production'` entries, fixing the empty dropdown in the Region Setup Dialog.
+
+---
+
+## Step 4: Test the Production Flow
+
+| Test | Action | Expected Result |
+|------|--------|-----------------|
+| Region Setup | New company signup | Dropdown shows production regions (AU, US, GB, etc.) |
+| Region Sync | Platform Admin syncs brands | Brands appear in Production Catalog |
+| Redemption | Team member redeems gift card | Real gift card link generated via production API |
+
+---
+
+## Files to Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| New migration file | Create | Add INSERT policy for company admins |
-| `src/components/onboarding/RegionSetupDialog.tsx` | Modify | Redesign UX with "Change" button flow |
+| None | — | No code changes needed, configuration only |
 
 ---
 
-## Technical Details
+## Implementation Steps
 
-### RegionSetupDialog Changes
-
-1. Add `isChanging` state to control dropdown visibility
-2. Remove always-visible dropdown
-3. Add "Change" button that sets `isChanging = true`
-4. When changing, show Select dropdown
-5. Pre-select the detected region by default (already working via useEffect)
-
-```tsx
-// Key state changes
-const [isChanging, setIsChanging] = useState(false);
-
-// Show either the region card with Change button, or the dropdown
-{!isChanging ? (
-  <RegionCard 
-    regionCode={selectedRegion} 
-    onChangeClick={() => setIsChanging(true)} 
-  />
-) : (
-  <Select value={selectedRegion} onValueChange={(val) => {
-    setSelectedRegion(val);
-    setIsChanging(false);
-  }}>
-    ...
-  </Select>
-)}
-```
+1. **Add Secret** - I'll invoke the secret tool to show you the input box for `GIFTBIT_API_KEY`
+2. **You paste the key** - Enter your production Giftbit API key
+3. **Sync regions** - Use Platform Admin to sync production regions
+4. **Test** - Verify the onboarding dropdown and redemption flow work
 
 ---
 
 ## Summary
 
-| Issue | Fix |
-|-------|-----|
-| "Failed to save region settings" | Add RLS INSERT policy for company admins during setup |
-| Dropdown always visible | Hide by default, show on "Change" click |
-| Cleaner UX | Single region card with flag, name, currency, and Change button |
+| Component | Status | After This Plan |
+|-----------|--------|-----------------|
+| `GIFTBIT_API_KEY_TESTBED` | ✅ Configured | No change |
+| `GIFTBIT_API_KEY` | ❌ Missing | ✅ Added |
+| Production regions in DB | ❌ Empty | ✅ Synced via Platform Admin |
+| Region Setup Dialog | ❌ Empty dropdown | ✅ Shows production regions |
+| Gift card redemption | ❌ Would fail | ✅ Works with production API |
