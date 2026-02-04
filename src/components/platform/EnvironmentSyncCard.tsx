@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin, CheckCheck, XCircle } from "lucide-react";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
 import { useAvailableRegions } from "@/hooks/useAvailableRegions";
 import { useSyncRegions } from "@/hooks/useSyncRegions";
@@ -91,6 +92,17 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
     );
   };
 
+  const allSelected = selectedRegions.length === displayRegions.length && displayRegions.length > 0;
+  const noneSelected = selectedRegions.length === 0;
+
+  const handleSelectAll = () => {
+    setSelectedRegions(displayRegions.map(r => r.region_code));
+  };
+
+  const handleClearAll = () => {
+    setSelectedRegions([]);
+  };
+
   const totalSyncedBrands = Object.values(regionCounts).reduce((sum, count) => sum + count, 0);
 
   return (
@@ -113,46 +125,77 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Region Selection */}
+        {/* Region Selection Header */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Regions to Sync:</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {displayRegions.map((region) => {
-              const code = region.region_code;
-              const flag = getRegionFlag(code);
-              const count = regionCounts[code] || 0;
-              const isSelected = selectedRegions.includes(code);
-              
-              return (
-                <div key={code} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`sync-${environment}-${code}`}
-                    checked={isSelected}
-                    onCheckedChange={() => toggleRegion(code)}
-                    disabled={isLoading}
-                  />
-                  <Label 
-                    htmlFor={`sync-${environment}-${code}`}
-                    className="flex items-center gap-1.5 cursor-pointer text-sm"
-                  >
-                    <span>{flag}</span>
-                    <span>{region.name}</span>
-                    {count > 0 ? (
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                        <Check className="h-3 w-3" />
-                        {count}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                        <X className="h-3 w-3" />
-                        0
-                      </span>
-                    )}
-                  </Label>
-                </div>
-              );
-            })}
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Regions to Sync:</Label>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectAll}
+                disabled={allSelected || isLoading}
+                className="h-7 px-2 text-xs"
+              >
+                <CheckCheck className="h-3 w-3 mr-1" />
+                All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAll}
+                disabled={noneSelected || isLoading}
+                className="h-7 px-2 text-xs"
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {selectedRegions.length} of {displayRegions.length} regions selected
+          </p>
+          
+          {/* Scrollable Region List */}
+          <ScrollArea className="h-48 rounded-md border">
+            <div className="grid grid-cols-2 gap-1.5 p-2">
+              {displayRegions.map((region) => {
+                const code = region.region_code;
+                const flag = getRegionFlag(code);
+                const count = regionCounts[code] || 0;
+                const isSelected = selectedRegions.includes(code);
+                
+                return (
+                  <div key={code} className="flex items-center space-x-1.5">
+                    <Checkbox
+                      id={`sync-${environment}-${code}`}
+                      checked={isSelected}
+                      onCheckedChange={() => toggleRegion(code)}
+                      disabled={isLoading}
+                      className="h-3.5 w-3.5"
+                    />
+                    <Label 
+                      htmlFor={`sync-${environment}-${code}`}
+                      className="flex items-center gap-1 cursor-pointer text-xs"
+                    >
+                      <span>{flag}</span>
+                      <span className="truncate max-w-[60px]">{region.name}</span>
+                      {count > 0 ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                          <Check className="h-2.5 w-2.5" />
+                          {count}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground flex items-center gap-0.5">
+                          <X className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
 
         {/* Sync Status */}
