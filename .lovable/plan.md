@@ -1,107 +1,92 @@
 
 
-# Fix Giftbit Redemption API Call
+# Add "View Gift Card" Link to Redemption History
 
-## Problem Identified
+## Current Situation
 
-The Giftbit `/direct_links` API is returning a 422 error because we're using the wrong parameter name:
+Your redemption history component is already set up to display the "View Gift Card" button - it's just missing the link data because of a parsing bug in the edge function.
 
-**Error message:**
+| Component | Status |
+|-----------|--------|
+| RedemptionHistory component | Already has "View Gift Card" button code |
+| useRedemptions hook | Already fetches `individual_gift_link` |
+| Database columns | `giftbit_claim_link` and `individual_gift_link` exist but are null |
+
+## The Problem
+
+The Giftbit API response looks like this:
+```json
+{
+  "direct_links": [
+    "https://testbedreward.giftbit.com/getReward/dl-943326cf..."
+  ]
+}
 ```
-Invalid request parameters: Property [region]: One (and only one) of 
-either region or brand_codes must be provided
-```
 
-The API documentation clearly states:
-> Required parameters for the API include `price_in_cents` and `brand_codes` (or `region` for Full Catalog rewards).
-
-## Root Cause
-
-In `supabase/functions/giftbit-redemption-service/index.ts`, line 117:
-
-```typescript
-// Current (WRONG)
-const giftbitPayload = {
-  brand_code: brandCode,  // ← Singular, not recognized by API
-  price_in_cents: Math.round(dollarAmount * 100),
-  id: idempotencyKey,
-  expiry: expiry
-};
-```
+But the current code tries to access `.link_url` on what is already a string URL.
 
 ## The Fix
 
-Change `brand_code` to `brand_codes` as an array:
+### Step 1: Fix Edge Function Parsing
 
+Update `supabase/functions/giftbit-redemption-service/index.ts`:
+
+**Current code (lines 143-150):**
 ```typescript
-// Fixed (CORRECT)
-const giftbitPayload = {
-  brand_codes: [brandCode],  // ← Array format as required by API
-  price_in_cents: Math.round(dollarAmount * 100),
-  id: idempotencyKey,
-  expiry: expiry
-};
+const directLink = giftbitData.direct_links?.[0];
+const claimLink = directLink.link_url;  // ❌ Wrong - directLink IS the URL
+const giftId = directLink.uuid || idempotencyKey;
 ```
+
+**Fixed code:**
+```typescript
+const claimLink = giftbitData.direct_links?.[0];  // ✅ Already a string URL
+const giftId = giftbitData.campaign?.uuid || idempotencyKey;
+```
+
+### Step 2: Update Existing Redemptions (One-time fix)
+
+For your two existing redemptions that have null links, we need to manually update them with the correct URLs from your Giftbit dashboard:
+
+```sql
+-- Update Auchan redemption
+UPDATE redemptions 
+SET 
+  giftbit_claim_link = 'https://testbedreward.giftbit.com/getReward/dl-943326cf906c482f9f9db62cb26428c3',
+  individual_gift_link = 'https://testbedreward.giftbit.com/getReward/dl-943326cf906c482f9f9db62cb26428c3'
+WHERE id = 'c755104d-8274-4573-be3c-587dc85ee332';
+
+-- Update Amazon redemption (get URL from Giftbit dashboard)
+UPDATE redemptions 
+SET 
+  giftbit_claim_link = '<URL from Giftbit dashboard>',
+  individual_gift_link = '<URL from Giftbit dashboard>'
+WHERE id = '8610e637-084b-462f-a832-fceb796f7c21';
+```
+
+## Result After Fix
+
+Once the link is saved to `individual_gift_link`:
+- The "View Gift Card" button will automatically appear in redemption history
+- Clicking it opens the Giftbit claim page in a new tab
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/giftbit-redemption-service/index.ts` | Change `brand_code: brandCode` to `brand_codes: [brandCode]` |
+| `supabase/functions/giftbit-redemption-service/index.ts` | Fix claim link parsing (lines 143-150) |
 
-## What's Already Set Up (No Changes Needed)
+## No Frontend Changes Needed
 
-| Component | Status |
-|-----------|--------|
-| `GIFTBIT_API_KEY_TESTBED` secret | Configured |
-| `giftbit_brands` table | 15 Australian brands synced |
-| `giftbit_regions` table | AU region exists |
-| `redemptions` table with Giftbit columns | Ready |
-| Frontend modal and hooks | Working correctly |
-| `get-rewards-shop` edge function | Returning Giftbit brands |
-
-## After the Fix
-
-1. Deploy the updated edge function
-2. Retry the redemption with "Auchan" or any other brand
-3. The claim link should be returned immediately
-4. Points will be deducted and success dialog will appear
-
----
-
-## Technical Details
-
-### Giftbit Direct Links API Requirements
-
-According to the official documentation:
-
-| Parameter | Type | Required |
-|-----------|------|----------|
-| `brand_codes` | array of strings | Yes (OR use `region`) |
-| `price_in_cents` | integer | Yes |
-| `id` | string | Yes (idempotency key) |
-| `expiry` | string (YYYY-MM-DD) | Optional |
-
-### Example Valid Payload
-
-```json
-{
-  "brand_codes": ["auchanfr"],
-  "price_in_cents": 1500,
-  "id": "redemption-unique-id-12345",
-  "expiry": "2027-02-04"
-}
+The RedemptionHistory component (lines 93-104) already has the button:
+```tsx
+{redemption.external_order_id && redemption.status === 'completed' && (
+  <Button onClick={() => window.open(redemption.external_order_id!, '_blank')}>
+    <ExternalLink className="h-3 w-3 mr-1" />
+    View Gift Card
+  </Button>
+)}
 ```
 
-### Expected Response
-
-```json
-{
-  "direct_links": [{
-    "status": "ACTIVE",
-    "link_url": "https://testbed.giftbit.com/claim/...",
-    "uuid": "gift-uuid-here"
-  }]
-}
-```
+This will work automatically once the database has the link!
 
