@@ -8,6 +8,7 @@ export interface AvailableRegion {
   currency_code: string;
   environment: string;
   is_active: boolean;
+  image_url: string | null;
 }
 
 export const useAvailableRegions = (environment: 'test' | 'live' | 'testbed' | 'production' = 'live') => {

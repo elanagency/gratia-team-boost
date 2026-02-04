@@ -31,6 +31,14 @@ export const getRegionFlag = (regionCode: string): string => {
   return REGION_FLAGS[regionCode?.toUpperCase()] || '🌐';
 };
 
+// Get region image URL or fallback to emoji flag
+export const getRegionImageOrFlag = (regionCode: string, imageUrl?: string | null): { type: 'image' | 'emoji'; value: string } => {
+  if (imageUrl) {
+    return { type: 'image', value: imageUrl };
+  }
+  return { type: 'emoji', value: getRegionFlag(regionCode) };
+};
+
 export const getRegionName = (regionCode: string): string => {
   return REGION_NAMES[regionCode?.toUpperCase()] || regionCode;
 };
