@@ -140,14 +140,14 @@ serve(async (req) => {
     const giftbitData = await giftbitResponse.json();
     console.log('Giftbit response:', giftbitData);
 
-    // Extract the claim link from response
-    const directLink = giftbitData.direct_links?.[0];
-    if (!directLink) {
+    // Extract the claim link from response - direct_links is an array of string URLs
+    const claimLink = giftbitData.direct_links?.[0];
+    if (!claimLink || typeof claimLink !== 'string') {
+      console.error('Invalid direct_links response:', giftbitData.direct_links);
       throw new Error('No direct link returned from Giftbit');
     }
 
-    const claimLink = directLink.link_url;
-    const giftId = directLink.uuid || idempotencyKey;
+    const giftId = giftbitData.campaign?.uuid || idempotencyKey;
 
     console.log(`Gift created successfully. Gift ID: ${giftId}, Claim link: ${claimLink}`);
 
