@@ -1,139 +1,86 @@
 
+# Fix Region Setup Dialog - RLS & UX Improvements
 
-# Region Selection During Onboarding
+## Issues Identified
 
-## Overview
+### 1. RLS Policy Missing (Root Cause of Save Failure)
+The `company_regions` table only has:
+- SELECT policies for company members
+- ALL policy for platform admins only
 
-Currently, regions are only assignable by Platform Admins. This plan explores adding **automatic region detection** with **manual override** during company setup, providing a seamless experience for Company Admins.
+**No INSERT policy exists for company admins**, which is why "Failed to save region settings" appears.
 
----
-
-## Proposed User Flow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      COMPANY ADMIN SIGNUP                       │
-├─────────────────────────────────────────────────────────────────┤
-│  1. User fills signup form (name, company, email)               │
-│  2. OTP verification                                            │
-│  3. Redirect to /admin dashboard                                │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │           REGION SETUP DIALOG (First Login)              │   │
-│  │                                                          │   │
-│  │  "🎉 Welcome to Grattia!"                               │   │
-│  │                                                          │   │
-│  │  We detected you're in:                                  │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │  🇦🇺 Australia (AUD)                 ✓ Selected │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  │                                                          │   │
-│  │  This determines which gift cards your team can          │   │
-│  │  redeem. You can add more regions later by               │   │
-│  │  contacting support.                                     │   │
-│  │                                                          │   │
-│  │  [ ] Also include Global gift cards (Visa, Mastercard)   │   │
-│  │                                                          │   │
-│  │              [Confirm & Continue]                        │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  4. Region saved to company_regions table                       │
-│  5. User proceeds to dashboard                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+### 2. UX Improvements Requested
+Current: Shows dropdown immediately with separate region card
+Requested: Cleaner flow with "Change" button to reveal dropdown
 
 ---
 
-## Technical Approach
+## Solution
 
-### Option A: IP Geolocation Detection (Recommended)
+### Phase 1: Fix RLS Policy
 
-Use a free IP geolocation API to detect the user's country during signup, then confirm/override in a setup dialog.
-
-**API Options (all have free tiers):**
-
-| API | Free Tier | Rate Limit | Response |
-|-----|-----------|------------|----------|
-| ipinfo.io | 50k/month | None | `{country: "AU", region: "Victoria"}` |
-| country.is | Unlimited | 1000/min | `{country: "AU"}` |
-| geoipapi.com | 10k/month | None | `{country_code: "AU", currency_code: "AUD"}` |
-
-**Mapping IP country to Giftbit regions:**
-
-| Country Code | Giftbit Region | Currency |
-|--------------|----------------|----------|
-| AU | AU | AUD |
-| US | US | USD |
-| CA | CA | CAD |
-| GB | GB | GBP |
-| NZ | NZ | NZD |
-| Other | GLOBAL | USD |
-
-### Option B: Manual Selection Only
-
-Skip IP detection and let users choose from a dropdown. Simpler but less magical.
-
----
-
-## Implementation Plan
-
-### Phase 1: Create Region Setup Dialog Component
-
-**New File:** `src/components/onboarding/RegionSetupDialog.tsx`
-
-- Modal dialog shown on first dashboard visit
-- Auto-detects country via IP (if Option A)
-- Shows detected region with option to change
-- Checkbox for including GLOBAL region
-- Saves to `company_regions` table on confirm
-
-### Phase 2: Add IP Geolocation Hook
-
-**New File:** `src/hooks/useGeoLocation.ts`
-
-```typescript
-// Uses country.is API (free, no API key required)
-const useGeoLocation = () => {
-  const [country, setCountry] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('https://api.country.is')
-      .then(res => res.json())
-      .then(data => setCountry(data.country)) // "AU", "US", etc.
-      .catch(() => setCountry(null))
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  return { country, isLoading };
-};
-```
-
-### Phase 3: Track Region Setup Completion
-
-**Database Change:** Add `region_setup_complete` column to `companies` table
+Add an INSERT policy allowing company admins to add regions for their own company during initial setup:
 
 ```sql
-ALTER TABLE companies 
-ADD COLUMN region_setup_complete BOOLEAN DEFAULT FALSE;
+CREATE POLICY "Company admins can insert their own regions during setup"
+ON company_regions
+FOR INSERT
+WITH CHECK (
+  company_id IN (
+    SELECT profiles.company_id
+    FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.role = 'admin'
+    AND profiles.status = 'active'
+  )
+  AND 
+  EXISTS (
+    SELECT 1 FROM companies
+    WHERE companies.id = company_id
+    AND companies.region_setup_complete = false
+  )
+);
 ```
 
-This flag determines whether to show the region setup dialog.
+This policy ensures:
+- Only company admins can insert
+- Only for their own company
+- Only when `region_setup_complete` is still `false` (prevents future manipulation)
 
-### Phase 4: Integrate Dialog into Dashboard
+### Phase 2: Redesign Dialog UX
 
-**File:** `src/pages/admin/Dashboard.tsx`
+**New Flow:**
+1. Show detected region with flag, name, and currency
+2. Display a "Change" button that reveals a dropdown
+3. Once a region is selected from dropdown, update the display
+4. Keep Global checkbox option
+5. Confirm & Continue button
 
-- Query company's `region_setup_complete` status
-- If `false` and user is admin, show `RegionSetupDialog`
-- On confirm, insert region(s) and set `region_setup_complete = true`
-
-### Phase 5: Allow Region Change Before First Team Member
-
-**File:** `src/components/settings/CompanyInformationCard.tsx`
-
-- If no team members have been invited yet, allow region editing
-- Once first member is invited, lock to read-only (current behavior)
+**Visual Structure:**
+```
++--------------------------------------------------+
+|  Welcome to Grattia!                             |
+|  Let's set up your reward region to get started. |
+|                                                  |
+|  [MapPin] We detected you're in:                 |
+|                                                  |
+|  +--------------------------------------------+  |
+|  |  [UK Flag]  United Kingdom                 |  |
+|  |             Currency: GBP                  |  |
+|  |                           [Change Button]  |  |
+|  +--------------------------------------------+  |
+|                                                  |
+|  (If "Change" clicked, show dropdown below)      |
+|                                                  |
+|  +--------------------------------------------+  |
+|  | [ ] Also include Global gift cards         |  |
+|  |     Visa, Mastercard, international options|  |
+|  +--------------------------------------------+  |
+|                                                  |
+|            [Confirm & Continue]                  |
++--------------------------------------------------+
+```
 
 ---
 
@@ -141,32 +88,47 @@ This flag determines whether to show the region setup dialog.
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/hooks/useGeoLocation.ts` | Create | IP geolocation detection hook |
-| `src/components/onboarding/RegionSetupDialog.tsx` | Create | First-login region selection modal |
-| `src/pages/admin/Dashboard.tsx` | Modify | Show dialog for new companies |
-| `src/components/settings/CompanyInformationCard.tsx` | Modify | Allow editing until first invite |
-| Database migration | Create | Add `region_setup_complete` to companies |
+| New migration file | Create | Add INSERT policy for company admins |
+| `src/components/onboarding/RegionSetupDialog.tsx` | Modify | Redesign UX with "Change" button flow |
 
 ---
 
-## Edge Cases Handled
+## Technical Details
 
-| Scenario | Behavior |
-|----------|----------|
-| IP detection fails | Default to dropdown selection, pre-select GLOBAL |
-| VPN user (wrong country) | Can manually change in dialog before confirming |
-| User closes dialog without confirming | Dialog reappears on next dashboard visit |
-| User wants to change region later | Contact support (existing flow) |
-| Platform admin overrides | Platform admin can always change via CompanyDetailsCard |
+### RegionSetupDialog Changes
+
+1. Add `isChanging` state to control dropdown visibility
+2. Remove always-visible dropdown
+3. Add "Change" button that sets `isChanging = true`
+4. When changing, show Select dropdown
+5. Pre-select the detected region by default (already working via useEffect)
+
+```tsx
+// Key state changes
+const [isChanging, setIsChanging] = useState(false);
+
+// Show either the region card with Change button, or the dropdown
+{!isChanging ? (
+  <RegionCard 
+    regionCode={selectedRegion} 
+    onChangeClick={() => setIsChanging(true)} 
+  />
+) : (
+  <Select value={selectedRegion} onValueChange={(val) => {
+    setSelectedRegion(val);
+    setIsChanging(false);
+  }}>
+    ...
+  </Select>
+)}
+```
 
 ---
 
 ## Summary
 
-This approach provides:
-1. **Automatic detection** - Reduces friction for new signups
-2. **User confirmation** - Prevents wrong region assignments
-3. **Graceful fallback** - Works even if IP detection fails
-4. **Clean UX** - Happens once on first login, then stays out of the way
-5. **Future flexibility** - Can add more regions via support
-
+| Issue | Fix |
+|-------|-----|
+| "Failed to save region settings" | Add RLS INSERT policy for company admins during setup |
+| Dropdown always visible | Hide by default, show on "Change" click |
+| Cleaner UX | Single region card with flag, name, currency, and Change button |
