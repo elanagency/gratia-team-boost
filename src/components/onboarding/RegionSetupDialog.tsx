@@ -38,6 +38,7 @@ export const RegionSetupDialog = ({ open, companyId, onComplete }: RegionSetupDi
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [includeGlobal, setIncludeGlobal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChanging, setIsChanging] = useState(false);
 
   // Set detected region once geolocation completes
   useEffect(() => {
@@ -97,6 +98,11 @@ export const RegionSetupDialog = ({ open, companyId, onComplete }: RegionSetupDi
     }
   };
 
+  const handleRegionChange = (value: string) => {
+    setSelectedRegion(value);
+    setIsChanging(false);
+  };
+
   const isLoading = geoLoading || regionsLoading;
 
   return (
@@ -119,55 +125,75 @@ export const RegionSetupDialog = ({ open, companyId, onComplete }: RegionSetupDi
             </div>
           ) : (
             <>
-              {/* Detected Region Display */}
-              {isDirectlySupported && (
+              {/* Detected Region Message */}
+              {isDirectlySupported && selectedRegion && !isChanging && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" />
-                  <span>We detected you're in <strong>{getRegionName(detectedRegion)}</strong></span>
+                  <span>We detected you're in:</span>
                 </div>
               )}
 
-              {/* Region Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="region">Your primary region</Label>
-                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                  <SelectTrigger id="region" className="w-full">
-                    <SelectValue placeholder="Select your region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {primaryRegions.map((region) => (
-                      <SelectItem key={region.region_code} value={region.region_code}>
-                        <div className="flex items-center gap-2">
-                          <span>{getRegionFlag(region.region_code)}</span>
-                          <span>{region.name}</span>
-                          <span className="text-muted-foreground">({region.currency_code})</span>
-                          {region.region_code === detectedRegion && isDirectlySupported && (
-                            <Check className="h-4 w-4 text-primary ml-auto" />
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  This determines which gift cards your team can redeem.
-                </p>
-              </div>
-
-              {/* Selected Region Card */}
-              {selectedRegion && (
+              {/* Region Card with Change Button (default view) */}
+              {selectedRegion && !isChanging && (
                 <div className="rounded-lg border bg-muted/50 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{getRegionFlag(selectedRegion)}</span>
-                    <div>
-                      <p className="font-medium">{getRegionName(selectedRegion)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Currency: {getRegionCurrency(selectedRegion)}
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{getRegionFlag(selectedRegion)}</span>
+                      <div>
+                        <p className="font-medium">{getRegionName(selectedRegion)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Currency: {getRegionCurrency(selectedRegion)}
+                        </p>
+                      </div>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsChanging(true)}
+                    >
+                      Change
+                    </Button>
                   </div>
                 </div>
               )}
+
+              {/* Region Dropdown (shown when changing or no region detected) */}
+              {(isChanging || !selectedRegion) && (
+                <div className="space-y-2">
+                  <Label htmlFor="region">Select your region</Label>
+                  <Select value={selectedRegion} onValueChange={handleRegionChange}>
+                    <SelectTrigger id="region" className="w-full">
+                      <SelectValue placeholder="Select your region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {primaryRegions.map((region) => (
+                        <SelectItem key={region.region_code} value={region.region_code}>
+                          <div className="flex items-center gap-2">
+                            <span>{getRegionFlag(region.region_code)}</span>
+                            <span>{region.name}</span>
+                            <span className="text-muted-foreground">({region.currency_code})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isChanging && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsChanging(false)}
+                      className="mt-2"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Help text about region */}
+              <p className="text-xs text-muted-foreground">
+                This determines which gift cards your team can redeem.
+              </p>
 
               {/* Global Gift Cards Option */}
               <div className="flex items-start space-x-3 rounded-lg border p-4">
