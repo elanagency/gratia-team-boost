@@ -211,25 +211,43 @@ serve(async (req) => {
       }
 
       case 'GET_BRANDS': {
-        // Fetch brands for a specific region
-        const url = `${apiBase}/brands?region=${region}`;
-        console.log(`Fetching brands from: ${url}`);
-        
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Giftbit brands error:', errorText);
-          throw new Error(`Failed to fetch brands: ${response.status}`);
+        // Fetch ALL brands for a specific region with pagination
+        let allBrands: GiftbitBrand[] = [];
+        let offset = 0;
+        const limit = 100;
+        let hasMore = true;
+
+        console.log(`Fetching all brands for region ${region} with pagination...`);
+
+        while (hasMore) {
+          const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
+          console.log(`Fetching brands page: region=${region}, offset=${offset}, limit=${limit}`);
+          
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Giftbit brands error:', errorText);
+            throw new Error(`Failed to fetch brands: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          const brands: GiftbitBrand[] = data.brands || [];
+          const totalCount = data.total_count || 0;
+          
+          allBrands = allBrands.concat(brands);
+          offset += limit;
+          hasMore = offset < totalCount;
+          
+          console.log(`Page fetched: ${brands.length} brands, total so far: ${allBrands.length}/${totalCount}`);
         }
-        
-        const data = await response.json();
-        console.log(`Fetched ${data.brands?.length || 0} brands for region ${region}`);
+
+        console.log(`Fetched all ${allBrands.length} brands for region ${region}`);
         
         return new Response(
-          JSON.stringify({ success: true, brands: data.brands || [] }),
+          JSON.stringify({ success: true, brands: allBrands, total: allBrands.length }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -289,29 +307,45 @@ serve(async (req) => {
       }
 
       case 'SYNC_BRANDS': {
-        // Sync brands for a specific region from Giftbit API to database
-        const url = `${apiBase}/brands?region=${region}`;
-        console.log(`Syncing brands from: ${url}`);
-        
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Giftbit sync error:', errorText);
-          throw new Error(`Failed to fetch brands: ${response.status}`);
+        // Sync ALL brands for a specific region from Giftbit API to database with pagination
+        let allBrands: GiftbitBrand[] = [];
+        let offset = 0;
+        const limit = 100;
+        let hasMore = true;
+
+        console.log(`Starting full brand sync for region ${region} with pagination...`);
+
+        while (hasMore) {
+          const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
+          console.log(`Fetching brands page: region=${region}, offset=${offset}, limit=${limit}`);
+          
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Giftbit sync error:', errorText);
+            throw new Error(`Failed to fetch brands: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          const brands: GiftbitBrand[] = data.brands || [];
+          const totalCount = data.total_count || 0;
+          
+          allBrands = allBrands.concat(brands);
+          offset += limit;
+          hasMore = offset < totalCount;
+          
+          console.log(`Page fetched: ${brands.length} brands, total so far: ${allBrands.length}/${totalCount}`);
         }
-        
-        const data = await response.json();
-        const brands: GiftbitBrand[] = data.brands || [];
-        
-        console.log(`Syncing ${brands.length} brands for region ${region}`);
+
+        console.log(`Syncing ${allBrands.length} total brands for region ${region}`);
         
         let syncedCount = 0;
         let errorCount = 0;
         
-        for (const brand of brands) {
+        for (const brand of allBrands) {
           const { error } = await supabase
             .from('giftbit_brands')
             .upsert({
@@ -347,7 +381,7 @@ serve(async (req) => {
             success: true, 
             synced: syncedCount, 
             errors: errorCount,
-            total: brands.length 
+            total: allBrands.length 
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
