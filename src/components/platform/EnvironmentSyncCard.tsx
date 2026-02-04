@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RefreshCw, TestTube, Globe, Clock, Check, X } from "lucide-react";
+import { RefreshCw, TestTube, Globe, Clock, Check, X, MapPin } from "lucide-react";
 import { useSyncGiftCards } from "@/hooks/useSyncGiftCards";
 import { useAvailableRegions } from "@/hooks/useAvailableRegions";
+import { useSyncRegions } from "@/hooks/useSyncRegions";
 import { format } from "date-fns";
 import { useState } from "react";
 import { getRegionFlag, getRegionName } from "@/lib/regionConstants";
@@ -37,8 +38,10 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
     isLoading
   } = useSyncGiftCards(environment);
 
-  const { regions } = useAvailableRegions(environment);
+  const { regions, refetch: refetchRegions } = useAvailableRegions(environment);
+  const { syncRegions, isSyncing: isSyncingRegions } = useSyncRegions(environment);
   const displayRegions = regions.length > 0 ? regions : STATIC_REGIONS;
+  const regionsNeedSync = regions.length <= 1;
 
   // Get brand counts per region
   const giftbitEnv = environment === 'live' ? 'production' : 'testbed';
@@ -177,18 +180,29 @@ export const EnvironmentSyncCard = ({ environment }: EnvironmentSyncCardProps) =
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={handleSync}
-            disabled={isLoading || selectedRegions.length === 0}
+            disabled={isLoading || isSyncingRegions || selectedRegions.length === 0}
             size="sm"
             variant="default"
             className="flex-1 sm:min-w-0"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             {isLoading ? 'Syncing...' : `Sync ${selectedRegions.length} Region${selectedRegions.length !== 1 ? 's' : ''}`}
           </Button>
           
           <Button
+            onClick={() => syncRegions()}
+            disabled={isLoading || isSyncingRegions}
+            size="sm"
+            variant={regionsNeedSync ? "secondary" : "outline"}
+            className="sm:w-auto"
+          >
+            <MapPin className={`mr-2 h-4 w-4 ${isSyncingRegions ? 'animate-pulse' : ''}`} />
+            {isSyncingRegions ? 'Syncing...' : regionsNeedSync ? 'Sync Regions' : 'Refresh Regions'}
+          </Button>
+          
+          <Button
             onClick={handleTest}
-            disabled={isLoading}
+            disabled={isLoading || isSyncingRegions}
             size="sm"
             variant="outline"
             className="sm:w-auto"
