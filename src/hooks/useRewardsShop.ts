@@ -15,16 +15,21 @@ export interface GiftCard {
   price: number;
   price_is_variable: boolean;
   created_at?: string;
+  min_price_in_cents?: number;
+  max_price_in_cents?: number;
+  currency_code?: string;
 }
 
 interface RewardsShopResponse {
   success: boolean;
   data: {
     giftCards: GiftCard[];
-    exchangeRate: string;
+    exchangeRate: number;
     userContext: {
       companyId: string;
       environment: 'test' | 'live';
+      region?: string;
+      provider?: 'goody' | 'giftbit';
     };
   };
   error?: string;
@@ -59,7 +64,7 @@ export const useRewardsShop = () => {
 
   return {
     giftCards: data?.giftCards || [],
-    exchangeRate: data?.exchangeRate || '0.03',
+    exchangeRate: String(data?.exchangeRate || 0.05),
     userContext: data?.userContext,
     isLoading,
     error

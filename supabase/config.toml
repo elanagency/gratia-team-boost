@@ -1,4 +1,3 @@
-
 project_id = "kbjcjtycmfdjfnduxiud"
 
 [api]
@@ -202,3 +201,9 @@ verify_jwt = false
 
 [functions.send-teams-notification]
 verify_jwt = false
+
+[functions.giftbit-brand-service]
+verify_jwt = true
+
+[functions.giftbit-redemption-service]
+verify_jwt = true
