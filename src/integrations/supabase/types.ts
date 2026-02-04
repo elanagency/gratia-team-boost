@@ -194,6 +194,99 @@ export type Database = {
         }
         Relationships: []
       }
+      giftbit_brands: {
+        Row: {
+          allowed_prices_in_cents: number[] | null
+          brand_code: string
+          brand_data: Json | null
+          created_at: string
+          currency_code: string | null
+          description: string | null
+          disclaimer: string | null
+          environment: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          last_synced_at: string | null
+          max_price_in_cents: number | null
+          min_price_in_cents: number | null
+          name: string
+          price_is_variable: boolean | null
+          region_code: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_prices_in_cents?: number[] | null
+          brand_code: string
+          brand_data?: Json | null
+          created_at?: string
+          currency_code?: string | null
+          description?: string | null
+          disclaimer?: string | null
+          environment?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          max_price_in_cents?: number | null
+          min_price_in_cents?: number | null
+          name: string
+          price_is_variable?: boolean | null
+          region_code: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_prices_in_cents?: number[] | null
+          brand_code?: string
+          brand_data?: Json | null
+          created_at?: string
+          currency_code?: string | null
+          description?: string | null
+          disclaimer?: string | null
+          environment?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          max_price_in_cents?: number | null
+          min_price_in_cents?: number | null
+          name?: string
+          price_is_variable?: boolean | null
+          region_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      giftbit_regions: {
+        Row: {
+          created_at: string
+          currency_code: string | null
+          environment: string
+          id: string
+          is_active: boolean | null
+          name: string
+          region_code: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          region_code: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          region_code?: string
+        }
+        Relationships: []
+      }
       goody_gift_cards: {
         Row: {
           brand_id: string | null
@@ -579,11 +672,15 @@ export type Database = {
           company_id: string
           created_at: string
           dollar_amount: number | null
+          giftbit_claim_link: string | null
+          giftbit_gift_id: string | null
+          giftbit_order_id: string | null
           goody_order_batch_id: string | null
           goody_order_id: string | null
           id: string
           individual_gift_link: string | null
           points_spent: number
+          provider: string | null
           redemption_date: string
           reward_id: string
           reward_name: string
@@ -596,11 +693,15 @@ export type Database = {
           company_id: string
           created_at?: string
           dollar_amount?: number | null
+          giftbit_claim_link?: string | null
+          giftbit_gift_id?: string | null
+          giftbit_order_id?: string | null
           goody_order_batch_id?: string | null
           goody_order_id?: string | null
           id?: string
           individual_gift_link?: string | null
           points_spent: number
+          provider?: string | null
           redemption_date?: string
           reward_id: string
           reward_name: string
@@ -613,11 +714,15 @@ export type Database = {
           company_id?: string
           created_at?: string
           dollar_amount?: number | null
+          giftbit_claim_link?: string | null
+          giftbit_gift_id?: string | null
+          giftbit_order_id?: string | null
           goody_order_batch_id?: string | null
           goody_order_id?: string | null
           id?: string
           individual_gift_link?: string | null
           points_spent?: number
+          provider?: string | null
           redemption_date?: string
           reward_id?: string
           reward_name?: string

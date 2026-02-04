@@ -41,10 +41,11 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
     setIsProcessing(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('goody-redemption-service', {
+      // Use Giftbit redemption service
+      const { data, error } = await supabase.functions.invoke('giftbit-redemption-service', {
         body: {
-          rewardId: reward.external_id,
-          rewardName: reward.name,
+          brandCode: reward.external_id,
+          brandName: reward.name,
           dollarAmount: dollarAmount,
           recipientEmail: recipientEmail,
           recipientFirstName: recipientFirstName,
@@ -57,14 +58,12 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
       }
 
       if (data?.success) {
-        const pointsSpent = Math.ceil(dollarAmount / parseFloat(exchangeRate));
-        
         // Call success callback if provided
         if (onRedemptionSuccess) {
           onRedemptionSuccess({
             brandName: reward.name,
             dollarAmount: dollarAmount,
-            pointsSpent: pointsSpent,
+            pointsSpent: data.pointsSpent,
             giftLink: data.giftLink
           });
         }
