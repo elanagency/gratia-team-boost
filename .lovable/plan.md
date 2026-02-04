@@ -1,272 +1,107 @@
 
-# Migrate Gift Card System from Goody to Giftbit
 
-## Overview
+# Fix Giftbit Redemption API Call
 
-This plan migrates the rewards shop from the Goody API to the Giftbit API, implementing:
-1. **Testbed environment first** (as requested)
-2. **Geolocation-based catalog filtering** for Australia
+## Problem Identified
 
----
+The Giftbit `/direct_links` API is returning a 422 error because we're using the wrong parameter name:
 
-## Phase 1: Database Schema Changes
-
-### 1.1 Create `giftbit_brands` table
-
-New table to store Giftbit brand catalog:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | uuid | Primary key |
-| `brand_code` | text | Giftbit brand identifier (e.g., "amazonau") |
-| `name` | text | Brand display name |
-| `description` | text | Brand description |
-| `disclaimer` | text | Legal disclaimer |
-| `image_url` | text | Brand logo/image |
-| `min_price_in_cents` | integer | Minimum allowed price |
-| `max_price_in_cents` | integer | Maximum allowed price |
-| `allowed_prices_in_cents` | integer[] | Fixed price options (if not variable) |
-| `price_is_variable` | boolean | Whether user can choose amount |
-| `currency_code` | text | Currency (e.g., "AUD") |
-| `region_code` | text | Region filter (e.g., "AU") |
-| `environment` | text | "testbed" or "production" |
-| `is_active` | boolean | Whether to show in shop |
-| `last_synced_at` | timestamp | Last API sync time |
-| `brand_data` | jsonb | Raw API response for reference |
-
-### 1.2 Create `giftbit_regions` table
-
-Store available regions for filtering:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | uuid | Primary key |
-| `region_code` | text | Region code (e.g., "AU") |
-| `name` | text | Display name (e.g., "Australia") |
-| `currency_code` | text | Default currency |
-| `environment` | text | "testbed" or "production" |
-
-### 1.3 Update `redemptions` table
-
-Add Giftbit-specific columns alongside existing Goody columns (for migration period):
-
-| New Column | Type | Description |
-|------------|------|-------------|
-| `giftbit_gift_id` | text | Giftbit gift UUID |
-| `giftbit_order_id` | text | Giftbit order reference |
-| `giftbit_claim_link` | text | Direct claim URL |
-| `provider` | text | "goody" or "giftbit" |
-
----
-
-## Phase 2: Edge Functions
-
-### 2.1 Create `giftbit-brand-service`
-
-Handles catalog synchronization from Giftbit API:
-
-**Endpoints:**
-- `GET_BRANDS` - Fetch all brands for a region
-- `GET_REGIONS` - Fetch available regions
-- `SYNC` - Full sync of brands for environment
-
-**Key Logic:**
-```text
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Admin Trigger  │ ──▶ │  Giftbit API     │ ──▶ │  giftbit_brands │
-│  (Sync Catalog) │     │  GET /brands     │     │  (Database)     │
-└─────────────────┘     │  ?region=AU      │     └─────────────────┘
-                        └──────────────────┘
+**Error message:**
+```
+Invalid request parameters: Property [region]: One (and only one) of 
+either region or brand_codes must be provided
 ```
 
-**API Calls:**
-- `GET /papi/v1/regions` - List available regions
-- `GET /papi/v1/brands?region=AU` - Get Australian brands
+The API documentation clearly states:
+> Required parameters for the API include `price_in_cents` and `brand_codes` (or `region` for Full Catalog rewards).
 
-### 2.2 Create `giftbit-redemption-service`
+## Root Cause
 
-Handles reward redemptions (synchronous):
+In `supabase/functions/giftbit-redemption-service/index.ts`, line 117:
 
-**Flow:**
-```text
-┌──────────┐    ┌───────────────────┐    ┌─────────────────┐
-│  User    │ ──▶│ giftbit-redemption│ ──▶│ Giftbit API     │
-│  Redeems │    │ -service          │    │ POST /direct_   │
-└──────────┘    └───────────────────┘    │ links           │
-                         │               └─────────────────┘
-                         ▼                        │
-                 ┌───────────────┐               │
-                 │ Deduct Points │               │
-                 │ Create Record │◀──────────────┘
-                 │ Return Link   │  (Immediate response!)
-                 └───────────────┘
-```
-
-**Key Difference from Goody:**
-- Giftbit returns the `claim_link` **immediately** in the API response
-- No webhook needed - simpler, faster user experience
-- Status can be "completed" right away
-
-**API Call:**
-```
-POST /papi/v1/direct_links
-{
-  "brand_code": "amazonau",
-  "price_in_cents": 2500,
-  "id": "unique-idempotency-key",
-  "expiry": "2027-12-31"
-}
-```
-
-**Response includes:**
-```json
-{
-  "direct_links": [{
-    "status": "ACTIVE",
-    "link_url": "https://giftbit.com/claim/..."
-  }]
-}
-```
-
-### 2.3 Update `get-rewards-shop`
-
-Modify to:
-1. Query `giftbit_brands` instead of `goody_gift_cards`
-2. Add IP geolocation detection
-3. Filter by region based on user location
-
-**Geolocation Approach:**
-- Use Cloudflare/Vercel headers (`CF-IPCountry`, `X-Vercel-IP-Country`) 
-- Or call a free IP geolocation service
-- Default to Australia (`AU`) for the first customer
-
----
-
-## Phase 3: Secrets Configuration
-
-### Required Secrets
-
-| Secret Name | Environment | Description |
-|-------------|-------------|-------------|
-| `GIFTBIT_API_KEY_TESTBED` | Testbed | From testbed.giftbit.com |
-| `GIFTBIT_API_KEY` | Production | From www.giftbit.com (when ready) |
-
----
-
-## Phase 4: Frontend Updates
-
-### 4.1 Update `useRewardsShop.ts`
-
-- Keep existing interface (`GiftCard`)
-- Update to handle new response format
-- Add region awareness
-
-### 4.2 Update `GiftCardModal.tsx`
-
-Change redemption service call:
 ```typescript
-// Before
-await supabase.functions.invoke('goody-redemption-service', {...});
-
-// After
-await supabase.functions.invoke('giftbit-redemption-service', {...});
+// Current (WRONG)
+const giftbitPayload = {
+  brand_code: brandCode,  // ← Singular, not recognized by API
+  price_in_cents: Math.round(dollarAmount * 100),
+  id: idempotencyKey,
+  expiry: expiry
+};
 ```
 
-### 4.3 Update Admin Catalog Components
+## The Fix
 
-- Update sync functions to call `giftbit-brand-service`
-- Add region selector in admin UI
-- Show region/country for each brand
+Change `brand_code` to `brand_codes` as an array:
 
----
+```typescript
+// Fixed (CORRECT)
+const giftbitPayload = {
+  brand_codes: [brandCode],  // ← Array format as required by API
+  price_in_cents: Math.round(dollarAmount * 100),
+  id: idempotencyKey,
+  expiry: expiry
+};
+```
 
-## Phase 5: Migration Strategy
+## Files to Modify
 
-### 5.1 Parallel Running (Recommended)
+| File | Change |
+|------|--------|
+| `supabase/functions/giftbit-redemption-service/index.ts` | Change `brand_code: brandCode` to `brand_codes: [brandCode]` |
 
-1. Keep Goody functions intact during development
-2. Create new Giftbit functions alongside
-3. Add feature flag or environment check to switch
-4. Test thoroughly in Testbed
-5. Switch to Giftbit when ready
+## What's Already Set Up (No Changes Needed)
 
-### 5.2 Data Migration
+| Component | Status |
+|-----------|--------|
+| `GIFTBIT_API_KEY_TESTBED` secret | Configured |
+| `giftbit_brands` table | 15 Australian brands synced |
+| `giftbit_regions` table | AU region exists |
+| `redemptions` table with Giftbit columns | Ready |
+| Frontend modal and hooks | Working correctly |
+| `get-rewards-shop` edge function | Returning Giftbit brands |
 
-- Existing `redemptions` with `goody_*` fields remain unchanged
-- New redemptions use `giftbit_*` fields
-- `provider` column indicates which system was used
+## After the Fix
+
+1. Deploy the updated edge function
+2. Retry the redemption with "Auchan" or any other brand
+3. The claim link should be returned immediately
+4. Points will be deducted and success dialog will appear
 
 ---
 
 ## Technical Details
 
-### Giftbit API Authentication
+### Giftbit Direct Links API Requirements
 
-```
-Authorization: Bearer {API_KEY}
-```
+According to the official documentation:
 
-### Key API Endpoints
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `brand_codes` | array of strings | Yes (OR use `region`) |
+| `price_in_cents` | integer | Yes |
+| `id` | string | Yes (idempotency key) |
+| `expiry` | string (YYYY-MM-DD) | Optional |
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/papi/v1/ping` | GET | Test connectivity |
-| `/papi/v1/regions` | GET | List available regions |
-| `/papi/v1/brands` | GET | List brands (with region filter) |
-| `/papi/v1/brands/{code}` | GET | Get single brand details |
-| `/papi/v1/direct_links` | POST | Create direct link reward |
-| `/papi/v1/gifts/{id}` | GET | Check gift status |
-| `/papi/v1/funds` | GET | Check account balance |
+### Example Valid Payload
 
-### Environment URLs
-
-| Environment | Base URL | Purpose |
-|-------------|----------|---------|
-| Testbed | `https://api-testbed.giftbit.com/papi/v1` | Testing (no real cards) |
-| Production | `https://api.giftbit.com/papi/v1` | Live rewards |
-
-### Geolocation Implementation
-
-```typescript
-// In Edge Function
-function getRegionFromRequest(req: Request): string {
-  // Try Cloudflare header first
-  const cfCountry = req.headers.get('CF-IPCountry');
-  if (cfCountry) return cfCountry;
-  
-  // Fallback to default (Australia for first customer)
-  return 'AU';
+```json
+{
+  "brand_codes": ["auchanfr"],
+  "price_in_cents": 1500,
+  "id": "redemption-unique-id-12345",
+  "expiry": "2027-02-04"
 }
 ```
 
----
+### Expected Response
 
-## Implementation Order
+```json
+{
+  "direct_links": [{
+    "status": "ACTIVE",
+    "link_url": "https://testbed.giftbit.com/claim/...",
+    "uuid": "gift-uuid-here"
+  }]
+}
+```
 
-1. **Add Giftbit Testbed API key** as secret
-2. **Create database migrations** (new tables)
-3. **Create `giftbit-brand-service`** edge function
-4. **Sync Australian brands** from Testbed
-5. **Create `giftbit-redemption-service`** edge function
-6. **Update `get-rewards-shop`** to use new tables
-7. **Update frontend** redemption calls
-8. **Test end-to-end** in Testbed
-9. **Add production key** when ready
-10. **Go live** with production Giftbit
-
----
-
-## Files to Create/Modify
-
-### New Files
-- `supabase/functions/giftbit-brand-service/index.ts`
-- `supabase/functions/giftbit-redemption-service/index.ts`
-- Migration: Create `giftbit_brands` table
-- Migration: Create `giftbit_regions` table
-- Migration: Update `redemptions` table
-
-### Modified Files
-- `supabase/functions/get-rewards-shop/index.ts`
-- `src/components/team/GiftCardModal.tsx`
-- `src/hooks/useRewardsShop.ts`
-- `src/integrations/supabase/types.ts` (auto-generated)
