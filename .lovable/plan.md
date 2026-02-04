@@ -1,90 +1,165 @@
 
-# Enable Production Giftbit Integration
+# Fix Giftbit Pagination and Complete Brand Catalog Sync
 
-## Overview
+## Problem Summary
 
-This plan adds the production Giftbit API key and ensures the entire production gift card flow works correctly - from region selection during onboarding to gift card redemption.
+You correctly identified that the Giftbit API call has a **pagination limit**. The API returns a **maximum of 20 brands per page by default**, but Australia has **108 brands** available. This explains why:
 
----
+- **Total Brands shows 0 or 20** instead of 108+
+- **Regions shows 0** when no regions have been synced with their complete catalogs
+- Team members only see a fraction of available gift cards
 
-## Step 1: Add the Production API Key Secret
+## Root Cause Analysis
 
-I will add the `GIFTBIT_API_KEY` secret so you can paste your production key. Once approved, a secure input box will appear for you to enter the key.
+Looking at the current edge function code (`giftbit-brand-service/index.ts`, line 293):
 
-**Secret Details:**
-| Secret Name | Purpose | Used By |
-|-------------|---------|---------|
-| `GIFTBIT_API_KEY` | Production Giftbit API access | `giftbit-brand-service`, `giftbit-redemption-service` |
-
----
-
-## Step 2: Verify Edge Functions Configuration
-
-The edge functions are already correctly configured to use the production key:
-
-**`giftbit-brand-service/index.ts` (line 167-169):**
 ```typescript
-const apiKey = environment === 'production' 
-  ? Deno.env.get('GIFTBIT_API_KEY')      // ← Production key
-  : Deno.env.get('GIFTBIT_API_KEY_TESTBED');
+const url = `${apiBase}/brands?region=${region}`;
 ```
 
-**`giftbit-redemption-service/index.ts` (line 77-79):**
-```typescript
-const apiKey = environment === 'production' 
-  ? Deno.env.get('GIFTBIT_API_KEY')      // ← Production key
-  : Deno.env.get('GIFTBIT_API_KEY_TESTBED');
+There is **no pagination handling**. The Giftbit API response includes:
+```json
+{
+  "limit": 20,      // ← Default page size
+  "offset": 0,      // ← Starting position
+  "total_count": 108 // ← Total available brands
+}
 ```
 
-No code changes needed - the logic is already in place.
+But the code ignores these pagination fields and only processes the first 20 results.
 
 ---
 
-## Step 3: Sync Production Regions
+## Solution
 
-After the secret is added, sync regions for the production environment:
+### Step 1: Update Edge Function to Handle Pagination
 
-1. Navigate to **Platform Admin > Gift Cards Catalog**
-2. Select the **Production Catalog** tab
-3. Click **Sync Regions** in the Environment Sync Card
+Modify `SYNC_BRANDS` action in `giftbit-brand-service/index.ts` to:
+1. Make initial API call to get `total_count`
+2. Loop through all pages using `offset` parameter
+3. Aggregate all brands before inserting into database
 
-This will populate `giftbit_regions` with `environment = 'production'` entries, fixing the empty dropdown in the Region Setup Dialog.
+**Updated API call logic:**
+```typescript
+// Fetch ALL brands with pagination
+let allBrands: GiftbitBrand[] = [];
+let offset = 0;
+const limit = 100; // Request more per page for efficiency
+let totalCount = 0;
 
----
+do {
+  const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
+  console.log(`Fetching brands page: offset=${offset}, limit=${limit}`);
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  });
+  
+  const data = await response.json();
+  const brands = data.brands || [];
+  
+  allBrands = allBrands.concat(brands);
+  totalCount = data.total_count || brands.length;
+  offset += limit;
+  
+} while (offset < totalCount);
 
-## Step 4: Test the Production Flow
+console.log(`Fetched all ${allBrands.length} brands (total_count: ${totalCount})`);
+```
 
-| Test | Action | Expected Result |
-|------|--------|-----------------|
-| Region Setup | New company signup | Dropdown shows production regions (AU, US, GB, etc.) |
-| Region Sync | Platform Admin syncs brands | Brands appear in Production Catalog |
-| Redemption | Team member redeems gift card | Real gift card link generated via production API |
+### Step 2: Update GET_BRANDS Action Similarly
+
+Apply the same pagination logic to `GET_BRANDS` action for consistency.
 
 ---
 
 ## Files to Modify
 
-| File | Action | Description |
-|------|--------|-------------|
-| None | — | No code changes needed, configuration only |
+| File | Changes |
+|------|---------|
+| `supabase/functions/giftbit-brand-service/index.ts` | Add pagination loop for `SYNC_BRANDS` and `GET_BRANDS` actions |
 
 ---
 
-## Implementation Steps
+## Implementation Details
 
-1. **Add Secret** - I'll invoke the secret tool to show you the input box for `GIFTBIT_API_KEY`
-2. **You paste the key** - Enter your production Giftbit API key
-3. **Sync regions** - Use Platform Admin to sync production regions
-4. **Test** - Verify the onboarding dropdown and redemption flow work
+### Before (Current - Only 20 brands):
+```typescript
+case 'SYNC_BRANDS': {
+  const url = `${apiBase}/brands?region=${region}`;
+  const response = await fetch(url, {...});
+  const data = await response.json();
+  const brands = data.brands || [];  // Only first 20!
+  // ... process brands
+}
+```
+
+### After (All brands with pagination):
+```typescript
+case 'SYNC_BRANDS': {
+  // Fetch ALL brands with pagination
+  let allBrands: GiftbitBrand[] = [];
+  let offset = 0;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
+    console.log(`Fetching brands: region=${region}, offset=${offset}`);
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch brands: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const brands: GiftbitBrand[] = data.brands || [];
+    const totalCount = data.total_count || 0;
+    
+    allBrands = allBrands.concat(brands);
+    offset += limit;
+    hasMore = offset < totalCount;
+    
+    console.log(`Page fetched: ${brands.length} brands, total so far: ${allBrands.length}/${totalCount}`);
+  }
+
+  console.log(`Syncing ${allBrands.length} total brands for region ${region}`);
+  
+  // ... upsert allBrands to database
+}
+```
 
 ---
 
-## Summary
+## Expected Results After Fix
 
-| Component | Status | After This Plan |
-|-----------|--------|-----------------|
-| `GIFTBIT_API_KEY_TESTBED` | ✅ Configured | No change |
-| `GIFTBIT_API_KEY` | ❌ Missing | ✅ Added |
-| Production regions in DB | ❌ Empty | ✅ Synced via Platform Admin |
-| Region Setup Dialog | ❌ Empty dropdown | ✅ Shows production regions |
-| Gift card redemption | ❌ Would fail | ✅ Works with production API |
+| Metric | Before | After |
+|--------|--------|-------|
+| AU Brands | 20 | 108 |
+| US Brands | 20 | All available |
+| Total Brands stat | 60 | 300+ |
+| Regions with brands | 3 | All synced regions |
+
+---
+
+## Post-Implementation Steps
+
+1. **Deploy** the updated edge function
+2. **Re-sync** production brands from Platform Admin:
+   - Navigate to Platform Admin > Gift Cards Catalog
+   - Select Production Catalog tab
+   - Click "Sync Brands" for each region (AU, US, etc.)
+3. **Verify** the stats update to show 108+ for Australia
+4. **Test** team member gift card shop shows full catalog
+
+---
+
+## Technical Notes
+
+- The Giftbit API supports `limit` values up to 100 per request
+- Using `offset` pagination is standard for the Giftbit API
+- No database schema changes required
+- The `get-rewards-shop` edge function will automatically return more brands since it queries from `giftbit_brands` table
