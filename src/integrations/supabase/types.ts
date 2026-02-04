@@ -294,6 +294,7 @@ export type Database = {
           created_at: string
           currency_code: string | null
           environment: string
+          giftbit_region_id: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -304,6 +305,7 @@ export type Database = {
           created_at?: string
           currency_code?: string | null
           environment?: string
+          giftbit_region_id?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -314,6 +316,7 @@ export type Database = {
           created_at?: string
           currency_code?: string | null
           environment?: string
+          giftbit_region_id?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null

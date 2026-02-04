@@ -211,17 +211,33 @@ serve(async (req) => {
       }
 
       case 'GET_BRANDS': {
+        // Look up the Giftbit region ID from the database
+        const { data: regionData, error: regionError } = await supabase
+          .from('giftbit_regions')
+          .select('giftbit_region_id')
+          .eq('region_code', region)
+          .eq('environment', environment)
+          .single();
+
+        if (regionError || !regionData?.giftbit_region_id) {
+          console.error(`Region ${region} not found or missing giftbit_region_id:`, regionError);
+          throw new Error(`Region ${region} not found. Please sync regions first using "Refresh Regions".`);
+        }
+
+        const giftbitRegionId = regionData.giftbit_region_id;
+        console.log(`Resolved region ${region} to Giftbit API region ID: ${giftbitRegionId}`);
+
         // Fetch ALL brands for a specific region with pagination
         let allBrands: GiftbitBrand[] = [];
         let offset = 0;
         const limit = 100;
         let hasMore = true;
 
-        console.log(`Fetching all brands for region ${region} with pagination...`);
+        console.log(`Fetching all brands for region ${region} (ID: ${giftbitRegionId}) with pagination...`);
 
         while (hasMore) {
-          const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
-          console.log(`Fetching brands page: region=${region}, offset=${offset}, limit=${limit}`);
+          const url = `${apiBase}/brands?region=${giftbitRegionId}&limit=${limit}&offset=${offset}`;
+          console.log(`Fetching brands page: region=${region} (ID: ${giftbitRegionId}), offset=${offset}, limit=${limit}`);
           
           const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${apiKey}` }
@@ -277,11 +293,12 @@ serve(async (req) => {
           const regionCode = extractRegionCode(apiRegion.image_url, apiRegion.name);
           const currencyCode = REGION_CURRENCIES[regionCode] || 'USD';
           
-          console.log(`Processing region: ${apiRegion.name} -> ${regionCode} (${currencyCode})`);
+          console.log(`Processing region: ${apiRegion.name} -> ${regionCode} (${currencyCode}), giftbit_region_id: ${apiRegion.id}`);
           
           const { error } = await supabase
             .from('giftbit_regions')
             .upsert({
+              giftbit_region_id: apiRegion.id,  // Store the numeric Giftbit API region ID
               region_code: regionCode,
               name: apiRegion.name,
               image_url: apiRegion.image_url,
@@ -307,17 +324,33 @@ serve(async (req) => {
       }
 
       case 'SYNC_BRANDS': {
+        // Look up the Giftbit region ID from the database
+        const { data: regionData, error: regionError } = await supabase
+          .from('giftbit_regions')
+          .select('giftbit_region_id')
+          .eq('region_code', region)
+          .eq('environment', environment)
+          .single();
+
+        if (regionError || !regionData?.giftbit_region_id) {
+          console.error(`Region ${region} not found or missing giftbit_region_id:`, regionError);
+          throw new Error(`Region ${region} not found. Please sync regions first using "Refresh Regions".`);
+        }
+
+        const giftbitRegionId = regionData.giftbit_region_id;
+        console.log(`Resolved region ${region} to Giftbit API region ID: ${giftbitRegionId}`);
+
         // Sync ALL brands for a specific region from Giftbit API to database with pagination
         let allBrands: GiftbitBrand[] = [];
         let offset = 0;
         const limit = 100;
         let hasMore = true;
 
-        console.log(`Starting full brand sync for region ${region} with pagination...`);
+        console.log(`Starting full brand sync for region ${region} (ID: ${giftbitRegionId}) with pagination...`);
 
         while (hasMore) {
-          const url = `${apiBase}/brands?region=${region}&limit=${limit}&offset=${offset}`;
-          console.log(`Fetching brands page: region=${region}, offset=${offset}, limit=${limit}`);
+          const url = `${apiBase}/brands?region=${giftbitRegionId}&limit=${limit}&offset=${offset}`;
+          console.log(`Fetching brands page: region=${region} (ID: ${giftbitRegionId}), offset=${offset}, limit=${limit}`);
           
           const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${apiKey}` }
