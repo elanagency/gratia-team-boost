@@ -1,90 +1,162 @@
 
+# Add Role Selection for Team Member Onboarding
 
-# Fix Testbed Catalog Sync - Giftbit Sandbox Limitation
+## Overview
 
-## Problem Summary
+This feature adds a "Role" selection dropdown to the team member invitation flow, allowing company admins to assign either "User" or "Admin" roles when inviting new team members. Admin role grants access to Analytics and Settings pages, while User role only has access to the Dashboard and Gift Cards.
 
-When syncing Australia brands on the **Test Catalog**, the sync shows "No brands found" because:
+---
 
-1. **Giftbit's testbed environment is a sandbox with very limited brand availability** - it does NOT have the same 108 brands that production has
-2. The 15 brands currently showing in testbed were synced **before** our region filter fix - they're actually global/random brands incorrectly labeled as Australian (notice "IKEA de", "Boots GB", "Auchan FR" are all non-Australian brands)
+## Current State
 
-The testbed API is correctly returning 0 brands for region-filtered requests because it simply doesn't have region-specific catalogs like production does.
+- **Invite Dialog**: Has Name, Email, and Department fields only
+- **Edit Member Dialog**: Has Name, Email (disabled), and Department fields only
+- **CSV Upload**: Template has Name, Email, Department columns
+- **Role Storage**: The `profiles` table already has an `is_admin` boolean column
+- **Access Control**: Navigation is already filtered based on `isAdmin` in `DashboardTopNavigation.tsx`
 
-## Solution
+---
 
-### Step 1: Clean up incorrect testbed data
+## Implementation Plan
 
-Delete the incorrectly tagged brands that were synced before our fix:
+### 1. Update InviteForm Component
+**File: `src/components/team/InviteForm.tsx`**
 
-```sql
-DELETE FROM giftbit_brands WHERE environment = 'testbed';
+Add a Role selection dropdown between Department and Submit button:
+- Add `role` and `setRole` props to the interface
+- Add a Select dropdown with options: "User" (default) and "Admin"
+- Style consistently with existing form fields
+
+### 2. Update InviteTeamMemberDialog Component
+**File: `src/components/team/InviteTeamMemberDialog.tsx`**
+
+- Add `role` state (default: "user")
+- Pass `role` and `setRole` to InviteForm
+- Update the edge function call to pass `is_admin: role === 'admin'`
+
+### 3. Update EditMemberForm Component
+**File: `src/components/team/EditMemberForm.tsx`**
+
+- Add `role` state initialized from `member.is_admin`
+- Add Role selection dropdown (User/Admin)
+- Update the `updateMember` function call to include `is_admin`
+
+### 4. Update useCompanyMembers Hook
+**File: `src/hooks/useCompanyMembers.ts`**
+
+- Extend `updateMember` function to accept `is_admin` in updateData
+- Update the Supabase query to set `is_admin` field
+
+### 5. Update create-team-member Edge Function
+**File: `supabase/functions/create-team-member/index.ts`**
+
+- Accept `is_admin` boolean parameter in request body (currently only uses `role: 'member'`)
+- Use `is_admin` value when creating the profile
+
+### 6. Update CSV Upload Template & Processing
+**File: `src/components/team/CSVUploadDialog.tsx`**
+
+Update sample CSV to include Role column:
+```csv
+Name,Email,Department,Role
+John Doe,john@example.com,Engineering,user
+Jane Smith,jane@example.com,Marketing,admin
 ```
 
-### Step 2: Improve error messaging in edge function
+Update `CSVMember` interface and parsing logic to include role field.
 
-Update the edge function to provide clearer feedback when a region returns 0 brands, especially for testbed:
+### 7. Update CSVPreviewStep Component
+**File: `src/components/team/csv/CSVPreviewStep.tsx`**
+
+- Add Role column to the preview table
+- Display "Admin" or "User" for each row
+
+### 8. Update CSV Processing Logic
+**File: `src/components/team/CSVUploadDialog.tsx`**
+
+- Pass `is_admin: member.role === 'admin'` to the create-team-member function
+
+---
+
+## Technical Details
+
+### Role Selection UI Component
+
+```text
+┌─────────────────────────────────────┐
+│ Role *                              │
+│ ┌─────────────────────────────────┐ │
+│ │ User                          ▼ │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│  Options:                           │
+│  • User - Standard team member      │
+│  • Admin - Can access Analytics     │
+│            and Settings             │
+└─────────────────────────────────────┘
+```
+
+### Data Flow
+
+| Component | Passes to | Value |
+|-----------|-----------|-------|
+| InviteForm | InviteTeamMemberDialog | `role: 'user' \| 'admin'` |
+| InviteTeamMemberDialog | Edge Function | `is_admin: boolean` |
+| Edge Function | Database | `profiles.is_admin` |
+
+### CSV Format (Updated)
+
+| Column | Required | Values |
+|--------|----------|--------|
+| Name | Yes | Any text |
+| Email | Yes | Valid email |
+| Department | Optional | Any text |
+| Role | Optional | "user" (default), "admin" |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/team/InviteForm.tsx` | Add role prop and Select dropdown |
+| `src/components/team/InviteTeamMemberDialog.tsx` | Add role state, pass to form and edge function |
+| `src/components/team/EditMemberForm.tsx` | Add role dropdown for editing existing members |
+| `src/hooks/useCompanyMembers.ts` | Extend updateMember to accept is_admin |
+| `supabase/functions/create-team-member/index.ts` | Accept and use is_admin parameter |
+| `src/components/team/CSVUploadDialog.tsx` | Update template, parsing, and processing |
+| `src/components/team/csv/CSVPreviewStep.tsx` | Add Role column to preview table |
+
+---
+
+## Access Control Verification
+
+The current access control is already implemented correctly:
 
 ```typescript
-// In SYNC_BRANDS action, after fetching all brands
-if (allBrands.length === 0) {
-  console.log(`No brands available for region ${region} in ${environment} environment`);
-  
-  // For testbed, this is expected - the sandbox has limited availability
-  if (environment === 'testbed') {
-    console.log('Note: Giftbit testbed has limited brand availability compared to production');
+// DashboardTopNavigation.tsx - Lines 30-42
+...(isAdmin ? [
+  {
+    name: "Analytics",
+    icon: BarChart3,
+    path: "/dashboard/analytics"
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    path: "/dashboard/settings"
   }
-}
+] : [])
 ```
 
-### Step 3: Add UI warning for testbed catalog
-
-Show an info message in the Test Catalog UI explaining that the testbed has limited brand availability:
-
-```
-ℹ️ The Giftbit Test environment (testbed) has limited brand availability. 
-   For full catalog testing, use the Production Catalog tab.
-```
+Users with `is_admin: false` will only see the Dashboard menu item, while users with `is_admin: true` will see Dashboard, Analytics, and Settings.
 
 ---
 
-## Technical Changes
+## Expected Behavior
 
-| File | Change |
-|------|--------|
-| Database (migration) | Clean up incorrect testbed brands |
-| `supabase/functions/giftbit-brand-service/index.ts` | Add informative logging for empty region results |
-| `src/components/platform/GiftbitBrandCard.tsx` (or equivalent UI) | Add info banner for testbed limitations |
-
----
-
-## Expected Behavior After Fix
-
-| Environment | Behavior |
-|-------------|----------|
-| **Production** | Syncs all 108+ brands for AU correctly (already working) |
-| **Testbed** | Shows info message explaining limited sandbox availability |
-| **Stats** | Testbed shows accurate 0 brands (not incorrect 15) |
-
----
-
-## Why This Happens
-
-Giftbit's testbed API is a **sandbox environment** meant for:
-- Testing API integration
-- Validating redemption flows
-- Development purposes
-
-It intentionally has a very limited catalog to reduce complexity. The full brand catalogs are only available in the **production API**.
-
----
-
-## Recommendation
-
-For testing the reward shop UI and redemption flow, you have two options:
-
-1. **Use production catalog for real testing** - This gives you the full 108+ brands to work with
-2. **Manually add a few test brands to testbed** - If you need specific test data
-
-The testbed is really only useful for testing API connectivity and redemption flows, not for catalog browsing.
+| User Role | Dashboard | Analytics | Settings | Gift Cards |
+|-----------|:---------:|:---------:|:--------:|:----------:|
+| Admin | ✓ | ✓ | ✓ | ✓ |
+| User | ✓ | ✗ | ✗ | ✓ |
 
