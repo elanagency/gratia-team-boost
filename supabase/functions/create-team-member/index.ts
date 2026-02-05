@@ -94,7 +94,7 @@ serve(async (req: Request) => {
   }
   
   try {
-    const { name, email, department, companyId, role = "member", invitedBy, origin } = await req.json();
+    const { name, email, department, companyId, role = "member", is_admin = false, invitedBy, origin } = await req.json();
     
     // Validate required inputs
     if (!name || !email || !companyId || !invitedBy) {
@@ -109,7 +109,7 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[CREATE-TEAM-MEMBER] Starting with data:", { name, email, companyId, role, origin });
+    console.log("[CREATE-TEAM-MEMBER] Starting with data:", { name, email, companyId, role, is_admin, origin });
 
     // Get the original authorization header to pass it along
     const authHeader = req.headers.get("Authorization");
@@ -331,7 +331,7 @@ serve(async (req: Request) => {
         first_name: firstName,
         last_name: lastName,
         company_id: companyId,
-        is_admin: false,
+        is_admin: is_admin === true, // Use the passed is_admin value
         role: role.toLowerCase(),
         department_id: departmentId,
         department: department || null, // Keep legacy field for backward compatibility

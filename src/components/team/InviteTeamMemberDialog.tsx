@@ -28,6 +28,7 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [department, setDepartment] = useState('');
+  const [role, setRole] = useState<'user' | 'admin'>('user');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { companyId, user } = useAuth();
   const { teamSlots } = useTeamMembers();
@@ -78,6 +79,7 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
           department,
           companyId,
           role: 'member',
+          is_admin: role === 'admin',
           invitedBy: user?.id,
           origin
         }
@@ -109,6 +111,7 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
       setEmail('');
       setName('');
       setDepartment('');
+      setRole('user');
       
       // Show appropriate success message based on email status
       if (data.emailSent) {
@@ -162,6 +165,8 @@ const InviteTeamMemberDialog = ({ onSuccess, open, onOpenChange }: InviteTeamMem
           setName={setName}
           department={department}
           setDepartment={setDepartment}
+          role={role}
+          setRole={setRole}
           isSubmitting={isSubmitting}
           isFirstMember={false}
           onSubmit={handleSubmit}

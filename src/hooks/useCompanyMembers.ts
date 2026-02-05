@@ -176,7 +176,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
     }
   }, [companyId, membersData, includeAdmins]);
 
-  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department?: string | null; department_id?: string | null }) => {
+  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department?: string | null; department_id?: string | null; is_admin?: boolean }) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
 
@@ -185,15 +185,23 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      // Build update object
+      const updatePayload: Record<string, any> = {
+        first_name: firstName,
+        last_name: lastName,
+        department: updateData.department,
+        department_id: updateData.department_id
+      };
+
+      // Only include is_admin if it was explicitly provided
+      if (updateData.is_admin !== undefined) {
+        updatePayload.is_admin = updateData.is_admin;
+      }
+
       // Update profile directly
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          department: updateData.department,
-          department_id: updateData.department_id
-        })
+        .update(updatePayload)
         .eq('id', memberId);
 
       if (profileError) throw profileError;

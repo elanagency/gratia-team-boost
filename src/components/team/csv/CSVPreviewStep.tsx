@@ -7,6 +7,7 @@ interface CSVMember {
   name: string;
   email: string;
   department: string;
+  role: 'user' | 'admin';
 }
 
 interface CSVPreviewStepProps {
@@ -75,6 +76,7 @@ export const CSVPreviewStep = memo(({ parsedMembers, onBack, onStartProcessing }
               <th className="text-left p-2 font-medium">Name</th>
               <th className="text-left p-2 font-medium">Email</th>
               <th className="text-left p-2 font-medium">Department</th>
+              <th className="text-left p-2 font-medium">Role</th>
             </tr>
           </thead>
           <tbody>
@@ -83,6 +85,7 @@ export const CSVPreviewStep = memo(({ parsedMembers, onBack, onStartProcessing }
                 <td className="p-2">{member.name}</td>
                 <td className="p-2">{member.email}</td>
                 <td className="p-2">{member.department || '-'}</td>
+                <td className="p-2 capitalize">{member.role}</td>
               </tr>
             ))}
           </tbody>

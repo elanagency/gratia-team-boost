@@ -5,6 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import NewDepartmentCombobox from "@/components/team/NewDepartmentCombobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface InviteFormProps {
   email: string;
@@ -13,6 +20,8 @@ interface InviteFormProps {
   setName: (name: string) => void;
   department: string;
   setDepartment: (department: string) => void;
+  role: 'user' | 'admin';
+  setRole: (role: 'user' | 'admin') => void;
   isSubmitting: boolean;
   isFirstMember: boolean;
   onSubmit: (e: React.FormEvent) => void;
@@ -26,6 +35,8 @@ const InviteForm = ({
   setName,
   department,
   setDepartment,
+  role,
+  setRole,
   isSubmitting,
   isFirstMember,
   onSubmit,
@@ -72,6 +83,18 @@ const InviteForm = ({
           onChange={setDepartment}
           placeholder="Select or create department"
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="role">Role *</Label>
+        <Select value={role} onValueChange={(value: 'user' | 'admin') => setRole(value)}>
+          <SelectTrigger id="role">
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="user">User - Standard team member</SelectItem>
+            <SelectItem value="admin">Admin - Can access Analytics & Settings</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <Button 
         type="submit" 
