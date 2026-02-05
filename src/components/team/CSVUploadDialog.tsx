@@ -34,6 +34,7 @@ interface CSVMember {
   name: string;
   email: string;
   department: string;
+  role: 'user' | 'admin';
 }
 
 interface ProcessingResult {
@@ -96,10 +97,10 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
 
   const downloadSampleCSV = useCallback(() => {
     const sampleData = [
-      ["Name", "Email", "Department"],
-      ["John Doe", "john@example.com", "Engineering"],
-      ["Jane Smith", "jane@example.com", "Marketing"],
-      ["Mike Johnson", "mike@example.com", "Sales"]
+      ["Name", "Email", "Department", "Role"],
+      ["John Doe", "john@example.com", "Engineering", "user"],
+      ["Jane Smith", "jane@example.com", "Marketing", "admin"],
+      ["Mike Johnson", "mike@example.com", "Sales", "user"]
     ];
     
     const csvContent = sampleData.map(row => row.join(",")).join("\n");
@@ -202,6 +203,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           if (normalized === 'name' || normalized === 'full name' || normalized === 'fullname') return 'name';
           if (normalized === 'email' || normalized === 'email address' || normalized === 'emailaddress') return 'email';
           if (normalized === 'department' || normalized === 'dept') return 'department';
+          if (normalized === 'role' || normalized === 'user role' || normalized === 'userrole') return 'role';
           return normalized;
         },
         complete: (results) => {
@@ -219,10 +221,12 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           // Map raw data to CSVMember format
           const members: CSVMember[] = rawMembers.map(row => {
             console.log('Processing row:', row);
+            const roleValue = (row.role || row.Role || row['user role'] || row['User Role'] || 'user').toString().trim().toLowerCase();
             return {
               name: (row.name || row.Name || row['full name'] || row['Full Name'] || '').toString().trim(),
               email: (row.email || row.Email || row['email address'] || row['Email Address'] || '').toString().trim(),
-              department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim()
+              department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim(),
+              role: roleValue === 'admin' ? 'admin' : 'user'
             };
           });
           
@@ -297,6 +301,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           department: member.department || null,
           companyId: companyId,
           role: "member",
+          is_admin: member.role === 'admin',
           invitedBy: user?.id,
           origin: window.location.origin
         }

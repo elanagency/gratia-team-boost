@@ -4,6 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { type CompanyMember as TeamMember, useTeamMembers } from "@/hooks/useCompanyMembers";
 import NewDepartmentCombobox from "@/components/team/NewDepartmentCombobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditMemberFormProps {
   member: TeamMember;
@@ -19,6 +26,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
   const [name, setName] = useState(member.name);
   const [department, setDepartment] = useState(member.department || "");
   const [departmentId, setDepartmentId] = useState<string | undefined>(member.department_id || undefined);
+  const [role, setRole] = useState<'user' | 'admin'>(member.is_admin ? 'admin' : 'user');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateMember } = useTeamMembers();
 
@@ -31,7 +39,8 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
       await updateMember(member.id, {
         name: name.trim(),
         department: department.trim() || null,
-        department_id: departmentId || null
+        department_id: departmentId || null,
+        is_admin: role === 'admin'
       });
       onSuccess();
     } catch (error) {
@@ -81,6 +90,19 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
           }}
           placeholder="Select or create department"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-role">Role</Label>
+        <Select value={role} onValueChange={(value: 'user' | 'admin') => setRole(value)}>
+          <SelectTrigger id="edit-role">
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="user">User - Standard team member</SelectItem>
+            <SelectItem value="admin">Admin - Can access Analytics & Settings</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="flex gap-2 pt-4">
