@@ -48,6 +48,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
           <TableHead className="text-gray-500">Name</TableHead>
           <TableHead className="text-gray-500">Email</TableHead>
           <TableHead className="text-gray-500">Department</TableHead>
+          <TableHead className="text-gray-500">Role</TableHead>
           <TableHead className="text-gray-500">Status</TableHead>
           <TableHead className="text-gray-500">Actions</TableHead>
         </TableRow>
@@ -61,6 +62,14 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
               </TableCell>
               <TableCell className="text-gray-600">{member.email}</TableCell>
               <TableCell className="text-gray-600">{member.department || 'Not specified'}</TableCell>
+              <TableCell>
+                <Badge 
+                  variant="secondary"
+                  className="bg-muted text-muted-foreground w-fit"
+                >
+                  {member.is_admin ? 'Admin' : 'User'}
+                </Badge>
+              </TableCell>
               <TableCell>
                 {(() => {
                    const status = getUserStatus(member.status);
@@ -144,7 +153,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
               No team members found. Invite your first team member!
             </TableCell>
           </TableRow>
