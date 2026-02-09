@@ -81,9 +81,11 @@ export function useTeamsIntegration() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const code = url.searchParams.get('code');
-    if (code && url.pathname.includes('/settings')) {
+    const state = url.searchParams.get('state');
+    if (code && state === 'teams' && url.pathname.includes('/settings')) {
       // Clean the URL
       url.searchParams.delete('code');
+      url.searchParams.delete('state');
       url.searchParams.delete('session_state');
       window.history.replaceState({}, '', url.toString());
       // Exchange code
