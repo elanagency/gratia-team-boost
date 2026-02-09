@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     const scopes = 'Team.ReadBasic.All Channel.ReadBasic.All ChannelMessage.Send offline_access';
 
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_TEAMS_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scopes)}&response_mode=query`;
+    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_TEAMS_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scopes)}&response_mode=query&state=teams`;
 
     return new Response(
       JSON.stringify({ auth_url: authUrl }),

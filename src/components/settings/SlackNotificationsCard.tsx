@@ -39,6 +39,10 @@ const SlackNotificationsCard = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
+    const state = params.get('state');
+    
+    // Skip if this is a Teams OAuth callback
+    if (state === 'teams') return;
     
     if (code && !isConnecting) {
       setIsConnecting(true);
