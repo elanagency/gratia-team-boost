@@ -205,5 +205,14 @@ verify_jwt = false
 [functions.giftbit-brand-service]
 verify_jwt = true
 
+[functions.teams-oauth-url]
+verify_jwt = false
+
+[functions.teams-oauth-callback]
+verify_jwt = true
+
+[functions.get-teams-channels]
+verify_jwt = true
+
 [functions.giftbit-redemption-service]
 verify_jwt = true
