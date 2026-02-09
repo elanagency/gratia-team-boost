@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getValidAccessToken } from '../_shared/teams-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +20,11 @@ interface TeamsNotificationPayload {
 interface TeamsIntegration {
   id: string;
   company_id: string;
-  webhook_url: string;
+  webhook_url: string | null;
   channel_name: string | null;
+  auth_type: string;
+  team_id: string | null;
+  channel_id: string | null;
   notification_settings: {
     recognition_notifications: boolean;
     point_allocation_alerts: boolean;
@@ -30,7 +34,6 @@ interface TeamsIntegration {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -46,14 +49,13 @@ Deno.serve(async (req) => {
     const { company_id, notification_type } = payload;
 
     if (!company_id) {
-      console.log('Missing company_id');
       return new Response(
         JSON.stringify({ success: false, error: 'Missing company_id' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Fetch Teams integration for the company
+    // Fetch Teams integration
     const { data: integration, error: fetchError } = await supabase
       .from('teams_integrations')
       .select('*')
@@ -61,7 +63,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchError || !integration) {
-      console.log('No Teams integration found for company:', company_id);
       return new Response(
         JSON.stringify({ success: false, error: 'No Teams integration found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -81,177 +82,155 @@ Deno.serve(async (req) => {
 
     const settingKey = notificationTypeMap[notification_type];
     if (settingKey && !settings[settingKey]) {
-      console.log(`Notification type ${notification_type} is disabled`);
       return new Response(
         JSON.stringify({ success: false, error: 'Notification type disabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // Build Microsoft Teams Adaptive Card message
-    const teamsMessage = buildTeamsMessage(payload);
-    console.log('Sending Teams message:', JSON.stringify(teamsMessage));
-
-    let webhookHost: string | undefined;
-    try {
-      webhookHost = new URL(teamsIntegration.webhook_url).host;
-    } catch {
-      webhookHost = undefined;
-    }
-
-    // Send to Microsoft Teams webhook
-    const teamsResponse = await fetch(teamsIntegration.webhook_url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(teamsMessage),
-    });
-
-    const responseText = await teamsResponse.text();
-    const responsePreview = responseText?.slice(0, 1500);
-    console.log(
-      'Teams webhook response:',
-      JSON.stringify({
-        ok: teamsResponse.ok,
-        status: teamsResponse.status,
-        statusText: teamsResponse.statusText,
-        webhookHost,
-        responsePreview,
-      })
-    );
-
-    if (!teamsResponse.ok) {
-      console.error('Teams webhook error:', responsePreview);
+    // Route based on auth_type
+    if (teamsIntegration.auth_type === 'oauth' && teamsIntegration.team_id && teamsIntegration.channel_id) {
+      return await sendViaGraphApi(supabase, teamsIntegration, payload);
+    } else if (teamsIntegration.webhook_url) {
+      return await sendViaWebhook(teamsIntegration, payload);
+    } else {
       return new Response(
-        JSON.stringify({
-          success: false,
-          delivered: false,
-          error: 'Failed to send Teams notification',
-          http_status: teamsResponse.status,
-          response_body_preview: responsePreview,
-          webhook_host: webhookHost,
-          message_preview: teamsMessage,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        JSON.stringify({ success: false, error: 'No valid sending method configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
-
-    console.log('Teams notification sent successfully');
-    return new Response(
-      JSON.stringify({
-        success: true,
-        delivered: true,
-        http_status: teamsResponse.status,
-        response_body_preview: responsePreview,
-        webhook_host: webhookHost,
-        message_preview: teamsMessage,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
     console.error('Error in send-teams-notification:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        delivered: false,
-        error: error?.message ?? String(error),
-      }),
+      JSON.stringify({ success: false, delivered: false, error: error?.message ?? String(error) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
 
-function buildTeamsMessage(payload: TeamsNotificationPayload): Record<string, unknown> {
+/** Send via Microsoft Graph API (OAuth) */
+async function sendViaGraphApi(
+  supabase: ReturnType<typeof createClient>,
+  integration: TeamsIntegration,
+  payload: TeamsNotificationPayload
+): Promise<Response> {
+  const { access_token } = await getValidAccessToken(supabase, integration.company_id);
+
+  const htmlContent = buildHtmlMessage(payload);
+
+  const graphUrl = `https://graph.microsoft.com/v1.0/teams/${integration.team_id}/channels/${integration.channel_id}/messages`;
+  
+  const graphResponse = await fetch(graphUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      body: {
+        contentType: 'html',
+        content: htmlContent,
+      },
+    }),
+  });
+
+  const responseText = await graphResponse.text();
+
+  if (!graphResponse.ok) {
+    console.error('Graph API error:', responseText);
+    return new Response(
+      JSON.stringify({ success: false, delivered: false, error: 'Failed to send via Graph API', http_status: graphResponse.status }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, delivered: true, method: 'graph_api' }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/** Send via webhook (legacy) */
+async function sendViaWebhook(
+  integration: TeamsIntegration,
+  payload: TeamsNotificationPayload
+): Promise<Response> {
+  const teamsMessage = buildWebhookMessage(payload);
+
+  const teamsResponse = await fetch(integration.webhook_url!, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(teamsMessage),
+  });
+
+  const responseText = await teamsResponse.text();
+  const responsePreview = responseText?.slice(0, 1500);
+
+  if (!teamsResponse.ok) {
+    return new Response(
+      JSON.stringify({ success: false, delivered: false, error: 'Failed to send Teams notification', http_status: teamsResponse.status, response_body_preview: responsePreview }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, delivered: true, method: 'webhook', http_status: teamsResponse.status }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/** Build HTML message for Graph API */
+function buildHtmlMessage(payload: TeamsNotificationPayload): string {
+  const { notification_type, sender_name, recipient_name, points, message, title } = payload;
+
+  switch (notification_type) {
+    case 'recognition':
+      return `<p><strong>🎉 Recognition Alert</strong></p><p><strong>${sender_name}</strong> gave <strong>${points} points</strong> to <strong>${recipient_name}</strong></p><p>${message || 'Great work!'}</p>`;
+    case 'point_allocation':
+      return `<p><strong>📊 Monthly Points Allocation</strong></p><p>${message || 'All team members have received their monthly points.'}</p>`;
+    case 'milestone':
+      return `<p><strong>🏆 ${title || 'Team Milestone'}</strong></p><p>${message || 'Congratulations on reaching this milestone!'}</p>`;
+    case 'summary':
+      return `<p><strong>📈 ${title || 'Weekly Recognition Summary'}</strong></p><p>${message || 'Here is your team recognition summary.'}</p>`;
+    default:
+      return `<p><strong>📢 Notification</strong></p><p>${message || 'You have a new notification from Grattia.'}</p>`;
+  }
+}
+
+/** Build MessageCard for webhook */
+function buildWebhookMessage(payload: TeamsNotificationPayload): Record<string, unknown> {
   const { notification_type, sender_name, recipient_name, points, message, title, summary_data } = payload;
 
-  // Use MessageCard format (O365 Connector format) for wider compatibility
   switch (notification_type) {
     case 'recognition':
       return {
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        themeColor: 'F572FF',
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions', themeColor: 'F572FF',
         summary: `${sender_name} recognized ${recipient_name}`,
-        sections: [
-          {
-            activityTitle: '🎉 Recognition Alert',
-            activitySubtitle: `${sender_name} gave ${points} points to ${recipient_name}`,
-            facts: [
-              { name: 'Points', value: String(points) },
-              { name: 'Message', value: message || 'Great work!' },
-            ],
-            markdown: true,
-          },
-        ],
+        sections: [{ activityTitle: '🎉 Recognition Alert', activitySubtitle: `${sender_name} gave ${points} points to ${recipient_name}`, facts: [{ name: 'Points', value: String(points) }, { name: 'Message', value: message || 'Great work!' }], markdown: true }],
       };
-
     case 'point_allocation':
       return {
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        themeColor: '00C2FF',
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions', themeColor: '00C2FF',
         summary: 'Monthly Points Allocated',
-        sections: [
-          {
-            activityTitle: '📊 Monthly Points Allocation',
-            activitySubtitle: 'Points have been allocated for this month',
-            text: message || 'All team members have received their monthly points.',
-            markdown: true,
-          },
-        ],
+        sections: [{ activityTitle: '📊 Monthly Points Allocation', text: message || 'All team members have received their monthly points.', markdown: true }],
       };
-
     case 'milestone':
       return {
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        themeColor: '00E5A1',
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions', themeColor: '00E5A1',
         summary: title || 'Team Milestone Reached',
-        sections: [
-          {
-            activityTitle: `🏆 ${title || 'Team Milestone'}`,
-            text: message || 'Congratulations on reaching this milestone!',
-            markdown: true,
-          },
-        ],
+        sections: [{ activityTitle: `🏆 ${title || 'Team Milestone'}`, text: message || 'Congratulations!', markdown: true }],
       };
-
     case 'summary':
       return {
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        themeColor: '7A1BF7',
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions', themeColor: '7A1BF7',
         summary: title || 'Recognition Summary',
-        sections: [
-          {
-            activityTitle: `📈 ${title || 'Weekly Recognition Summary'}`,
-            text: message || 'Here is your team recognition summary.',
-            facts: summary_data
-              ? Object.entries(summary_data).map(([key, value]) => ({
-                  name: key,
-                  value: String(value),
-                }))
-              : [],
-            markdown: true,
-          },
-        ],
+        sections: [{ activityTitle: `📈 ${title || 'Weekly Recognition Summary'}`, text: message || 'Here is your summary.', facts: summary_data ? Object.entries(summary_data).map(([k, v]) => ({ name: k, value: String(v) })) : [], markdown: true }],
       };
-
     default:
       return {
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        themeColor: 'F572FF',
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions', themeColor: 'F572FF',
         summary: 'Grattia Notification',
-        sections: [
-          {
-            activityTitle: '📢 Notification',
-            text: message || 'You have a new notification from Grattia.',
-            markdown: true,
-          },
-        ],
+        sections: [{ activityTitle: '📢 Notification', text: message || 'You have a new notification from Grattia.', markdown: true }],
       };
   }
 }

@@ -867,31 +867,52 @@ export type Database = {
       }
       teams_integrations: {
         Row: {
+          access_token: string | null
+          auth_type: string
+          channel_id: string | null
           channel_name: string | null
           company_id: string
           created_at: string
           id: string
           notification_settings: Json | null
+          refresh_token: string | null
+          team_id: string | null
+          team_name: string | null
+          token_expires_at: string | null
           updated_at: string
-          webhook_url: string
+          webhook_url: string | null
         }
         Insert: {
+          access_token?: string | null
+          auth_type?: string
+          channel_id?: string | null
           channel_name?: string | null
           company_id: string
           created_at?: string
           id?: string
           notification_settings?: Json | null
+          refresh_token?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          token_expires_at?: string | null
           updated_at?: string
-          webhook_url: string
+          webhook_url?: string | null
         }
         Update: {
+          access_token?: string | null
+          auth_type?: string
+          channel_id?: string | null
           channel_name?: string | null
           company_id?: string
           created_at?: string
           id?: string
           notification_settings?: Json | null
+          refresh_token?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          token_expires_at?: string | null
           updated_at?: string
-          webhook_url?: string
+          webhook_url?: string | null
         }
         Relationships: [
           {

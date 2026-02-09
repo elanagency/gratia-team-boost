@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, ExternalLink, Send, Unlink } from 'lucide-react';
-import { useTeamsIntegration } from '@/hooks/useTeamsIntegration';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Send, Unlink, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTeamsIntegration, type MsChannel } from '@/hooks/useTeamsIntegration';
 import { TeamsTestDiagnostics, type TeamsTestDiagnosticsData } from '@/components/settings/teams/TeamsTestDiagnostics';
 import { TeamsNotificationToggleRow } from '@/components/settings/TeamsNotificationToggleRow';
 import { TeamsWebhookSetupInstructions } from '@/components/settings/teams/TeamsWebhookSetupInstructions';
@@ -39,22 +39,53 @@ export default function TeamsNotificationsCard() {
     integration,
     isLoading,
     isConnected,
+    isOAuth,
+    connectViaOAuth,
     connectTeams,
     updateNotificationSettings,
+    selectTeamAndChannel,
     disconnectTeams,
     testConnectionAsync,
     isConnecting,
     isUpdating,
     isDisconnecting,
     isTesting,
+    isSelectingChannel,
+    teams,
+    isLoadingTeams,
+    fetchChannels,
   } = useTeamsIntegration();
 
   const [webhookUrl, setWebhookUrl] = useState('');
   const [channelName, setChannelName] = useState('');
-  const [showInstructions, setShowInstructions] = useState(false);
+  const [showWebhookFallback, setShowWebhookFallback] = useState(false);
   const [lastTest, setLastTest] = useState<TeamsTestDiagnosticsData | null>(null);
 
-  const handleConnect = () => {
+  // Channel picker state
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [channels, setChannels] = useState<MsChannel[]>([]);
+  const [isLoadingChannels, setIsLoadingChannels] = useState(false);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>('');
+
+  // Pre-populate from integration
+  useEffect(() => {
+    if (integration?.team_id) setSelectedTeamId(integration.team_id);
+    if (integration?.channel_id) setSelectedChannelId(integration.channel_id);
+  }, [integration?.team_id, integration?.channel_id]);
+
+  // Fetch channels when team changes
+  useEffect(() => {
+    if (!selectedTeamId || !isOAuth) return;
+    setIsLoadingChannels(true);
+    setChannels([]);
+    setSelectedChannelId('');
+    fetchChannels(selectedTeamId)
+      .then(setChannels)
+      .catch(() => setChannels([]))
+      .finally(() => setIsLoadingChannels(false));
+  }, [selectedTeamId, isOAuth]);
+
+  const handleWebhookConnect = () => {
     if (!webhookUrl.trim()) return;
     connectTeams({ webhookUrl: webhookUrl.trim(), channelName: channelName.trim() || undefined });
     setWebhookUrl('');
@@ -69,7 +100,6 @@ export default function TeamsNotificationsCard() {
     setLastTest(null);
     try {
       const data = await testConnectionAsync();
-      // Expecting the edge function to return details; fall back gracefully.
       setLastTest({
         delivered: true,
         ...(typeof data === 'object' && data ? (data as Record<string, unknown>) : {}),
@@ -77,6 +107,18 @@ export default function TeamsNotificationsCard() {
     } catch {
       setLastTest({ delivered: false });
     }
+  };
+
+  const handleSaveChannel = () => {
+    const team = teams.find(t => t.id === selectedTeamId);
+    const channel = channels.find(c => c.id === selectedChannelId);
+    if (!team || !channel) return;
+    selectTeamAndChannel({
+      teamId: team.id,
+      teamName: team.displayName,
+      channelId: channel.id,
+      channelName: channel.displayName,
+    });
   };
 
   if (isLoading) {
@@ -111,61 +153,70 @@ export default function TeamsNotificationsCard() {
       <CardContent className="space-y-6">
         {!isConnected ? (
           <div className="space-y-4">
-            <div className="rounded-lg border bg-muted/50 p-4">
-              <button
-                onClick={() => setShowInstructions(!showInstructions)}
-                className="flex w-full items-center justify-between text-left"
-              >
-                <span className="font-medium">How to get your Teams webhook URL</span>
-                <span className="text-muted-foreground">
-                  {showInstructions ? '▲' : '▼'}
-                </span>
-              </button>
-              
-              {showInstructions && (
+            {/* Primary: OAuth Connect */}
+            <Button onClick={connectViaOAuth} className="w-full" size="lg">
+              <TeamsLogo />
+              <span className="ml-2">Connect to Microsoft Teams</span>
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Sign in with your Microsoft account to select a Team and Channel
+            </p>
+
+            <Separator />
+
+            {/* Secondary: Webhook fallback */}
+            <button
+              onClick={() => setShowWebhookFallback(!showWebhookFallback)}
+              className="flex w-full items-center justify-between text-left text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>Or connect via Webhook URL (advanced)</span>
+              {showWebhookFallback ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
+            {showWebhookFallback && (
+              <div className="space-y-3 rounded-lg border p-4">
                 <TeamsWebhookSetupInstructions />
-              )}
-            </div>
 
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="webhook-url">Webhook URL</Label>
-                <Input
-                  id="webhook-url"
-                  type="url"
-                  placeholder="https://outlook.office.com/webhook/..."
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="webhook-url">Webhook URL</Label>
+                  <Input
+                    id="webhook-url"
+                    type="url"
+                    placeholder="https://outlook.office.com/webhook/..."
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="channel-name">Channel Name (optional)</Label>
+                  <Input
+                    id="channel-name"
+                    type="text"
+                    placeholder="e.g., #general"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleWebhookConnect}
+                  disabled={!webhookUrl.trim() || isConnecting}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    'Connect via Webhook'
+                  )}
+                </Button>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="channel-name">Channel Name (optional)</Label>
-                <Input
-                  id="channel-name"
-                  type="text"
-                  placeholder="e.g., #general"
-                  value={channelName}
-                  onChange={(e) => setChannelName(e.target.value)}
-                />
-              </div>
-
-              <Button
-                onClick={handleConnect}
-                disabled={!webhookUrl.trim() || isConnecting}
-                className="w-full"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  'Connect Microsoft Teams'
-                )}
-              </Button>
-            </div>
-
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -173,19 +224,16 @@ export default function TeamsNotificationsCard() {
             <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-4">
               <div>
                 <p className="font-medium">
-                  {integration?.channel_name || 'Teams Channel'}
+                  {isOAuth
+                    ? `${integration?.team_name || 'Microsoft Teams'} — ${integration?.channel_name || 'No channel selected'}`
+                    : integration?.channel_name || 'Teams Channel'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Webhook connected
+                  {isOAuth ? 'Connected via Microsoft account' : 'Connected via webhook'}
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTest}
-                  disabled={isTesting}
-                >
+                <Button variant="outline" size="sm" onClick={handleTest} disabled={isTesting}>
                   {isTesting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -227,6 +275,52 @@ export default function TeamsNotificationsCard() {
               </div>
             </div>
 
+            {/* Team & Channel picker (OAuth only) */}
+            {isOAuth && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h4 className="font-medium">Team & Channel</h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Team</Label>
+                      <Select value={selectedTeamId} onValueChange={setSelectedTeamId} disabled={isLoadingTeams}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingTeams ? 'Loading teams...' : 'Select a team'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>{team.displayName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Channel</Label>
+                      <Select value={selectedChannelId} onValueChange={setSelectedChannelId} disabled={isLoadingChannels || !selectedTeamId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingChannels ? 'Loading channels...' : 'Select a channel'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {channels.map((ch) => (
+                            <SelectItem key={ch.id} value={ch.id}>{ch.displayName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {selectedTeamId && selectedChannelId && (
+                    selectedTeamId !== integration?.team_id || selectedChannelId !== integration?.channel_id
+                  ) && (
+                    <Button onClick={handleSaveChannel} disabled={isSelectingChannel} size="sm">
+                      {isSelectingChannel ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Save Channel
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+
             <Separator />
 
             <TeamsTestDiagnostics data={lastTest} />
@@ -234,7 +328,6 @@ export default function TeamsNotificationsCard() {
             {/* Notification settings */}
             <div className="space-y-4">
               <h4 className="font-medium">Notification Types</h4>
-
               <div className="space-y-3">
                 <TeamsNotificationToggleRow
                   id="recognition"
@@ -244,7 +337,6 @@ export default function TeamsNotificationsCard() {
                   onCheckedChange={(checked) => handleToggle('recognition_notifications', checked)}
                   disabled={isUpdating}
                 />
-
                 <TeamsNotificationToggleRow
                   id="allocation"
                   title="Point Allocation Alerts"
@@ -253,7 +345,6 @@ export default function TeamsNotificationsCard() {
                   disabled
                   comingSoon
                 />
-
                 <TeamsNotificationToggleRow
                   id="milestones"
                   title="Team Milestones"
@@ -262,7 +353,6 @@ export default function TeamsNotificationsCard() {
                   disabled
                   comingSoon
                 />
-
                 <TeamsNotificationToggleRow
                   id="summaries"
                   title="Weekly/Monthly Summaries"
