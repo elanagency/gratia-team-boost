@@ -79,7 +79,7 @@ export function useAnalyticsData({
         case 'sent':
           return fetchSentDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
         case 'engagement':
-          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, granularity);
+          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
         case 'redemptions':
           return fetchRedemptionsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
         case 'logins':
@@ -136,10 +136,11 @@ async function fetchEngagementDataWithTrend(
   endDate: Date,
   prevStart: Date,
   prevEnd: Date,
+  segmentBy: SegmentType,
   granularity: GranularityType
 ): Promise<AnalyticsData> {
   const [currentData, previousEngagement] = await Promise.all([
-    fetchEngagementData(companyId, startDate, endDate, granularity),
+    fetchEngagementData(companyId, startDate, endDate, segmentBy, granularity),
     fetchEngagementTotal(companyId, prevStart, prevEnd),
   ]);
 
@@ -307,25 +308,27 @@ async function fetchEngagementData(
   companyId: string,
   startDate: Date,
   endDate: Date,
+  segmentBy: SegmentType,
   granularity: GranularityType
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  // Get total active members
+  // Get total active members with department/name info for segmentation
   const { data: totalMembers, error: membersError } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, first_name, last_name, department_id, departments(name)')
     .eq('company_id', companyId)
     .eq('status', 'active');
 
   if (membersError) throw membersError;
 
-  const totalMemberCount = totalMembers?.length || 0;
+  const members = totalMembers || [];
+  const totalMemberCount = members.length;
 
   // Get point transactions to calculate unique participants
   const { data: transactions, error: txError } = await supabase
     .from('point_transactions')
     .select('sender_profile_id, recipient_profile_id, created_at')
     .eq('company_id', companyId)
-    .gt('points', 0)  // Only positive transactions
+    .gt('points', 0)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: true });
@@ -359,20 +362,50 @@ async function fetchEngagementData(
       ? Math.round((uniqueParticipants.size / totalMemberCount) * 100)
       : 0;
 
-    return {
+    const dataPoint: ChartDataPoint = {
       date: format(intervalStart, granularity === 'monthly' ? 'MMM yyyy' : 'MMM d'),
       value: engagementRate,
       label: `${engagementRate}%`,
     };
+
+    if (segmentBy === 'department') {
+      // Group members by department
+      const deptGroups: Record<string, string[]> = {};
+      members.forEach((m: any) => {
+        const deptName = m.departments?.name || 'No Department';
+        if (!deptGroups[deptName]) deptGroups[deptName] = [];
+        deptGroups[deptName].push(m.id);
+      });
+
+      const segments: Record<string, number> = {};
+      Object.entries(deptGroups).forEach(([deptName, memberIds]) => {
+        const deptParticipants = memberIds.filter(id => uniqueParticipants.has(id)).length;
+        segments[deptName] = memberIds.length > 0
+          ? Math.round((deptParticipants / memberIds.length) * 100)
+          : 0;
+      });
+      dataPoint.segments = segments;
+    } else if (segmentBy === 'person') {
+      const segments: Record<string, number> = {};
+      members.forEach((m: any) => {
+        const name = `${m.first_name} ${m.last_name}`;
+        segments[name] = uniqueParticipants.has(m.id) ? 100 : 0;
+      });
+      dataPoint.segments = segments;
+    }
+
+    return dataPoint;
   });
 
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
   const average = chartData.length > 0 ? Math.round(total / chartData.length) : 0;
 
+  const tableData: TableDataRow[] = buildTableData(chartData, segmentBy);
+
   return {
     chartData,
-    tableData: chartData.map(d => ({ date: d.date, value: d.value })),
-    total: average, // For engagement, total is the average rate
+    tableData,
+    total: average,
     average,
   };
 }
