@@ -1,47 +1,89 @@
 
 
-# Fix: Microsoft Teams OAuth Callback Conflict + Invalid Secret
+# PartnerStack Integration Plan
 
-## Two Problems Found
+## Overview
 
-### Problem 1: Slack hook hijacks the Teams OAuth code
-Both the Slack card (`SlackNotificationsCard.tsx`, line 41) and Teams hook (`useTeamsIntegration.ts`, line 83) detect `?code=` in the URL on the settings page. When Microsoft redirects back with an auth code, the **Slack** component also tries to process it as a Slack code, fails, and shows: *"Failed to connect Slack: Edge Function returned a non-2xx status code."*
-
-### Problem 2: Invalid Azure Client Secret
-The edge function logs show: `AADSTS7000215: Invalid client secret provided. Ensure the secret being sent in the request is the client secret value, not the client secret ID.`
-
-You need to update the `MS_TEAMS_CLIENT_SECRET` Supabase secret with the actual **Secret Value** (not the Secret ID) from Azure. The secret value is only shown once when you create it -- if you can't find it, you'll need to create a new client secret in Azure.
+Integrate PartnerStack to track partner referrals for both signups and paid conversions. This involves three parts: frontend tracking, signup attribution, and transaction reporting.
 
 ---
 
-## Fix Plan
+## What This Enables
 
-### 1. Differentiate OAuth callbacks (prevent collision)
+- Partners share referral links (e.g., `grattia.partnerlinks.io/partner123`)
+- When someone clicks a partner link and lands on your site, PartnerStack drops a cookie identifying which partner referred them
+- When that visitor signs up, the partner gets credited
+- When that customer makes a payment (Stripe subscription), the partner earns commission
 
-**Option: Use a `state` parameter to distinguish providers**
+---
 
-**File: `src/hooks/useTeamsIntegration.ts`**
-- When generating the OAuth URL, include `state=teams` in the request
-- In the callback detection `useEffect`, only process the code if `state=teams` is present in the URL params
+## Implementation Steps
 
-**File: `supabase/functions/teams-oauth-url/index.ts`**
-- Add `state=teams` to the authorization URL query parameters
+### Step 1: Add PartnerStackJS Tracking Snippet
 
-**File: `src/components/settings/SlackNotificationsCard.tsx`**
-- In the callback `useEffect`, skip processing if `state=teams` is present in the URL (meaning it's a Teams callback, not Slack)
+Add the PartnerStackJS snippet to `index.html` in the `<head>` section. This uses your **public key** (which is safe to embed in frontend code).
 
-### 2. Update the MS_TEAMS_CLIENT_SECRET (manual step)
+Your public key from the screenshots: `pk_Oy99JnUkDuCWNdkCiZCAjmpVdoH6MzLx`
 
-Go to Azure Portal > App registrations > your app > Certificates & secrets, create a new client secret, copy the **Value** (not the ID), and update the `MS_TEAMS_CLIENT_SECRET` Supabase secret.
+This snippet will:
+- Detect when a visitor arrives via a partner referral link
+- Store the partner attribution in a first-party cookie
+- Make the `growsumo` object available globally for signup tracking
+
+### Step 2: Track Signups in the Sign-Up Flow
+
+After a user successfully verifies their OTP and creates an account in `SignUpForm.tsx`:
+- Set customer data on the `growsumo` object (name, email, customer key)
+- Call `growsumo.createSignup()` to report the signup to PartnerStack
+- Use the user's Supabase auth ID as the `customer_key` for consistent tracking
+
+### Step 3: Report Transactions (Server-Side)
+
+Since Stripe is already connected to PartnerStack (visible in your screenshot), Stripe payment events should flow automatically to PartnerStack via their Stripe integration. No additional server-side code is needed for transaction tracking -- PartnerStack matches customers by email.
+
+If email matching proves unreliable, we can optionally add the `customer_key` metadata to Stripe customers later.
+
+### Step 4: Store the Secret Key
+
+Store the PartnerStack **secret key** as a Supabase secret for any future server-side API calls (e.g., manually creating customers or transactions via the PartnerStack API).
 
 ---
 
 ## Technical Details
 
-**Files to modify:**
+### Files to modify
+
 | File | Change |
 |------|--------|
-| `supabase/functions/teams-oauth-url/index.ts` | Add `state=teams` to auth URL |
-| `src/hooks/useTeamsIntegration.ts` | Check for `state=teams` before processing callback |
-| `src/components/settings/SlackNotificationsCard.tsx` | Skip callback if `state=teams` is present |
+| `index.html` | Add PartnerStackJS snippet in `<head>` with public key |
+| `src/components/auth/SignUpForm.tsx` | Call `growsumo.createSignup()` after successful OTP verification |
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `src/vite-env.d.ts` (update) | Add TypeScript type declaration for `window.growsumo` |
+
+### Secrets to add
+
+| Secret | Purpose |
+|--------|---------|
+| `PARTNERSTACK_SECRET_KEY` | For any future server-side PartnerStack API calls |
+
+### SignUpForm changes (pseudocode)
+
+After successful OTP verification (line ~98 in SignUpForm.tsx), before navigating to `/admin`:
+
+```text
+1. Check if window.growsumo exists
+2. Set growsumo.data.name = fullName
+3. Set growsumo.data.email = user email
+4. Set growsumo.data.customer_key = supabase auth user ID
+5. Call growsumo.createSignup() 
+6. Continue with navigation (don't block on this)
+```
+
+### PartnerStackJS snippet (for index.html)
+
+The snippet loads the PartnerStackJS library with your public key, enabling automatic cookie-based partner attribution on every page.
 
