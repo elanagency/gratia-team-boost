@@ -1,4 +1,5 @@
 import React from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
 import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
 import { BillingCard } from "@/components/settings/BillingCard";
@@ -10,15 +11,39 @@ const Settings = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-800">Settings</h1>
-      
-      <div className="space-y-6">
-        <CompanyInformationCard />
-        <DepartmentManagement />
-        <TeamManagementCard />
-        <BillingCard />
-        <SlackNotificationsCard />
-        <TeamsNotificationsCard />
-      </div>
+
+      <Tabs defaultValue="company" className="w-full">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="company">Company</TabsTrigger>
+          <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="company">
+          <CompanyInformationCard />
+        </TabsContent>
+
+        <TabsContent value="departments">
+          <DepartmentManagement />
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamManagementCard />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingCard />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <div className="space-y-6">
+            <SlackNotificationsCard />
+            <TeamsNotificationsCard />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
