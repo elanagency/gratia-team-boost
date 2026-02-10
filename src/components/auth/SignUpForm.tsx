@@ -87,7 +87,7 @@ const SignUpForm = () => {
     
     setIsVerifying(true);
     try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
         email: signupData.email,
         token: otp,
         type: 'email'
@@ -95,6 +95,24 @@ const SignUpForm = () => {
 
       if (verifyError) {
         throw verifyError;
+      }
+
+      // Report signup to PartnerStack (non-blocking)
+      try {
+        if (typeof growsumo !== 'undefined' && growsumo) {
+          growsumo.data.name = signupData.fullName;
+          growsumo.data.email = signupData.email;
+          growsumo.data.customer_key = verifyData.user?.id || signupData.email;
+          growsumo.createSignup((error, result) => {
+            if (error) {
+              console.error("PartnerStack signup tracking error:", error);
+            } else {
+              console.log("PartnerStack signup tracked successfully");
+            }
+          });
+        }
+      } catch (psError) {
+        console.error("PartnerStack error:", psError);
       }
 
       // Send welcome email via Brevo template ID 5
