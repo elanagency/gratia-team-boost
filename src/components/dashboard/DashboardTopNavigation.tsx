@@ -32,11 +32,6 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
         name: "Analytics",
         icon: BarChart3,
         path: "/dashboard/analytics"
-      },
-      {
-        name: "Settings",
-        icon: Settings,
-        path: "/dashboard/settings"
       }
     ] : [])
   ];
@@ -91,7 +86,19 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
       </div>
           
       {/* User Menu */}
-      <div className="flex items-center relative z-10">
+      <div className="flex items-center gap-2 relative z-10">
+        {isAdmin && (
+          <Link
+            to="/dashboard/settings"
+            className={`p-2 rounded-lg transition-colors ${
+              isActive('/dashboard/settings')
+                ? 'bg-white/20 text-white shadow-lg'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/10 transition-colors">
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-medium">
