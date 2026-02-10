@@ -1,23 +1,35 @@
 
 
-# Move Settings Button to Right Side (Icon Only)
+# Settings Page: Tab-Based Layout
 
 ## What Changes
 
-In the top navigation bar (`DashboardTopNavigation`), the **Settings** link will be moved out of the center navigation group and placed on the right side, next to the user menu. The "Settings" text label will be removed, keeping only the gear icon.
+Replace the current vertically stacked layout (long scroll) with a horizontal **tab bar** similar to the reference screenshot. Each major section becomes its own tab, so only one section is visible at a time.
 
-## Layout (Before -> After)
+## Proposed Tabs
 
-**Before:** `[Logo] --- [Dashboard] [Analytics] [Settings] [Points] --- [User Menu]`
-
-**After:** `[Logo] --- [Dashboard] [Analytics] [Points] --- [Settings icon] [User Menu]`
+| Tab Label       | Component(s)                                    |
+|-----------------|------------------------------------------------|
+| Company         | `CompanyInformationCard`                        |
+| Departments     | `DepartmentManagement`                          |
+| Team            | `TeamManagementCard`                            |
+| Billing         | `BillingCard`                                   |
+| Notifications   | `SlackNotificationsCard` + `TeamsNotificationsCard` |
 
 ## Technical Details
 
-### `src/components/dashboard/DashboardTopNavigation.tsx`
+### `src/pages/admin/Settings.tsx`
 
-- Remove the Settings item from the `menuItems` array (keep only Dashboard and Analytics in center nav)
-- Add a standalone Settings gear icon button to the right-side section, placed before the user dropdown
-- The icon uses a `Link` to `/dashboard/settings`, styled consistently with the nav (white icon, subtle hover)
-- Only visible for admin users (same condition as before)
+- Import `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs`
+- Wrap content in a `<Tabs defaultValue="company">` container
+- Add a `<TabsList>` with five triggers: Company, Departments, Team, Billing, Notifications
+- Each `<TabsContent>` renders the corresponding component(s)
+- The Notifications tab will contain both Slack and Teams cards stacked vertically
+- URL does not need to change per tab (simple client-side state)
+
+### Result
+
+- No scrolling through unrelated sections
+- Clean horizontal navigation matching the reference design
+- One file changed, no new files needed
 
