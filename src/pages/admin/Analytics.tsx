@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { subDays } from "date-fns";
 import { AnalyticsMetricsSidebar } from "@/components/analytics/AnalyticsMetricsSidebar";
 import { AnalyticsChartArea } from "@/components/analytics/AnalyticsChartArea";
@@ -20,6 +20,14 @@ const Analytics = () => {
   });
   const [segmentBy, setSegmentBy] = useState<SegmentType>("none");
   const [granularity, setGranularity] = useState<GranularityType>("daily");
+
+  const isSegmentDisabled = selectedMetric === "engagement";
+
+  useEffect(() => {
+    if (isSegmentDisabled) {
+      setSegmentBy("none");
+    }
+  }, [isSegmentDisabled]);
 
   const { data, isLoading, error } = useAnalyticsData({
     metric: selectedMetric,
@@ -49,6 +57,7 @@ const Analytics = () => {
               onSegmentChange={setSegmentBy}
               granularity={granularity}
               onGranularityChange={setGranularity}
+              disableSegment={isSegmentDisabled}
             />
           </div>
 

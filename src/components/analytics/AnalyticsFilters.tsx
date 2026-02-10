@@ -25,6 +25,7 @@ interface AnalyticsFiltersProps {
   onSegmentChange: (segment: SegmentType) => void;
   granularity: GranularityType;
   onGranularityChange: (granularity: GranularityType) => void;
+  disableSegment?: boolean;
 }
 
 type DatePreset = {
@@ -65,6 +66,7 @@ export function AnalyticsFilters({
   onSegmentChange,
   granularity,
   onGranularityChange,
+  disableSegment = false,
 }: AnalyticsFiltersProps) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [selectedPreset, setSelectedPreset] = React.useState<string>("Last 30 days");
@@ -131,8 +133,12 @@ export function AnalyticsFilters({
       </Popover>
 
       {/* Segment By Selector */}
-      <Select value={segmentBy} onValueChange={(value) => onSegmentChange(value as SegmentType)}>
-        <SelectTrigger className="w-[160px]">
+      <Select
+        value={segmentBy}
+        onValueChange={(value) => onSegmentChange(value as SegmentType)}
+        disabled={disableSegment}
+      >
+        <SelectTrigger className="w-[160px]" title={disableSegment ? "Segmentation not available for Engagement Rate" : undefined}>
           <SelectValue placeholder="Segment by" />
         </SelectTrigger>
         <SelectContent>
