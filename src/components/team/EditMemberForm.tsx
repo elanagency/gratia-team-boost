@@ -27,6 +27,8 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
   const [department, setDepartment] = useState(member.department || "");
   const [departmentId, setDepartmentId] = useState<string | undefined>(member.department_id || undefined);
   const [role, setRole] = useState<'user' | 'admin'>(member.is_admin ? 'admin' : 'user');
+  const [birthday, setBirthday] = useState(member.birthday || "");
+  const [companyStartDate, setCompanyStartDate] = useState(member.company_start_date || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateMember } = useTeamMembers();
 
@@ -40,7 +42,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
         name: name.trim(),
         department: department.trim() || null,
         department_id: departmentId || null,
-        is_admin: role === 'admin'
+        is_admin: role === 'admin',
+        birthday: birthday || null,
+        company_start_date: companyStartDate || null
       });
       onSuccess();
     } catch (error) {
@@ -103,6 +107,27 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({
             <SelectItem value="admin">Admin - Can access Analytics & Settings</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="edit-birthday">Birthday</Label>
+          <Input
+            type="date"
+            id="edit-birthday"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="edit-companyStartDate">Company Start Date</Label>
+          <Input
+            type="date"
+            id="edit-companyStartDate"
+            value={companyStartDate}
+            onChange={(e) => setCompanyStartDate(e.target.value)}
+          />
+        </div>
       </div>
       
       <div className="flex gap-2 pt-4">

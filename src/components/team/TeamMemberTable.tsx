@@ -8,6 +8,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { MoreHorizontal, Edit, Trash2, Mail, Check, X, UserCheck } from "lucide-react";
 import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { getUserStatus } from "@/lib/userStatus";
+import { format } from "date-fns";
 
 interface TeamMemberTableProps {
   teamMembers: TeamMember[];
@@ -49,6 +50,8 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
           <TableHead className="text-gray-500">Email</TableHead>
           <TableHead className="text-gray-500">Department</TableHead>
           <TableHead className="text-gray-500">Role</TableHead>
+          <TableHead className="text-gray-500">Birthday</TableHead>
+          <TableHead className="text-gray-500">Start Date</TableHead>
           <TableHead className="text-gray-500">Status</TableHead>
           <TableHead className="text-gray-500">Actions</TableHead>
         </TableRow>
@@ -69,6 +72,12 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                 >
                   {member.is_admin ? 'Admin' : 'User'}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-gray-600">
+                {member.birthday ? format(new Date(member.birthday), 'MMM d') : '-'}
+              </TableCell>
+              <TableCell className="text-gray-600">
+                {member.company_start_date ? format(new Date(member.company_start_date), 'MMM d, yyyy') : '-'}
               </TableCell>
               <TableCell>
                 {(() => {
@@ -153,7 +162,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+            <TableCell colSpan={8} className="text-center py-8 text-gray-500">
               No team members found. Invite your first team member!
             </TableCell>
           </TableRow>

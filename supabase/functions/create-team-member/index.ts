@@ -94,7 +94,7 @@ serve(async (req: Request) => {
   }
   
   try {
-    const { name, email, department, companyId, role = "member", is_admin = false, invitedBy, origin } = await req.json();
+    const { name, email, department, companyId, role = "member", is_admin = false, invitedBy, origin, birthday, companyStartDate } = await req.json();
     
     // Validate required inputs
     if (!name || !email || !companyId || !invitedBy) {
@@ -339,6 +339,8 @@ serve(async (req: Request) => {
         monthly_points: 100, // Give initial monthly points
         status: 'invited', // Set initial status as invited
         temporary_password: password, // Store the generated password for resending invites
+        birthday: birthday || null,
+        company_start_date: companyStartDate || null,
       })
       .select()
       .single();
