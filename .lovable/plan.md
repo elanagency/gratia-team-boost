@@ -1,29 +1,73 @@
 
 
-# Fix: Teams Channel Selection Not Persisting on Page Load
+# Show Celebration Rewards in Recognition Feed + Dedicated Celebration Feed
 
-## Problem
+## Overview
 
-When the page loads, two `useEffect` hooks race against each other:
+Two changes:
+1. **Recognition Feed** -- Include birthday and anniversary celebration entries so the whole team can see them
+2. **Celebrations tab** -- Add a dedicated, more detailed celebration rewards feed (expanding the existing recent logs table into a full history)
 
-1. **Pre-populate effect** (line 71-74): Sets `selectedTeamId` and `selectedChannelId` from the saved integration
-2. **Channel-fetch effect** (line 77-86): Fires when `selectedTeamId` changes, and always resets `selectedChannelId` to `''` and clears the channels list
+---
 
-The channel-fetch effect runs after the pre-populate sets the team ID, wiping out the saved channel selection. So on every page load, the channel dropdown shows "Select channel" even though it is saved in the database.
+## 1. Recognition Feed: Show Celebration Entries
 
-## Fix
+**File: `src/components/points/RecognitionFeed.tsx`**
 
-**File: `src/components/settings/TeamsNotificationsCard.tsx`**
+Currently, the filter at lines 95-121 excludes all self-transactions (`sender_profile_id === recipient_profile_id`). Celebration rewards are recorded as self-transactions with descriptions starting with a cake or party emoji.
 
-1. Only reset `selectedChannelId` in the channel-fetch effect when the user is **actively changing** the team (i.e., the new team ID differs from the saved `integration.team_id`). When the team ID matches what is already saved, preserve the existing `selectedChannelId`.
+**Changes:**
+- Update the filter to allow self-transactions through when the description matches celebration patterns (`/^🎂/` or `/^🎉/`)
+- In the feed rendering (lines 508-623), detect celebration posts and render them differently:
+  - Instead of "**SenderName** gave +50 to **RecipientName**", show something like "🎂 **Sarah Johnson** received +50 birthday celebration points" or "🎉 **John Smith** received +100 work anniversary points"
+  - Use a distinct avatar background color (e.g., a warm celebratory tone) to visually distinguish celebrations from peer recognitions
+  - Hide the "quick points" buttons on celebration posts since they are system-generated
+- Celebration posts will not be grouped into threads (they stand alone)
 
-2. After fetching channels, if the saved `integration.channel_id` matches one of the fetched channels, re-select it automatically.
+## 2. Celebrations Tab: Dedicated Celebration Feed
 
-This ensures that on initial load the saved channel is preserved, while still clearing the channel when the user picks a different team.
+**File: `src/components/settings/CelebrationSettingsCard.tsx`**
 
-## Technical Detail
+The existing "Recent Celebration Rewards" table (lines 333-364) already shows the last 10 entries. We will expand this into a full celebration feed:
 
-Replace the channel-fetch `useEffect` (lines 77-86) with logic that:
-- Skips resetting `selectedChannelId` if `selectedTeamId === integration?.team_id`
-- After channels are fetched, if the integration's saved `channel_id` exists in the fetched list, sets it as selected
+- Increase the limit from 10 to 50 entries
+- Add a "Load More" or pagination if needed
+- Add summary stats at the top: total points distributed this year, number of birthday rewards, number of anniversary rewards
+- Show the wallet deduction alongside each entry so admins can track spending
+
+No new files are needed -- both changes modify existing components.
+
+## Technical Details
+
+### RecognitionFeed filter change (lines 95-121)
+
+```
+// Allow celebration self-transactions through
+const celebrationPatterns = [/^🎂/, /^🎉/];
+const isCelebration = celebrationPatterns.some(p => p.test(transaction.description));
+
+if (transaction.sender_profile_id === transaction.recipient_profile_id && !isCelebration) {
+  return false;
+}
+```
+
+### RecognitionFeed rendering change
+
+Add a helper to detect celebrations:
+```
+const isCelebrationPost = (t: PointTransaction) =>
+  t.sender_id === t.recipient_id && (/^🎂/.test(t.description) || /^🎉/.test(t.description));
+```
+
+For celebration posts, render a different layout:
+- Show the recipient's avatar with a celebration-themed background
+- Display "received X celebration points" instead of the sender/recipient flow
+- Show the description (e.g., "Birthday reward" / "Work anniversary reward")
+- No quick-points buttons
+
+### CelebrationSettingsCard expansion
+
+- Add yearly summary stats query from `celebration_rewards_log` grouped by `reward_type`
+- Increase log fetch limit to 50
+- Show running total of points spent on celebrations
 
