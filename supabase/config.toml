@@ -216,3 +216,6 @@ verify_jwt = true
 
 [functions.giftbit-redemption-service]
 verify_jwt = true
+
+[functions.purchase-company-points]
+verify_jwt = false

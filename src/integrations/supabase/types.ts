@@ -601,6 +601,8 @@ export type Database = {
           key: string
           monthly_price_per_team_member_in_cents: number | null
           point_exchange_rate: number | null
+          stripe_celebration_product_id_live: string | null
+          stripe_celebration_product_id_test: string | null
           stripe_price_id_live: string | null
           stripe_price_id_test: string | null
           stripe_product_id_live: string | null
@@ -614,6 +616,8 @@ export type Database = {
           key: string
           monthly_price_per_team_member_in_cents?: number | null
           point_exchange_rate?: number | null
+          stripe_celebration_product_id_live?: string | null
+          stripe_celebration_product_id_test?: string | null
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
           stripe_product_id_live?: string | null
@@ -627,6 +631,8 @@ export type Database = {
           key?: string
           monthly_price_per_team_member_in_cents?: number | null
           point_exchange_rate?: number | null
+          stripe_celebration_product_id_live?: string | null
+          stripe_celebration_product_id_test?: string | null
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
           stripe_product_id_live?: string | null
