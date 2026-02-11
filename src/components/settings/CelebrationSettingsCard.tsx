@@ -12,11 +12,56 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Cake, CalendarHeart, Wallet, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useSearchParams } from "react-router-dom";
+import BuyPointsDialog from "./BuyPointsDialog";
 
 const CelebrationSettingsCard = () => {
   const { companyId } = useAuth();
   const queryClient = useQueryClient();
   const { pointExchangeRate } = usePlatformSettings();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // Handle post-purchase verification
+  useEffect(() => {
+    const purchaseStatus = searchParams.get("points_purchase");
+    const sessionId = searchParams.get("session_id");
+
+    if (purchaseStatus === "success" && sessionId && !verifying) {
+      setVerifying(true);
+      (async () => {
+        try {
+          const response = await supabase.functions.invoke("verify-stripe-session", {
+            body: { sessionId },
+          });
+
+          if (response.error) throw new Error(response.error.message);
+
+          const data = response.data;
+          if (data?.success || data?.type === "points_purchase") {
+            toast.success(`${data.pointsCredited?.toLocaleString() || ""} points added to your wallet!`);
+            queryClient.invalidateQueries({ queryKey: ["company-celebration-settings"] });
+          } else {
+            toast.error("Purchase verification failed");
+          }
+        } catch (err: any) {
+          console.error("Verification error:", err);
+          toast.error("Failed to verify purchase");
+        } finally {
+          setVerifying(false);
+          // Clean URL params
+          searchParams.delete("points_purchase");
+          searchParams.delete("session_id");
+          setSearchParams(searchParams, { replace: true });
+        }
+      })();
+    } else if (purchaseStatus === "cancelled") {
+      toast.info("Purchase cancelled");
+      searchParams.delete("points_purchase");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   // Fetch company celebration settings
   const { data: company, isLoading: companyLoading } = useQuery({
@@ -63,7 +108,6 @@ const CelebrationSettingsCard = () => {
         .limit(10);
       if (error) throw error;
 
-      // Fetch profile names for the logs
       if (!data?.length) return [];
       const profileIds = [...new Set(data.map((l) => l.profile_id))];
       const { data: profiles } = await supabase
@@ -269,8 +313,8 @@ const CelebrationSettingsCard = () => {
               <p className="text-2xl font-bold">{walletBalance.toLocaleString()} pts</p>
               <p className="text-sm text-muted-foreground">${walletValue.toFixed(2)} value</p>
             </div>
-            <Button variant="outline" disabled>
-              Buy Points (Coming Soon)
+            <Button onClick={() => setBuyDialogOpen(true)} disabled={verifying}>
+              {verifying ? "Verifying purchase..." : "Buy Points"}
             </Button>
           </div>
 
@@ -317,6 +361,16 @@ const CelebrationSettingsCard = () => {
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Buy Points Dialog */}
+      {companyId && (
+        <BuyPointsDialog
+          open={buyDialogOpen}
+          onOpenChange={setBuyDialogOpen}
+          companyId={companyId}
+          exchangeRate={rate}
+        />
       )}
     </div>
   );

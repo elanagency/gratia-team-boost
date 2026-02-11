@@ -185,6 +185,74 @@ serve(async (req: Request) => {
       }
     }
 
+    // Handle celebration points purchase
+    if (session.metadata?.purchase_type === "celebration_points") {
+      console.log("[VERIFY-STRIPE-SESSION] Processing celebration points purchase");
+
+      if (session.payment_status !== "paid") {
+        return new Response(
+          JSON.stringify({ error: "Payment not completed" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const pointsQuantity = parseInt(session.metadata.points_quantity || "0");
+      if (pointsQuantity <= 0) {
+        return new Response(
+          JSON.stringify({ error: "Invalid points quantity" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Credit points_balance
+      const { data: currentCompany } = await supabaseAdmin
+        .from("companies")
+        .select("points_balance")
+        .eq("id", companyId)
+        .single();
+
+      const newBalance = (currentCompany?.points_balance || 0) + pointsQuantity;
+
+      const { error: creditError } = await supabaseAdmin
+        .from("companies")
+        .update({ points_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq("id", companyId);
+
+      if (creditError) {
+        console.error("[VERIFY-STRIPE-SESSION] Error crediting points:", creditError);
+        return new Response(
+          JSON.stringify({ error: "Failed to credit points" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Log subscription event for audit
+      await supabaseAdmin.from("subscription_events").insert({
+        company_id: companyId,
+        event_type: "points_purchase",
+        new_quantity: pointsQuantity,
+        amount_charged: session.amount_total || 0,
+        metadata: {
+          session_id: sessionId,
+          points_quantity: pointsQuantity,
+          new_balance: newBalance,
+        },
+      });
+
+      console.log("[VERIFY-STRIPE-SESSION] Points credited:", { pointsQuantity, newBalance });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          type: "points_purchase",
+          pointsCredited: pointsQuantity,
+          newBalance,
+          companyId,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Handle payment mode sessions (existing subscription flow)
     if (session.payment_status !== "paid") {
       return new Response(
