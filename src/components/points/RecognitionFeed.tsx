@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Clock, Heart } from "lucide-react";
+import { MessageCircle, Clock, Heart, Cake, PartyPopper } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
@@ -92,9 +92,13 @@ export function RecognitionFeed() {
       }
 
       // Filter out system/cron job transactions, redemptions, and self-transactions
+      // but allow celebration rewards through
+      const celebrationPatterns = [/^🎂/, /^🎉/];
       const filteredTransactions = transactionsData.filter(transaction => {
-        // 1. Exclude self-transactions (redemptions, refunds, etc.)
-        if (transaction.sender_profile_id === transaction.recipient_profile_id) {
+        const isCelebration = celebrationPatterns.some(p => p.test(transaction.description));
+        
+        // 1. Exclude self-transactions (redemptions, refunds, etc.) but allow celebrations
+        if (transaction.sender_profile_id === transaction.recipient_profile_id && !isCelebration) {
           return false;
         }
         
@@ -188,6 +192,9 @@ export function RecognitionFeed() {
         mainPosts.push(transaction);
       }
     });
+    
+    // Celebration posts should never be grouped as comments
+    // They are always standalone main posts (already handled above since they don't start with 'Quick appreciation: ')
     
     // Create threads for main posts
     mainPosts.forEach(post => {
@@ -504,44 +511,75 @@ export function RecognitionFeed() {
             {threadedRecognitions.map((thread) => {
               const parsed = parseStructuredMessage(thread.mainPost);
               const canGivePoints = user?.id !== thread.mainPost.recipient_id && user?.id !== thread.mainPost.sender_id;
+              const isCelebration = thread.mainPost.sender_id === thread.mainPost.recipient_id && 
+                (/^🎂/.test(thread.mainPost.description) || /^🎉/.test(thread.mainPost.description));
+              const isBirthday = /^🎂/.test(thread.mainPost.description);
               
               return (
                 <div key={thread.mainPost.id} className="border-b border-border/50 pb-6 last:border-b-0">
                   {/* Main Post */}
                   <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="text-xs bg-[#F572FF]/10 text-[#F572FF]">
-                        {getInitials(thread.mainPost.sender_name)}
+                      <AvatarFallback className={`text-xs ${
+                        isCelebration 
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 
+                          : 'bg-[#F572FF]/10 text-[#F572FF]'
+                      }`}>
+                        {isCelebration ? (
+                          isBirthday ? <Cake className="h-4 w-4" /> : <PartyPopper className="h-4 w-4" />
+                        ) : (
+                          getInitials(thread.mainPost.sender_name)
+                        )}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                         <span className="font-bold text-sm">{thread.mainPost.sender_name}</span>
-                         <span className="text-xs text-muted-foreground">gave</span>
-                         <Badge className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                            +{thread.mainPost.points}
-                          </Badge>
-                         <span className="text-xs text-muted-foreground">to</span>
-                         <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
-                      </div>
+                      {isCelebration ? (
+                        <>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm">
+                              {isBirthday ? '🎂' : '🎉'}{' '}
+                              <span className="font-bold">{thread.mainPost.recipient_name}</span>
+                              {' '}received{' '}
+                            </span>
+                            <Badge className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              +{thread.mainPost.points}
+                            </Badge>
+                            <span className="text-sm">
+                              {isBirthday ? 'birthday' : 'work anniversary'} celebration points
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-sm">{thread.mainPost.sender_name}</span>
+                            <span className="text-xs text-muted-foreground">gave</span>
+                            <Badge className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              +{thread.mainPost.points}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">to</span>
+                            <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
+                          </div>
                       
-                        <div className="text-sm text-muted-foreground">
-                           {parsed.cleanText}
-                         </div>
+                          <div className="text-sm text-muted-foreground">
+                            {parsed.cleanText}
+                          </div>
                        
-                       {(() => {
-                         const parsed = parseStructuredMessage(thread.mainPost);
-                         return parsed.hashtags.length > 0 && (
-                           <div className="flex gap-1 flex-wrap">
-                             {parsed.hashtags.map((tag, index) => (
-                               <Badge key={index} variant="outline" className="text-xs">
-                                 #{tag}
-                               </Badge>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                          {(() => {
+                            const parsed = parseStructuredMessage(thread.mainPost);
+                            return parsed.hashtags.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {parsed.hashtags.map((tag, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    #{tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -549,7 +587,7 @@ export function RecognitionFeed() {
                           {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
                         </div>
                         
-                        {canGivePoints && (
+                        {canGivePoints && !isCelebration && (
                           <div className="flex gap-1">
                              {quickPoints.map((points) => {
                                const recipientId = thread.mainPost.recipient_id;
