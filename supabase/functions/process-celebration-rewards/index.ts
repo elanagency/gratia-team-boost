@@ -12,9 +12,52 @@ interface Company {
 
 interface Profile {
   id: string
+  first_name: string | null
+  last_name: string | null
   birthday: string | null
   company_start_date: string | null
   points: number
+}
+
+async function sendCelebrationNotifications(
+  supabaseUrl: string,
+  serviceKey: string,
+  companyId: string,
+  memberName: string,
+  rewardType: 'birthday' | 'anniversary',
+  points: number,
+  yearsOfService?: number
+) {
+  const message = rewardType === 'birthday'
+    ? `🎂 Happy Birthday to ${memberName}! They received ${points} celebration points`
+    : `🎉 Happy Work Anniversary to ${memberName} (${yearsOfService} year${yearsOfService !== 1 ? 's' : ''})! They received ${points} celebration points`
+
+  const title = rewardType === 'birthday' ? 'Birthday Celebration' : 'Work Anniversary Celebration'
+
+  const notificationPayload = {
+    company_id: companyId,
+    notification_type: 'milestone',
+    message,
+    title,
+    points,
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${serviceKey}`,
+  }
+
+  // Fire-and-forget to both Slack and Teams
+  const calls = [
+    fetch(`${supabaseUrl}/functions/v1/send-slack-notification`, {
+      method: 'POST', headers, body: JSON.stringify(notificationPayload),
+    }).catch(e => console.log('Slack notification skipped:', e.message)),
+    fetch(`${supabaseUrl}/functions/v1/send-teams-notification`, {
+      method: 'POST', headers, body: JSON.stringify(notificationPayload),
+    }).catch(e => console.log('Teams notification skipped:', e.message)),
+  ]
+
+  await Promise.allSettled(calls)
 }
 
 Deno.serve(async (req) => {
@@ -62,7 +105,7 @@ Deno.serve(async (req) => {
       // Get active members for this company
       const { data: members, error: membersError } = await supabase
         .from('profiles')
-        .select('id, birthday, company_start_date, points')
+        .select('id, first_name, last_name, birthday, company_start_date, points')
         .eq('company_id', company.id)
         .eq('status', 'active')
 
@@ -152,6 +195,9 @@ Deno.serve(async (req) => {
             description: `🎂 Birthday reward`
           })
 
+          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
+          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, memberName, 'birthday', company.birthday_reward_points)
+
           totalBirthdayRewards++
           console.log(`Birthday reward: ${company.birthday_reward_points} pts to ${member.id} in company ${company.id}`)
         }
@@ -214,6 +260,10 @@ Deno.serve(async (req) => {
             points: company.anniversary_reward_points,
             description: `🎉 Work anniversary reward`
           })
+
+          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
+          const yearsOfService = currentYear - startDate.getFullYear()
+          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, memberName, 'anniversary', company.anniversary_reward_points, yearsOfService)
 
           totalAnniversaryRewards++
           console.log(`Anniversary reward: ${company.anniversary_reward_points} pts to ${member.id} in company ${company.id}`)
