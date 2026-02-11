@@ -76,11 +76,21 @@ export default function TeamsNotificationsCard() {
   // Fetch channels when team changes
   useEffect(() => {
     if (!selectedTeamId || !isOAuth) return;
+    const isUserChangingTeam = selectedTeamId !== integration?.team_id;
     setIsLoadingChannels(true);
     setChannels([]);
-    setSelectedChannelId('');
+    if (isUserChangingTeam) {
+      setSelectedChannelId('');
+    }
     fetchChannels(selectedTeamId)
-      .then(setChannels)
+      .then((fetched) => {
+        setChannels(fetched);
+        // Re-select saved channel if it exists in the fetched list
+        if (!isUserChangingTeam && integration?.channel_id) {
+          const saved = fetched.find((c: MsChannel) => c.id === integration.channel_id);
+          if (saved) setSelectedChannelId(saved.id);
+        }
+      })
       .catch(() => setChannels([]))
       .finally(() => setIsLoadingChannels(false));
   }, [selectedTeamId, isOAuth]);
