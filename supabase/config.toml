@@ -219,3 +219,6 @@ verify_jwt = true
 
 [functions.purchase-company-points]
 verify_jwt = false
+
+[functions.process-celebration-rewards]
+verify_jwt = false
