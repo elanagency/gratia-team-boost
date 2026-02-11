@@ -95,7 +95,36 @@ const CelebrationSettingsCard = () => {
     enabled: !!companyId,
   });
 
-  // Fetch recent celebration logs
+  // Fetch yearly summary stats
+  const { data: yearlyStats } = useQuery({
+    queryKey: ["celebration-yearly-stats", companyId],
+    queryFn: async () => {
+      if (!companyId) return null;
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await supabase
+        .from("celebration_rewards_log")
+        .select("reward_type, points_awarded")
+        .eq("company_id", companyId)
+        .eq("year", currentYear);
+      if (error) throw error;
+
+      const stats = { birthday_count: 0, anniversary_count: 0, birthday_points: 0, anniversary_points: 0, total_points: 0 };
+      data?.forEach((r) => {
+        if (r.reward_type === "birthday") {
+          stats.birthday_count++;
+          stats.birthday_points += r.points_awarded;
+        } else {
+          stats.anniversary_count++;
+          stats.anniversary_points += r.points_awarded;
+        }
+        stats.total_points += r.points_awarded;
+      });
+      return stats;
+    },
+    enabled: !!companyId,
+  });
+
+  // Fetch recent celebration logs (expanded to 50)
   const { data: recentLogs } = useQuery({
     queryKey: ["celebration-logs", companyId],
     queryFn: async () => {
@@ -105,7 +134,7 @@ const CelebrationSettingsCard = () => {
         .select("id, reward_type, points_awarded, event_date, year, created_at, profile_id")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50);
       if (error) throw error;
 
       if (!data?.length) return [];
@@ -329,14 +358,48 @@ const CelebrationSettingsCard = () => {
         </CardContent>
       </Card>
 
+      {/* Yearly Summary Stats */}
+      {yearlyStats && yearlyStats.total_points > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarHeart className="h-5 w-5 text-primary" />
+              {new Date().getFullYear()} Celebration Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border p-4 text-center">
+                <p className="text-2xl font-bold">{yearlyStats.total_points.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Total Points Distributed</p>
+                <p className="text-xs text-muted-foreground">${(yearlyStats.total_points * rate).toFixed(2)} value</p>
+              </div>
+              <div className="rounded-lg border p-4 text-center">
+                <p className="text-2xl font-bold">{yearlyStats.birthday_count}</p>
+                <p className="text-sm text-muted-foreground">🎂 Birthday Rewards</p>
+                <p className="text-xs text-muted-foreground">{yearlyStats.birthday_points.toLocaleString()} pts</p>
+              </div>
+              <div className="rounded-lg border p-4 text-center">
+                <p className="text-2xl font-bold">{yearlyStats.anniversary_count}</p>
+                <p className="text-sm text-muted-foreground">🎉 Anniversary Rewards</p>
+                <p className="text-xs text-muted-foreground">{yearlyStats.anniversary_points.toLocaleString()} pts</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Reward History */}
       {recentLogs && recentLogs.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarHeart className="h-5 w-5 text-primary" />
-              Recent Celebration Rewards
+              Celebration Rewards History
             </CardTitle>
+            <CardDescription>
+              Last {recentLogs.length} celebration rewards distributed
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -345,6 +408,7 @@ const CelebrationSettingsCard = () => {
                   <TableHead>Employee</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Points</TableHead>
+                  <TableHead>Cost</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -352,8 +416,11 @@ const CelebrationSettingsCard = () => {
                 {recentLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>{log.employee_name}</TableCell>
-                    <TableCell className="capitalize">{log.reward_type}</TableCell>
+                    <TableCell>
+                      {log.reward_type === "birthday" ? "🎂 Birthday" : "🎉 Anniversary"}
+                    </TableCell>
                     <TableCell>{log.points_awarded}</TableCell>
+                    <TableCell className="text-muted-foreground">${(log.points_awarded * rate).toFixed(2)}</TableCell>
                     <TableCell>{format(new Date(log.created_at), "MMM d, yyyy")}</TableCell>
                   </TableRow>
                 ))}
