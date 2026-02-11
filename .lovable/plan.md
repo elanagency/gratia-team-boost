@@ -1,109 +1,87 @@
 
 
-# Birthday and Anniversary Rewards -- Business Logic and Implementation Plan
+# Phase 2: Buy Points via Stripe Checkout
 
-## How It Works (Plain English)
+## Overview
 
-1. **Company Admin goes to Settings** and finds a new "Celebrations" tab
-2. They toggle on **Birthday Rewards** and/or **Anniversary Rewards**, setting how many points each event should give (e.g. 50 points on birthday, 100 points on work anniversary)
-3. The company has a **points wallet** (already exists as `points_balance` on the companies table). The admin tops it up by purchasing points -- e.g. buying 1,000 points at $0.05 each = $50.00
-4. **Every day**, a background job checks: "Does any employee have a birthday or work anniversary today?" If yes, it deducts points from the company wallet and adds them to that employee's redeemable balance (`points` on profiles)
-5. If the wallet runs low, the admin gets a warning. If it hits zero, rewards pause until topped up
+Add a "Buy Points" flow so company admins can top up their company wallet by purchasing celebration points through Stripe Checkout. Each purchase creates a trackable Stripe product/line item.
 
-## Cost Visibility
+## How It Works
 
-When configuring, the admin sees a cost estimator:
+1. Admin clicks "Buy Points" on the Celebrations settings tab
+2. A dialog opens where they enter how many points they want (e.g. 500)
+3. The cost is shown in real-time (500 pts x $0.05 = $25.00)
+4. They click "Proceed to Checkout" which redirects to Stripe Checkout
+5. After payment, they return to Settings and the company's `points_balance` is credited
 
-```text
-Birthday Rewards:    100 pts x 12 employees = 1,200 pts/year = $60.00/year
-Anniversary Rewards:  50 pts x 12 employees =   600 pts/year = $30.00/year
-                                        Total: 1,800 pts/year = $90.00/year
-Current wallet balance: 500 pts ($25.00)
-```
+## Stripe Product Strategy
 
-This helps them decide how many points to buy.
+A dedicated Stripe product called **"Celebration Points"** will be created (one per environment, stored in `platform_settings` alongside existing product IDs). Each checkout dynamically creates a price based on the current `point_exchange_rate` and the quantity requested -- this way each purchase is a clean line item in the Stripe dashboard showing "Celebration Points x 500".
 
-## Data Model Changes
+## Changes Required
 
-### New columns on `companies` table
+### 1. Database Migration
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `birthday_rewards_enabled` | boolean | false | Toggle for birthday rewards |
-| `birthday_reward_points` | integer | 0 | Points given on each birthday |
-| `anniversary_rewards_enabled` | boolean | false | Toggle for anniversary rewards |
-| `anniversary_reward_points` | integer | 0 | Points given on each work anniversary |
+Add two new columns to `platform_settings`:
+- `stripe_celebration_product_id_live` (text)
+- `stripe_celebration_product_id_test` (text)
 
-### New table: `celebration_rewards_log`
+These store the Stripe product ID for "Celebration Points" in each environment.
 
-Tracks every automated reward distribution for auditing and duplicate prevention.
+### 2. New Edge Function: `purchase-company-points/index.ts`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | uuid (PK) | Auto-generated |
-| `company_id` | uuid (FK) | Which company |
-| `profile_id` | uuid (FK) | Which employee received |
-| `reward_type` | text | "birthday" or "anniversary" |
-| `points_awarded` | integer | How many points given |
-| `event_date` | date | The actual birthday/anniversary date |
-| `year` | integer | The year this was awarded (prevents duplicates) |
-| `created_at` | timestamptz | When it was processed |
+Accepts: `companyId`, `pointsQuantity`, `origin`
 
-Unique constraint on `(company_id, profile_id, reward_type, year)` to prevent double-awarding.
+Flow:
+1. Authenticate the user, verify they are admin of the company
+2. Get the company's Stripe environment (live/test) and customer ID (create if needed, same pattern as `billing-setup-checkout`)
+3. Get `point_exchange_rate` from `platform_settings` to calculate price per point in cents
+4. Get or create the "Celebration Points" Stripe product (store ID back to `platform_settings`)
+5. Create a Stripe price for the exact unit amount (exchange rate in cents)
+6. Create a Stripe Checkout session in `payment` mode with `quantity = pointsQuantity`
+7. Metadata includes `company_id`, `points_quantity`, and `purchase_type: "celebration_points"`
+8. Success URL redirects to `/dashboard/settings?points_purchase=success&session_id={CHECKOUT_SESSION_ID}`
 
-## Frontend Changes
+### 3. Update `verify-stripe-session/index.ts`
 
-### Settings Page -- New "Celebrations" Tab
+Add a new code path that checks `session.metadata.purchase_type === "celebration_points"`:
+- Verify payment status is "paid"
+- Read `points_quantity` from metadata
+- Credit `companies.points_balance` by that amount
+- Log a `subscription_events` entry with `event_type: "points_purchase"` for audit
+- Return success with the points credited
 
-Added to the existing tabbed Settings page (`src/pages/admin/Settings.tsx`):
+### 4. Update `CelebrationSettingsCard.tsx`
 
-- **Birthday Rewards** section: Toggle switch + points amount input
-- **Anniversary Rewards** section: Toggle switch + points amount input
-- **Cost Estimator**: Shows projected annual cost based on team size and exchange rate
-- **Company Wallet**: Shows current balance with a "Buy Points" button
-- **Reward History**: Table of recent automated rewards from `celebration_rewards_log`
+Replace the disabled "Buy Points (Coming Soon)" button with a working flow:
+- "Buy Points" button opens a dialog
+- Dialog contains: quantity input, real-time cost display (quantity x exchange rate), and "Proceed to Checkout" button
+- The button calls `purchase-company-points` and redirects to the Stripe Checkout URL
+- After returning from Stripe, a `useEffect` picks up the `points_purchase=success` query param, calls `verify-stripe-session`, shows a toast, and refreshes the wallet balance
 
-### Buy Points Flow
+### 5. New Component: `BuyPointsDialog.tsx`
 
-A new edge function `purchase-company-points` creates a Stripe Checkout session for a one-off purchase. The admin picks a quantity (e.g. 1,000 points at $0.05 each = $50). On successful payment, the company's `points_balance` is credited.
+A dialog component in `src/components/settings/` containing:
+- Number input for points quantity (with min value, e.g. 100)
+- Quick-select buttons (e.g. 500, 1000, 2500, 5000)
+- Live cost calculation display
+- "Proceed to Checkout" button that triggers the edge function
+- Loading state while creating checkout session
 
-## Backend -- Daily Cron Job
+## File Summary
 
-A new edge function `process-celebration-rewards` runs daily via pg_cron:
-
-1. Query all companies where birthday or anniversary rewards are enabled
-2. For each company, find employees whose birthday (month/day) or company_start_date (month/day) matches today
-3. Check `celebration_rewards_log` to skip anyone already rewarded this year
-4. For each match: check company `points_balance` is sufficient, deduct from wallet, add to employee's `points` (redeemable), log to `celebration_rewards_log`, create a `point_transaction` record
-5. If wallet is insufficient, skip and optionally flag the company for a low-balance notification
-
-## Implementation Phases
-
-### Phase 1: Database and Configuration UI
-- Migration: add columns to `companies`, create `celebration_rewards_log` table
-- Build the "Celebrations" settings tab with toggles, point amounts, and cost estimator
-- Show current wallet balance
-
-### Phase 2: Buy Points
-- Edge function `purchase-company-points` (Stripe Checkout for one-off point purchase)
-- Webhook or verification to credit `points_balance` after payment
-- "Buy Points" button in the Celebrations tab
-
-### Phase 3: Daily Processing
-- Edge function `process-celebration-rewards`
-- pg_cron schedule (daily at 9:00 AM UTC)
-- Logging and transaction records
-- Low balance warnings
-
-### Phase 4: Notifications (optional, later)
-- Slack/Teams notification when someone gets a birthday/anniversary reward
-- Email notification to the employee
-- Low wallet balance alert to admin
+| File | Action |
+|------|--------|
+| `supabase/migrations/...` | Add celebration product ID columns to platform_settings |
+| `supabase/functions/purchase-company-points/index.ts` | New edge function |
+| `supabase/functions/verify-stripe-session/index.ts` | Add celebration points verification path |
+| `src/components/settings/BuyPointsDialog.tsx` | New dialog component |
+| `src/components/settings/CelebrationSettingsCard.tsx` | Wire up Buy Points button and post-purchase verification |
 
 ## What Will NOT Change
 
-- Existing monthly 100-point allocation (separate system)
-- Peer-to-peer recognition flow
-- Redemption shop or exchange rate logic
-- Existing subscription billing
+- Existing subscription billing flow
+- Monthly points allocation
+- Peer-to-peer recognition
+- Exchange rate or redemption logic
 
