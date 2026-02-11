@@ -359,8 +359,7 @@ const CelebrationSettingsCard = () => {
       </Card>
 
       {/* Yearly Summary Stats */}
-      {yearlyStats && yearlyStats.total_points > 0 && (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarHeart className="h-5 w-5 text-primary" />
@@ -370,28 +369,26 @@ const CelebrationSettingsCard = () => {
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{yearlyStats.total_points.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(yearlyStats?.total_points || 0).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Total Points Distributed</p>
-                <p className="text-xs text-muted-foreground">${(yearlyStats.total_points * rate).toFixed(2)} value</p>
+                <p className="text-xs text-muted-foreground">${((yearlyStats?.total_points || 0) * rate).toFixed(2)} value</p>
               </div>
               <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{yearlyStats.birthday_count}</p>
+                <p className="text-2xl font-bold">{yearlyStats?.birthday_count || 0}</p>
                 <p className="text-sm text-muted-foreground">🎂 Birthday Rewards</p>
-                <p className="text-xs text-muted-foreground">{yearlyStats.birthday_points.toLocaleString()} pts</p>
+                <p className="text-xs text-muted-foreground">{(yearlyStats?.birthday_points || 0).toLocaleString()} pts</p>
               </div>
               <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{yearlyStats.anniversary_count}</p>
+                <p className="text-2xl font-bold">{yearlyStats?.anniversary_count || 0}</p>
                 <p className="text-sm text-muted-foreground">🎉 Anniversary Rewards</p>
-                <p className="text-xs text-muted-foreground">{yearlyStats.anniversary_points.toLocaleString()} pts</p>
+              <p className="text-xs text-muted-foreground">{(yearlyStats?.anniversary_points || 0).toLocaleString()} pts</p>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Recent Reward History */}
-      {recentLogs && recentLogs.length > 0 && (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarHeart className="h-5 w-5 text-primary" />
@@ -426,9 +423,15 @@ const CelebrationSettingsCard = () => {
                 ))}
               </TableBody>
             </Table>
+            {(!recentLogs || recentLogs.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  No celebration rewards distributed yet
+                </TableCell>
+              </TableRow>
+            )}
           </CardContent>
         </Card>
-      )}
 
       {/* Buy Points Dialog */}
       {companyId && (
