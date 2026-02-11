@@ -6,6 +6,7 @@ import { BillingCard } from "@/components/settings/BillingCard";
 import SlackNotificationsCard from "@/components/settings/SlackNotificationsCard";
 import TeamsNotificationsCard from "@/components/settings/TeamsNotificationsCard";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
+import CelebrationSettingsCard from "@/components/settings/CelebrationSettingsCard";
 
 const Settings = () => {
   return (
@@ -17,6 +18,7 @@ const Settings = () => {
           <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="celebrations">Celebrations</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
@@ -31,6 +33,10 @@ const Settings = () => {
 
         <TabsContent value="team">
           <TeamManagementCard />
+        </TabsContent>
+
+        <TabsContent value="celebrations">
+          <CelebrationSettingsCard />
         </TabsContent>
 
         <TabsContent value="billing">
