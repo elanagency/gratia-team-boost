@@ -1,81 +1,109 @@
 
 
-# Add Birthday and Company Start Date Fields
+# Birthday and Anniversary Rewards -- Business Logic and Implementation Plan
 
-## Overview
+## How It Works (Plain English)
 
-Add two new date fields -- **Birthday** and **Company Start Date** -- to team member profiles. These will appear in the invite form, edit form, CSV upload, and team member table.
+1. **Company Admin goes to Settings** and finds a new "Celebrations" tab
+2. They toggle on **Birthday Rewards** and/or **Anniversary Rewards**, setting how many points each event should give (e.g. 50 points on birthday, 100 points on work anniversary)
+3. The company has a **points wallet** (already exists as `points_balance` on the companies table). The admin tops it up by purchasing points -- e.g. buying 1,000 points at $0.05 each = $50.00
+4. **Every day**, a background job checks: "Does any employee have a birthday or work anniversary today?" If yes, it deducts points from the company wallet and adds them to that employee's redeemable balance (`points` on profiles)
+5. If the wallet runs low, the admin gets a warning. If it hits zero, rewards pause until topped up
 
-## Changes Required
+## Cost Visibility
 
-### 1. Database Migration
+When configuring, the admin sees a cost estimator:
 
-Add two new nullable columns to the `profiles` table:
+```text
+Birthday Rewards:    100 pts x 12 employees = 1,200 pts/year = $60.00/year
+Anniversary Rewards:  50 pts x 12 employees =   600 pts/year = $30.00/year
+                                        Total: 1,800 pts/year = $90.00/year
+Current wallet balance: 500 pts ($25.00)
+```
 
-- `birthday` (date, nullable)
-- `company_start_date` (date, nullable)
+This helps them decide how many points to buy.
 
-### 2. `src/hooks/useCompanyMembers.ts`
+## Data Model Changes
 
-- Add `birthday` and `company_start_date` to the `CompanyMember` interface
-- Add both fields to the Supabase select query
-- Map both fields into the formatted member objects
+### New columns on `companies` table
 
-### 3. `src/components/team/InviteForm.tsx`
+| Column | Type | Default | Description |
+|--------|------|---------|-------------|
+| `birthday_rewards_enabled` | boolean | false | Toggle for birthday rewards |
+| `birthday_reward_points` | integer | 0 | Points given on each birthday |
+| `anniversary_rewards_enabled` | boolean | false | Toggle for anniversary rewards |
+| `anniversary_reward_points` | integer | 0 | Points given on each work anniversary |
 
-- Add two date input fields (`<Input type="date">`) for Birthday and Company Start Date (both optional)
-- Add corresponding props to the interface (`birthday`, `setBirthday`, `companyStartDate`, `setCompanyStartDate`)
+### New table: `celebration_rewards_log`
 
-### 4. `src/components/team/InviteTeamMemberDialog.tsx`
+Tracks every automated reward distribution for auditing and duplicate prevention.
 
-- Add `birthday` and `companyStartDate` state variables
-- Pass them to `InviteForm` and include them in the `create-team-member` edge function call body
-- Reset them on close/success
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid (PK) | Auto-generated |
+| `company_id` | uuid (FK) | Which company |
+| `profile_id` | uuid (FK) | Which employee received |
+| `reward_type` | text | "birthday" or "anniversary" |
+| `points_awarded` | integer | How many points given |
+| `event_date` | date | The actual birthday/anniversary date |
+| `year` | integer | The year this was awarded (prevents duplicates) |
+| `created_at` | timestamptz | When it was processed |
 
-### 5. `src/components/team/EditMemberForm.tsx`
+Unique constraint on `(company_id, profile_id, reward_type, year)` to prevent double-awarding.
 
-- Add `birthday` and `companyStartDate` state initialized from `member.birthday` / `member.company_start_date`
-- Add two date input fields to the form
-- Include both fields in the `updateMember` call
+## Frontend Changes
 
-### 6. `src/hooks/useCompanyMembers.ts` - `updateMember`
+### Settings Page -- New "Celebrations" Tab
 
-- Accept `birthday` and `company_start_date` in the update payload and pass them to the Supabase update
+Added to the existing tabbed Settings page (`src/pages/admin/Settings.tsx`):
 
-### 7. `src/components/team/TeamMemberTable.tsx`
+- **Birthday Rewards** section: Toggle switch + points amount input
+- **Anniversary Rewards** section: Toggle switch + points amount input
+- **Cost Estimator**: Shows projected annual cost based on team size and exchange rate
+- **Company Wallet**: Shows current balance with a "Buy Points" button
+- **Reward History**: Table of recent automated rewards from `celebration_rewards_log`
 
-- Add "Birthday" and "Start Date" columns to the table header
-- Display formatted dates (or "-") in the corresponding cells
-- Update the empty state colSpan from 6 to 8
+### Buy Points Flow
 
-### 8. CSV Upload Changes
+A new edge function `purchase-company-points` creates a Stripe Checkout session for a one-off purchase. The admin picks a quantity (e.g. 1,000 points at $0.05 each = $50). On successful payment, the company's `points_balance` is credited.
 
-**`src/components/team/CSVUploadDialog.tsx`**:
-- Add `birthday` and `companyStartDate` to `CSVMember` interface
-- Update `parseCSV` header normalization to handle "birthday", "date of birth", "dob", "start date", "company start date"
-- Pass both fields to the `create-team-member` edge function call
-- Update sample CSV to include the new columns
+## Backend -- Daily Cron Job
 
-**`src/components/team/csv/CSVUploadStep.tsx`**:
-- Update the format example text to show the new columns
+A new edge function `process-celebration-rewards` runs daily via pg_cron:
 
-**`src/components/team/csv/CSVPreviewStep.tsx`**:
-- Add `birthday` and `companyStartDate` to the `CSVMember` interface
-- Add columns to the preview table
+1. Query all companies where birthday or anniversary rewards are enabled
+2. For each company, find employees whose birthday (month/day) or company_start_date (month/day) matches today
+3. Check `celebration_rewards_log` to skip anyone already rewarded this year
+4. For each match: check company `points_balance` is sufficient, deduct from wallet, add to employee's `points` (redeemable), log to `celebration_rewards_log`, create a `point_transaction` record
+5. If wallet is insufficient, skip and optionally flag the company for a low-balance notification
 
-### 9. `supabase/functions/create-team-member/index.ts`
+## Implementation Phases
 
-- Accept `birthday` and `companyStartDate` from the request body
-- Include them in the profile insert/update query
+### Phase 1: Database and Configuration UI
+- Migration: add columns to `companies`, create `celebration_rewards_log` table
+- Build the "Celebrations" settings tab with toggles, point amounts, and cost estimator
+- Show current wallet balance
 
-### 10. Profile Settings (team member view)
+### Phase 2: Buy Points
+- Edge function `purchase-company-points` (Stripe Checkout for one-off point purchase)
+- Webhook or verification to credit `points_balance` after payment
+- "Buy Points" button in the Celebrations tab
 
-**`src/pages/admin/ProfileSettings.tsx`**:
-- Fetch and display birthday and company start date (read-only or editable) so team members can also see their own dates
+### Phase 3: Daily Processing
+- Edge function `process-celebration-rewards`
+- pg_cron schedule (daily at 9:00 AM UTC)
+- Logging and transaction records
+- Low balance warnings
+
+### Phase 4: Notifications (optional, later)
+- Slack/Teams notification when someone gets a birthday/anniversary reward
+- Email notification to the employee
+- Low wallet balance alert to admin
 
 ## What Will NOT Change
 
-- No changes to billing, points, or subscription logic
-- No changes to RLS policies (existing profile update policies cover new columns)
-- Fields are all optional so no existing flows break
+- Existing monthly 100-point allocation (separate system)
+- Peer-to-peer recognition flow
+- Redemption shop or exchange rate logic
+- Existing subscription billing
 
