@@ -22,6 +22,10 @@ interface InviteFormProps {
   setDepartment: (department: string) => void;
   role: 'user' | 'admin';
   setRole: (role: 'user' | 'admin') => void;
+  birthday: string;
+  setBirthday: (birthday: string) => void;
+  companyStartDate: string;
+  setCompanyStartDate: (date: string) => void;
   isSubmitting: boolean;
   isFirstMember: boolean;
   onSubmit: (e: React.FormEvent) => void;
@@ -37,6 +41,10 @@ const InviteForm = ({
   setDepartment,
   role,
   setRole,
+  birthday,
+  setBirthday,
+  companyStartDate,
+  setCompanyStartDate,
   isSubmitting,
   isFirstMember,
   onSubmit,
@@ -96,8 +104,28 @@ const InviteForm = ({
           </SelectContent>
         </Select>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="birthday">Birthday</Label>
+          <Input
+            type="date"
+            id="birthday"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="companyStartDate">Company Start Date</Label>
+          <Input
+            type="date"
+            id="companyStartDate"
+            value={companyStartDate}
+            onChange={(e) => setCompanyStartDate(e.target.value)}
+          />
+        </div>
+      </div>
       <Button 
-        type="submit" 
+        type="submit"
         disabled={isSubmitting || !!emailError} 
         className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
       >

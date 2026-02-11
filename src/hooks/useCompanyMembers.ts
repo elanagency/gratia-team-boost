@@ -15,6 +15,8 @@ export interface CompanyMember {
   status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
   is_admin: boolean;
+  birthday?: string | null;
+  company_start_date?: string | null;
 }
 
 export interface CompanyMembersOptions {
@@ -67,7 +69,9 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
           department,
           department_id,
           status,
-          first_login_at
+          first_login_at,
+          birthday,
+          company_start_date
         `, { count: 'exact' })
         .eq('company_id', companyId);
 
@@ -127,7 +131,9 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
           department_id: profile.department_id || undefined,
           status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at,
-          is_admin: profile.is_admin || false
+          is_admin: profile.is_admin || false,
+          birthday: profile.birthday || null,
+          company_start_date: profile.company_start_date || null
         };
       });
 
@@ -176,7 +182,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
     }
   }, [companyId, membersData, includeAdmins]);
 
-  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department?: string | null; department_id?: string | null; is_admin?: boolean }) => {
+  const updateMember = useCallback(async (memberId: string, updateData: { name: string; department?: string | null; department_id?: string | null; is_admin?: boolean; birthday?: string | null; company_start_date?: string | null }) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
 
@@ -196,6 +202,14 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
       // Only include is_admin if it was explicitly provided
       if (updateData.is_admin !== undefined) {
         updatePayload.is_admin = updateData.is_admin;
+      }
+
+      // Include date fields if provided
+      if (updateData.birthday !== undefined) {
+        updatePayload.birthday = updateData.birthday || null;
+      }
+      if (updateData.company_start_date !== undefined) {
+        updatePayload.company_start_date = updateData.company_start_date || null;
       }
 
       // Update profile directly

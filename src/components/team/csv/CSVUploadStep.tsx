@@ -26,11 +26,11 @@ export const CSVUploadStep = memo(({ onFileChange, onDownloadSample }: CSVUpload
         <div>
           <strong>CSV Format:</strong>
           <br />
-          Name, Email, Department
+          Name, Email, Department, Role, Birthday, Company Start Date
           <br />
-          John Doe, john@example.com, Engineering
+          John Doe, john@example.com, Engineering, user, 1990-05-15, 2023-01-10
           <br />
-          Jane Smith, jane@example.com, Marketing
+          Jane Smith, jane@example.com, Marketing, admin, , 2022-06-01
         </div>
         <Button
           type="button"

@@ -14,10 +14,32 @@ const ProfileSettings = () => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: firstName,
-    lastName: lastName
+    lastName: lastName,
+    birthday: '',
+    companyStartDate: ''
   });
 
   // Shipping fields removed for security
+
+  // Fetch profile date fields
+  React.useEffect(() => {
+    const fetchDates = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('birthday, company_start_date')
+        .eq('id', user.id)
+        .single();
+      if (data) {
+        setForm(prev => ({
+          ...prev,
+          birthday: data.birthday || '',
+          companyStartDate: data.company_start_date || ''
+        }));
+      }
+    };
+    fetchDates();
+  }, [user?.id]);
 
   // Update form when auth context data changes
   React.useEffect(() => {
@@ -46,6 +68,8 @@ const ProfileSettings = () => {
           id: user.id,
           first_name: form.firstName,
           last_name: form.lastName,
+          birthday: form.birthday || null,
+          company_start_date: form.companyStartDate || null,
           updated_at: new Date().toISOString(),
         });
       
@@ -110,8 +134,27 @@ const ProfileSettings = () => {
               <p className="text-xs text-gray-500">Email cannot be changed</p>
             </div>
 
-            {/* Shipping information is now collected at redemption time only */}
-            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="birthday">Birthday</Label>
+                <Input
+                  id="birthday"
+                  type="date"
+                  value={form.birthday}
+                  onChange={(e) => setForm({...form, birthday: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company-start-date">Company Start Date</Label>
+                <Input
+                  id="company-start-date"
+                  type="date"
+                  value={form.companyStartDate}
+                  onChange={(e) => setForm({...form, companyStartDate: e.target.value})}
+                />
+              </div>
+            </div>
+
             <Button type="submit" disabled={loading} className="bg-[#F572FF] hover:bg-[#E55DE9] text-white">
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
