@@ -59,11 +59,63 @@ export type Database = {
         }
         Relationships: []
       }
+      celebration_rewards_log: {
+        Row: {
+          company_id: string
+          created_at: string
+          event_date: string
+          id: string
+          points_awarded: number
+          profile_id: string
+          reward_type: string
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          event_date: string
+          id?: string
+          points_awarded: number
+          profile_id: string
+          reward_type: string
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          event_date?: string
+          id?: string
+          points_awarded?: number
+          profile_id?: string
+          reward_type?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "celebration_rewards_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "celebration_rewards_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
+          anniversary_reward_points: number
+          anniversary_rewards_enabled: boolean
           billing_cycle_anchor: number | null
           billing_ready: boolean | null
+          birthday_reward_points: number
+          birthday_rewards_enabled: boolean
           created_at: string
           environment: string
           first_active_member_at: string | null
@@ -87,8 +139,12 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          anniversary_reward_points?: number
+          anniversary_rewards_enabled?: boolean
           billing_cycle_anchor?: number | null
           billing_ready?: boolean | null
+          birthday_reward_points?: number
+          birthday_rewards_enabled?: boolean
           created_at?: string
           environment?: string
           first_active_member_at?: string | null
@@ -112,8 +168,12 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          anniversary_reward_points?: number
+          anniversary_rewards_enabled?: boolean
           billing_cycle_anchor?: number | null
           billing_ready?: boolean | null
+          birthday_reward_points?: number
+          birthday_rewards_enabled?: boolean
           created_at?: string
           environment?: string
           first_active_member_at?: string | null
