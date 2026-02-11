@@ -1,21 +1,29 @@
 
 
-# Move Settings to User Dropdown Menu
+# Fix: Teams Channel Selection Not Persisting on Page Load
 
-## What Changes
+## Problem
 
-Move the Settings gear icon from the top navigation bar into the user dropdown menu, alongside "Profile Settings" and "Log out". This simplifies the header and keeps all user/admin actions in one place.
+When the page loads, two `useEffect` hooks race against each other:
 
-## Changes
+1. **Pre-populate effect** (line 71-74): Sets `selectedTeamId` and `selectedChannelId` from the saved integration
+2. **Channel-fetch effect** (line 77-86): Fires when `selectedTeamId` changes, and always resets `selectedChannelId` to `''` and clears the channels list
 
-**File: `src/components/dashboard/DashboardTopNavigation.tsx`**
+The channel-fetch effect runs after the pre-populate sets the team ID, wiping out the saved channel selection. So on every page load, the channel dropdown shows "Select channel" even though it is saved in the database.
 
-1. Remove the standalone Settings icon button from the right side of the nav bar (the `isAdmin && (...)` block with the gear icon before the dropdown)
-2. Add a new "Company Settings" menu item inside the `DropdownMenuContent`, between "Profile Settings" and "Log out" -- only visible to admin users
-3. The menu item will use the Settings icon and link to `/dashboard/settings`
+## Fix
 
-The result in the dropdown will be:
-- Profile Settings
-- Company Settings (admin only)
-- Log out
+**File: `src/components/settings/TeamsNotificationsCard.tsx`**
+
+1. Only reset `selectedChannelId` in the channel-fetch effect when the user is **actively changing** the team (i.e., the new team ID differs from the saved `integration.team_id`). When the team ID matches what is already saved, preserve the existing `selectedChannelId`.
+
+2. After fetching channels, if the saved `integration.channel_id` matches one of the fetched channels, re-select it automatically.
+
+This ensures that on initial load the saved channel is preserved, while still clearing the channel when the user picks a different team.
+
+## Technical Detail
+
+Replace the channel-fetch `useEffect` (lines 77-86) with logic that:
+- Skips resetting `selectedChannelId` if `selectedTeamId === integration?.team_id`
+- After channels are fetched, if the integration's saved `channel_id` exists in the fetched list, sets it as selected
 
