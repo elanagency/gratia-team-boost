@@ -1,81 +1,72 @@
 
 
-# Phase 3: Daily Celebration Rewards Processing
+# Add Celebration Notifications to Slack and Teams
 
 ## Overview
 
-Create a new edge function `process-celebration-rewards` that runs daily via `pg_cron`, checking all companies with celebrations enabled and distributing birthday/anniversary points automatically.
+After each successful birthday or anniversary reward is distributed, the `process-celebration-rewards` edge function will send a notification to Slack and/or Teams (if connected and the `team_milestones` notification type is enabled).
 
-## How It Works
+## What Changes
 
-1. The function runs once daily (scheduled at 9:00 AM UTC via `pg_cron`)
-2. It queries all companies where `birthday_rewards_enabled = true` OR `anniversary_rewards_enabled = true`
-3. For each company, it finds active employees whose `birthday` (month/day) or `company_start_date` (month/day) matches today
-4. It checks `celebration_rewards_log` to skip anyone already rewarded this year for that event type
-5. For each eligible employee: verifies the company has enough `points_balance`, deducts from wallet, credits the employee's `points`, logs to `celebration_rewards_log`, and creates a `point_transactions` record
-6. If the wallet runs out mid-processing, remaining employees are skipped and logged as "insufficient_balance"
+Only **one file** needs to be updated: `supabase/functions/process-celebration-rewards/index.ts`
 
-## New Edge Function: `process-celebration-rewards/index.ts`
+### Changes to the function:
 
-**Logic flow per company:**
+1. **Fetch member names** -- Update the profiles query to also select `first_name, last_name` so we can include the employee's name in the notification message
 
-```text
-For each company with celebrations enabled:
-  +-- Birthday rewards enabled?
-  |     Find active profiles where EXTRACT(month, day) from birthday = today
-  |     Filter out those already in celebration_rewards_log for this year
-  |     For each match:
-  |       Check company.points_balance >= birthday_reward_points
-  |       Deduct from company points_balance
-  |       Add to profile.points (redeemable)
-  |       Insert celebration_rewards_log entry
-  |       Insert point_transactions record (sender = null, system reward)
-  |
-  +-- Anniversary rewards enabled?
-        Same logic using company_start_date instead of birthday
-        (Skip if company_start_date is today's date in the current year -- that means they just started, not an anniversary)
+2. **Add a helper function** `sendCelebrationNotifications(supabaseUrl, companyId, memberName, rewardType, points)` that:
+   - Calls `send-slack-notification` with `notification_type: 'milestone'` and a celebration-specific message (e.g. "Happy Birthday to Sarah Johnson! She received 50 points")
+   - Calls `send-teams-notification` with the same `notification_type: 'milestone'` payload
+   - Both calls are fire-and-forget (wrapped in try/catch so a notification failure never blocks the reward)
+   - Uses the function's own `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to call the sibling functions via their HTTP endpoints
+
+3. **Call the helper** after each successful birthday reward and anniversary reward (after the `celebration_rewards_log` insert succeeds)
+
+### Message format examples:
+
+- Birthday: "Happy Birthday to Sarah Johnson! She received 50 celebration points"
+- Anniversary: "Happy Work Anniversary to John Smith (3 years)! He received 100 celebration points"
+
+For anniversaries, the years of service will be calculated from `company_start_date`.
+
+### Notification routing:
+
+Both Slack and Teams notification functions already handle:
+- Checking if the company has the integration connected
+- Checking if the `team_milestones` notification type is enabled
+- Gracefully returning if not connected or disabled
+
+So the celebration function simply fires the requests and does not need to worry about whether the company uses Slack, Teams, both, or neither.
+
+## No UI changes needed
+
+The existing notification settings already have a "Team Milestones" toggle in both Slack and Teams settings cards. Celebration notifications will flow through that existing toggle -- no new UI controls required.
+
+## Technical Details
+
+### Updated Profile interface
+```
+interface Profile {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  birthday: string | null
+  company_start_date: string | null
+  points: number
+}
 ```
 
-**Key details:**
-- Uses service role key (no user auth needed since it is a cron job)
-- `verify_jwt = false` in config.toml (called by pg_cron, not by a user)
-- `point_transactions` entry uses `sender_profile_id = NULL` and description like "Birthday reward" or "Work anniversary reward" to distinguish system-generated rewards
-- Anniversary logic skips employees whose `company_start_date` year equals the current year (they just started, no anniversary yet)
-
-## Config Changes
-
-Add to `supabase/config.toml`:
-```toml
-[functions.process-celebration-rewards]
-verify_jwt = false
+### Notification helper (called within the function)
+```
+async function sendCelebrationNotifications(
+  supabaseUrl: string,
+  serviceKey: string,
+  companyId: string,
+  memberName: string,
+  rewardType: 'birthday' | 'anniversary',
+  points: number,
+  yearsOfService?: number
+)
 ```
 
-## pg_cron Setup
-
-A SQL statement (run via the Supabase SQL editor, not a migration) to schedule the daily job:
-
-```sql
-SELECT cron.schedule(
-  'process-celebration-rewards-daily',
-  '0 9 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://<project-ref>.supabase.co/functions/v1/process-celebration-rewards',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <anon-key>"}'::jsonb,
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
-
-This will be provided as a ready-to-run SQL snippet using the project's actual URL and anon key.
-
-## File Summary
-
-| File | Action |
-|------|--------|
-| `supabase/functions/process-celebration-rewards/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` for the new function |
-
-After deployment, the pg_cron SQL will be run to schedule the daily execution.
-
+This calls both `/functions/v1/send-slack-notification` and `/functions/v1/send-teams-notification` with the appropriate payload, catching errors silently.
