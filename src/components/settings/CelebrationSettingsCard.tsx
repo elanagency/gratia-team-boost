@@ -395,7 +395,7 @@ const CelebrationSettingsCard = () => {
               Celebration Rewards History
             </CardTitle>
             <CardDescription>
-              Last {recentLogs.length} celebration rewards distributed
+              Last {recentLogs?.length || 0} celebration rewards distributed
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -410,7 +410,7 @@ const CelebrationSettingsCard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentLogs.map((log) => (
+                {recentLogs?.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>{log.employee_name}</TableCell>
                     <TableCell>
