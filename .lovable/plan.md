@@ -1,28 +1,39 @@
 
 
-# Fix HTML Description Rendering in Gift Card Modal
+# Update Redemption Amount Options with Custom Amount
 
-## Problem
+## Overview
 
-Gift card descriptions from the Giftbit API contain HTML tags (`<p>`, `<a>`, `<br>`, etc.) that are currently displayed as raw text. For example, Amazon.com shows `<a href="https://www.amazon.com/gc-legal">www.amazon.com/gc-legal</a>` instead of a clickable link.
-
-## Solution
-
-Parse the HTML description and render it properly using `dangerouslySetInnerHTML` with basic sanitization to strip unsafe tags while preserving safe formatting tags like `<p>`, `<a>`, `<br>`, and `<strong>`.
+Change the four fixed amount tiles from $15/$20/$25/$30 to $5/$10/$20/Custom, where the "Custom" tile opens an inline input for typing a custom dollar amount.
 
 ## Changes
 
 ### File: `src/components/team/RewardInfo.tsx`
 
-- Replace the plain text rendering of `reward.description` with a sanitized HTML renderer
-- Create a simple sanitization function that strips all tags except safe ones (`p`, `a`, `br`, `strong`, `em`, `ul`, `li`)
-- Ensure links open in a new tab (`target="_blank"`, `rel="noopener noreferrer"`)
-- Style the rendered HTML with appropriate typography classes (e.g., links get underline styling, paragraphs get proper spacing)
+- Change `dollarAmounts` from `[15, 20, 25, 30]` to `[5, 10, 20]` (three fixed options)
+- Add a `customAmount` state (string) and `isCustom` state (boolean)
+- Add a fourth tile labeled "Custom" that, when clicked, sets `isCustom = true` and deselects fixed amounts
+- When "Custom" is selected, show an inline dollar input field inside the tile (or directly below) where the user types a number
+- Auto-calculate points cost as the user types using the existing `getPointsForAmount` function
+- Set the `selectedAmount` to the parsed custom value so the rest of the redemption flow works unchanged
+- Validate custom amount is a positive number and within the gift card's min/max price range (if available from `reward.min_price_in_cents` / `reward.max_price_in_cents`)
+- Clicking a fixed tile deselects custom mode
 
 ### Technical Details
 
-- Add a `sanitizeHtml` helper function that uses regex to whitelist safe tags and strip everything else
-- For `<a>` tags, inject `target="_blank" rel="noopener noreferrer"` attributes
-- Wrap the output in a styled `div` with `dangerouslySetInnerHTML`
-- Apply Tailwind prose-like styles: `text-muted-foreground text-sm` with child element styling via a CSS class or inline approach
+**New state variables:**
+- `isCustomMode: boolean` -- whether the custom tile is active
+- `customAmountInput: string` -- raw text input value
+
+**Custom tile behavior:**
+- First click activates custom mode and shows an input
+- The input has a "$" prefix and accepts only numbers
+- Points display updates live as the user types
+- If the parsed value is invalid or zero, the redeem button stays disabled
+- `selectedAmount` is set to `parseFloat(customAmountInput)` when in custom mode
+
+**Validation:**
+- Must be a positive whole number
+- If `reward.min_price_in_cents` exists, enforce minimum (converted to dollars)
+- If `reward.max_price_in_cents` exists, enforce maximum (converted to dollars)
 
