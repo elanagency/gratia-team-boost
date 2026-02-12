@@ -134,7 +134,23 @@ serve(async (req) => {
     if (!giftbitResponse.ok) {
       const errorText = await giftbitResponse.text();
       console.error('Giftbit API error:', errorText);
-      throw new Error(`Giftbit API error: ${giftbitResponse.status} - ${errorText}`);
+      
+      // Parse Giftbit error for user-friendly message
+      let userMessage = 'Failed to process gift card. Please try a different amount or brand.';
+      try {
+        const giftbitError = JSON.parse(errorText);
+        if (giftbitError?.error?.code === 'ERROR_CAMPAIGN_INVALID_BRAND') {
+          userMessage = 'This gift card brand does not support the selected amount. Please try a different amount.';
+        }
+      } catch (_) { /* use default message */ }
+      
+      return new Response(
+        JSON.stringify({ success: false, error: userMessage }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 422 
+        }
+      );
     }
 
     const giftbitData = await giftbitResponse.json();
