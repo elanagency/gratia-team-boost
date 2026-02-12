@@ -1,18 +1,28 @@
 
 
-# Add "Redemptions Are Final" Warning to Gift Card Redemption
+# Fix HTML Description Rendering in Gift Card Modal
 
-## Overview
+## Problem
 
-Add a clear warning message near the redeem button in the gift card redemption flow, informing users that all redemptions are final and non-refundable.
+Gift card descriptions from the Giftbit API contain HTML tags (`<p>`, `<a>`, `<br>`, etc.) that are currently displayed as raw text. For example, Amazon.com shows `<a href="https://www.amazon.com/gc-legal">www.amazon.com/gc-legal</a>` instead of a clickable link.
+
+## Solution
+
+Parse the HTML description and render it properly using `dangerouslySetInnerHTML` with basic sanitization to strip unsafe tags while preserving safe formatting tags like `<p>`, `<a>`, `<br>`, and `<strong>`.
 
 ## Changes
 
 ### File: `src/components/team/RewardInfo.tsx`
 
-- Add a warning alert just above the "Redeem Gift Card" button
-- Use the existing `Alert` component with an `AlertCircle` icon (already imported)
-- Text: "All redemptions are final and non-refundable."
-- Styled with a subtle amber/warning tone to draw attention without being alarming
-- Only visible once an amount is selected, so it appears at the decision point
+- Replace the plain text rendering of `reward.description` with a sanitized HTML renderer
+- Create a simple sanitization function that strips all tags except safe ones (`p`, `a`, `br`, `strong`, `em`, `ul`, `li`)
+- Ensure links open in a new tab (`target="_blank"`, `rel="noopener noreferrer"`)
+- Style the rendered HTML with appropriate typography classes (e.g., links get underline styling, paragraphs get proper spacing)
+
+### Technical Details
+
+- Add a `sanitizeHtml` helper function that uses regex to whitelist safe tags and strip everything else
+- For `<a>` tags, inject `target="_blank" rel="noopener noreferrer"` attributes
+- Wrap the output in a styled `div` with `dangerouslySetInnerHTML`
+- Apply Tailwind prose-like styles: `text-muted-foreground text-sm` with child element styling via a CSS class or inline approach
 
