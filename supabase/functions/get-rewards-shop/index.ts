@@ -20,6 +20,7 @@ interface GiftCard {
   max_price_in_cents?: number;
   currency_code?: string;
   region_code?: string;
+  category?: string;
 }
 
 serve(async (req) => {
@@ -138,7 +139,8 @@ serve(async (req) => {
         min_price_in_cents: brand.min_price_in_cents,
         max_price_in_cents: brand.max_price_in_cents,
         currency_code: brand.currency_code || 'AUD',
-        region_code: brand.region_code
+        region_code: brand.region_code,
+        category: brand.category || 'Other'
       };
     });
 

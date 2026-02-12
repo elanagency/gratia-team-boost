@@ -291,6 +291,7 @@ export type Database = {
           allowed_prices_in_cents: number[] | null
           brand_code: string
           brand_data: Json | null
+          category: string | null
           created_at: string
           currency_code: string | null
           description: string | null
@@ -311,6 +312,7 @@ export type Database = {
           allowed_prices_in_cents?: number[] | null
           brand_code: string
           brand_data?: Json | null
+          category?: string | null
           created_at?: string
           currency_code?: string | null
           description?: string | null
@@ -331,6 +333,7 @@ export type Database = {
           allowed_prices_in_cents?: number[] | null
           brand_code?: string
           brand_data?: Json | null
+          category?: string | null
           created_at?: string
           currency_code?: string | null
           description?: string | null

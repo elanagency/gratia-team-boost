@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useGiftbitBrands, useGiftbitBrandCounts } from "@/hooks/useGiftbitBrands";
 import { usePlatformRewardSettings } from "@/hooks/usePlatformRewardSettings";
 import { useRealtimeGiftCards } from "@/hooks/useRealtimeGiftCards";
@@ -13,16 +13,19 @@ import { GiftbitBrandCard } from "@/components/platform/GiftbitBrandCard";
 import { EnvironmentSyncCard } from "@/components/platform/EnvironmentSyncCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRegionFlag } from "@/lib/regionConstants";
+import { CategoryFilterBar } from "@/components/team/CategoryFilterBar";
 
 const PlatformGiftCardsCatalog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [activeEnvironment, setActiveEnvironment] = useState<'test' | 'live'>('live');
   
   const { brands, totalCount, isLoading, error, refetch } = useGiftbitBrands({ 
     environment: activeEnvironment,
-    regionFilter: regionFilter === 'all' ? null : regionFilter
+    regionFilter: regionFilter === 'all' ? null : regionFilter,
+    categoryFilter
   });
   const { blacklistedProducts, isLoadingBlacklist } = usePlatformRewardSettings();
   const { data: brandCounts } = useGiftbitBrandCounts(activeEnvironment);
@@ -30,6 +33,16 @@ const PlatformGiftCardsCatalog = () => {
   
   // Enable real-time updates for the active environment
   useRealtimeGiftCards({ environment: activeEnvironment, enabled: true });
+
+  // Compute category counts from all brands (before filtering by category)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    brands?.forEach(brand => {
+      const cat = (brand as any).category || 'Other';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [brands]);
 
   // Filter brands based on search term and status
   const filteredBrands = brands?.filter(brand => {
@@ -152,6 +165,13 @@ const PlatformGiftCardsCatalog = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Category Filter */}
+          <CategoryFilterBar
+            selectedCategory={categoryFilter}
+            onSelectCategory={setCategoryFilter}
+            categoryCounts={categoryCounts}
+          />
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">

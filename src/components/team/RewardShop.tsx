@@ -1,15 +1,17 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRewardsShop, GiftCard } from "@/hooks/useRewardsShop";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { RedemptionSuccessDialog } from "./RedemptionSuccessDialog";
+import { CategoryFilterBar } from "./CategoryFilterBar";
 import { Input } from "@/components/ui/input";
 import { RealTimeStatus } from "@/components/ui/real-time-status";
 import { Search } from "lucide-react";
 
 export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedReward, setSelectedReward] = useState<GiftCard | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [redemptionData, setRedemptionData] = useState<{
@@ -20,12 +22,24 @@ export const RewardShop = () => {
   } | null>(null);
   
   const { giftCards, exchangeRate, isLoading, error } = useRewardsShop();
+
+  // Compute category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    giftCards.forEach(card => {
+      const cat = card.category || 'Other';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [giftCards]);
   
-  // Filter rewards based on search term
-  const filteredRewards = giftCards.filter(reward => 
-    reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Filter rewards based on search term and category
+  const filteredRewards = giftCards.filter(reward => {
+    const matchesSearch = reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = !categoryFilter || (reward.category || 'Other') === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
   
   const handleSelectReward = (reward: GiftCard) => {
     setSelectedReward(reward);
@@ -51,6 +65,13 @@ export const RewardShop = () => {
         <h2 className="text-xl font-semibold">Gift Cards Shop</h2>
         <RealTimeStatus />
       </div>
+
+      {/* Category Filter */}
+      <CategoryFilterBar
+        selectedCategory={categoryFilter}
+        onSelectCategory={setCategoryFilter}
+        categoryCounts={categoryCounts}
+      />
       
       {/* Search */}
       <div className="relative max-w-md">
