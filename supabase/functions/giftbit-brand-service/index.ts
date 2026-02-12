@@ -5,6 +5,29 @@ import { corsHeaders } from "../_shared/cors.ts";
 const GIFTBIT_API_BASE_TESTBED = "https://api-testbed.giftbit.com/papi/v1";
 const GIFTBIT_API_BASE_PRODUCTION = "https://api.giftbit.com/papi/v1";
 
+// Category keyword mapping for auto-categorisation during sync
+const BRAND_CATEGORY_MAP: Record<string, string> = {
+  "visa": "Prepaid Cards", "mastercard": "Prepaid Cards", "prepaid": "Prepaid Cards", "eftpos": "Prepaid Cards", "amex": "Prepaid Cards", "american express": "Prepaid Cards",
+  "adidas": "Apparel", "nike": "Apparel", "h&m": "Apparel", "zara": "Apparel", "uniqlo": "Apparel", "lululemon": "Apparel", "gap": "Apparel", "foot locker": "Apparel", "cotton on": "Apparel", "bonds": "Apparel", "rebel": "Apparel", "platypus": "Apparel", "the iconic": "Apparel", "country road": "Apparel", "seed": "Apparel", "kathmandu": "Apparel", "r.m.williams": "Apparel", "surfstitch": "Apparel", "general pants": "Apparel", "asos": "Apparel", "nordstrom": "Apparel", "old navy": "Apparel", "under armour": "Apparel", "puma": "Apparel",
+  "airbnb": "Destinations", "hotel": "Destinations", "travel": "Destinations", "flight": "Destinations", "webjet": "Destinations", "booking": "Destinations", "expedia": "Destinations", "accor": "Destinations", "marriott": "Destinations", "hilton": "Destinations",
+  "spotify": "Entertainment", "netflix": "Entertainment", "disney": "Entertainment", "hoyts": "Entertainment", "event cinema": "Entertainment", "cinema": "Entertainment", "playstation": "Entertainment", "xbox": "Entertainment", "nintendo": "Entertainment", "steam": "Entertainment", "google play": "Entertainment", "apple": "Entertainment", "itunes": "Entertainment", "amc": "Entertainment", "ticketek": "Entertainment", "ticketmaster": "Entertainment", "stan": "Entertainment", "foxtel": "Entertainment", "kayo": "Entertainment", "roblox": "Entertainment", "fortnite": "Entertainment",
+  "uber eats": "Food & Drink", "doordash": "Food & Drink", "menulog": "Food & Drink", "deliveroo": "Food & Drink", "grubhub": "Food & Drink", "wine": "Food & Drink", "beer": "Food & Drink", "liquor": "Food & Drink", "dan murphy": "Food & Drink", "bws": "Food & Drink", "coles": "Food & Drink", "woolworths": "Food & Drink", "aldi": "Food & Drink",
+  "ikea": "Home", "bunnings": "Home", "home depot": "Home", "freedom": "Home", "temple": "Home", "kmart": "Home", "target": "Home", "bed bath": "Home", "harvey norman": "Home", "good guys": "Home", "jb hi-fi": "Home", "lowes": "Home", "wayfair": "Home",
+  "sephora": "Lifestyle", "mecca": "Lifestyle", "priceline": "Lifestyle", "beauty": "Lifestyle", "cosmetic": "Lifestyle", "fragrance": "Lifestyle", "pet": "Lifestyle", "bath & body": "Lifestyle",
+  "amazon": "Online Shopping", "ebay": "Online Shopping", "catch": "Online Shopping", "wish": "Online Shopping", "etsy": "Online Shopping",
+  "starbucks": "Restaurants", "mcdonald": "Restaurants", "kfc": "Restaurants", "subway": "Restaurants", "domino": "Restaurants", "pizza": "Restaurants", "grill": "Restaurants", "burger": "Restaurants", "nando": "Restaurants", "restaurant": "Restaurants", "dining": "Restaurants", "cafe": "Restaurants", "coffee": "Restaurants", "chipotle": "Restaurants", "taco bell": "Restaurants", "wendy": "Restaurants", "dunkin": "Restaurants",
+  "spa": "Wellness", "wellness": "Wellness", "fitness": "Wellness", "gym": "Wellness", "yoga": "Wellness", "massage": "Wellness", "health": "Wellness", "pharmacy": "Wellness", "chemist": "Wellness",
+};
+
+function getCategoryForBrand(brandName: string): string {
+  const lowerName = brandName.toLowerCase();
+  const sortedKeys = Object.keys(BRAND_CATEGORY_MAP).sort((a, b) => b.length - a.length);
+  for (const keyword of sortedKeys) {
+    if (lowerName.includes(keyword)) return BRAND_CATEGORY_MAP[keyword];
+  }
+  return "Other";
+}
+
 // Currency mapping for regions
 const REGION_CURRENCIES: Record<string, string> = {
   'CA': 'CAD',
@@ -404,7 +427,8 @@ serve(async (req) => {
               environment,
               is_active: true,
               last_synced_at: new Date().toISOString(),
-              brand_data: brand
+              brand_data: brand,
+              category: getCategoryForBrand(brand.name)
             }, { onConflict: 'brand_code,region_code,environment' });
           
           if (error) {

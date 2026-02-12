@@ -7,14 +7,15 @@ export type GiftbitBrand = Tables<"giftbit_brands">;
 export interface UseGiftbitBrandsOptions {
   environment: 'test' | 'live';
   regionFilter?: string | null;
+  categoryFilter?: string | null;
 }
 
 export const useGiftbitBrands = (options: UseGiftbitBrandsOptions) => {
-  const { environment, regionFilter } = options;
+  const { environment, regionFilter, categoryFilter } = options;
   const giftbitEnv = environment === 'live' ? 'production' : 'testbed';
   
   const query = useQuery({
-    queryKey: ['giftbit-brands', giftbitEnv, regionFilter],
+    queryKey: ['giftbit-brands', giftbitEnv, regionFilter, categoryFilter],
     queryFn: async () => {
       let queryBuilder = supabase
         .from('giftbit_brands')
@@ -25,6 +26,10 @@ export const useGiftbitBrands = (options: UseGiftbitBrandsOptions) => {
       
       if (regionFilter) {
         queryBuilder = queryBuilder.eq('region_code', regionFilter);
+      }
+
+      if (categoryFilter) {
+        queryBuilder = queryBuilder.eq('category', categoryFilter);
       }
       
       const { data, error } = await queryBuilder;

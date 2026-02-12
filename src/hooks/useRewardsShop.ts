@@ -19,6 +19,7 @@ export interface GiftCard {
   max_price_in_cents?: number;
   currency_code?: string;
   region_code?: string;
+  category?: string;
 }
 
 interface RewardsShopResponse {
