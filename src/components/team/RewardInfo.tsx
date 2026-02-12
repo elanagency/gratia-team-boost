@@ -61,8 +61,10 @@ export const RewardInfo = ({
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientFirstName, setRecipientFirstName] = useState(currentUserFirstName);
   const [recipientLastName, setRecipientLastName] = useState(currentUserLastName);
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customAmountInput, setCustomAmountInput] = useState("");
   
-  const dollarAmounts = [15, 20, 25, 30];
+  const dollarAmounts = [5, 10, 20];
   const rate = parseFloat(exchangeRate);
   
   // Calculate points for each dollar amount
@@ -73,15 +75,34 @@ export const RewardInfo = ({
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail);
   const isValidFirstName = recipientFirstName.trim().length > 0;
   const isValidLastName = recipientLastName.trim().length > 0;
-  const selectedAmountPoints = selectedAmount ? getPointsForAmount(selectedAmount) : 0;
-  const hasEnoughPointsForSelected = selectedAmountPoints <= userPoints;
+  const customParsed = parseFloat(customAmountInput);
+  const customValid = isCustomMode && !isNaN(customParsed) && customParsed > 0 && Number.isInteger(customParsed);
+  const effectiveAmount = isCustomMode ? (customValid ? customParsed : null) : selectedAmount;
+  const selectedAmountPoints = effectiveAmount ? getPointsForAmount(effectiveAmount) : 0;
+  const hasEnoughPointsForSelected = effectiveAmount ? selectedAmountPoints <= userPoints : false;
+
+  // Min/max validation for custom amounts
+  const minDollars = reward.min_price_in_cents ? reward.min_price_in_cents / 100 : 1;
+  const maxDollars = reward.max_price_in_cents ? reward.max_price_in_cents / 100 : Infinity;
+  const customInRange = customValid && customParsed >= minDollars && customParsed <= maxDollars;
   
-  const isRedeemDisabled = !selectedAmount || !isValidEmail || !isValidFirstName || !isValidLastName || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
+  const isRedeemDisabled = !effectiveAmount || (isCustomMode && !customInRange) || !isValidEmail || !isValidFirstName || !isValidLastName || isLoadingPoints || !hasEnoughPointsForSelected || isProcessing;
   
   const handleRedeem = () => {
-    if (selectedAmount && isValidEmail && isValidFirstName && isValidLastName && hasEnoughPointsForSelected) {
-      onRedeem(selectedAmount, recipientEmail, recipientFirstName.trim(), recipientLastName.trim());
+    if (effectiveAmount && isValidEmail && isValidFirstName && isValidLastName && hasEnoughPointsForSelected && (!isCustomMode || customInRange)) {
+      onRedeem(effectiveAmount, recipientEmail, recipientFirstName.trim(), recipientLastName.trim());
     }
+  };
+
+  const handleFixedSelect = (amount: number) => {
+    setSelectedAmount(amount);
+    setIsCustomMode(false);
+    setCustomAmountInput("");
+  };
+
+  const handleCustomSelect = () => {
+    setIsCustomMode(true);
+    setSelectedAmount(null);
   };
   // Show error state if settings failed to load or are missing
   if (!exchangeRate) {
@@ -134,12 +155,12 @@ export const RewardInfo = ({
             {dollarAmounts.map((amount) => {
               const pointsNeeded = getPointsForAmount(amount);
               const canAfford = pointsNeeded <= userPoints;
-              const isSelected = selectedAmount === amount;
+              const isSelected = !isCustomMode && selectedAmount === amount;
               
               return (
                 <button
                   key={amount}
-                  onClick={() => setSelectedAmount(amount)}
+                  onClick={() => handleFixedSelect(amount)}
                   disabled={!canAfford || isLoadingPoints}
                   className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-left ${
                     isSelected 
@@ -164,6 +185,56 @@ export const RewardInfo = ({
                 </button>
               );
             })}
+            
+            {/* Custom Amount Tile */}
+            <button
+              onClick={handleCustomSelect}
+              disabled={isLoadingPoints}
+              className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                isCustomMode 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+              }`}
+            >
+              {isCustomMode && (
+                <Check className="absolute top-2 right-2 h-4 w-4 text-primary" />
+              )}
+              {isCustomMode ? (
+                <div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-lg">$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={customAmountInput}
+                      onChange={(e) => setCustomAmountInput(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      placeholder="0"
+                      autoFocus
+                      className="font-semibold text-lg w-full bg-transparent border-none outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {customValid ? `${getPointsForAmount(customParsed).toLocaleString()} points` : 'Enter amount'}
+                  </div>
+                  {customValid && !customInRange && (
+                    <div className="text-xs text-destructive mt-1">
+                      {customParsed < minDollars ? `Min $${minDollars}` : `Max $${maxDollars}`}
+                    </div>
+                  )}
+                  {customValid && customInRange && !hasEnoughPointsForSelected && !isLoadingPoints && (
+                    <div className="text-xs text-destructive mt-1">
+                      Need {(selectedAmountPoints - userPoints).toLocaleString()} more
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="font-semibold text-lg">Custom</div>
+                  <div className="text-sm text-muted-foreground">Enter amount</div>
+                </div>
+              )}
+            </button>
           </div>
         ) : (
           // Fixed pricing: Show single price option
@@ -249,7 +320,7 @@ export const RewardInfo = ({
       </div>
       
       {/* Redemptions Are Final Warning */}
-      {selectedAmount && hasEnoughPointsForSelected && (
+      {effectiveAmount && hasEnoughPointsForSelected && (!isCustomMode || customInRange) && (
         <Alert className="mb-4 border-amber-300 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/30">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           <AlertDescription className="text-amber-800 dark:text-amber-300">
@@ -259,11 +330,11 @@ export const RewardInfo = ({
       )}
 
       {/* Insufficient Points Alert for Selected Amount */}
-      {selectedAmount && !hasEnoughPointsForSelected && !isLoadingPoints && (
+      {effectiveAmount && !hasEnoughPointsForSelected && !isLoadingPoints && (
         <Alert className="mb-4 border-destructive/50 bg-destructive/10">
           <AlertCircle className="h-4 w-4 text-destructive" />
           <AlertDescription className="text-destructive">
-            You need {(selectedAmountPoints - userPoints).toLocaleString()} more points to redeem ${selectedAmount}.
+            You need {(selectedAmountPoints - userPoints).toLocaleString()} more points to redeem ${effectiveAmount}.
           </AlertDescription>
         </Alert>
       )}
@@ -275,14 +346,15 @@ export const RewardInfo = ({
       >
         {isProcessing ? "Processing..." : 
          isLoadingPoints ? "Loading..." :
-         !selectedAmount ? "Select Amount" :
+         !effectiveAmount ? "Select Amount" :
+         (isCustomMode && !customInRange) ? "Enter Valid Amount" :
          !isValidFirstName || !isValidLastName ? "Enter Recipient Name" :
          !isValidEmail ? "Enter Valid Email" :
          !hasEnoughPointsForSelected ? "Insufficient Points" :
          "Redeem Gift Card"}
       </Button>
       
-      {selectedAmount && hasEnoughPointsForSelected && (
+      {effectiveAmount && hasEnoughPointsForSelected && (!isCustomMode || customInRange) && (
         <p className="text-xs text-muted-foreground mt-2 text-center">
           Redeeming this gift card will deduct {selectedAmountPoints.toLocaleString()} points from your balance
         </p>
