@@ -1,23 +1,18 @@
 
 
-# Add "My Redemptions" Tab to Gift Cards Page
+# Add "Redemptions Are Final" Warning to Gift Card Redemption
 
 ## Overview
 
-Add a tabbed interface to the Gift Cards page (`/dashboard/gift-cards`) with two tabs:
-- **Shop** (default) -- the existing gift card browsing experience
-- **My Redemptions** -- shows the user's redemption history, reusing the existing `RedemptionHistory` component
+Add a clear warning message near the redeem button in the gift card redemption flow, informing users that all redemptions are final and non-refundable.
 
 ## Changes
 
-### File: `src/pages/team/GiftCardShop.tsx`
+### File: `src/components/team/RewardInfo.tsx`
 
-- Import `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` from the UI library
-- Import the existing `RedemptionHistory` component from `@/components/team/RedemptionHistory`
-- Wrap the page content in a `Tabs` component with two tabs:
-  - "Shop" tab containing the existing `RewardShopComponent`
-  - "My Redemptions" tab containing the `RedemptionHistory` component
-- The tabs will use the same styling pattern as the Settings page tabs
-
-No new components, hooks, or database changes are needed -- just composing existing pieces together.
+- Add a warning alert just above the "Redeem Gift Card" button
+- Use the existing `Alert` component with an `AlertCircle` icon (already imported)
+- Text: "All redemptions are final and non-refundable."
+- Styled with a subtle amber/warning tone to draw attention without being alarming
+- Only visible once an amount is selected, so it appears at the decision point
 
