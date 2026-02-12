@@ -4,6 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Check } from "lucide-react";
 import { GiftCard } from "@/hooks/useRewardsShop";
+
+const sanitizeHtml = (html: string): string => {
+  // Strip all tags except safe ones
+  const allowedTags = ['p', 'a', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'b', 'i'];
+  const tagPattern = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/gi;
+  
+  let sanitized = html.replace(tagPattern, (match, tagName) => {
+    if (allowedTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    return '';
+  });
+  
+  // Add target="_blank" and rel="noopener noreferrer" to all <a> tags
+  sanitized = sanitized.replace(
+    /<a\b([^>]*)>/gi,
+    (match, attrs) => {
+      const cleanAttrs = attrs
+        .replace(/target\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/rel\s*=\s*["'][^"']*["']/gi, '');
+      return `<a${cleanAttrs} target="_blank" rel="noopener noreferrer">`;
+    }
+  );
+  
+  // Remove any script content or event handlers
+  sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+  
+  return sanitized;
+};
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -87,9 +116,10 @@ export const RewardInfo = ({
       </div>
       
       {reward.description && (
-        <p className="text-muted-foreground mb-6">
-          {reward.description}
-        </p>
+        <div 
+          className="text-muted-foreground mb-6 text-sm [&_a]:text-primary [&_a]:underline [&_a]:hover:opacity-80 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(reward.description) }}
+        />
       )}
       
       {/* Amount Selection */}
