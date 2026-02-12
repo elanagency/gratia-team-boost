@@ -88,12 +88,15 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
         </DialogHeader>
         
         <Card className="overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <RewardImage 
-              imageUrl={reward.image_url} 
-              rewardName={reward.name} 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-5">
+            <div className="md:col-span-2">
+              <RewardImage 
+                imageUrl={reward.image_url} 
+                rewardName={reward.name} 
+              />
+            </div>
             
+            <div className="md:col-span-3">
             <RewardInfo
               reward={reward}
               onRedeem={handleRedeem}
@@ -104,6 +107,7 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
               currentUserFirstName={firstName}
               currentUserLastName={lastName}
             />
+            </div>
           </div>
         </Card>
       </DialogContent>
