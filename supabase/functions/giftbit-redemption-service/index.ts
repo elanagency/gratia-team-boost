@@ -208,6 +208,34 @@ serve(async (req) => {
         })
       });
 
+    // Fire-and-forget: send redemption confirmation email
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+      await fetch(`${supabaseUrl}/functions/v1/email-service`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          type: 'redemption',
+          to: recipientEmail,
+          toName: `${recipientFirstName} ${recipientLastName}`,
+          templateParams: {
+            fname: recipientFirstName,
+            brandName,
+            dollarAmount,
+            pointsSpent: pointsRequired,
+            giftLink: claimLink,
+          },
+        }),
+      });
+      console.log('Redemption confirmation email sent');
+    } catch (emailError) {
+      console.error('Failed to send redemption email (non-blocking):', emailError);
+    }
+
     console.log(`Redemption completed successfully for user ${user.id}`);
 
     return new Response(
