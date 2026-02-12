@@ -1,22 +1,31 @@
 
 
-# Fix Custom Text Overflow in Gift Card Modal
+# Wire Redemption Email (Brevo Template 10)
 
-## Problem
+## Overview
 
-The right-hand content (amount tiles, recipient info) is getting pushed off the edge because the 50/50 grid split doesn't give enough room for the text side, especially with the four amount tiles.
-
-## Solution
-
-Change the two-column grid from equal 50/50 to roughly 40/60 (image smaller, text larger) so the right side has more breathing room.
+Two small changes to connect the new Brevo redemption template (ID 10) to the gift card redemption flow.
 
 ## Changes
 
-### File: `src/components/team/GiftCardModal.tsx`
+### 1. `supabase/functions/email-service/index.ts`
 
-- Change the grid class from `grid-cols-1 md:grid-cols-2` to `grid-cols-1 md:grid-cols-5`
-- Apply `md:col-span-2` to the image section (40%)
-- Apply `md:col-span-3` to the info section (60%)
+- Add `'redemption'` to the `EmailServiceRequest` type union
+- Add a case in `getBrevoTemplateId` mapping `'redemption'` to template ID `10`
 
-This gives the text/form side 60% of the width, preventing the amount tiles and other content from overflowing.
+### 2. `supabase/functions/giftbit-redemption-service/index.ts`
+
+- After the redemption record is created and points are deducted (around line 209), add a call to the `email-service` edge function
+- Send the following payload:
+  - `type`: `'redemption'`
+  - `to`: `recipientEmail` (the user's email from the request body)
+  - `toName`: `recipientFirstName + ' ' + recipientLastName`
+  - `templateParams`: `{ fname: recipientFirstName, brandName, dollarAmount, pointsSpent: pointsRequired, giftLink: claimLink }`
+- The email call will be fire-and-forget (log errors but don't fail the redemption response)
+- Uses the Supabase URL and service role key already available in the function to call the email-service internally via `fetch`
+
+### Technical Notes
+
+- The email is sent as a secondary action; if it fails, the redemption still succeeds and the user still gets their claim link in the UI
+- The internal call to email-service uses the `SUPABASE_URL` + `/functions/v1/email-service` path with the `SUPABASE_ANON_KEY` for authorization (service-to-service call pattern already established in this codebase)
 
