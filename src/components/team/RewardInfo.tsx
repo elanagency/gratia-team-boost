@@ -218,6 +218,16 @@ export const RewardInfo = ({
         </div>
       </div>
       
+      {/* Redemptions Are Final Warning */}
+      {selectedAmount && hasEnoughPointsForSelected && (
+        <Alert className="mb-4 border-amber-300 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/30">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="text-amber-800 dark:text-amber-300">
+            All redemptions are final and non-refundable.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Insufficient Points Alert for Selected Amount */}
       {selectedAmount && !hasEnoughPointsForSelected && !isLoadingPoints && (
         <Alert className="mb-4 border-destructive/50 bg-destructive/10">
