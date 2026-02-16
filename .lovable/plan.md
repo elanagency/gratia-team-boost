@@ -1,35 +1,30 @@
 
-# Dashboard Layout Restructure
 
-## Current Layout
-- Row 1: `GivePointsCard` (left 50%) | `RecognitionFeed` (right 50%)
-- Row 2: `LeaderboardCard` (full width)
+# Recognition Feed Height and Leaderboard Redesign
 
-## New Layout
-- Left column: `GivePointsCard` stacked on top of `LeaderboardCard` (each same width/height)
-- Right column: `RecognitionFeed` spanning the full height of both rows
+## 1. Extend Recognition Feed scroll height
 
-```text
-+---------------------+---------------------+
-|                     |                     |
-|  Give Recognition   |                     |
-|                     |  Recognition Feed   |
-+---------------------+  (spans full        |
-|                     |   height)           |
-|  Team Leaderboard   |                     |
-|                     |                     |
-+---------------------+---------------------+
-```
+The `RecognitionFeed` card currently has `h-96` (384px) on its `CardContent`, which cuts off the scrollable area too early. Since the feed now spans two rows on the right column, it should use more vertical space.
 
-## Technical Details
+### File: `src/components/points/RecognitionFeed.tsx`
+- Line 508: Change `h-96` to `h-[600px]` to give the feed significantly more scrollable room, matching the combined height of the two left-column cards
 
-### File: `src/pages/admin/Dashboard.tsx`
+## 2. Redesign Team Leaderboard rows
 
-Change the grid layout from the current two-row approach to a single 2-column CSS grid with explicit row spanning:
+Replace the current table-based layout with a modern row-based design matching the reference image:
 
-- Use `grid grid-cols-1 lg:grid-cols-2` with `gap-6`
-- Left column contains `GivePointsCard` then `LeaderboardCard` stacked vertically (wrapped in a flex column container)
-- Right column contains `RecognitionFeed` with `lg:row-span-2` so it stretches the full height of both left-column cards
-- Remove the separate bottom `<div>` for the leaderboard since it moves into the left column
+- Each row is a horizontal flex container (no table)
+- Left side: rank number in a colored circle (gold for #1, silver for #2, bronze for #3, grey for others), followed by an avatar circle with initials, then the member's name with department below in smaller grey text
+- Right side: points number in accent color, right-aligned
+- Top 3 ranks get colored rank badges; ranks 4+ get a grey badge
 
-On mobile (below `lg`), all three cards stack vertically in order: Give Recognition, Leaderboard, Recognition Feed.
+### File: `src/components/points/LeaderboardCard.tsx`
+- Remove `Table` imports and the entire table markup (lines 194-219)
+- Replace with a `div`-based list where each member row uses:
+  - A rank badge circle (colored by rank: gold #1, silver #2, bronze/orange #3, grey 4+)
+  - An avatar circle with the member's initials (varied background colors)
+  - Name (bold) with department subtitle below in grey
+  - Points number right-aligned in accent color
+- Keep the header, loading, empty, and admin-only states unchanged
+- Remove the `Department` column header since department is shown inline under the name
+
