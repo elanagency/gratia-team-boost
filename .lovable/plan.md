@@ -1,25 +1,39 @@
 
 
-# Analytics Table Units and Settings Icon
+# Gift Card Shop and Redemption UX Improvements
 
-## 1. Remove "pts" from table cells, add to row label
+## 1. Remove category filter bar from Gift Card Shop
 
-Currently every cell shows values like "0 pts", "20 pts". The change removes the unit suffix from individual cells and appends it to the row label instead (e.g., "Total (pts)").
+The horizontal category filter (All, Prepaid Cards, Apparel, etc.) will be removed from the shop. Users will see all gift cards in a single flat list, filtered only by the search box.
 
-### File: `src/components/analytics/AnalyticsDataTable.tsx`
+### File: `src/components/team/RewardShop.tsx`
+- Remove the `CategoryFilterBar` import and component
+- Remove the `categoryFilter` state and `categoryCounts` memo
+- Remove the category matching logic from `filteredRewards` (keep only search filter)
 
-- Change the `metricUnits` map to only be used for row labels, not cell values
-- In the table body, remove `{unit}` from the cell rendering (line 154), so cells show just the number
-- Append the unit to the row label: e.g., `Total (pts)` instead of `Total` -- but only when the unit is non-empty
-- The header columns (dates) and CSV export remain unchanged
+## 2. Show reward name as the card title in Redemption History
 
-## 2. Add Settings icon to the top navigation bar
+Currently each redemption card shows "Gift Card Redemption" as the bold title, with the brand name shown below in small grey text ("Reward: Amazon"). The title will be changed to show the brand name directly (e.g., "Amazon") in the same font/size, and the redundant "Reward:" line below will be removed.
 
-Currently Settings is only inside the user dropdown. The request is to add a visible Settings gear icon next to the user avatar area in the top-right, outside the dropdown.
+### File: `src/components/team/RedemptionHistory.tsx`
+- Line 72: Change `"Gift Card Redemption"` to `{redemption.reward?.name || "Gift Card Redemption"}`
+- Lines 79-83: Remove the separate "Reward: {name}" paragraph since the info is now in the title
 
-### File: `src/components/dashboard/DashboardTopNavigation.tsx`
+## 3. Remove redemption history from Profile Settings
 
-- Add a `Link` with a `Settings` icon (already imported) directly before the `DropdownMenu` in the user menu area (line 89-90)
-- Only render this icon when `isAdmin` is true (non-admins don't have settings access)
-- Style: white icon with subtle hover background (`hover:bg-white/10`), matching the nav style
+The redemption history card at the bottom of Profile Settings is no longer needed since it lives in the Gift Cards tab.
+
+### File: `src/pages/admin/ProfileSettings.tsx`
+- Remove the `RedemptionHistory` import (line 10)
+- Remove the entire second Card block (lines 165-175) containing the redemption history
+
+## 4. Fix "View My Redemptions" link in success dialog
+
+After redeeming a gift card, the success popup's "View My Redemptions" button currently navigates to `/dashboard/profile`. It should navigate to `/dashboard/gift-cards` and switch to the "My Redemptions" tab.
+
+### File: `src/components/team/RedemptionSuccessDialog.tsx`
+- Line 34: Change `navigate("/dashboard/profile")` to `navigate("/dashboard/gift-cards?tab=redemptions")`
+
+### File: `src/pages/team/GiftCardShop.tsx`
+- Read the `tab` URL search param and use it to control the active tab (so `?tab=redemptions` opens the My Redemptions tab directly)
 
