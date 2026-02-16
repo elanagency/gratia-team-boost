@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log('Active seats to bill:', activeSeats);
+    // Add 1 for the admin (company owner) who is also a billable seat
+    const totalBillableSeats = activeSeats + 1;
+    console.log('Active non-admin seats:', activeSeats, 'Total billable seats (incl. admin):', totalBillableSeats);
 
     // Get pricing from platform settings
     const { data: pricingData } = await supabase
@@ -150,7 +152,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       items: [{
         price: priceId,
-        quantity: activeSeats
+        quantity: totalBillableSeats
       }],
       collection_method: 'charge_automatically',
       billing_cycle_anchor: billingCycleAnchor,
@@ -182,7 +184,7 @@ Deno.serve(async (req) => {
       .insert({
         company_id: companyId,
         event_type: 'subscription_created',
-        new_quantity: activeSeats,
+        new_quantity: totalBillableSeats,
         metadata: {
           subscription_id: subscription.id,
           trigger: 'first_member_login',
@@ -195,7 +197,7 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       subscriptionId: subscription.id,
-      activeSeats,
+      activeSeats: totalBillableSeats,
       message: 'Subscription created successfully'
     }, { headers: corsHeaders });
 

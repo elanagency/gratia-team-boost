@@ -256,7 +256,7 @@ serve(async (req: Request) => {
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
       },
       success_url: `${baseUrl}/dashboard/team?setup=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/dashboard/settings?setup=cancelled`,
+      cancel_url: `${baseUrl}/dashboard/settings?tab=billing&setup=cancelled`,
       billing_address_collection: "required",
       allow_promotion_codes: true,
     };
