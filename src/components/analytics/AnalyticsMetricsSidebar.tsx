@@ -14,7 +14,7 @@ const metrics: MetricItem[] = [
   { id: "sent", label: "Recognition Sent", icon: <Send className="h-4 w-4" /> },
   { id: "engagement", label: "Engagement Rate", icon: <Users className="h-4 w-4" /> },
   { id: "redemptions", label: "Redemptions", icon: <Gift className="h-4 w-4" /> },
-  { id: "logins", label: "User Activity", icon: <LogIn className="h-4 w-4" /> },
+  { id: "logins", label: "Daily Active Users", icon: <LogIn className="h-4 w-4" /> },
 ];
 
 interface AnalyticsMetricsSidebarProps {
