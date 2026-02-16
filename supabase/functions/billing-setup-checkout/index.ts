@@ -153,8 +153,8 @@ serve(async (req: Request) => {
         setup_type: "billing_method",
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
       },
-      success_url: `${baseUrl}/dashboard/settings?setup=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/dashboard/settings?setup=cancelled`,
+      success_url: `${baseUrl}/dashboard/settings?tab=billing&setup=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/dashboard/settings?tab=billing&setup=cancelled`,
     };
 
     console.log("[BILLING-SETUP-CHECKOUT] Creating setup session with config:", {

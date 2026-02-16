@@ -9,18 +9,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to get the appropriate Stripe key based on environment mode
-const getStripeKey = async (supabaseAdmin: any): Promise<string> => {
+// Helper function to get the appropriate Stripe key based on company environment
+const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<string> => {
   try {
-    console.log("[VERIFY-STRIPE-SESSION] Getting environment mode from platform settings");
-    const { data: envSetting } = await supabaseAdmin
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'environment_mode')
+    console.log("[VERIFY-STRIPE-SESSION] Getting company environment for:", companyId);
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('environment')
+      .eq('id', companyId)
       .single();
     
-    const environment = envSetting?.value || 'test'; // Default to test for safety
-    console.log(`[VERIFY-STRIPE-SESSION] Using Stripe environment: ${environment}`);
+    const environment = company?.environment || 'live'; // Default to live to match billing-setup-checkout
+    console.log(`[VERIFY-STRIPE-SESSION] Using company environment: ${environment}`);
     
     if (environment === 'live') {
       const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -32,11 +32,10 @@ const getStripeKey = async (supabaseAdmin: any): Promise<string> => {
       return testKey;
     }
   } catch (error) {
-    console.error(`[VERIFY-STRIPE-SESSION] Error getting Stripe key, defaulting to test:`, error);
-    // Fallback to test key for safety
-    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-    if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
-    return testKey;
+    console.error(`[VERIFY-STRIPE-SESSION] Error getting Stripe key, defaulting to live:`, error);
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+    return liveKey;
   }
 };
 
@@ -68,13 +67,24 @@ serve(async (req: Request) => {
       }
     );
 
-    const stripeKey = await getStripeKey(supabaseAdmin);
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    // Retrieve the checkout session
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // First, we need to retrieve the session with any Stripe key to get the company_id from metadata.
+    // Try live key first (most common), then test key as fallback.
+    let session;
+    let stripe;
+    
+    // Try to retrieve session - we need to try both keys since we don't know the company yet
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    
+    try {
+      const stripeLive = new Stripe(liveKey || "", { apiVersion: "2023-10-16" });
+      session = await stripeLive.checkout.sessions.retrieve(sessionId);
+      stripe = stripeLive;
+    } catch {
+      const stripeTest = new Stripe(testKey || "", { apiVersion: "2023-10-16" });
+      session = await stripeTest.checkout.sessions.retrieve(sessionId);
+      stripe = stripeTest;
+    }
 
     const companyId = session.metadata?.company_id || session.metadata?.companyId;
     const pendingMemberData = session.metadata?.pending_member_data;

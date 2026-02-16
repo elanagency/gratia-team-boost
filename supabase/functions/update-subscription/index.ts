@@ -85,8 +85,8 @@ serve(async (req) => {
       throw new Error('Failed to get member count');
     }
 
-    // If the new quantity doesn't match actual member count, use actual count
-    const adjustedQuantity = actualMemberCount || 0;
+    // Add 1 for the admin (company owner) who is also a billable seat
+    const adjustedQuantity = (actualMemberCount || 0) + 1;
     
     // If no billable members, cancel the subscription
     if (adjustedQuantity === 0) {

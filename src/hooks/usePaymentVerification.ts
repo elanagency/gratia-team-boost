@@ -46,11 +46,11 @@ export const usePaymentVerification = (onSuccess?: () => void) => {
         toast.error("Failed to verify payment. Please contact support.");
       }).finally(() => {
         setIsVerifying(false);
-        window.history.replaceState({}, '', '/dashboard/settings');
+        window.history.replaceState({}, '', '/dashboard/settings?tab=billing');
       });
     } else if (setupStatus === 'cancelled') {
       toast.error("Subscription setup was cancelled.");
-      window.history.replaceState({}, '', '/dashboard/settings');
+      window.history.replaceState({}, '', '/dashboard/settings?tab=billing');
     }
   }, [searchParams, onSuccess, isVerifying]);
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CompanyInformationCard } from "@/components/settings/CompanyInformationCard";
 import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
@@ -9,11 +10,14 @@ import DepartmentManagement from "@/components/team/DepartmentManagement";
 import CelebrationSettingsCard from "@/components/settings/CelebrationSettingsCard";
 
 const Settings = () => {
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "company";
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-800">Settings</h1>
 
-      <Tabs defaultValue="company" className="w-full">
+      <Tabs defaultValue={activeTab} className="w-full">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
