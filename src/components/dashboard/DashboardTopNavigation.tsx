@@ -87,6 +87,15 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
           
       {/* User Menu */}
       <div className="flex items-center gap-2 relative z-10">
+        {isAdmin && (
+          <Link
+            to="/dashboard/settings"
+            className="p-2 rounded-md hover:bg-white/10 transition-colors"
+            title="Company Settings"
+          >
+            <Settings className="h-5 w-5 text-white" />
+          </Link>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/10 transition-colors">
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-medium">
