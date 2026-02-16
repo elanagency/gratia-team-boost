@@ -23,6 +23,8 @@ const CelebrationSettingsCard = () => {
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  const rate = pointExchangeRate || 0.05;
+
   // Handle post-purchase verification
   useEffect(() => {
     const purchaseStatus = searchParams.get("points_purchase");
@@ -50,7 +52,6 @@ const CelebrationSettingsCard = () => {
           toast.error("Failed to verify purchase");
         } finally {
           setVerifying(false);
-          // Clean URL params
           searchParams.delete("points_purchase");
           searchParams.delete("session_id");
           setSearchParams(searchParams, { replace: true });
@@ -124,7 +125,7 @@ const CelebrationSettingsCard = () => {
     enabled: !!companyId,
   });
 
-  // Fetch recent celebration logs (expanded to 50)
+  // Fetch recent celebration logs
   const { data: recentLogs } = useQuery({
     queryKey: ["celebration-logs", companyId],
     queryFn: async () => {
@@ -157,20 +158,27 @@ const CelebrationSettingsCard = () => {
     enabled: !!companyId,
   });
 
-  // Local state
+  // Local state — dollar amounts instead of points
   const [birthdayEnabled, setBirthdayEnabled] = useState(false);
-  const [birthdayPoints, setBirthdayPoints] = useState("0");
+  const [birthdayDollars, setBirthdayDollars] = useState("0");
   const [anniversaryEnabled, setAnniversaryEnabled] = useState(false);
-  const [anniversaryPoints, setAnniversaryPoints] = useState("0");
+  const [anniversaryDollars, setAnniversaryDollars] = useState("0");
 
+  // Convert DB points → dollars on load
   useEffect(() => {
     if (company) {
       setBirthdayEnabled(company.birthday_rewards_enabled);
-      setBirthdayPoints(String(company.birthday_reward_points));
+      setBirthdayDollars((company.birthday_reward_points * rate).toFixed(2));
       setAnniversaryEnabled(company.anniversary_rewards_enabled);
-      setAnniversaryPoints(String(company.anniversary_reward_points));
+      setAnniversaryDollars((company.anniversary_reward_points * rate).toFixed(2));
     }
-  }, [company]);
+  }, [company, rate]);
+
+  // Convert dollars → points for saving
+  const dollarsToPoints = (dollars: string) => Math.round((parseFloat(dollars) || 0) / rate);
+
+  const birthdayPointsCalc = dollarsToPoints(birthdayDollars);
+  const anniversaryPointsCalc = dollarsToPoints(anniversaryDollars);
 
   // Save mutation
   const saveMutation = useMutation({
@@ -180,9 +188,9 @@ const CelebrationSettingsCard = () => {
         .from("companies")
         .update({
           birthday_rewards_enabled: birthdayEnabled,
-          birthday_reward_points: parseInt(birthdayPoints) || 0,
+          birthday_reward_points: birthdayPointsCalc,
           anniversary_rewards_enabled: anniversaryEnabled,
-          anniversary_reward_points: parseInt(anniversaryPoints) || 0,
+          anniversary_reward_points: anniversaryPointsCalc,
         })
         .eq("id", companyId);
       if (error) throw error;
@@ -195,12 +203,9 @@ const CelebrationSettingsCard = () => {
   });
 
   // Cost estimator
-  const rate = pointExchangeRate || 0.05;
   const employees = memberCount || 0;
-  const bPts = parseInt(birthdayPoints) || 0;
-  const aPts = parseInt(anniversaryPoints) || 0;
-  const birthdayAnnualPts = birthdayEnabled ? bPts * employees : 0;
-  const anniversaryAnnualPts = anniversaryEnabled ? aPts * employees : 0;
+  const birthdayAnnualPts = birthdayEnabled ? birthdayPointsCalc * employees : 0;
+  const anniversaryAnnualPts = anniversaryEnabled ? anniversaryPointsCalc * employees : 0;
   const totalAnnualPts = birthdayAnnualPts + anniversaryAnnualPts;
   const totalAnnualCost = totalAnnualPts * rate;
   const walletBalance = company?.points_balance || 0;
@@ -209,9 +214,9 @@ const CelebrationSettingsCard = () => {
   const hasChanges =
     company &&
     (birthdayEnabled !== company.birthday_rewards_enabled ||
-      parseInt(birthdayPoints) !== company.birthday_reward_points ||
+      birthdayPointsCalc !== company.birthday_reward_points ||
       anniversaryEnabled !== company.anniversary_rewards_enabled ||
-      parseInt(anniversaryPoints) !== company.anniversary_reward_points);
+      anniversaryPointsCalc !== company.anniversary_reward_points);
 
   if (companyLoading) {
     return (
@@ -225,7 +230,7 @@ const CelebrationSettingsCard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Configuration Card */}
+      {/* Combined Configuration + Cost Estimator Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -236,202 +241,202 @@ const CelebrationSettingsCard = () => {
             Automatically reward team members on their birthday or work anniversary. Points are deducted from your company wallet.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Birthday Rewards */}
-          <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-3">
-                <Switch checked={birthdayEnabled} onCheckedChange={setBirthdayEnabled} />
-                <Label className="text-base font-medium">Birthday Rewards</Label>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column — Configuration */}
+            <div className="space-y-6">
+              {/* Birthday Rewards */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Switch checked={birthdayEnabled} onCheckedChange={setBirthdayEnabled} />
+                  <Label className="text-base font-medium">Birthday Rewards</Label>
+                </div>
+                {birthdayEnabled && (
+                  <div className="pl-14 space-y-1">
+                    <Label htmlFor="birthday-dollars" className="text-sm text-muted-foreground">
+                      Dollar value per birthday
+                    </Label>
+                    <div className="relative w-32">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <Input
+                        id="birthday-dollars"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="pl-7 w-full"
+                        value={birthdayDollars}
+                        onChange={(e) => setBirthdayDollars(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">= {birthdayPointsCalc.toLocaleString()} points</p>
+                  </div>
+                )}
               </div>
-              {birthdayEnabled && (
-                <div className="flex items-center gap-2 pl-14">
-                  <Label htmlFor="birthday-points" className="text-sm text-muted-foreground whitespace-nowrap">
-                    Points per birthday:
-                  </Label>
-                  <Input
-                    id="birthday-points"
-                    type="number"
-                    min="1"
-                    className="w-24"
-                    value={birthdayPoints}
-                    onChange={(e) => setBirthdayPoints(e.target.value)}
-                  />
+
+              {/* Anniversary Rewards */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Switch checked={anniversaryEnabled} onCheckedChange={setAnniversaryEnabled} />
+                  <Label className="text-base font-medium">Work Anniversary Rewards</Label>
+                </div>
+                {anniversaryEnabled && (
+                  <div className="pl-14 space-y-1">
+                    <Label htmlFor="anniversary-dollars" className="text-sm text-muted-foreground">
+                      Dollar value per anniversary
+                    </Label>
+                    <div className="relative w-32">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <Input
+                        id="anniversary-dollars"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="pl-7 w-full"
+                        value={anniversaryDollars}
+                        onChange={(e) => setAnniversaryDollars(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">= {anniversaryPointsCalc.toLocaleString()} points</p>
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={() => saveMutation.mutate()} disabled={!hasChanges || saveMutation.isPending}>
+                {saveMutation.isPending ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+
+            {/* Right Column — Cost Estimator & Wallet */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="h-4 w-4 text-primary" />
+                <h3 className="font-medium text-sm">Cost Estimator</h3>
+              </div>
+
+              <div className="rounded-lg bg-muted p-4 text-sm font-mono space-y-1">
+                {birthdayEnabled && (
+                  <div className="flex justify-between gap-2">
+                    <span>Birthday:</span>
+                    <span>${(birthdayAnnualPts * rate).toFixed(2)}/yr</span>
+                  </div>
+                )}
+                {anniversaryEnabled && (
+                  <div className="flex justify-between gap-2">
+                    <span>Anniversary:</span>
+                    <span>${(anniversaryAnnualPts * rate).toFixed(2)}/yr</span>
+                  </div>
+                )}
+                {(birthdayEnabled || anniversaryEnabled) && (
+                  <>
+                    <div className="border-t border-border my-2" />
+                    <div className="flex justify-between font-semibold gap-2">
+                      <span>Est. Annual Total:</span>
+                      <span>${totalAnnualCost.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Based on {employees} active employee{employees !== 1 ? "s" : ""}
+                    </p>
+                  </>
+                )}
+                {!birthdayEnabled && !anniversaryEnabled && (
+                  <p className="text-muted-foreground">Enable rewards above to see cost estimates.</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <p className="font-medium text-sm">Company Wallet</p>
+                <p className="text-2xl font-bold">{walletBalance.toLocaleString()} pts</p>
+                <p className="text-sm text-muted-foreground">${walletValue.toFixed(2)} value</p>
+                <Button onClick={() => setBuyDialogOpen(true)} disabled={verifying} className="w-full">
+                  {verifying ? "Verifying purchase..." : "Buy Points"}
+                </Button>
+              </div>
+
+              {(birthdayEnabled || anniversaryEnabled) && walletBalance < totalAnnualPts && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <Info className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-destructive">
+                    Wallet ({walletBalance.toLocaleString()} pts) may not cover annual cost ({totalAnnualPts.toLocaleString()} pts). Top up to ensure uninterrupted rewards.
+                  </p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Anniversary Rewards */}
-          <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-3">
-                <Switch checked={anniversaryEnabled} onCheckedChange={setAnniversaryEnabled} />
-                <Label className="text-base font-medium">Work Anniversary Rewards</Label>
-              </div>
-              {anniversaryEnabled && (
-                <div className="flex items-center gap-2 pl-14">
-                  <Label htmlFor="anniversary-points" className="text-sm text-muted-foreground whitespace-nowrap">
-                    Points per anniversary:
-                  </Label>
-                  <Input
-                    id="anniversary-points"
-                    type="number"
-                    min="1"
-                    className="w-24"
-                    value={anniversaryPoints}
-                    onChange={(e) => setAnniversaryPoints(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <Button onClick={() => saveMutation.mutate()} disabled={!hasChanges || saveMutation.isPending}>
-            {saveMutation.isPending ? "Saving..." : "Save Settings"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Cost Estimator & Wallet */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Cost Estimator & Company Wallet
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-4 text-sm font-mono space-y-1">
-            {birthdayEnabled && (
-              <div className="flex justify-between">
-                <span>Birthday Rewards:</span>
-                <span>
-                  {bPts} pts × {employees} employees = {birthdayAnnualPts.toLocaleString()} pts/year = ${(birthdayAnnualPts * rate).toFixed(2)}/year
-                </span>
-              </div>
-            )}
-            {anniversaryEnabled && (
-              <div className="flex justify-between">
-                <span>Anniversary Rewards:</span>
-                <span>
-                  {aPts} pts × {employees} employees = {anniversaryAnnualPts.toLocaleString()} pts/year = ${(anniversaryAnnualPts * rate).toFixed(2)}/year
-                </span>
-              </div>
-            )}
-            {(birthdayEnabled || anniversaryEnabled) && (
-              <>
-                <div className="border-t border-border my-2" />
-                <div className="flex justify-between font-semibold">
-                  <span>Estimated Annual Total:</span>
-                  <span>
-                    {totalAnnualPts.toLocaleString()} pts = ${totalAnnualCost.toFixed(2)}
-                  </span>
-                </div>
-              </>
-            )}
-            {!birthdayEnabled && !anniversaryEnabled && (
-              <p className="text-muted-foreground">Enable birthday or anniversary rewards above to see cost estimates.</p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">Company Wallet Balance</p>
-              <p className="text-2xl font-bold">{walletBalance.toLocaleString()} pts</p>
-              <p className="text-sm text-muted-foreground">${walletValue.toFixed(2)} value</p>
-            </div>
-            <Button onClick={() => setBuyDialogOpen(true)} disabled={verifying}>
-              {verifying ? "Verifying purchase..." : "Buy Points"}
-            </Button>
-          </div>
-
-          {(birthdayEnabled || anniversaryEnabled) && walletBalance < totalAnnualPts && (
-            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-              <Info className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-destructive">
-                Your wallet balance ({walletBalance.toLocaleString()} pts) may not cover the estimated annual cost ({totalAnnualPts.toLocaleString()} pts). Top up your wallet to ensure uninterrupted rewards.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Yearly Summary Stats */}
       <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarHeart className="h-5 w-5 text-primary" />
-              {new Date().getFullYear()} Celebration Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{(yearlyStats?.total_points || 0).toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Points Distributed</p>
-                <p className="text-xs text-muted-foreground">${((yearlyStats?.total_points || 0) * rate).toFixed(2)} value</p>
-              </div>
-              <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{yearlyStats?.birthday_count || 0}</p>
-                <p className="text-sm text-muted-foreground">🎂 Birthday Rewards</p>
-                <p className="text-xs text-muted-foreground">{(yearlyStats?.birthday_points || 0).toLocaleString()} pts</p>
-              </div>
-              <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold">{yearlyStats?.anniversary_count || 0}</p>
-                <p className="text-sm text-muted-foreground">🎉 Anniversary Rewards</p>
-              <p className="text-xs text-muted-foreground">{(yearlyStats?.anniversary_points || 0).toLocaleString()} pts</p>
-              </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarHeart className="h-5 w-5 text-primary" />
+            {new Date().getFullYear()} Celebration Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-2xl font-bold">{(yearlyStats?.total_points || 0).toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground">Total Points Distributed</p>
+              <p className="text-xs text-muted-foreground">${((yearlyStats?.total_points || 0) * rate).toFixed(2)} value</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-2xl font-bold">{yearlyStats?.birthday_count || 0}</p>
+              <p className="text-sm text-muted-foreground">🎂 Birthday Rewards</p>
+              <p className="text-xs text-muted-foreground">{(yearlyStats?.birthday_points || 0).toLocaleString()} pts</p>
+            </div>
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-2xl font-bold">{yearlyStats?.anniversary_count || 0}</p>
+              <p className="text-sm text-muted-foreground">🎉 Anniversary Rewards</p>
+              <p className="text-xs text-muted-foreground">{(yearlyStats?.anniversary_points || 0).toLocaleString()} pts</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Reward History */}
       <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarHeart className="h-5 w-5 text-primary" />
-              Celebration Rewards History
-            </CardTitle>
-            <CardDescription>
-              Last {recentLogs?.length || 0} celebration rewards distributed
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Points</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentLogs?.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>{log.employee_name}</TableCell>
-                    <TableCell>
-                      {log.reward_type === "birthday" ? "🎂 Birthday" : "🎉 Anniversary"}
-                    </TableCell>
-                    <TableCell>{log.points_awarded}</TableCell>
-                    <TableCell className="text-muted-foreground">${(log.points_awarded * rate).toFixed(2)}</TableCell>
-                    <TableCell>{format(new Date(log.created_at), "MMM d, yyyy")}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {(!recentLogs || recentLogs.length === 0) && (
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarHeart className="h-5 w-5 text-primary" />
+            Celebration Rewards History
+          </CardTitle>
+          <CardDescription>
+            Last {recentLogs?.length || 0} celebration rewards distributed
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  No celebration rewards distributed yet
-                </TableCell>
+                <TableHead>Employee</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Points</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
-            )}
-          </CardContent>
-        </Card>
+            </TableHeader>
+            <TableBody>
+              {recentLogs?.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell>{log.employee_name}</TableCell>
+                  <TableCell>
+                    {log.reward_type === "birthday" ? "🎂 Birthday" : "🎉 Anniversary"}
+                  </TableCell>
+                  <TableCell>{log.points_awarded}</TableCell>
+                  <TableCell className="text-muted-foreground">${(log.points_awarded * rate).toFixed(2)}</TableCell>
+                  <TableCell>{format(new Date(log.created_at), "MMM d, yyyy")}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {(!recentLogs || recentLogs.length === 0) && (
+            <p className="text-center text-muted-foreground py-8">
+              No celebration rewards distributed yet
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Buy Points Dialog */}
       {companyId && (
