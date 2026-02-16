@@ -9,20 +9,7 @@ const corsHeaders = {
 }
 
 // Helper function to get the correct Stripe key based on company environment
-async function getStripeKey(supabaseClient: any, companyId: string): Promise<string> {
-  console.log('[GET-PAYMENT-METHOD] Getting company environment mode');
-  
-  // Get environment setting from platform_settings
-  const { data: envData } = await supabaseClient
-    .from('platform_settings')
-    .select('value')
-    .eq('key', 'stripe_environment')
-    .maybeSingle();
-  
-  const environment = envData?.value || 'test';
-  console.log(`[GET-PAYMENT-METHOD] Using Stripe environment: ${environment}`);
-  
-  // Get the appropriate Stripe key
+function getStripeKeyForEnvironment(environment: string): string {
   const keyName = environment === 'live' ? 'STRIPE_SECRET_KEY_LIVE' : 'STRIPE_SECRET_KEY_TEST';
   const stripeKey = Deno.env.get(keyName);
   
@@ -30,6 +17,7 @@ async function getStripeKey(supabaseClient: any, companyId: string): Promise<str
     throw new Error(`Missing Stripe key for environment: ${environment}`);
   }
   
+  console.log(`[GET-PAYMENT-METHOD] Using Stripe key for environment: ${environment}`);
   return stripeKey;
 }
 
@@ -117,8 +105,8 @@ serve(async (req) => {
 
     logStep('Found Stripe customer', { customerId: stripeCustomerId, environment });
 
-    // Initialize Stripe with correct key
-    const stripeKey = await getStripeKey(supabaseClient, companyId);
+    // Initialize Stripe with correct key based on company's own environment
+    const stripeKey = getStripeKeyForEnvironment(environment);
     const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
 
     // Get customer's default payment method
