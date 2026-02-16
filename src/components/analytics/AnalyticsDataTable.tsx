@@ -147,11 +147,11 @@ export function AnalyticsDataTable({
               {rows.map((row) => (
                 <tr key={row.label} className="border-b transition-colors hover:bg-muted/50">
                   <td className="p-4 align-middle font-medium sticky left-0 z-10 bg-card border-r border-border/50">
-                    {row.label}
+                    {row.label}{unit ? ` (${unit.trim()})` : ''}
                   </td>
                   {dates.map(date => (
                     <td key={date} className="p-4 align-middle text-right">
-                      {(row.values[date] || 0).toLocaleString()}{unit}
+                      {(row.values[date] || 0).toLocaleString()}
                     </td>
                   ))}
                 </tr>
