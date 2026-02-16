@@ -57,21 +57,17 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-fit">
-        {/* Left Column - Give Points Card */}
-        <div className="h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Stacked Cards */}
+        <div className="flex flex-col gap-6">
           <GivePointsCard />
+          <LeaderboardCard />
         </div>
         
-        {/* Right Column - Recognition Feed */}
-        <div className="h-full">
+        {/* Right Column - Recognition Feed spanning full height */}
+        <div className="lg:row-span-2 h-full">
           <RecognitionFeed />
         </div>
-      </div>
-      
-      {/* Bottom Section - Full Width Leaderboard */}
-      <div>
-        <LeaderboardCard />
       </div>
     </div>
   );
