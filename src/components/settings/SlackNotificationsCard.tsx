@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slack, Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info } from "lucide-react";
+import slackLogo from "@/assets/slack-logo.webp";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -118,7 +119,7 @@ const SlackNotificationsCard = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-lg bg-[#4A154B] flex items-center justify-center">
-              <Slack className="h-5 w-5 text-white" />
+              <img src={slackLogo} alt="Slack" className="h-5 w-5 rounded" />
             </div>
             <div>
               <CardTitle className="text-lg">Slack Notifications</CardTitle>
@@ -142,7 +143,7 @@ const SlackNotificationsCard = () => {
             <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
               isConnected ? 'bg-green-100' : 'bg-gray-300'
             }`}>
-              <Slack className={`h-4 w-4 ${isConnected ? 'text-green-700' : 'text-gray-600'}`} />
+              <img src={slackLogo} alt="Slack" className="h-4 w-4 rounded" />
             </div>
             <div>
               <p className="font-medium text-gray-900">
