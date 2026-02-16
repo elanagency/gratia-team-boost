@@ -146,21 +146,14 @@ export const SubscriptionStatusCard = () => {
     fetchSubscriptionStatus();
   }, [user, companyId]);
 
-  // Check for setup success in URL params
+  // Listen for billing-updated event (dispatched after Stripe checkout verification)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const setup = urlParams.get('setup');
-    
-    if (setup === 'success') {
-      toast.success("Subscription setup successful!");
-      window.history.replaceState({}, '', window.location.pathname);
-      setTimeout(() => {
-        fetchSubscriptionStatus();
-      }, 2000);
-    } else if (setup === 'cancelled') {
-      toast.error("Subscription setup was cancelled");
-      window.history.replaceState({}, '', window.location.pathname);
-    }
+    const handler = () => {
+      console.log('billing-updated event received, refreshing subscription status');
+      fetchSubscriptionStatus();
+    };
+    window.addEventListener('billing-updated', handler);
+    return () => window.removeEventListener('billing-updated', handler);
   }, []);
 
   if (isLoading || isPricingLoading) {
