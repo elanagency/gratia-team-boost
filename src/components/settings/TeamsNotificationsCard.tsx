@@ -23,16 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-// Microsoft Teams logo SVG
-const TeamsLogo = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20.625 6.75H17.25V4.5C17.25 3.67157 16.5784 3 15.75 3H8.25C7.42157 3 6.75 3.67157 6.75 4.5V6.75H3.375C2.75368 6.75 2.25 7.25368 2.25 7.875V18.375C2.25 18.9963 2.75368 19.5 3.375 19.5H20.625C21.2463 19.5 21.75 18.9963 21.75 18.375V7.875C21.75 7.25368 21.2463 6.75 20.625 6.75Z" fill="#5059C9"/>
-    <path d="M15.75 6.75V4.5H8.25V6.75H6.75V4.5C6.75 3.67157 7.42157 3 8.25 3H15.75C16.5784 3 17.25 3.67157 17.25 4.5V6.75H15.75Z" fill="#7B83EB"/>
-    <circle cx="12" cy="12" r="3" fill="white"/>
-    <path d="M19.5 9C20.3284 9 21 9.67157 21 10.5V15C21 15.8284 20.3284 16.5 19.5 16.5C18.6716 16.5 18 15.8284 18 15V10.5C18 9.67157 18.6716 9 19.5 9Z" fill="#7B83EB"/>
-    <circle cx="19.5" cy="6.75" r="1.5" fill="#7B83EB"/>
-  </svg>
-);
+import teamsLogo from "@/assets/teams-logo.png";
 
 export default function TeamsNotificationsCard() {
   const {
@@ -146,7 +137,7 @@ export default function TeamsNotificationsCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <TeamsLogo />
+            <img src={teamsLogo} alt="Microsoft Teams" className="h-6 w-6" />
             <div>
               <CardTitle className="text-lg">Microsoft Teams Notifications</CardTitle>
               <CardDescription>
@@ -165,7 +156,7 @@ export default function TeamsNotificationsCard() {
           <div className="space-y-4">
             {/* Primary: OAuth Connect */}
             <Button onClick={connectViaOAuth} className="w-full" size="lg">
-              <TeamsLogo />
+              <img src={teamsLogo} alt="Microsoft Teams" className="h-6 w-6" />
               <span className="ml-2">Connect to Microsoft Teams</span>
             </Button>
 
