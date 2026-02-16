@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Medal, Trophy, Star, Users } from "lucide-react";
+import { Loader2, Trophy, Users } from "lucide-react";
 
 type LeaderboardMember = {
   userId: string;
@@ -151,17 +151,39 @@ export function LeaderboardCard() {
   }, [companyId]); // Remove fetchLeaderboard from dependencies
 
 
-  const getRankIcon = (rank: number) => {
+  const getRankBadgeStyle = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />;
+        return "bg-yellow-400 text-yellow-900";
       case 2:
-        return <Medal className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />;
+        return "bg-gray-300 text-gray-700";
       case 3:
-        return <Medal className="h-4 w-4 sm:h-5 sm:w-5 text-amber-700" />;
+        return "bg-amber-600 text-white";
       default:
-        return <Star className="h-4 w-4 sm:h-5 sm:w-5 text-[#F572FF]" />;
+        return "bg-muted text-muted-foreground";
     }
+  };
+
+  const avatarColors = [
+    "bg-blue-100 text-blue-700",
+    "bg-green-100 text-green-700",
+    "bg-purple-100 text-purple-700",
+    "bg-pink-100 text-pink-700",
+    "bg-orange-100 text-orange-700",
+    "bg-teal-100 text-teal-700",
+    "bg-red-100 text-red-700",
+    "bg-indigo-100 text-indigo-700",
+    "bg-cyan-100 text-cyan-700",
+    "bg-rose-100 text-rose-700",
+  ];
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -181,8 +203,8 @@ export function LeaderboardCard() {
         ) : isOnlyAdmin ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-sm text-gray-500 mb-2">Build your team to get started</p>
-            <p className="text-xs text-gray-400 mb-4">Add team members to start giving recognition</p>
+            <p className="text-sm text-muted-foreground mb-2">Build your team to get started</p>
+            <p className="text-xs text-muted-foreground mb-4">Add team members to start giving recognition</p>
             <Button 
               onClick={() => navigate('/dashboard/settings')}
               className="bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
@@ -191,35 +213,43 @@ export function LeaderboardCard() {
             </Button>
           </div>
         ) : leaderboard.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-               <TableHeader>
-                 <TableRow>
-                   <TableHead className="text-xs sm:text-sm">Rank</TableHead>
-                   <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                   <TableHead className="hidden md:table-cell text-xs sm:text-sm">Department</TableHead>
-                   <TableHead className="text-right text-xs sm:text-sm">Points</TableHead>
-                 </TableRow>
-               </TableHeader>
-               <TableBody>
-                 {leaderboard.map((member) => (
-                   <TableRow key={member.userId}>
-                     <TableCell className="font-medium">
-                       <div className="flex items-center gap-1 sm:gap-2">
-                         {getRankIcon(member.rank)}
-                         <span className="text-xs sm:text-sm">{member.rank}</span>
-                       </div>
-                     </TableCell>
-                     <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{member.name}</TableCell>
-                     <TableCell className="hidden md:table-cell text-xs sm:text-sm">{member.department || '-'}</TableCell>
-                     <TableCell className="text-right font-semibold text-xs sm:text-sm">{member.points}</TableCell>
-                   </TableRow>
-                 ))}
-               </TableBody>
-            </Table>
+          <div className="space-y-2">
+            {leaderboard.map((member, index) => (
+              <div
+                key={member.userId}
+                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                {/* Rank badge */}
+                <div
+                  className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shrink-0 ${getRankBadgeStyle(member.rank)}`}
+                >
+                  {member.rank}
+                </div>
+
+                {/* Avatar */}
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarFallback className={`text-xs font-medium ${avatarColors[index % avatarColors.length]}`}>
+                    {getInitials(member.name)}
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Name & department */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{member.name}</p>
+                  {member.department && (
+                    <p className="text-xs text-muted-foreground truncate">{member.department}</p>
+                  )}
+                </div>
+
+                {/* Points */}
+                <span className="text-sm font-semibold text-[#F572FF] shrink-0">
+                  {member.points} pts
+                </span>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">No team members yet</p>
             <p className="text-xs sm:text-sm mt-2">Start giving points to recognize team members</p>
           </div>

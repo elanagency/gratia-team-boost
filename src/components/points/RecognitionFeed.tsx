@@ -505,7 +505,7 @@ export function RecognitionFeed() {
           Recent team recognitions and celebrations
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0 h-96 flex flex-col">
+      <CardContent className="p-4 sm:p-6 pt-0 h-[600px] flex flex-col">
         {threadedRecognitions.length > 0 ? (
           <div className="space-y-6 flex-1 overflow-y-auto">
             {threadedRecognitions.map((thread) => {
