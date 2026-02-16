@@ -31,7 +31,7 @@ export const RedemptionSuccessDialog = ({
 
   const handleViewRedemptions = () => {
     onOpenChange(false);
-    navigate("/dashboard/profile");
+    navigate("/dashboard/gift-cards?tab=redemptions");
   };
 
   const handleContinueShopping = () => {

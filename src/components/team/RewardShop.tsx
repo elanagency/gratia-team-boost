@@ -1,17 +1,15 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useRewardsShop, GiftCard } from "@/hooks/useRewardsShop";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { RedemptionSuccessDialog } from "./RedemptionSuccessDialog";
-import { CategoryFilterBar } from "./CategoryFilterBar";
 import { Input } from "@/components/ui/input";
 import { RealTimeStatus } from "@/components/ui/real-time-status";
 import { Search } from "lucide-react";
 
 export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedReward, setSelectedReward] = useState<GiftCard | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [redemptionData, setRedemptionData] = useState<{
@@ -23,22 +21,10 @@ export const RewardShop = () => {
   
   const { giftCards, exchangeRate, isLoading, error } = useRewardsShop();
 
-  // Compute category counts
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    giftCards.forEach(card => {
-      const cat = card.category || 'Other';
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    return counts;
-  }, [giftCards]);
-  
-  // Filter rewards based on search term and category
+  // Filter rewards based on search term
   const filteredRewards = giftCards.filter(reward => {
-    const matchesSearch = reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    return reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = !categoryFilter || (reward.category || 'Other') === categoryFilter;
-    return matchesSearch && matchesCategory;
   });
   
   const handleSelectReward = (reward: GiftCard) => {
@@ -66,13 +52,6 @@ export const RewardShop = () => {
         <RealTimeStatus />
       </div>
 
-      {/* Category Filter */}
-      <CategoryFilterBar
-        selectedCategory={categoryFilter}
-        onSelectCategory={setCategoryFilter}
-        categoryCounts={categoryCounts}
-      />
-      
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
