@@ -18,8 +18,8 @@ const TeamInviteManager = ({ onSuccess }: TeamInviteManagerProps) => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Check if billing setup is needed based on billing_ready status
-  const needsBillingSetup = !teamSlots.billing_ready;
+  // Check if subscription exists — if not, admin needs to start one
+  const needsBillingSetup = !teamSlots.has_subscription;
 
   const handleInviteClick = () => {
     if (needsBillingSetup) {

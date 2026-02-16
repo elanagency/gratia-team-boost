@@ -5,12 +5,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { CreditCard, Shield, Clock } from "lucide-react";
+import { CreditCard, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
@@ -35,24 +34,16 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
     setIsSettingUp(true);
 
     try {
-      // Check session validity first
       const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Current session valid:", !!sessionData.session);
       
       if (!sessionData.session) {
-        console.log("No valid session found, attempting refresh...");
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
         if (refreshError || !refreshData.session) {
-          console.error("Session refresh failed:", refreshError);
           toast.error("Your session has expired. Please log in again.");
           return;
         }
-        console.log("Session refreshed successfully");
       }
 
-      console.log("Setting up billing for company:", companyId);
-      
       const origin = window.location.origin;
       
       const { data, error } = await supabase.functions.invoke('billing-setup-checkout', {
@@ -67,42 +58,29 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
       });
       
       if (error) {
-        console.error("Error from billing-setup-checkout:", error);
-        
-        // Handle specific authentication errors
-        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('session')) {
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
           toast.error("Authentication expired. Please log in again.");
           return;
         }
-        
         throw error;
       }
       
-      console.log("Billing setup response:", data);
-      
+      if (data?.alreadySubscribed) {
+        toast.success("You already have an active subscription!");
+        onSetupComplete();
+        return;
+      }
+
       if (data?.url) {
-        console.log("Redirecting to billing setup:", data.url);
-        
-        // Close dialog before redirect
         onOpenChange(false);
-        
-        // Redirect to Stripe setup
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL received from billing setup");
+        throw new Error("No checkout URL received");
       }
       
     } catch (error) {
       console.error("Error setting up billing:", error);
-      
-      // Provide more specific error messages
-      if (error.message?.includes('session') || error.message?.includes('auth')) {
-        toast.error("Authentication issue. Please refresh the page and try again.");
-      } else if (error.message?.includes('checkout URL')) {
-        toast.error("Unable to create billing setup. Please contact support.");
-      } else {
-        toast.error("Failed to setup billing. Please try again.");
-      }
+      toast.error("Failed to setup billing. Please try again.");
     } finally {
       setIsSettingUp(false);
     }
@@ -112,9 +90,9 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Setup Your Billing</DialogTitle>
+          <DialogTitle>Start Your Subscription</DialogTitle>
           <DialogDescription>
-            Set up your payment method to start inviting team members. No charges until your first team member logs in.
+            Begin your subscription to start inviting team members. You can apply a coupon at checkout.
           </DialogDescription>
         </DialogHeader>
         
@@ -122,34 +100,32 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Secure Payment Setup
+              How Billing Works
             </h4>
             <div className="space-y-2 text-sm text-blue-700">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                <span>Add your payment method securely with Stripe</span>
+                <span>Your subscription starts at <strong>${pricePerMember}/month</strong> for your admin seat</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                <span>No charges today - just setup</span>
+                <span>Team members are added to your subscription as they join</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                <span>Billing starts when first team member logs in</span>
+                <span>Prorated billing — you only pay for the time used</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Billing Details
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h4 className="font-medium text-purple-800 mb-2 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Have a Coupon?
             </h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>Cost:</strong> ${pricePerMember}/month per active team member</p>
-              <p><strong>Billing:</strong> Monthly, based on active members</p>
-              <p><strong>Start Date:</strong> When first team member logs in</p>
-            </div>
+            <p className="text-sm text-purple-700">
+              You can apply a promotion code on the checkout page to get a discount.
+            </p>
           </div>
 
           <Button 
@@ -166,7 +142,7 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
             ) : (
               <>
                 <CreditCard className="mr-2 h-4 w-4" />
-                Setup Payment Method
+                Start Subscription — ${pricePerMember}/mo
               </>
             )}
           </Button>

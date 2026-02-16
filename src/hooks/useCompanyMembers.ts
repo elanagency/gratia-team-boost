@@ -38,7 +38,7 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
 
   const { user, companyId } = useAuth();
   const queryClient = useQueryClient();
-  const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0, billing_ready: false });
+  const [teamSlots, setTeamSlots] = useState({ used: 0, available: 0, total: 0, billing_ready: false, has_subscription: false });
 
   const {
     data: membersData,
@@ -168,9 +168,10 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
 
         setTeamSlots({
           used: usedMembers,
-          available: hasSubscription ? 999 : 0, // Unlimited after subscription
+          available: hasSubscription ? 999 : 0,
           total: hasSubscription ? usedMembers : 0,
-          billing_ready: billingReady
+          billing_ready: billingReady,
+          has_subscription: hasSubscription
         });
       } catch (error) {
         console.error("Error fetching team slots:", error);
