@@ -13,7 +13,7 @@ const Footer = () => {
           Making employee appreciation meaningful and rewarding.
         </p>
         <p className="text-sm text-gray-400">
-          © 2025 Grattia. All rights reserved.
+          © 2026 Grattia. All rights reserved.
         </p>
       </div>
     </footer>
