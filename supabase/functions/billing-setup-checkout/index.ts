@@ -18,7 +18,7 @@ const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<stri
       .eq('id', companyId)
       .single();
     
-    const environment = company?.environment || 'live'; // Default to live
+    const environment = company?.environment || 'live';
     console.log(`[BILLING-SETUP-CHECKOUT] Using company environment: ${environment}`);
     
     if (environment === 'live') {
@@ -32,7 +32,6 @@ const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<stri
     }
   } catch (error) {
     console.error(`[BILLING-SETUP-CHECKOUT] Error getting Stripe key, defaulting to live:`, error);
-    // Fallback to live key 
     const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
     if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
     return liveKey;
@@ -54,9 +53,9 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[BILLING-SETUP-CHECKOUT] Setting up billing for:", { companyId, origin });
+    console.log("[BILLING-SETUP-CHECKOUT] Setting up subscription for:", { companyId, origin });
 
-    // Get authenticated user for email prepopulation
+    // Get authenticated user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -112,13 +111,26 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get environment-specific customer ID
-    const customerIdField = company.environment === 'live' ? 'stripe_customer_id_live' : 'stripe_customer_id_test';
-    let customerId = company.environment === 'live' ? company.stripe_customer_id_live : company.stripe_customer_id_test;
+    // If company already has a subscription, skip checkout
+    if (company.stripe_subscription_id) {
+      console.log("[BILLING-SETUP-CHECKOUT] Company already has subscription:", company.stripe_subscription_id);
+      return new Response(
+        JSON.stringify({ 
+          alreadySubscribed: true,
+          subscriptionId: company.stripe_subscription_id 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Create Stripe customer if doesn't exist for this environment
+    // Get environment-specific customer ID
+    const isLive = (company.environment || 'live') === 'live';
+    const customerIdField = isLive ? 'stripe_customer_id_live' : 'stripe_customer_id_test';
+    let customerId = isLive ? company.stripe_customer_id_live : company.stripe_customer_id_test;
+
+    // Create Stripe customer if doesn't exist
     if (!customerId) {
-      console.log("[BILLING-SETUP-CHECKOUT] Creating new Stripe customer with email:", user.email, "for environment:", company.environment);
+      console.log("[BILLING-SETUP-CHECKOUT] Creating new Stripe customer for environment:", company.environment);
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: {
@@ -131,41 +143,69 @@ serve(async (req: Request) => {
       customerId = customer.id;
       console.log("[BILLING-SETUP-CHECKOUT] Created Stripe customer:", customerId);
 
-      // Update company with environment-specific customer ID
       const updateData = { [customerIdField]: customerId };
       await supabaseAdmin
         .from("companies")
         .update(updateData)
         .eq("id", companyId);
-    } else {
-      console.log("[BILLING-SETUP-CHECKOUT] Using existing Stripe customer:", customerId, "for environment:", company.environment);
     }
 
-    // Create setup checkout session - just to collect payment method, no payment
+    // Get the platform price ID for subscription
+    const priceIdField = isLive ? 'stripe_price_id_live' : 'stripe_price_id_test';
+    const { data: settingsData } = await supabaseAdmin
+      .from('platform_settings')
+      .select(`${priceIdField}`)
+      .eq('key', 'platform_settings')
+      .single();
+
+    const priceId = settingsData?.[priceIdField as keyof typeof settingsData];
+    
+    if (!priceId) {
+      console.error("[BILLING-SETUP-CHECKOUT] No price ID found for environment");
+      return new Response(
+        JSON.stringify({ error: "Platform pricing not configured. Please contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create subscription checkout session (not setup mode)
     const baseUrl = origin || "http://localhost:3000";
     
     const checkoutConfig: any = {
       customer: customerId,
-      payment_method_types: ["card"],
-      mode: "setup", // This only collects payment method, no payment
+      mode: "subscription", // Real subscription, not just card setup
+      line_items: [{
+        price: priceId,
+        quantity: 1, // 1 seat for the admin
+      }],
+      allow_promotion_codes: true, // Enable coupon/promo codes
       metadata: {
         company_id: companyId,
-        setup_type: "billing_method",
+        setup_type: "initial_subscription",
         ...(memberData ? { pending_member_data: JSON.stringify(memberData) } : {}),
+      },
+      subscription_data: {
+        metadata: {
+          company_id: companyId,
+          environment: company.environment || 'live',
+        },
       },
       success_url: `${baseUrl}/dashboard/settings?tab=billing&setup=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/dashboard/settings?tab=billing&setup=cancelled`,
     };
 
-    console.log("[BILLING-SETUP-CHECKOUT] Creating setup session with config:", {
+    console.log("[BILLING-SETUP-CHECKOUT] Creating subscription checkout with config:", {
       customer: customerId,
-      mode: "setup",
-      companyId
+      mode: "subscription",
+      quantity: 1,
+      priceId,
+      companyId,
+      allowPromoCodes: true
     });
 
     const session = await stripe.checkout.sessions.create(checkoutConfig);
 
-    console.log("[BILLING-SETUP-CHECKOUT] Setup session created:", session.id);
+    console.log("[BILLING-SETUP-CHECKOUT] Checkout session created:", session.id);
 
     return new Response(
       JSON.stringify({

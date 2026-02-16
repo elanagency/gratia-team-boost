@@ -9,36 +9,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to get the appropriate Stripe key based on company environment
-const getStripeKey = async (supabaseAdmin: any, companyId: string): Promise<string> => {
-  try {
-    console.log("[VERIFY-STRIPE-SESSION] Getting company environment for:", companyId);
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('environment')
-      .eq('id', companyId)
-      .single();
-    
-    const environment = company?.environment || 'live'; // Default to live to match billing-setup-checkout
-    console.log(`[VERIFY-STRIPE-SESSION] Using company environment: ${environment}`);
-    
-    if (environment === 'live') {
-      const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
-      if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
-      return liveKey;
-    } else {
-      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-      if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
-      return testKey;
-    }
-  } catch (error) {
-    console.error(`[VERIFY-STRIPE-SESSION] Error getting Stripe key, defaulting to live:`, error);
-    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
-    if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
-    return liveKey;
-  }
-};
-
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -67,12 +37,9 @@ serve(async (req: Request) => {
       }
     );
 
-    // First, we need to retrieve the session with any Stripe key to get the company_id from metadata.
-    // Try live key first (most common), then test key as fallback.
+    // Try to retrieve session - try both keys since we don't know the company yet
     let session;
     let stripe;
-    
-    // Try to retrieve session - we need to try both keys since we don't know the company yet
     const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
     const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
     
@@ -96,98 +63,133 @@ serve(async (req: Request) => {
       );
     }
 
-    // Handle setup mode sessions (billing setup) - No payment validation needed
+    // Handle subscription mode sessions (new billing flow)
+    if (session.mode === 'subscription') {
+      console.log("[VERIFY-STRIPE-SESSION] Processing subscription mode session");
+      
+      const subscriptionId = session.subscription as string;
+      
+      if (!subscriptionId) {
+        return new Response(
+          JSON.stringify({ error: "No subscription created" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Retrieve the subscription to get item ID
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const subscriptionItemId = subscription.items.data[0]?.id || null;
+
+      // Update company with subscription details + billing_ready for backward compat
+      const { error: updateError } = await supabaseAdmin
+        .from('companies')
+        .update({ 
+          stripe_subscription_id: subscriptionId,
+          stripe_subscription_item_id: subscriptionItemId,
+          subscription_status: 'active',
+          billing_ready: true,
+          first_charge_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', companyId);
+
+      if (updateError) {
+        console.error("[VERIFY-STRIPE-SESSION] Error updating company:", updateError);
+        throw updateError;
+      }
+
+      // Log subscription event
+      await supabaseAdmin.from("subscription_events").insert({
+        company_id: companyId,
+        event_type: "subscription_created",
+        new_quantity: 1,
+        metadata: {
+          subscription_id: subscriptionId,
+          session_id: sessionId,
+          trigger: 'initial_subscription_checkout',
+        },
+      });
+
+      console.log("[VERIFY-STRIPE-SESSION] Subscription saved:", subscriptionId);
+
+      // Create pending member if data exists
+      let memberCreationResult = null;
+      if (pendingMemberData) {
+        try {
+          const memberData = JSON.parse(pendingMemberData);
+          console.log("[VERIFY-STRIPE-SESSION] Creating pending member:", memberData);
+
+          const memberResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-team-member`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+            },
+            body: JSON.stringify(memberData)
+          });
+
+          if (memberResponse.ok) {
+            memberCreationResult = await memberResponse.json();
+            console.log("[VERIFY-STRIPE-SESSION] Member created successfully");
+          } else {
+            const errorText = await memberResponse.text();
+            console.error("[VERIFY-STRIPE-SESSION] Failed to create member:", errorText);
+          }
+        } catch (memberError) {
+          console.error("[VERIFY-STRIPE-SESSION] Error creating pending member:", memberError);
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        type: 'subscription_created',
+        companyId,
+        subscriptionId,
+        memberCreated: !!memberCreationResult,
+        ...memberCreationResult
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Handle setup mode sessions (legacy billing setup flow)
     if (session.mode === 'setup') {
-      console.log("[VERIFY-STRIPE-SESSION] Processing setup mode session for billing setup");
+      console.log("[VERIFY-STRIPE-SESSION] Processing legacy setup mode session");
       
       const customerId = session.customer as string;
       const setupIntentId = session.setup_intent as string;
-      const environment = session.metadata?.environment || 'live';
 
       try {
-        // Retrieve setup intent to get payment method
         const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
         const paymentMethodId = setupIntent.payment_method as string;
 
         if (paymentMethodId) {
-          // Attach payment method to customer if not already attached
           try {
-            await stripe.paymentMethods.attach(paymentMethodId, {
-              customer: customerId,
-            });
+            await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
           } catch (error) {
-            // Payment method might already be attached
-            console.log("[VERIFY-STRIPE-SESSION] Payment method already attached or error:", error);
+            console.log("[VERIFY-STRIPE-SESSION] Payment method already attached:", error);
           }
 
-          // Set as default payment method
           await stripe.customers.update(customerId, {
-            invoice_settings: {
-              default_payment_method: paymentMethodId,
-            },
+            invoice_settings: { default_payment_method: paymentMethodId },
           });
-
-          console.log("[VERIFY-STRIPE-SESSION] Payment method attached and set as default");
         }
 
-        // Mark billing as ready
-        const { error: updateError } = await supabaseAdmin
+        await supabaseAdmin
           .from('companies')
-          .update({ 
-            billing_ready: true,
-            updated_at: new Date().toISOString()
-          })
+          .update({ billing_ready: true, updated_at: new Date().toISOString() })
           .eq('id', companyId);
-
-        if (updateError) {
-          console.error("[VERIFY-STRIPE-SESSION] Error updating billing_ready:", updateError);
-          throw updateError;
-        }
-
-        console.log("[VERIFY-STRIPE-SESSION] Company billing marked as ready");
-
-        // If there's pending member data, create the member now that billing is set up
-        let memberCreationResult = null;
-        if (pendingMemberData) {
-          try {
-            const memberData = JSON.parse(pendingMemberData);
-            console.log("[VERIFY-STRIPE-SESSION] Creating pending member after billing setup:", memberData);
-
-            // Call create-team-member function
-            const memberResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-team-member`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-              },
-              body: JSON.stringify(memberData)
-            });
-
-            if (memberResponse.ok) {
-              memberCreationResult = await memberResponse.json();
-              console.log("[VERIFY-STRIPE-SESSION] Member created successfully after billing setup");
-            } else {
-              const errorText = await memberResponse.text();
-              console.error("[VERIFY-STRIPE-SESSION] Failed to create member after billing setup:", errorText);
-            }
-          } catch (memberError) {
-            console.error("[VERIFY-STRIPE-SESSION] Error creating pending member:", memberError);
-          }
-        }
 
         return new Response(JSON.stringify({ 
           received: true, 
           type: 'setup_completed',
           companyId,
-          memberCreated: !!memberCreationResult,
-          ...memberCreationResult
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
-
       } catch (error) {
-        console.error("[VERIFY-STRIPE-SESSION] Error processing setup session:", error);
+        console.error("[VERIFY-STRIPE-SESSION] Error processing setup:", error);
         return new Response(
           JSON.stringify({ error: "Setup processing failed" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -214,7 +216,6 @@ serve(async (req: Request) => {
         );
       }
 
-      // Credit points_balance
       const { data: currentCompany } = await supabaseAdmin
         .from("companies")
         .select("points_balance")
@@ -229,41 +230,27 @@ serve(async (req: Request) => {
         .eq("id", companyId);
 
       if (creditError) {
-        console.error("[VERIFY-STRIPE-SESSION] Error crediting points:", creditError);
         return new Response(
           JSON.stringify({ error: "Failed to credit points" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Log subscription event for audit
       await supabaseAdmin.from("subscription_events").insert({
         company_id: companyId,
         event_type: "points_purchase",
         new_quantity: pointsQuantity,
         amount_charged: session.amount_total || 0,
-        metadata: {
-          session_id: sessionId,
-          points_quantity: pointsQuantity,
-          new_balance: newBalance,
-        },
+        metadata: { session_id: sessionId, points_quantity: pointsQuantity, new_balance: newBalance },
       });
 
-      console.log("[VERIFY-STRIPE-SESSION] Points credited:", { pointsQuantity, newBalance });
-
       return new Response(
-        JSON.stringify({
-          success: true,
-          type: "points_purchase",
-          pointsCredited: pointsQuantity,
-          newBalance,
-          companyId,
-        }),
+        JSON.stringify({ success: true, type: "points_purchase", pointsCredited: pointsQuantity, newBalance, companyId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Handle payment mode sessions (existing subscription flow)
+    // Handle other payment mode sessions
     if (session.payment_status !== "paid") {
       return new Response(
         JSON.stringify({ error: "Payment not completed" }),
@@ -271,115 +258,37 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[VERIFY-STRIPE-SESSION] Processing:", { companyId, hasPendingMember: !!pendingMemberData });
-
-    // Get the subscription from the session
     const subscriptionId = session.subscription as string;
-    
-    // Get the amount charged from the session
-    const amountTotal = session.amount_total || 0; // in cents
-    console.log("[VERIFY-STRIPE-SESSION] Amount charged:", amountTotal);
-    
-    // Update company with subscription information
+    const amountTotal = session.amount_total || 0;
+
     const { error: updateError } = await supabaseAdmin
       .from("companies")
-      .update({
-        stripe_subscription_id: subscriptionId,
-        subscription_status: "active",
-      })
+      .update({ stripe_subscription_id: subscriptionId, subscription_status: "active" })
       .eq("id", companyId);
 
     if (updateError) {
-      console.error("[VERIFY-STRIPE-SESSION] Error updating company:", updateError);
       return new Response(
         JSON.stringify({ error: "Failed to update company subscription" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get current team member count for subscription event
-    const { data: memberCount } = await supabaseAdmin
-      .from("profiles")
-      .select("id", { count: "exact" })
-      .eq("company_id", companyId)
-      .eq("is_admin", false)
-      .eq("status", "active");
-
-    const currentMembers = memberCount?.length || 0;
-
-    // Log the subscription event
-    const { error: eventError } = await supabaseAdmin
-      .from("subscription_events")
-      .insert({
-        company_id: companyId,
-        event_type: "subscription_created",
-        new_quantity: currentMembers,
-        amount_charged: amountTotal,
-        metadata: {
-          subscription_id: subscriptionId,
-          session_id: sessionId,
-          initial_member_count: currentMembers,
-        },
-      });
-
-    if (eventError) {
-      console.error("[VERIFY-STRIPE-SESSION] Error logging subscription event:", eventError);
-    }
-
-    let memberCreationResult = null;
-
-    // If there's pending member data, create the member now
-    if (pendingMemberData) {
-      try {
-        const memberData = JSON.parse(pendingMemberData);
-        console.log("[VERIFY-STRIPE-SESSION] Creating pending member:", memberData);
-
-        // Call create-team-member function
-        const memberResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/create-team-member`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-          },
-          body: JSON.stringify(memberData)
-        });
-
-        if (memberResponse.ok) {
-          memberCreationResult = await memberResponse.json();
-          console.log("[VERIFY-STRIPE-SESSION] Member created successfully");
-        } else {
-          const errorText = await memberResponse.text();
-          console.error("[VERIFY-STRIPE-SESSION] Failed to create member:", errorText);
-        }
-      } catch (memberError) {
-        console.error("[VERIFY-STRIPE-SESSION] Error creating pending member:", memberError);
-      }
-    }
-
-    console.log("[VERIFY-STRIPE-SESSION] Verification completed successfully");
+    await supabaseAdmin.from("subscription_events").insert({
+      company_id: companyId,
+      event_type: "subscription_created",
+      amount_charged: amountTotal,
+      metadata: { subscription_id: subscriptionId, session_id: sessionId },
+    });
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        companyId,
-        subscriptionId,
-        memberCreated: !!memberCreationResult,
-        ...memberCreationResult,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, companyId, subscriptionId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("[VERIFY-STRIPE-SESSION] Error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

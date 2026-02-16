@@ -344,21 +344,21 @@ export const BillingCard = () => {
               {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
             </div>
             <div className="text-sm text-muted-foreground">
-              ${(memberPriceInCents / 100).toFixed(2)} per member/month
+              ${(memberPriceInCents / 100).toFixed(2)} per seat/month
             </div>
           </div>
 
-          {/* Active Members */}
+          {/* Active Seats */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
-              Active members
+              Active seats
             </div>
             <div className="font-semibold">
-              {subscriptionStatus?.team_members || 0}
+              {hasExistingSubscription ? (subscriptionStatus?.team_members || 0) + 1 : 0}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Only active members billed' : 'Add members to start'}
+              {hasExistingSubscription ? 'Includes admin seat' : 'Start subscription to add'}
             </div>
           </div>
 
@@ -369,10 +369,10 @@ export const BillingCard = () => {
               Monthly cost
             </div>
             <div className="font-semibold">
-              ${((subscriptionStatus?.monthly_cost || 0) / 100).toFixed(2)}
+              ${(((subscriptionStatus?.team_members || 0) + 1) * memberPriceInCents / 100).toFixed(2)}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Current billing' : 'No charges yet'}
+              {hasExistingSubscription ? 'Prorated on changes' : 'No charges yet'}
             </div>
           </div>
 
@@ -396,7 +396,7 @@ export const BillingCard = () => {
               )}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasBillingSetup ? 'Managed via Stripe' : 'Set up billing to view'}
+              {hasBillingSetup ? 'Managed via Stripe' : 'Start subscription to set up'}
             </div>
           </div>
         </div>

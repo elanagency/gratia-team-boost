@@ -296,32 +296,24 @@ export const SubscriptionStatusCard = () => {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="font-medium text-green-800 mb-2">How It Works</h4>
               <div className="text-sm text-green-700 space-y-1">
-                <p>• Add team members instantly</p>
-                <p>• Billing updates automatically each month</p>
-                <p>• Pay only for active team members</p>
+                <p>• Your admin seat is always included</p>
+                <p>• Team members are added with prorated billing</p>
+                <p>• Seats adjust as members join or leave</p>
                 <p>• Remove members anytime to reduce costs</p>
               </div>
             </div>
           </>
-        ) : subscriptionStatus.team_members > 0 ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-800 mb-2">Subscription Required</h4>
-            <p className="text-sm text-yellow-700 mb-4">
-              You have {subscriptionStatus.team_members} team member(s) but no active subscription. 
-              A subscription will be created when you add your first member.
-            </p>
-          </div>
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-800 mb-2">Ready to Start</h4>
             <p className="text-sm text-blue-700 mb-4">
-              Add your first team member to automatically start your subscription.
+              Start your subscription to begin inviting team members.
             </p>
             <div className="text-sm text-blue-600">
-              <p>• ${(memberPriceInCents / 100).toFixed(2)} per team member per month</p>
-              <p>• Billing starts with your first team member</p>
-              <p>• Add members instantly after subscription</p>
-              <p>• No setup fees or commitments</p>
+              <p>• {"$"}{(memberPriceInCents / 100).toFixed(2)} per seat per month</p>
+              <p>• Subscription starts with your admin seat</p>
+              <p>• Team members are added with prorated billing</p>
+              <p>• Apply a coupon at checkout for discounts</p>
             </div>
           </div>
         )}
