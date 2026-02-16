@@ -200,6 +200,16 @@ export const BillingCard = () => {
     }
   }, [fetchPaymentMethodDetails, hasBillingSetup]);
 
+  // Listen for billing-updated event (dispatched after Stripe checkout verification)
+  useEffect(() => {
+    const handler = () => {
+      console.log('billing-updated event received, refreshing billing data');
+      fetchSubscriptionStatus();
+    };
+    window.addEventListener('billing-updated', handler);
+    return () => window.removeEventListener('billing-updated', handler);
+  }, [fetchSubscriptionStatus]);
+
   // Real-time subscription for profiles changes (member additions/deletions)
   useEffect(() => {
     if (!companyId) return;

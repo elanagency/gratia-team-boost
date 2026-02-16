@@ -34,6 +34,9 @@ export const usePaymentVerification = (onSuccess?: () => void) => {
           console.log("Payment verification successful:", data);
           toast.success("Subscription setup successful! You can now add team members.");
           
+          // Signal billing components to refetch immediately
+          window.dispatchEvent(new CustomEvent('billing-updated'));
+          
           // Invalidate all company-related queries to refresh billing status
           queryClient.invalidateQueries({ queryKey: ['company-members'] });
           queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
