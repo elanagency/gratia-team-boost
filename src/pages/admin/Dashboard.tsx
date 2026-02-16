@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GivePointsCard } from "@/components/points/GivePointsCard";
 import { RecognitionFeed } from "@/components/points/RecognitionFeed";
 import { LeaderboardCard } from "@/components/points/LeaderboardCard";
 import { RegionSetupDialog } from "@/components/onboarding/RegionSetupDialog";
+import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
+import BillingSetupDialog from "@/components/team/BillingSetupDialog";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const { companyId, isAdmin } = useAuth();
   const [showRegionSetup, setShowRegionSetup] = useState(false);
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Check if region setup is needed for admins
   const { data: company, refetch: refetchCompany } = useQuery({
@@ -40,6 +44,11 @@ const Dashboard = () => {
     refetchCompany();
   };
 
+  const handleBillingSetupComplete = () => {
+    setBillingDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["onboarding-progress"] });
+  };
+
   return (
     <div className="space-y-6">
       {/* Region Setup Dialog for new companies */}
@@ -51,10 +60,24 @@ const Dashboard = () => {
         />
       )}
 
+      {/* Billing Setup Dialog triggered from onboarding */}
+      {companyId && (
+        <BillingSetupDialog
+          open={billingDialogOpen}
+          onOpenChange={setBillingDialogOpen}
+          onSetupComplete={handleBillingSetupComplete}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
       </div>
+
+      {/* Onboarding Checklist for admins */}
+      {isAdmin && (
+        <OnboardingChecklist onUpgradeClick={() => setBillingDialogOpen(true)} />
+      )}
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
