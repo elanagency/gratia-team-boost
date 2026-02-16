@@ -113,20 +113,6 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-            <DropdownMenuItem asChild>
-              <Link to="/dashboard/profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Profile Settings
-              </Link>
-            </DropdownMenuItem>
-            {isAdmin && (
-              <DropdownMenuItem asChild>
-                <Link to="/dashboard/settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Company Settings
-                </Link>
-              </DropdownMenuItem>
-            )}
             <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive">
               <LogOut className="h-4 w-4" />
               Log out
