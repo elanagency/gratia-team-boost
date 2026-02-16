@@ -29,7 +29,7 @@ const metricLabels: Record<MetricType, string> = {
   sent: "Recognition Sent",
   engagement: "Engagement Rate",
   redemptions: "Points Redeemed",
-  logins: "Login Frequency",
+  logins: "Daily Active Users",
 };
 
 const metricUnits: Record<MetricType, string> = {
@@ -37,7 +37,7 @@ const metricUnits: Record<MetricType, string> = {
   sent: "points",
   engagement: "%",
   redemptions: "points",
-  logins: "logins",
+  logins: "users",
 };
 
 // Color palette for segments
