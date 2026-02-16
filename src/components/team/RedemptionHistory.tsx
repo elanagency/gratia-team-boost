@@ -69,18 +69,13 @@ export const RedemptionHistory = () => {
                   </div>
                   
                   <div>
-                    <h4 className="font-medium">Gift Card Redemption</h4>
+                    <h4 className="font-medium">{redemption.reward?.name || "Gift Card Redemption"}</h4>
                     <p className="text-sm text-gray-500">
                       Redeemed on {format(new Date(redemption.redemption_date), 'MMM d, yyyy')}
                     </p>
                     <p className="text-sm font-medium text-[#F572FF]">
                       {redemption.points_spent} points
                     </p>
-                    {redemption.reward?.name && (
-                      <p className="text-xs text-gray-400">
-                        Reward: {redemption.reward.name}
-                      </p>
-                    )}
                     
                     {/* Show processing indicator for pending redemptions */}
                     {(redemption.status === 'pending' || redemption.status === 'created') && !redemption.external_order_id && (
