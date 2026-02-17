@@ -1,84 +1,70 @@
 
 
-# Fix: "Failed to setup billing" — Stale Auth Session
+# Fix CSV Date Parsing and Display
 
-## Root Cause
+## Problems Found
 
-The auth logs reveal the exact problem:
+1. **Company Start Date not saved**: The CSV contains dates in US format (e.g., "2/17/2022") which PostgreSQL's `date` column doesn't accept. The value gets silently dropped, resulting in `null` in the database. The birthday "2/17/1991" happened to be accepted by Postgres in some cases, but the start date was not -- both need proper conversion.
 
-```
-"Session not found" - session id (20638350-a6d1-4ff6-b8b2-b0c51f96b902) doesn't exist
-```
+2. **Birthday displays one day behind**: The database stores "1991-02-17" correctly, but `new Date("1991-02-17")` in JavaScript interprets date-only strings as UTC midnight. In US timezones (UTC-5 to UTC-8), this shifts to the previous day (Feb 16).
 
-All three billing attempts returned **401** because the user's auth session is **expired/invalid on the server**, even though it looks valid locally.
+## Root Causes
 
-Here is what happens step by step:
+- The CSV parsing code passes raw date strings (like "2/17/2022") directly to the edge function without converting to ISO format (YYYY-MM-DD)
+- The display code uses `new Date(dateString)` which interprets YYYY-MM-DD as UTC, causing timezone shift
 
-1. User clicks "Start Subscription"
-2. `BillingSetupDialog` calls `getSession()` -- this reads from **local storage** and returns a cached session that appears valid
-3. Since a session exists locally, the refresh logic is skipped entirely
-4. The edge function is called with this stale token
-5. The edge function calls `getUser()` (server-side validation) -- Supabase auth responds "Session not found"
-6. Edge function returns 401
-7. Frontend shows "Failed to setup billing"
+## Changes
 
-Additionally, the refresh token itself is also invalid (`"Refresh Token Not Found"` in auth logs at 11:39:28), meaning even a refresh attempt would fail.
+### 1. `src/components/team/CSVUploadDialog.tsx` -- Add date normalization
 
-## Fix: Two Changes
+Add a helper function that converts various date formats (M/D/YYYY, MM/DD/YYYY, D/M/YYYY, YYYY-MM-DD, etc.) to the ISO `YYYY-MM-DD` format before sending to the edge function.
 
-### 1. Use `getUser()` instead of `getSession()` in BillingSetupDialog
-
-Replace the local-only `getSession()` check with a server-validated `getUser()` call. This ensures we detect stale sessions before calling the edge function, and redirect the user to log in again if their session is truly expired.
-
-**File: `src/components/team/BillingSetupDialog.tsx`**
-
-Replace the session check block (lines 37-45) with:
+Apply this normalization in the `parseCSV` callback when mapping rows (around line 226), converting `birthday` and `companyStartDate` values to ISO format.
 
 ```typescript
-// Validate session server-side (getSession only checks local cache)
-const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
-
-if (userError || !validUser) {
-  toast.error("Your session has expired. Please log in again.");
-  setIsSettingUp(false);
-  return;
-}
-```
-
-### 2. Improve 401 error messaging in BillingSetupDialog
-
-Update the catch block to provide a clearer message and optionally redirect to login, so users don't get stuck clicking "Start Subscription" repeatedly with a dead session.
-
-**File: `src/components/team/BillingSetupDialog.tsx`**
-
-Update the error handling (lines 60-65) to:
-
-```typescript
-if (error) {
-  if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('403')) {
-    toast.error("Your session has expired. Please log in again.");
-    // Sign out to clear stale local session
-    await supabase.auth.signOut();
-    return;
+function normalizeDate(dateStr: string): string {
+  if (!dateStr || !dateStr.trim()) return '';
+  const trimmed = dateStr.trim();
+  
+  // Already ISO format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  
+  // US format: M/D/YYYY or MM/DD/YYYY
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, month, day, year] = slashMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  throw error;
+  
+  // Dash format: M-D-YYYY
+  const dashMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dashMatch) {
+    const [, month, day, year] = dashMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  return trimmed; // Return as-is if no match
 }
 ```
 
-## Summary
+### 2. `src/components/team/TeamMemberTable.tsx` -- Fix timezone-safe date display
+
+Replace `new Date(member.birthday)` and `new Date(member.company_start_date)` with a timezone-safe parsing approach that treats the date string as local rather than UTC.
+
+```typescript
+// Before (timezone bug):
+format(new Date(member.birthday), 'MMM d')
+
+// After (timezone safe):
+format(new Date(member.birthday + 'T00:00:00'), 'MMM d')
+```
+
+Appending `T00:00:00` (without a `Z`) forces JavaScript to parse it as local time instead of UTC.
+
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/team/BillingSetupDialog.tsx` | Replace `getSession()` with `getUser()` for server-side validation; improve 401/403 error handling to clear stale sessions |
-
-## Why This Fixes It
-
-- `getSession()` only reads local storage -- it cannot detect server-side session invalidation
-- `getUser()` makes a server round-trip to validate the token, catching expired/revoked sessions immediately
-- If the session is stale, the user gets a clear "Please log in again" message instead of a generic "Failed to setup billing"
-- The `signOut()` call clears the invalid local session, so the next login starts fresh
-
-## Note for the User
-
-The specific user experiencing this issue (Piers Chen) has an invalid session that cannot be recovered. After this fix is deployed, they will see "Your session has expired. Please log in again" and can re-authenticate to proceed with billing setup.
+| `src/components/team/CSVUploadDialog.tsx` | Add `normalizeDate()` helper; apply to birthday and companyStartDate during CSV parsing |
+| `src/components/team/TeamMemberTable.tsx` | Append `T00:00:00` to date strings before creating Date objects to prevent UTC timezone shift |
 
