@@ -80,15 +80,17 @@ const Dashboard = () => {
       )}
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Left Column - Stacked Cards */}
         <div className="flex flex-col gap-6">
           <GivePointsCard />
-          <LeaderboardCard />
+          <div className="flex-1 flex flex-col">
+            <LeaderboardCard />
+          </div>
         </div>
         
         {/* Right Column - Recognition Feed spanning full height */}
-        <div className="lg:row-span-2 h-full">
+        <div className="h-full">
           <RecognitionFeed />
         </div>
       </div>
