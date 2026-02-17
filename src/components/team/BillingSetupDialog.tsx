@@ -34,14 +34,13 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
     setIsSettingUp(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData.session) {
-          toast.error("Your session has expired. Please log in again.");
-          return;
-        }
+      // Validate session server-side (getSession only checks local cache)
+      const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !validUser) {
+        toast.error("Your session has expired. Please log in again.");
+        setIsSettingUp(false);
+        return;
       }
 
       const origin = window.location.origin;
@@ -58,8 +57,9 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
       });
       
       if (error) {
-        if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-          toast.error("Authentication expired. Please log in again.");
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('403')) {
+          toast.error("Your session has expired. Please log in again.");
+          await supabase.auth.signOut();
           return;
         }
         throw error;
