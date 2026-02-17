@@ -1,66 +1,61 @@
 
 
-# Celebrations Tab UI Redesign
+# Dashboard Layout and Leaderboard Improvements
 
 ## Overview
-Three changes to the Celebrations settings tab: switch input from points to dollars, merge the configuration and cost estimator into a single condensed card, and bring the wallet/Buy Points CTA higher on the page.
+Four changes to the admin dashboard: limit leaderboard to top 5, add a person/department toggle, match component heights, and make the recognition feed fill its parent height.
 
-## Change 1: Dollar Input Instead of Points
+## Change 1: Leaderboard Top 5
 
-Currently admins type a number of points (e.g. "100 points per birthday"). Instead, they'll type a dollar amount (e.g. "$5.00 per birthday") and see the auto-calculated points below it.
+In `src/components/points/LeaderboardCard.tsx`, change `.slice(0, 10)` to `.slice(0, 5)` so only the top 5 members are shown.
 
-- Input fields change from "Points per birthday" to "Dollar value per birthday" with a `$` prefix
-- Below each input, a helper line shows: "= X points at current rate"
-- Under the hood, the dollar value is converted to points using the exchange rate before saving to the DB (the DB columns still store points)
-- On load, the existing point values are converted back to dollars for display
+## Change 2: Department Toggle on Leaderboard
 
-**Example:** If exchange rate is $0.05/point and admin types "$5.00", the helper shows "= 100 points" and 100 is saved to the DB.
+Add a toggle (two small tabs: "Person" / "Department") below the card title in `LeaderboardCard.tsx`.
 
-## Change 2: Condensed Two-Column Layout
+- **Person view** (current): shows individual members ranked by recognition points received
+- **Department view**: aggregates recognition points by department, ranks departments, shows department name and total points
 
-Merge the "Celebration Rewards" config card and the "Cost Estimator & Company Wallet" card into a single card with a two-column layout on desktop:
+Implementation:
+- Add a `viewMode` state: `'person' | 'department'`
+- Two small toggle buttons in the card header
+- When `viewMode === 'department'`, group the fetched data by `department` field, sum points per department, sort descending, show top 5
+- Department rows use a folder/building icon instead of avatar initials
+- Rank badges remain the same (gold, silver, bronze)
 
-```text
-+----------------------------------------------+
-| Celebration Rewards                           |
-| Automatically reward team members...          |
-+----------------------+-----------------------+
-| LEFT COLUMN          | RIGHT COLUMN          |
-|                      |                       |
-| [Switch] Birthday    | Cost Estimator        |
-|   $ [___] per bday   | Birthday: $X/yr       |
-|   = 100 pts          | Anniversary: $X/yr    |
-|                      | ──────────────         |
-| [Switch] Anniversary | Total: $X/yr          |
-|   $ [___] per anniv  |                       |
-|   = 200 pts          | Wallet: 5,000 pts     |
-|                      | $250.00 value         |
-| [Save Settings]      | [Buy Points]          |
-+----------------------+-----------------------+
-| Low balance warning (full width, if needed)   |
-+----------------------------------------------+
-```
+## Change 3: Match Component Heights
 
-On mobile, the two columns stack vertically (config first, then estimator/wallet).
+The left column (GivePointsCard + LeaderboardCard) and right column (RecognitionFeed) should have equal height.
 
-## Change 3: Buy Points Higher on Screen
+In `src/pages/admin/Dashboard.tsx`, update the grid layout:
+- Add `min-h-0` to the grid container
+- Make the left column use `flex flex-col gap-6` (already does)
+- Make the right column use `h-full` with a flex container that stretches to match
 
-Because the config and estimator are now in a single card, the wallet balance and "Buy Points" button appear in the right column -- visible immediately without scrolling past two separate cards.
+The key fix: wrap the two-column grid in a container that uses `grid-rows` to ensure both columns stretch equally. Specifically, set the grid to `items-stretch` so both columns match height.
+
+## Change 4: Feed Scrolls Full Height
+
+In `src/components/points/RecognitionFeed.tsx`, remove the hardcoded `h-[600px]` on CardContent (line 508) and replace it with `flex-1 min-h-0` so the feed expands to fill the full height of its parent card. The card itself already has `h-full`.
+
+Update the Card wrapper to use `flex flex-col` so the content area can grow, and ensure the scroll container fills available space.
 
 ## Technical Details
 
-### File Modified: `src/components/settings/CelebrationSettingsCard.tsx`
+### Files Modified
 
-**State changes:**
-- Replace `birthdayPoints` / `anniversaryPoints` (string of points) with `birthdayDollars` / `anniversaryDollars` (string of dollar amounts)
-- On load, convert DB points to dollars: `dollars = points * rate`
-- On save, convert dollars back to points: `points = Math.round(dollars / rate)`
+**`src/components/points/LeaderboardCard.tsx`**
+- Add `viewMode` state with `'person' | 'department'` toggle
+- Add toggle UI in CardHeader (two small pill buttons)
+- Reduce `.slice(0, 10)` to `.slice(0, 5)`
+- Add department aggregation logic when `viewMode === 'department'`
+- Department view shows department name, total points, and rank badge
 
-**Layout changes:**
-- Remove the second `<Card>` (Cost Estimator & Wallet)
-- Add a `grid grid-cols-1 md:grid-cols-2 gap-6` inside the first card's `<CardContent>`
-- Left column: birthday/anniversary toggles + inputs + save button
-- Right column: cost breakdown + wallet balance + Buy Points button + low balance warning
+**`src/components/points/RecognitionFeed.tsx`**
+- Line 498: Add `flex flex-col` to the Card
+- Line 508: Replace `h-[600px]` with `flex-1 min-h-0 overflow-hidden` on CardContent, and ensure the inner scroll div uses `overflow-y-auto h-full`
 
-No database changes needed -- the DB still stores points, the conversion is purely in the UI layer.
+**`src/pages/admin/Dashboard.tsx`**
+- Update the grid to ensure both columns stretch to the same height using `items-stretch` or equivalent
+- Left column already uses `flex flex-col gap-6`; the LeaderboardCard should get `flex-1` so it stretches to fill remaining space
 
