@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     // Add 1 for the admin (company owner) who is also a billable seat
-    const adjustedQuantity = (actualMemberCount || 0) + 1;
+    const adjustedQuantity = actualMemberCount || 0;
     
     // If no billable members, cancel the subscription
     if (adjustedQuantity === 0) {
