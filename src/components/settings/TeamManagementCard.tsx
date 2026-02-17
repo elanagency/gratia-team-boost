@@ -11,7 +11,6 @@ import EditTeamMemberDialog from "@/components/team/EditTeamMemberDialog";
 import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 
 export const TeamManagementCard = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,9 +35,6 @@ export const TeamManagementCard = () => {
     activeOnly: true
   });
   
-  const { isVerifying } = usePaymentVerification(fetchTeamMembers);
-
-
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
     await removeMember(memberToDelete);
@@ -139,9 +135,9 @@ export const TeamManagementCard = () => {
         </div>
 
         <div className="p-6 space-y-4">
-          {isLoading || isVerifying ? (
+          {isLoading ? (
             <div className="p-8 text-center">
-              {isVerifying ? "Processing subscription setup..." : "Loading team members..."}
+              Loading team members...
             </div>
           ) : (
             <TeamMemberTable 

@@ -190,8 +190,8 @@ serve(async (req: Request) => {
           environment: company.environment || 'live',
         },
       },
-      success_url: `${baseUrl}/dashboard/settings?tab=billing&setup=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/dashboard/settings?tab=billing&setup=cancelled`,
+      success_url: `${baseUrl}/dashboard/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/dashboard/settings?tab=billing`,
     };
 
     console.log("[BILLING-SETUP-CHECKOUT] Creating subscription checkout with config:", {
