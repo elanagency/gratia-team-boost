@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               queryClient.invalidateQueries({ queryKey: ['user-profile', profile.id] });
               
               // Check if this is the first non-admin member login to activate billing
-              if (profile.company_id && !profile.is_admin) {
+              if (profile.company_id) {
                 // Check if company already has a subscription to decide which action to take
                 const { data: companyData } = await supabase
                   .from('companies')
@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               queryClient.invalidateQueries({ queryKey: ['user-profile', profile.id] });
               
               // Check if this is the first non-admin member login to activate billing
-              if (profile.company_id && !profile.is_admin) {
+              if (profile.company_id) {
                 // Check if company already has a subscription to decide which action to take
                 const { data: companyData } = await supabase
                   .from('companies')
