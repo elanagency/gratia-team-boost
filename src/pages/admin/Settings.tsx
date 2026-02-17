@@ -8,10 +8,14 @@ import SlackNotificationsCard from "@/components/settings/SlackNotificationsCard
 import TeamsNotificationsCard from "@/components/settings/TeamsNotificationsCard";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
 import CelebrationSettingsCard from "@/components/settings/CelebrationSettingsCard";
+import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "company";
+  
+  // Run payment verification at the page level so it fires regardless of active tab
+  usePaymentVerification();
 
   return (
     <div className="space-y-6">
