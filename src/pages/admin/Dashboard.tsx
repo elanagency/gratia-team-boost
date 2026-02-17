@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GivePointsCard } from "@/components/points/GivePointsCard";
 import { RecognitionFeed } from "@/components/points/RecognitionFeed";
@@ -14,6 +14,18 @@ const Dashboard = () => {
   const [showRegionSetup, setShowRegionSetup] = useState(false);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    const el = leftColRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      setLeftColHeight(entries[0].contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Check if region setup is needed for admins
   const { data: company, refetch: refetchCompany } = useQuery({
@@ -80,17 +92,18 @@ const Dashboard = () => {
       )}
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column - Stacked Cards */}
-        <div className="flex flex-col gap-6">
+        <div ref={leftColRef} className="flex flex-col gap-6">
           <GivePointsCard />
-          <div className="flex-1 flex flex-col">
-            <LeaderboardCard />
-          </div>
+          <LeaderboardCard />
         </div>
         
-        {/* Right Column - Recognition Feed spanning full height */}
-        <div className="h-full">
+        {/* Right Column - Recognition Feed constrained to left column height */}
+        <div
+          className="h-full min-h-0 overflow-hidden"
+          style={leftColHeight ? { maxHeight: leftColHeight } : undefined}
+        >
           <RecognitionFeed />
         </div>
       </div>
