@@ -1,82 +1,48 @@
 
 
-# Fix: Invited Admin Members Not Counted in Billing
+# Fix: Billing Update Skipped for Admin Members on Login
 
 ## Problem
 
-When a team member is invited with the "Admin" role, they are set with `is_admin = true` in the database. The billing count function `get_stripe_active_member_count` only counts members where `is_admin = false`, so these invited admins are completely invisible to billing. The subscription quantity never updates, and no proration charge is created.
+The billing fix we deployed (DB function + edge function changes) is correct, but the billing update is **never triggered** for admin members. In `AuthContext.tsx`, both login paths (invited user becoming active, and first-login for active users) have a guard:
+
+```typescript
+if (profile.company_id && !profile.is_admin) {
+```
+
+This means when an invited admin logs in for the first time, the code never calls `billing-activate-on-first-login` or `update-subscription`. The Stripe subscription stays at its old quantity.
 
 ## Root Cause
 
-The DB function `get_stripe_active_member_count` filters `AND is_admin = false`. The billing logic then does `count + 1` to account for the company owner. This means:
-- Original company owner: counted via the `+1`
-- Invited members with role "user" (`is_admin = false`): counted by the function
-- Invited members with role "admin" (`is_admin = true`): **not counted at all** -- this is the bug
+The original assumption was that only non-admin team members should trigger billing updates. But since invited admins are also billable seats, they need to trigger the same billing flow.
 
 ## Solution
 
-Change the billing count approach: count **all** active members in the company (regardless of `is_admin`), and remove the `+1` offset. This ensures every active member is billable, including:
-- The original company owner (admin)
-- Invited team members (user role)
-- Invited team members (admin role)
+Remove the `!profile.is_admin` guard from both login paths in `AuthContext.tsx`. The billing functions themselves already correctly count all active members, so we just need to ensure they actually get called.
 
 ### Changes
 
-**1. Database migration -- Update `get_stripe_active_member_count`**
+**`src/context/AuthContext.tsx`**
 
-Remove the `AND is_admin = false` filter so the function counts ALL active members:
+Two lines need to change:
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_stripe_active_member_count(company_id uuid)
-RETURNS integer
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT COUNT(*)::INTEGER
-  FROM public.profiles
-  WHERE company_id = $1 
-  AND status = 'active';
-$$;
-```
+1. **Line 168** (invited user becoming active path):
+   - Change: `if (profile.company_id && !profile.is_admin)`
+   - To: `if (profile.company_id)`
 
-**2. `supabase/functions/update-subscription/index.ts`**
-
-Remove the `+1` offset on line 87. Change:
-```
-const adjustedQuantity = (actualMemberCount || 0) + 1;
-```
-to:
-```
-const adjustedQuantity = actualMemberCount || 0;
-```
-
-**3. `supabase/functions/billing-activate-on-first-login/index.ts`**
-
-Remove the `+1` offset on line 44. Change:
-```
-const totalBillableSeats = (activeSeats || 0) + 1;
-```
-to:
-```
-const totalBillableSeats = activeSeats || 0;
-```
-
-**4. `src/context/AuthContext.tsx`**
-
-No changes needed -- this file just passes the count to the edge function; the `+1` logic lives in the edge functions.
+2. **Line 227** (first-login for active users path):
+   - Change: `if (profile.company_id && !profile.is_admin)`
+   - To: `if (profile.company_id)`
 
 ## Impact
 
-- All active members (admin or not) will be counted as billable seats
-- The company owner is no longer manually added as `+1` -- they're included in the count naturally since they have `status = 'active'`
-- Existing subscriptions will reflect the correct count on the next update
+- When any user (admin or non-admin) logs in for the first time, the system will check the company subscription and update the seat count
+- The DB function already counts all active members correctly, so the Stripe quantity will be updated properly
+- No edge function changes needed -- this is purely a frontend trigger fix
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| New migration SQL | Update `get_stripe_active_member_count` to remove `is_admin = false` filter |
-| `supabase/functions/update-subscription/index.ts` | Remove `+ 1` from `adjustedQuantity` |
-| `supabase/functions/billing-activate-on-first-login/index.ts` | Remove `+ 1` from `totalBillableSeats` |
+| `src/context/AuthContext.tsx` | Remove `!profile.is_admin` guard from both billing trigger paths (lines 168 and 227) |
 
