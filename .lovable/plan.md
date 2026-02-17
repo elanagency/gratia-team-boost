@@ -1,57 +1,82 @@
 
-# Fix Dashboard Layout: Left Column Drives Height
+
+# Fix: Invited Admin Members Not Counted in Billing
 
 ## Problem
 
-The CSS grid uses `items-stretch`, which makes both columns match the **tallest** one. Since the Recognition Feed has many entries, it becomes the tallest -- forcing the GivePointsCard in the left column to stretch with a huge empty gap. The user wants the opposite: the left column (GivePointsCard + LeaderboardCard) should determine the overall height, and the Recognition Feed should be constrained to that height with internal scrolling.
+When a team member is invited with the "Admin" role, they are set with `is_admin = true` in the database. The billing count function `get_stripe_active_member_count` only counts members where `is_admin = false`, so these invited admins are completely invisible to billing. The subscription quantity never updates, and no proration charge is created.
 
-## Approach
+## Root Cause
 
-CSS grid alone cannot make one column constrain the other's height. The solution is to use a `ResizeObserver` to measure the left column's natural height and apply it as a `maxHeight` on the right column (on desktop only).
+The DB function `get_stripe_active_member_count` filters `AND is_admin = false`. The billing logic then does `count + 1` to account for the company owner. This means:
+- Original company owner: counted via the `+1`
+- Invited members with role "user" (`is_admin = false`): counted by the function
+- Invited members with role "admin" (`is_admin = true`): **not counted at all** -- this is the bug
 
-## Changes
+## Solution
 
-### 1. `src/pages/admin/Dashboard.tsx`
+Change the billing count approach: count **all** active members in the company (regardless of `is_admin`), and remove the `+1` offset. This ensures every active member is billable, including:
+- The original company owner (admin)
+- Invited team members (user role)
+- Invited team members (admin role)
 
-- Add a `useRef` on the left column and a `useState` for its measured height
-- Use a `ResizeObserver` in a `useEffect` to track the left column's height
-- Remove `items-stretch` from the grid (use default `items-start` so the left column sizes naturally)
-- Apply `maxHeight` + `overflow-hidden` to the right column div, tied to the measured left column height
-- On mobile (single column), don't constrain the height
+### Changes
 
-```tsx
-const leftColRef = useRef<HTMLDivElement>(null);
-const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
+**1. Database migration -- Update `get_stripe_active_member_count`**
 
-useEffect(() => {
-  const el = leftColRef.current;
-  if (!el) return;
-  const observer = new ResizeObserver((entries) => {
-    setLeftColHeight(entries[0].contentRect.height);
-  });
-  observer.observe(el);
-  return () => observer.disconnect();
-}, []);
+Remove the `AND is_admin = false` filter so the function counts ALL active members:
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_stripe_active_member_count(company_id uuid)
+RETURNS integer
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT COUNT(*)::INTEGER
+  FROM public.profiles
+  WHERE company_id = $1 
+  AND status = 'active';
+$$;
 ```
 
-Grid changes:
-- Remove `items-stretch` from the grid class
-- Left column: add `ref={leftColRef}`, keep natural sizing
-- Right column: apply `style={{ maxHeight: leftColHeight }}` with `overflow-hidden` on lg screens only
+**2. `supabase/functions/update-subscription/index.ts`**
 
-### 2. `src/components/points/RecognitionFeed.tsx`
+Remove the `+1` offset on line 87. Change:
+```
+const adjustedQuantity = (actualMemberCount || 0) + 1;
+```
+to:
+```
+const adjustedQuantity = actualMemberCount || 0;
+```
 
-- Keep the existing `min-h-0`, `flex-col`, `overflow-y-auto` setup (already correct from previous edits)
-- Ensure the Card uses `h-full` so it fills whatever height constraint is given by the parent
+**3. `supabase/functions/billing-activate-on-first-login/index.ts`**
 
-No additional changes needed in RecognitionFeed since the parent will now properly constrain its height.
+Remove the `+1` offset on line 44. Change:
+```
+const totalBillableSeats = (activeSeats || 0) + 1;
+```
+to:
+```
+const totalBillableSeats = activeSeats || 0;
+```
 
-## Result
+**4. `src/context/AuthContext.tsx`**
 
-The left column (GivePointsCard + LeaderboardCard) sizes naturally based on its content. The right column (Recognition Feed) matches that exact height. If the feed has more entries than can fit, users scroll within the card. Both columns appear symmetrical and aligned.
+No changes needed -- this file just passes the count to the edge function; the `+1` logic lives in the edge functions.
+
+## Impact
+
+- All active members (admin or not) will be counted as billable seats
+- The company owner is no longer manually added as `+1` -- they're included in the count naturally since they have `status = 'active'`
+- Existing subscriptions will reflect the correct count on the next update
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/Dashboard.tsx` | Add ResizeObserver to measure left column height; apply as maxHeight to right column; remove `items-stretch` |
+| New migration SQL | Update `get_stripe_active_member_count` to remove `is_admin = false` filter |
+| `supabase/functions/update-subscription/index.ts` | Remove `+ 1` from `adjustedQuantity` |
+| `supabase/functions/billing-activate-on-first-login/index.ts` | Remove `+ 1` from `totalBillableSeats` |
+
