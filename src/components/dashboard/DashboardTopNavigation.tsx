@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RedeemablePointsBox } from "@/components/navigation/RedeemablePointsBox";
+import OnboardingProgressWidget from "@/components/onboarding/OnboardingProgressWidget";
 
 type DashboardTopNavigationProps = {
   user: any;
@@ -62,6 +63,7 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
             className="h-8 w-auto"
           />
         </Link>
+        {isAdmin && <OnboardingProgressWidget />}
       </div>
           
       {/* Center Navigation */}
