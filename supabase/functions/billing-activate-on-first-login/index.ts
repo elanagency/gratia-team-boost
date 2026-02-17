@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     }
 
     // Total = active non-admin members + 1 (admin)
-    const totalBillableSeats = (activeSeats || 0) + 1;
+    const totalBillableSeats = activeSeats || 0;
     console.log('Active non-admin seats:', activeSeats, 'Total billable (incl. admin):', totalBillableSeats);
 
     // Get appropriate Stripe key based on company environment
