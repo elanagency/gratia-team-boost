@@ -1,53 +1,57 @@
 
-
-# Fix Recognition Feed Scroll Containment
+# Fix Dashboard Layout: Left Column Drives Height
 
 ## Problem
 
-The Recognition Feed card grows in height with every new entry, pushing the page layout taller and breaking visual symmetry with the left column (Give Points + Leaderboard). The feed should be contained to match the left column's height, with internal scrolling for overflow content.
+The CSS grid uses `items-stretch`, which makes both columns match the **tallest** one. Since the Recognition Feed has many entries, it becomes the tallest -- forcing the GivePointsCard in the left column to stretch with a huge empty gap. The user wants the opposite: the left column (GivePointsCard + LeaderboardCard) should determine the overall height, and the Recognition Feed should be constrained to that height with internal scrolling.
 
-## Root Cause
+## Approach
 
-In `src/pages/admin/Dashboard.tsx`, the two-column grid uses `items-stretch` so both columns match the tallest one. But because the feed content has no height constraint, it keeps growing and becomes the tallest element -- defeating the purpose of `items-stretch`.
+CSS grid alone cannot make one column constrain the other's height. The solution is to use a `ResizeObserver` to measure the left column's natural height and apply it as a `maxHeight` on the right column (on desktop only).
 
-## Solution
+## Changes
 
-Two small changes:
+### 1. `src/pages/admin/Dashboard.tsx`
 
-### 1. `src/pages/admin/Dashboard.tsx` -- Constrain the right column
-
-Wrap the grid in a container that establishes a fixed reference height. The right column should use `overflow-hidden` so the feed is forced to scroll internally rather than grow the grid.
-
-```tsx
-{/* Right Column - Recognition Feed spanning full height */}
-<div className="h-full min-h-0 overflow-hidden">
-  <RecognitionFeed />
-</div>
-```
-
-### 2. `src/components/points/RecognitionFeed.tsx` -- Add proper scroll containment
-
-The card already uses `flex flex-col` and the content area has `flex-1 min-h-0`. The scrollable div (line 510) just needs proper height constraints to work within the flex layout:
-
-- Change the outer Card to include `min-h-0 overflow-hidden` alongside `h-full flex flex-col`
-- Ensure the scrollable content div uses `overflow-y-auto` with proper flex containment
+- Add a `useRef` on the left column and a `useState` for its measured height
+- Use a `ResizeObserver` in a `useEffect` to track the left column's height
+- Remove `items-stretch` from the grid (use default `items-start` so the left column sizes naturally)
+- Apply `maxHeight` + `overflow-hidden` to the right column div, tied to the measured left column height
+- On mobile (single column), don't constrain the height
 
 ```tsx
-// Line 498: Card wrapper
-<Card className="dashboard-card h-full flex flex-col min-h-0 overflow-hidden">
+const leftColRef = useRef<HTMLDivElement>(null);
+const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
 
-// Line 510: Scrollable content area  
-<div className="space-y-6 flex-1 overflow-y-auto min-h-0">
+useEffect(() => {
+  const el = leftColRef.current;
+  if (!el) return;
+  const observer = new ResizeObserver((entries) => {
+    setLeftColHeight(entries[0].contentRect.height);
+  });
+  observer.observe(el);
+  return () => observer.disconnect();
+}, []);
 ```
+
+Grid changes:
+- Remove `items-stretch` from the grid class
+- Left column: add `ref={leftColRef}`, keep natural sizing
+- Right column: apply `style={{ maxHeight: leftColHeight }}` with `overflow-hidden` on lg screens only
+
+### 2. `src/components/points/RecognitionFeed.tsx`
+
+- Keep the existing `min-h-0`, `flex-col`, `overflow-y-auto` setup (already correct from previous edits)
+- Ensure the Card uses `h-full` so it fills whatever height constraint is given by the parent
+
+No additional changes needed in RecognitionFeed since the parent will now properly constrain its height.
+
+## Result
+
+The left column (GivePointsCard + LeaderboardCard) sizes naturally based on its content. The right column (Recognition Feed) matches that exact height. If the feed has more entries than can fit, users scroll within the card. Both columns appear symmetrical and aligned.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/Dashboard.tsx` | Add `min-h-0 overflow-hidden` to right column wrapper |
-| `src/components/points/RecognitionFeed.tsx` | Add `min-h-0 overflow-hidden` to Card; ensure scroll container is properly constrained |
-
-## Result
-
-The Recognition Feed will match the left column height exactly and scroll internally, keeping the dashboard layout clean and symmetrical.
-
+| `src/pages/admin/Dashboard.tsx` | Add ResizeObserver to measure left column height; apply as maxHeight to right column; remove `items-stretch` |
