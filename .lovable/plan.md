@@ -1,29 +1,53 @@
 
 
-# Remove Departments Tab, Add "Manage Departments" Button to Team Tab
+# Fix Recognition Feed Scroll Containment
 
-## Overview
+## Problem
 
-Remove the dedicated "Departments" tab from Settings and instead add a subtle "Manage Departments" button on the Team Management tab that opens the existing department management UI in a dialog.
+The Recognition Feed card grows in height with every new entry, pushing the page layout taller and breaking visual symmetry with the left column (Give Points + Leaderboard). The feed should be contained to match the left column's height, with internal scrolling for overflow content.
 
-## Changes
+## Root Cause
 
-### 1. `src/pages/admin/Settings.tsx`
-- Remove the `<TabsTrigger value="departments">` tab
-- Remove the `<TabsContent value="departments">` block
-- Remove the `DepartmentManagement` import
+In `src/pages/admin/Dashboard.tsx`, the two-column grid uses `items-stretch` so both columns match the tallest one. But because the feed content has no height constraint, it keeps growing and becomes the tallest element -- defeating the purpose of `items-stretch`.
 
-### 2. `src/components/settings/TeamManagementCard.tsx`
-- Add a "Manage Departments" button (subtle, using `variant="outline"` or `variant="ghost"`) next to the existing "Invite Team Member" and "Upload CSV" buttons
-- Clicking it opens a Dialog containing the existing `DepartmentManagement` component (without the outer Card wrapper)
-- Import `DepartmentManagement` and wrap it in a `Dialog`
+## Solution
 
-### 3. `src/components/team/DepartmentManagement.tsx`
-- Add an optional `embedded` prop (boolean) so that when rendered inside the Team tab dialog, it skips the outer `<Card>` wrapper and renders just the content directly
-- When `embedded={true}`: render without Card/CardHeader, just the department list with add/edit/delete functionality
-- When `embedded={false}` (default): keep existing Card-wrapped layout for any other usage
+Two small changes:
+
+### 1. `src/pages/admin/Dashboard.tsx` -- Constrain the right column
+
+Wrap the grid in a container that establishes a fixed reference height. The right column should use `overflow-hidden` so the feed is forced to scroll internally rather than grow the grid.
+
+```tsx
+{/* Right Column - Recognition Feed spanning full height */}
+<div className="h-full min-h-0 overflow-hidden">
+  <RecognitionFeed />
+</div>
+```
+
+### 2. `src/components/points/RecognitionFeed.tsx` -- Add proper scroll containment
+
+The card already uses `flex flex-col` and the content area has `flex-1 min-h-0`. The scrollable div (line 510) just needs proper height constraints to work within the flex layout:
+
+- Change the outer Card to include `min-h-0 overflow-hidden` alongside `h-full flex flex-col`
+- Ensure the scrollable content div uses `overflow-y-auto` with proper flex containment
+
+```tsx
+// Line 498: Card wrapper
+<Card className="dashboard-card h-full flex flex-col min-h-0 overflow-hidden">
+
+// Line 510: Scrollable content area  
+<div className="space-y-6 flex-1 overflow-y-auto min-h-0">
+```
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/pages/admin/Dashboard.tsx` | Add `min-h-0 overflow-hidden` to right column wrapper |
+| `src/components/points/RecognitionFeed.tsx` | Add `min-h-0 overflow-hidden` to Card; ensure scroll container is properly constrained |
 
 ## Result
 
-The Settings tabs will be: Company, Team, Celebrations, Billing, Notifications. The Team tab will have a small "Manage Departments" button that opens a clean dialog for creating, editing, and deleting departments.
+The Recognition Feed will match the left column height exactly and scroll internally, keeping the dashboard layout clean and symmetrical.
 
