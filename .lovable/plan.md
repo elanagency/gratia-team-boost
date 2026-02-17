@@ -1,66 +1,47 @@
 
+# Fix Stripe Post-Checkout Verification (Layers 1 & 2)
 
-# Onboarding Improvements (5 Changes)
+## Problem
+After completing Stripe checkout, users return to `/dashboard/settings?tab=billing` with `setup=success&session_id=...` in the URL. But the `usePaymentVerification` hook lives inside `TeamManagementCard` (the Team tab), which is not mounted when the Billing tab is active. The verification never fires, so the subscription is never recorded in the database.
 
-## 1. Fix Welcome Email Company Name
+## Layer 1: Move Verification to Settings Page Level
 
-**Problem:** The Brevo template uses `{{ company_name }}` but the edge function sends `company` as the parameter key.
+Move `usePaymentVerification` from `TeamManagementCard.tsx` up to `Settings.tsx` so it runs regardless of which tab is active.
 
-**Fix:** In `supabase/functions/send-welcome-email/index.ts`, change the `templateParams` key from `company` to `company_name`:
+**`src/pages/admin/Settings.tsx`**
+- Import and call `usePaymentVerification()` at the top of the component
 
-```
-templateParams: {
-  fname: firstName,
-  company_name: companyName   // was: company
-}
-```
+**`src/components/settings/TeamManagementCard.tsx`**
+- Remove the `usePaymentVerification` import and usage
+- Remove the `isVerifying` state from the loading condition
 
-## 2. Sequential Step Locking
+## Layer 2: Interstitial Success Page
 
-**Problem:** All incomplete steps are currently clickable. Only the current (next incomplete) step should be clickable; future steps should show a lock icon and be disabled.
+Instead of returning directly to the Settings page (where timing issues can still occur), redirect Stripe through a dedicated success page that handles verification in a clean, isolated component.
 
-**Fix in `OnboardingChecklist.tsx`:**
-- Change the logic so only steps that are completed OR are the "next" step are interactive
-- Future locked steps get `disabled` styling (opacity, no hover, cursor-not-allowed)
-- Replace the step number circle with a `Lock` icon (from lucide-react) for locked future steps
-- Completed steps keep the green checkmark; the active step keeps the accent number badge
+**New file: `src/pages/admin/SubscriptionSuccess.tsx`**
+- Reads `session_id` from URL params
+- Shows a centered card: "Setting up your subscription..." with a spinner
+- Calls `verify-stripe-session` on mount
+- On success: shows "Subscription activated!" then redirects to `/dashboard/settings?tab=billing` after 2 seconds
+- On error: shows error message with a manual "Go to Settings" button
 
-## 3. Fix "Add Team Members" Dead-End Route
+**`src/App.tsx`**
+- Add route: `/dashboard/subscription-success` rendering `SubscriptionSuccess`
 
-**Problem:** The onboarding step links to `/dashboard/team`, but no route exists for that path in `App.tsx` -- it hits the 404 catch-all.
+**`supabase/functions/billing-setup-checkout/index.ts`**
+- Change `success_url` from `/dashboard/settings?tab=billing&setup=success&session_id={CHECKOUT_SESSION_ID}` to `/dashboard/subscription-success?session_id={CHECKOUT_SESSION_ID}`
+- Change `cancel_url` to `/dashboard/settings?tab=billing`
 
-**Fix:** Change the step route from `/dashboard/team` to `/dashboard/settings?tab=team` in the `stepRoutes` map in `OnboardingChecklist.tsx`. This takes the admin directly to the Team tab inside Settings where they can invite members.
+**`src/hooks/usePaymentVerification.ts`**
+- Update the `replaceState` URL (line 52) to remove the `setup` and `session_id` params cleanly (minor cleanup since the interstitial handles the primary flow now; the hook in Settings acts as a fallback for any old URLs)
 
-## 4. Prevent Closing Onboarding Until Step 3 Complete
-
-**Problem:** The dismiss (X) button is always visible, letting admins close the checklist before they've meaningfully onboarded.
-
-**Fix in `OnboardingChecklist.tsx`:**
-- Only show the X dismiss button when the first 3 required steps (upgrade, members, integrations) are all completed
-- This means the checklist stays visible until they finish step 3. Since step 4 is optional, they can dismiss after step 3.
-- The auto-dismiss on full completion remains as-is
-
-## 5. Header Onboarding Progress Widget
-
-**Problem:** The onboarding checklist is only visible on the main dashboard page, so admins navigating to Settings or other pages lose sight of their progress.
-
-**New component: `OnboardingProgressWidget`** -- a small pill/badge in the top navigation bar (next to the Grattia logo) showing progress like "2/4 Setup" with a mini progress ring or bar. Clicking it navigates back to the dashboard.
-
-**Details:**
-- New file: `src/components/onboarding/OnboardingProgressWidget.tsx`
-- Uses the existing `useOnboardingProgress` hook
-- Renders a small pill: accent-colored progress indicator + "X/4" text
-- Hidden when onboarding is fully complete or dismissed (reads same localStorage key)
-- Placed in `DashboardTopNavigation.tsx` next to the logo, only for admin users
-
----
-
-## Files to Modify
+## Summary of File Changes
 
 | File | Change |
 |------|--------|
-| `supabase/functions/send-welcome-email/index.ts` | Fix `company` to `company_name` in templateParams |
-| `src/components/onboarding/OnboardingChecklist.tsx` | Lock future steps, hide X until step 3 done, fix route |
-| `src/components/onboarding/OnboardingProgressWidget.tsx` | New header widget component |
-| `src/components/dashboard/DashboardTopNavigation.tsx` | Add OnboardingProgressWidget next to logo |
-
+| `src/pages/admin/Settings.tsx` | Add `usePaymentVerification` call |
+| `src/components/settings/TeamManagementCard.tsx` | Remove `usePaymentVerification` |
+| `src/pages/admin/SubscriptionSuccess.tsx` | New interstitial success page |
+| `src/App.tsx` | Add `/dashboard/subscription-success` route |
+| `supabase/functions/billing-setup-checkout/index.ts` | Update `success_url` to point to interstitial |
