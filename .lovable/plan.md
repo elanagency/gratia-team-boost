@@ -1,48 +1,35 @@
 
 
-# Fix: Billing Update Skipped for Admin Members on Login
+# Fix: BillingCard Showing Stale Seat Count
 
 ## Problem
 
-The billing fix we deployed (DB function + edge function changes) is correct, but the billing update is **never triggered** for admin members. In `AuthContext.tsx`, both login paths (invited user becoming active, and first-login for active users) have a guard:
+The BillingCard component has the same bug we already fixed in the backend:
+- Line 124: queries profiles with `.eq('is_admin', false)`, excluding admin members from the count
+- Line 368: adds `+ 1` to display the "Active seats" number
+- Line 382: adds `+ 1` when calculating the displayed monthly cost
 
-```typescript
-if (profile.company_id && !profile.is_admin) {
-```
-
-This means when an invited admin logs in for the first time, the code never calls `billing-activate-on-first-login` or `update-subscription`. The Stripe subscription stays at its old quantity.
-
-## Root Cause
-
-The original assumption was that only non-admin team members should trigger billing updates. But since invited admins are also billable seats, they need to trigger the same billing flow.
+This means the UI always shows the old count (non-admin members + 1) instead of the actual total of all active members.
 
 ## Solution
 
-Remove the `!profile.is_admin` guard from both login paths in `AuthContext.tsx`. The billing functions themselves already correctly count all active members, so we just need to ensure they actually get called.
+Apply the same fix pattern used in the edge functions:
 
-### Changes
+### `src/components/settings/BillingCard.tsx`
 
-**`src/context/AuthContext.tsx`**
+1. **Remove `.eq('is_admin', false)`** from the profiles query (line 124) so it counts ALL active members
+2. **Remove `+ 1`** from the Active seats display (line 368)
+3. **Remove `+ 1`** from the Monthly cost calculation (line 382)
+4. **Update label** from "Includes admin seat" to "All active members" since the count now naturally includes admins
 
-Two lines need to change:
+| Line | Current | New |
+|------|---------|-----|
+| 124 | `.eq('is_admin', false)` | (remove this line) |
+| 368 | `(subscriptionStatus?.team_members \|\| 0) + 1` | `subscriptionStatus?.team_members \|\| 0` |
+| 371 | `'Includes admin seat'` | `'All active members'` |
+| 382 | `(((subscriptionStatus?.team_members \|\| 0) + 1) * memberPriceInCents / 100)` | `((subscriptionStatus?.team_members \|\| 0) * memberPriceInCents / 100)` |
 
-1. **Line 168** (invited user becoming active path):
-   - Change: `if (profile.company_id && !profile.is_admin)`
-   - To: `if (profile.company_id)`
+### Also fix `src/components/settings/SubscriptionStatusCard.tsx`
 
-2. **Line 227** (first-login for active users path):
-   - Change: `if (profile.company_id && !profile.is_admin)`
-   - To: `if (profile.company_id)`
-
-## Impact
-
-- When any user (admin or non-admin) logs in for the first time, the system will check the company subscription and update the seat count
-- The DB function already counts all active members correctly, so the Stripe quantity will be updated properly
-- No edge function changes needed -- this is purely a frontend trigger fix
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `src/context/AuthContext.tsx` | Remove `!profile.is_admin` guard from both billing trigger paths (lines 168 and 227) |
+This component has the same issue (lines 79-83 query with `is_admin = false`, and the display uses a separate calculation). Remove the filter there too for consistency.
 
