@@ -55,7 +55,7 @@ export const DashboardTopNavigation = ({ user, firstName, lastName, handleLogout
       <div className="absolute top-0 right-10 w-32 h-32 rounded-full bg-grattia-pink/10 blur-2xl"></div>
       <div className="absolute bottom-0 left-10 w-40 h-40 rounded-full bg-grattia-purple/20 blur-2xl"></div>
       {/* Logo */}
-      <div className="flex items-center relative z-10">
+      <div className="flex items-center gap-4 relative z-10">
         <Link to="/dashboard" className="flex items-center">
           <img 
             src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png" 
