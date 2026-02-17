@@ -1,61 +1,66 @@
 
 
-# Dashboard Layout and Leaderboard Improvements
+# Onboarding Improvements (5 Changes)
 
-## Overview
-Four changes to the admin dashboard: limit leaderboard to top 5, add a person/department toggle, match component heights, and make the recognition feed fill its parent height.
+## 1. Fix Welcome Email Company Name
 
-## Change 1: Leaderboard Top 5
+**Problem:** The Brevo template uses `{{ company_name }}` but the edge function sends `company` as the parameter key.
 
-In `src/components/points/LeaderboardCard.tsx`, change `.slice(0, 10)` to `.slice(0, 5)` so only the top 5 members are shown.
+**Fix:** In `supabase/functions/send-welcome-email/index.ts`, change the `templateParams` key from `company` to `company_name`:
 
-## Change 2: Department Toggle on Leaderboard
+```
+templateParams: {
+  fname: firstName,
+  company_name: companyName   // was: company
+}
+```
 
-Add a toggle (two small tabs: "Person" / "Department") below the card title in `LeaderboardCard.tsx`.
+## 2. Sequential Step Locking
 
-- **Person view** (current): shows individual members ranked by recognition points received
-- **Department view**: aggregates recognition points by department, ranks departments, shows department name and total points
+**Problem:** All incomplete steps are currently clickable. Only the current (next incomplete) step should be clickable; future steps should show a lock icon and be disabled.
 
-Implementation:
-- Add a `viewMode` state: `'person' | 'department'`
-- Two small toggle buttons in the card header
-- When `viewMode === 'department'`, group the fetched data by `department` field, sum points per department, sort descending, show top 5
-- Department rows use a folder/building icon instead of avatar initials
-- Rank badges remain the same (gold, silver, bronze)
+**Fix in `OnboardingChecklist.tsx`:**
+- Change the logic so only steps that are completed OR are the "next" step are interactive
+- Future locked steps get `disabled` styling (opacity, no hover, cursor-not-allowed)
+- Replace the step number circle with a `Lock` icon (from lucide-react) for locked future steps
+- Completed steps keep the green checkmark; the active step keeps the accent number badge
 
-## Change 3: Match Component Heights
+## 3. Fix "Add Team Members" Dead-End Route
 
-The left column (GivePointsCard + LeaderboardCard) and right column (RecognitionFeed) should have equal height.
+**Problem:** The onboarding step links to `/dashboard/team`, but no route exists for that path in `App.tsx` -- it hits the 404 catch-all.
 
-In `src/pages/admin/Dashboard.tsx`, update the grid layout:
-- Add `min-h-0` to the grid container
-- Make the left column use `flex flex-col gap-6` (already does)
-- Make the right column use `h-full` with a flex container that stretches to match
+**Fix:** Change the step route from `/dashboard/team` to `/dashboard/settings?tab=team` in the `stepRoutes` map in `OnboardingChecklist.tsx`. This takes the admin directly to the Team tab inside Settings where they can invite members.
 
-The key fix: wrap the two-column grid in a container that uses `grid-rows` to ensure both columns stretch equally. Specifically, set the grid to `items-stretch` so both columns match height.
+## 4. Prevent Closing Onboarding Until Step 3 Complete
 
-## Change 4: Feed Scrolls Full Height
+**Problem:** The dismiss (X) button is always visible, letting admins close the checklist before they've meaningfully onboarded.
 
-In `src/components/points/RecognitionFeed.tsx`, remove the hardcoded `h-[600px]` on CardContent (line 508) and replace it with `flex-1 min-h-0` so the feed expands to fill the full height of its parent card. The card itself already has `h-full`.
+**Fix in `OnboardingChecklist.tsx`:**
+- Only show the X dismiss button when the first 3 required steps (upgrade, members, integrations) are all completed
+- This means the checklist stays visible until they finish step 3. Since step 4 is optional, they can dismiss after step 3.
+- The auto-dismiss on full completion remains as-is
 
-Update the Card wrapper to use `flex flex-col` so the content area can grow, and ensure the scroll container fills available space.
+## 5. Header Onboarding Progress Widget
 
-## Technical Details
+**Problem:** The onboarding checklist is only visible on the main dashboard page, so admins navigating to Settings or other pages lose sight of their progress.
 
-### Files Modified
+**New component: `OnboardingProgressWidget`** -- a small pill/badge in the top navigation bar (next to the Grattia logo) showing progress like "2/4 Setup" with a mini progress ring or bar. Clicking it navigates back to the dashboard.
 
-**`src/components/points/LeaderboardCard.tsx`**
-- Add `viewMode` state with `'person' | 'department'` toggle
-- Add toggle UI in CardHeader (two small pill buttons)
-- Reduce `.slice(0, 10)` to `.slice(0, 5)`
-- Add department aggregation logic when `viewMode === 'department'`
-- Department view shows department name, total points, and rank badge
+**Details:**
+- New file: `src/components/onboarding/OnboardingProgressWidget.tsx`
+- Uses the existing `useOnboardingProgress` hook
+- Renders a small pill: accent-colored progress indicator + "X/4" text
+- Hidden when onboarding is fully complete or dismissed (reads same localStorage key)
+- Placed in `DashboardTopNavigation.tsx` next to the logo, only for admin users
 
-**`src/components/points/RecognitionFeed.tsx`**
-- Line 498: Add `flex flex-col` to the Card
-- Line 508: Replace `h-[600px]` with `flex-1 min-h-0 overflow-hidden` on CardContent, and ensure the inner scroll div uses `overflow-y-auto h-full`
+---
 
-**`src/pages/admin/Dashboard.tsx`**
-- Update the grid to ensure both columns stretch to the same height using `items-stretch` or equivalent
-- Left column already uses `flex flex-col gap-6`; the LeaderboardCard should get `flex-1` so it stretches to fill remaining space
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `supabase/functions/send-welcome-email/index.ts` | Fix `company` to `company_name` in templateParams |
+| `src/components/onboarding/OnboardingChecklist.tsx` | Lock future steps, hide X until step 3 done, fix route |
+| `src/components/onboarding/OnboardingProgressWidget.tsx` | New header widget component |
+| `src/components/dashboard/DashboardTopNavigation.tsx` | Add OnboardingProgressWidget next to logo |
 
