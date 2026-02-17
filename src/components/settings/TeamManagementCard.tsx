@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle } from "lucide-react";
+import { Users, AlertTriangle, Building2 } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import DepartmentManagement from "@/components/team/DepartmentManagement";
 import TeamInviteManager from "@/components/team/TeamInviteManager";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
@@ -129,6 +131,20 @@ export const TeamManagementCard = () => {
           <h2 className="card-title">Team Management</h2>
           
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Manage Departments
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Manage Departments</DialogTitle>
+                </DialogHeader>
+                <DepartmentManagement embedded />
+              </DialogContent>
+            </Dialog>
             <TeamInviteManager onSuccess={fetchTeamMembers} />
             <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>

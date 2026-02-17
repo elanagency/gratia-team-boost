@@ -24,7 +24,7 @@ import { Edit, Trash2, Plus, Building2 } from "lucide-react";
 import { useDepartmentManagement } from "@/hooks/useDepartmentManagement";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 
-const DepartmentManagement = () => {
+const DepartmentManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const {
     departments,
     isLoading,
@@ -85,31 +85,8 @@ const DepartmentManagement = () => {
     setShowEditDialog(true);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Department Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LoadingSpinner />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Department Management
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+  const departmentContent = (
+    <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
             Manage your company departments. You can create, edit, and delete departments.
@@ -274,7 +251,36 @@ const DepartmentManagement = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
+    </div>
+  );
+
+  if (isLoading) {
+    const loading = <LoadingSpinner />;
+    if (embedded) return loading;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Department Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>{loading}</CardContent>
+      </Card>
+    );
+  }
+
+  if (embedded) return departmentContent;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Department Management
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{departmentContent}</CardContent>
     </Card>
   );
 };

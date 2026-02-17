@@ -6,7 +6,6 @@ import { TeamManagementCard } from "@/components/settings/TeamManagementCard";
 import { BillingCard } from "@/components/settings/BillingCard";
 import SlackNotificationsCard from "@/components/settings/SlackNotificationsCard";
 import TeamsNotificationsCard from "@/components/settings/TeamsNotificationsCard";
-import DepartmentManagement from "@/components/team/DepartmentManagement";
 import CelebrationSettingsCard from "@/components/settings/CelebrationSettingsCard";
 import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 
@@ -24,7 +23,6 @@ const Settings = () => {
       <Tabs defaultValue={activeTab} className="w-full">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="company">Company</TabsTrigger>
-          <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="celebrations">Celebrations</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -33,10 +31,6 @@ const Settings = () => {
 
         <TabsContent value="company">
           <CompanyInformationCard />
-        </TabsContent>
-
-        <TabsContent value="departments">
-          <DepartmentManagement />
         </TabsContent>
 
         <TabsContent value="team">
