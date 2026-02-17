@@ -44,7 +44,7 @@ serve(async (req: Request) => {
         toName: firstName,
         templateParams: {
           fname: firstName,
-          company: companyName
+          company_name: companyName
         }
       }
     });

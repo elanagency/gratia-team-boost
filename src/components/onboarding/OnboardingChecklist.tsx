@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle2, CreditCard, Users, MessageSquare, Gift } from "lucide-react";
+import { X, CheckCircle2, CreditCard, Users, MessageSquare, Gift, Lock } from "lucide-react";
 import { useOnboardingProgress, type OnboardingStep } from "@/hooks/useOnboardingProgress";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ const stepIcons: Record<string, React.ElementType> = {
 };
 
 const stepRoutes: Record<string, string> = {
-  members: "/dashboard/team",
+  members: "/dashboard/settings?tab=team",
   integrations: "/dashboard/settings?tab=notifications",
   celebrations: "/dashboard/settings?tab=celebrations",
 };
@@ -47,13 +47,16 @@ const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ onUpgradeClic
 
   if (dismissed || isLoading || !companyId) return null;
 
+  // First 3 required steps must be complete before allowing dismiss
+  const requiredStepsComplete = steps.slice(0, 3).every((s) => s.completed);
+
   const handleDismiss = () => {
     setDismissed(true);
     localStorage.setItem(storageKey, "true");
   };
 
-  const handleStepClick = (step: OnboardingStep) => {
-    if (step.completed) return;
+  const handleStepClick = (step: OnboardingStep, isNext: boolean) => {
+    if (step.completed || !isNext) return;
     if (step.key === "upgrade") {
       onUpgradeClick();
     } else {
@@ -75,14 +78,16 @@ const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ onUpgradeClic
               {completedCount} of {totalSteps} steps completed
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:bg-muted"
-            onClick={handleDismiss}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {requiredStepsComplete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:bg-muted"
+              onClick={handleDismiss}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Progress bar */}
@@ -93,32 +98,31 @@ const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ onUpgradeClic
           {steps.map((step, idx) => {
             const Icon = stepIcons[step.key];
             const isNext = !step.completed && steps.slice(0, idx).every((s) => s.completed);
+            const isLocked = !step.completed && !isNext;
 
             return (
               <button
                 key={step.key}
-                onClick={() => handleStepClick(step)}
-                disabled={step.completed}
+                onClick={() => handleStepClick(step, isNext)}
+                disabled={step.completed || isLocked}
                 className={`
                   relative flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors
                   ${step.completed
                     ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 cursor-default"
                     : isNext
                       ? "border-[#F572FF]/40 bg-[#F572FF]/5 hover:bg-[#F572FF]/10 cursor-pointer"
-                      : "border-border bg-card hover:bg-muted/50 cursor-pointer"
+                      : "border-border bg-muted/30 opacity-60 cursor-not-allowed"
                   }
                 `}
               >
-                {/* Step number / check */}
+                {/* Step number / check / lock */}
                 <div className="flex w-full items-center justify-between">
                   {step.completed ? (
                     <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : isLocked ? (
+                    <Lock className="h-5 w-5 text-muted-foreground/50" />
                   ) : (
-                    <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold
-                        ${isNext ? "bg-[#F572FF] text-white" : "border border-muted-foreground/30 text-muted-foreground"}
-                      `}
-                    >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold bg-[#F572FF] text-white">
                       {idx + 1}
                     </span>
                   )}
