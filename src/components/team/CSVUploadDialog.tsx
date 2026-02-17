@@ -48,6 +48,23 @@ interface ProcessingResult {
 
 type DialogStep = 'upload' | 'preview' | 'processing';
 
+function normalizeDate(dateStr: string): string {
+  if (!dateStr || !dateStr.trim()) return '';
+  const trimmed = dateStr.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, month, day, year] = slashMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  const dashMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dashMatch) {
+    const [, month, day, year] = dashMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return trimmed;
+}
+
 export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
   const { user, companyId } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -231,8 +248,8 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
               email: (row.email || row.Email || row['email address'] || row['Email Address'] || '').toString().trim(),
               department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim(),
               role: roleValue === 'admin' ? 'admin' : 'user',
-              birthday: (row.birthday || row.Birthday || row['date of birth'] || row['Date of Birth'] || row.dob || row.DOB || '').toString().trim(),
-              companyStartDate: (row.companyStartDate || row['Company Start Date'] || row['start date'] || row['Start Date'] || '').toString().trim()
+              birthday: normalizeDate((row.birthday || row.Birthday || row['date of birth'] || row['Date of Birth'] || row.dob || row.DOB || '').toString()),
+              companyStartDate: normalizeDate((row.companyStartDate || row['Company Start Date'] || row['start date'] || row['Start Date'] || '').toString())
             };
           });
           

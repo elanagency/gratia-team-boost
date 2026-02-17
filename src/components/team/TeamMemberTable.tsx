@@ -74,10 +74,10 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                 </Badge>
               </TableCell>
               <TableCell className="text-gray-600">
-                {member.birthday ? format(new Date(member.birthday), 'MMM d') : '-'}
+                {member.birthday ? format(new Date(member.birthday + 'T00:00:00'), 'MMM d') : '-'}
               </TableCell>
               <TableCell className="text-gray-600">
-                {member.company_start_date ? format(new Date(member.company_start_date), 'MMM d, yyyy') : '-'}
+                {member.company_start_date ? format(new Date(member.company_start_date + 'T00:00:00'), 'MMM d, yyyy') : '-'}
               </TableCell>
               <TableCell>
                 {(() => {
