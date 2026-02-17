@@ -76,7 +76,6 @@ export const SubscriptionStatusCard = () => {
         .from('profiles')
         .select('id', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('is_admin', false)
         .eq('status', 'active');
 
       const teamMembers = memberCount?.length || 0;

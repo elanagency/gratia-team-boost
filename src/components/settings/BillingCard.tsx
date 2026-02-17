@@ -121,7 +121,6 @@ export const BillingCard = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('is_admin', false)
         .eq('status', 'active');
 
       const teamMembers = memberCount || 0;
@@ -365,10 +364,10 @@ export const BillingCard = () => {
               Active seats
             </div>
             <div className="font-semibold">
-              {hasExistingSubscription ? (subscriptionStatus?.team_members || 0) + 1 : 0}
+              {hasExistingSubscription ? (subscriptionStatus?.team_members || 0) : 0}
             </div>
             <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Includes admin seat' : 'Start subscription to add'}
+              {hasExistingSubscription ? 'All active members' : 'Start subscription to add'}
             </div>
           </div>
 
@@ -379,7 +378,7 @@ export const BillingCard = () => {
               Monthly cost
             </div>
             <div className="font-semibold">
-              ${(((subscriptionStatus?.team_members || 0) + 1) * memberPriceInCents / 100).toFixed(2)}
+              ${((subscriptionStatus?.team_members || 0) * memberPriceInCents / 100).toFixed(2)}
             </div>
             <div className="text-sm text-muted-foreground">
               {hasExistingSubscription ? 'Prorated on changes' : 'No charges yet'}
