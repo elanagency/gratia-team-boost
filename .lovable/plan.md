@@ -1,25 +1,22 @@
 
 
-# Fix: Step 2 Should Complete on Invite, Not Activation
+# Fix: Step 2 Completes When Any Second User Exists
 
 ## Problem
 
-The "Add Team Members" onboarding step checks for non-admin profiles with `status = 'active'`. When you invite someone, their status is `'invited'`, so the step doesn't show as complete until they log in and become active.
+The current query for the "Add Team Members" step filters by `is_admin = false`, so it only counts non-admin members. The user wants it to complete as soon as there is more than one person in the company -- regardless of admin status or activation status.
 
-## Fix
+## Change
 
 ### File: `src/hooks/useOnboardingProgress.ts`
 
-Change the members query (line 40) from:
-```
-.eq("status", "active")
-```
-to:
-```
-.in("status", ["active", "invited"])
-```
+In the `membersRes` query (around lines 36-41):
 
-This way, as soon as one non-admin team member exists (whether invited or active), step 2 marks as complete.
+- Remove the `.eq("is_admin", false)` filter
+- Remove the `.in("status", ["active", "invited"])` filter
+- Keep the `company_id` filter and the count-only select
 
-One-line change, no other files affected.
+Then update the `hasMembers` check from `memberCount > 0` to `memberCount > 1` (since the admin themselves is now included in the count).
+
+This means: as soon as an invite is sent and a second profile row exists in the company, step 2 shows as complete.
 
