@@ -35,9 +35,7 @@ export const useOnboardingProgress = (): OnboardingProgress => {
         supabase
           .from("profiles")
           .select("id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("is_admin", false)
-          .in("status", ["active", "invited"]),
+          .eq("company_id", companyId),
         supabase
           .from("slack_integrations")
           .select("id", { count: "exact", head: true })
@@ -54,7 +52,7 @@ export const useOnboardingProgress = (): OnboardingProgress => {
       const teamsCount = teamsRes.count ?? 0;
 
       const hasSubscription = !!company?.stripe_subscription_id;
-      const hasMembers = memberCount > 0;
+      const hasMembers = memberCount > 1;
       const hasIntegration = slackCount > 0 || teamsCount > 0;
       const hasCelebrations =
         (company?.birthday_rewards_enabled && (company?.birthday_reward_points ?? 0) > 0) ||
