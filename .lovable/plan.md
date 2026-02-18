@@ -1,70 +1,88 @@
 
 
-# Fix: Company Deletion Failing
+# Feature: Company-Entered Coupon in Billing Setup Dialog
 
-## Problem
+## Overview
 
-The `delete-company` edge function was **never deployed**, so every call returned a 404/error. Additionally, the function is missing cleanup for several tables with `company_id` data, which could cause orphaned records.
+The company admin can paste a Stripe Coupon ID directly into the pre-checkout popup (BillingSetupDialog). The coupon is then attached to the subscription object itself, so Stripe automatically applies it to all invoices — including immediate proration invoices when new seats are added.
 
-## Solution
+No database changes needed. No platform settings changes. Just a UI input field and passing the value through to the edge function.
 
-### 1. Deploy the edge function (already done)
+## User Flow
 
-The function has now been deployed. This alone should fix the immediate "Failed to delete company" error.
+1. Company admin signs up, navigates to upgrade their plan
+2. The BillingSetupDialog popup appears explaining how billing works
+3. In the "Have a Coupon?" section, there is now an input field where they can paste a coupon code
+4. They click "Start Subscription" — the coupon is sent to the edge function
+5. The edge function attaches the coupon to the subscription via `subscription_data.coupon`
+6. Stripe checkout opens (without the manual promo code field, since the coupon is already applied)
+7. All future invoices on this subscription (including seat addition prorations) respect the coupon's rules
 
-### 2. Update `supabase/functions/delete-company/index.ts` to clean up ALL related tables
+If the admin leaves the coupon field empty, the checkout falls back to `allow_promotion_codes: true` so they can still manually enter a code on the Stripe checkout page.
 
-The current function only deletes from 3 tables before removing the company. It needs to also clean up:
+## Changes
 
-- `celebration_rewards_log`
-- `company_point_transactions`
-- `company_regions`
-- `departments`
-- `login_events`
-- `redemptions`
-- `slack_integrations`
-- `teams_integrations`
+### 1. `src/components/team/BillingSetupDialog.tsx`
 
-The updated deletion sequence (lines 136-150) will be:
+- Add a `couponCode` state variable
+- Replace the static "Have a Coupon?" text (lines 121-129) with an input field where the admin can paste a coupon code
+- Pass `couponCode` in the request body to the edge function (line 49-57)
+
+The "Have a Coupon?" section becomes:
+
+```
+Have a Coupon?
+[ Enter coupon code          ]
+The coupon will be applied to your subscription
+and all future charges.
+```
+
+### 2. `supabase/functions/billing-setup-checkout/index.ts`
+
+- Extract `couponCode` from the request body (line 47)
+- If a coupon code is provided:
+  - Add `coupon: couponCode` to the `subscription_data` object (line 187-192)
+  - Remove `allow_promotion_codes: true` from the checkout config
+- If no coupon code is provided:
+  - Keep `allow_promotion_codes: true` so they can enter one on the Stripe page
+
+The key change in the checkout config (around line 174):
 
 ```typescript
-const deletions = [
-  // Delete integration records
-  supabase.from('slack_integrations').delete().eq('company_id', companyId),
-  supabase.from('teams_integrations').delete().eq('company_id', companyId),
-  
-  // Delete point and transaction records
-  supabase.from('monthly_points_allocations').delete().eq('company_id', companyId),
-  supabase.from('point_transactions').delete().eq('company_id', companyId),
-  supabase.from('company_point_transactions').delete().eq('company_id', companyId),
-  supabase.from('celebration_rewards_log').delete().eq('company_id', companyId),
-  
-  // Delete redemptions and login events
-  supabase.from('redemptions').delete().eq('company_id', companyId),
-  supabase.from('login_events').delete().eq('company_id', companyId),
-  
-  // Delete company structure records
-  supabase.from('subscription_events').delete().eq('company_id', companyId),
-  supabase.from('company_regions').delete().eq('company_id', companyId),
-  supabase.from('departments').delete().eq('company_id', companyId),
-  
-  // Deactivate profiles (already backed up)
-  supabase.from('profiles').update({ status: 'deactivated' }).eq('company_id', companyId),
-  
-  // Finally delete the company
-  supabase.from('companies').delete().eq('id', companyId),
-]
+const checkoutConfig: any = {
+  customer: customerId,
+  mode: "subscription",
+  line_items: [{ price: priceId, quantity: 1 }],
+  // Only allow manual promo codes if no coupon was pre-entered
+  ...(couponCode ? {} : { allow_promotion_codes: true }),
+  metadata: { ... },
+  subscription_data: {
+    metadata: { company_id: companyId, environment: company.environment || 'live' },
+    // Attach coupon to the subscription itself
+    ...(couponCode ? { coupon: couponCode } : {}),
+  },
+  success_url: ...,
+  cancel_url: ...,
+};
 ```
+
+## Why This Works
+
+When a coupon is attached to the Stripe subscription object (not just the checkout session), Stripe automatically applies it to every invoice that subscription generates. This includes:
+- The initial checkout invoice
+- Immediate proration invoices from `always_invoice` when seats are added
+- Monthly renewal invoices
+
+The coupon's own rules (duration, percentage, fixed amount, etc.) control exactly how long it lasts — all managed in the Stripe Dashboard.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `supabase/functions/delete-company/index.ts` | Add missing table cleanups for all 8 additional tables with `company_id` |
+| `src/components/team/BillingSetupDialog.tsx` | Add coupon input field to the "Have a Coupon?" section, pass value to edge function |
+| `supabase/functions/billing-setup-checkout/index.ts` | Accept `couponCode` param, attach to `subscription_data.coupon` when present |
 
-## Impact
+## No Database Changes Required
 
-- Company deletion will work immediately (function is now deployed)
-- All related data will be properly cleaned up, preventing orphaned records
-- User data is still backed up to `backup_users` before deletion
+The coupon code is entered by the user at checkout time and passed directly to Stripe. Nothing needs to be stored in the database.
 
