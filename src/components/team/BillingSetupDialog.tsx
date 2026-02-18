@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { CreditCard, Shield, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
@@ -21,6 +22,7 @@ interface BillingSetupDialogProps {
 
 const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetupDialogProps) => {
   const [isSettingUp, setIsSettingUp] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
   const { companyId, user, firstName, lastName } = useAuth();
   const { memberPriceInCents } = usePlatformSettings();
   const pricePerMember = (memberPriceInCents / 100).toFixed(2);
@@ -52,7 +54,8 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
             name: firstName && lastName ? `${firstName} ${lastName}`.trim() : 'Admin',
             email: user?.email
           },
-          origin
+          origin,
+          couponCode: couponCode.trim() || undefined
         }
       });
       
@@ -123,8 +126,14 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
               <Sparkles className="h-4 w-4" />
               Have a Coupon?
             </h4>
-            <p className="text-sm text-purple-700">
-              You can apply a promotion code on the checkout page to get a discount.
+            <Input
+              placeholder="Enter coupon code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              className="mt-1 bg-white"
+            />
+            <p className="text-xs text-purple-600 mt-1.5">
+              The coupon will be applied to your subscription and all future charges.
             </p>
           </div>
 
