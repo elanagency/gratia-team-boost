@@ -9,31 +9,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to get the appropriate Stripe key based on environment mode
-const getStripeKey = async (supabaseService: any): Promise<string> => {
-  try {
-    console.log("[UPDATE-SUBSCRIPTION] Getting environment mode from platform settings");
-    const { data: envSetting } = await supabaseService
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'environment_mode')
-      .single();
-    
-    const environment = envSetting?.value || 'test'; // Default to test for safety
-    console.log(`[UPDATE-SUBSCRIPTION] Using Stripe environment: ${environment}`);
-    
-    if (environment === 'live') {
-      const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
-      if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
-      return liveKey;
-    } else {
-      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-      if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
-      return testKey;
-    }
-  } catch (error) {
-    console.error(`[UPDATE-SUBSCRIPTION] Error getting Stripe key, defaulting to test:`, error);
-    // Fallback to test key for safety
+// Helper function to get the appropriate Stripe key based on company's environment
+const getStripeKey = async (supabaseService: any, companyId: string): Promise<string> => {
+  console.log("[UPDATE-SUBSCRIPTION] Getting environment from company record:", companyId);
+  const { data: company, error } = await supabaseService
+    .from('companies')
+    .select('environment')
+    .eq('id', companyId)
+    .single();
+
+  if (error) {
+    console.error("[UPDATE-SUBSCRIPTION] Error fetching company environment:", error);
+    throw new Error("Could not determine company environment");
+  }
+
+  const environment = company?.environment || 'live';
+  console.log(`[UPDATE-SUBSCRIPTION] Using Stripe environment: ${environment}`);
+
+  if (environment === 'live') {
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    if (!liveKey) throw new Error("STRIPE_SECRET_KEY_LIVE not configured");
+    return liveKey;
+  } else {
     const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
     if (!testKey) throw new Error("STRIPE_SECRET_KEY_TEST not configured");
     return testKey;
@@ -59,8 +56,8 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Initialize Stripe with environment-specific key
-    const stripeKey = await getStripeKey(supabaseService);
+    // Initialize Stripe with company-specific environment key
+    const stripeKey = await getStripeKey(supabaseService, companyId);
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
