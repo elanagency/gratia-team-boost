@@ -37,7 +37,7 @@ export const useOnboardingProgress = (): OnboardingProgress => {
           .select("id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("is_admin", false)
-          .eq("status", "active"),
+          .in("status", ["active", "invited"]),
         supabase
           .from("slack_integrations")
           .select("id", { count: "exact", head: true })
