@@ -44,7 +44,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { companyId, memberData, origin, couponCode } = await req.json();
+    const { companyId, memberData, origin } = await req.json();
 
     if (!companyId) {
       return new Response(
@@ -178,8 +178,7 @@ serve(async (req: Request) => {
         price: priceId,
         quantity: 1,
       }],
-      // discounts and allow_promotion_codes are mutually exclusive in Stripe
-      ...(couponCode ? { discounts: [{ coupon: couponCode }] } : { allow_promotion_codes: true }),
+      allow_promotion_codes: true,
       metadata: {
         company_id: companyId,
         setup_type: "initial_subscription",
@@ -200,9 +199,7 @@ serve(async (req: Request) => {
       mode: "subscription",
       quantity: 1,
       priceId,
-      companyId,
-      couponCode: couponCode || 'none',
-      allowPromoCodes: !couponCode
+      companyId
     });
 
     const session = await stripe.checkout.sessions.create(checkoutConfig);
@@ -221,19 +218,6 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("[BILLING-SETUP-CHECKOUT] Error:", error);
-    
-    // Detect invalid coupon errors from Stripe
-    const stripeError = error as any;
-    if (stripeError?.type === 'StripeInvalidRequestError' && 
-        (stripeError?.message?.includes('coupon') || stripeError?.message?.includes('No such coupon'))) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Invalid coupon code",
-          errorType: "invalid_coupon"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
     
     let errorMessage = "Internal server error";
     if (error instanceof Error) {
