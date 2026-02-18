@@ -178,8 +178,8 @@ serve(async (req: Request) => {
         price: priceId,
         quantity: 1,
       }],
-      // Only allow manual promo codes if no coupon was pre-entered
-      ...(couponCode ? {} : { allow_promotion_codes: true }),
+      // discounts and allow_promotion_codes are mutually exclusive in Stripe
+      ...(couponCode ? { discounts: [{ coupon: couponCode }] } : { allow_promotion_codes: true }),
       metadata: {
         company_id: companyId,
         setup_type: "initial_subscription",
@@ -190,8 +190,6 @@ serve(async (req: Request) => {
           company_id: companyId,
           environment: company.environment || 'live',
         },
-        // Attach coupon to the subscription so it applies to all future invoices
-        ...(couponCode ? { coupon: couponCode } : {}),
       },
       success_url: `${baseUrl}/dashboard/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/dashboard/settings?tab=billing`,
