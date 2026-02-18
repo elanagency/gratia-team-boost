@@ -135,14 +135,26 @@ serve(async (req) => {
 
     // Step 3: Delete company-related data in correct order
     const deletions = [
-      // Delete point-related records
+      // Delete integration records
+      supabase.from('slack_integrations').delete().eq('company_id', companyId),
+      supabase.from('teams_integrations').delete().eq('company_id', companyId),
+      
+      // Delete point and transaction records
       supabase.from('monthly_points_allocations').delete().eq('company_id', companyId),
       supabase.from('point_transactions').delete().eq('company_id', companyId),
+      supabase.from('company_point_transactions').delete().eq('company_id', companyId),
+      supabase.from('celebration_rewards_log').delete().eq('company_id', companyId),
       
-      // Delete subscription events
+      // Delete redemptions and login events
+      supabase.from('redemptions').delete().eq('company_id', companyId),
+      supabase.from('login_events').delete().eq('company_id', companyId),
+      
+      // Delete company structure records
       supabase.from('subscription_events').delete().eq('company_id', companyId),
+      supabase.from('company_regions').delete().eq('company_id', companyId),
+      supabase.from('departments').delete().eq('company_id', companyId),
       
-      // Mark profiles as inactive instead of deleting (they're already backed up)
+      // Deactivate profiles (already backed up)
       supabase.from('profiles').update({ status: 'deactivated' }).eq('company_id', companyId),
       
       // Finally delete the company
