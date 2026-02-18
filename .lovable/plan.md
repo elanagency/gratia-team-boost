@@ -1,48 +1,60 @@
 
+# Fix: Show "Invalid Coupon" Error Message
 
-# Fix: Stripe Coupon Parameter Error
+## Overview
 
-## The Problem
+When a user enters an invalid coupon code, Stripe throws an error that currently gets caught by the generic error handler, showing "Failed to setup billing." Instead, we should detect coupon-specific errors and show a clear message like "This coupon code is not valid."
 
-The Stripe Checkout Session API does not accept `coupon` inside `subscription_data`. The error from Stripe is:
+## Changes
 
-> Received unknown parameter: subscription_data[coupon]
+### 1. Edge Function: `supabase/functions/billing-setup-checkout/index.ts`
 
-## The Fix
-
-Use Stripe's top-level `discounts` parameter instead. When you pass `discounts: [{ coupon: 'COUPON_ID' }]` to a Checkout Session in subscription mode, Stripe automatically attaches the coupon to the subscription object -- so it still applies to all future invoices including proration invoices from seat additions.
-
-**Important**: `discounts` and `allow_promotion_codes` are mutually exclusive in the Stripe API, which aligns with our existing logic.
-
-### File: `supabase/functions/billing-setup-checkout/index.ts`
-
-Move the coupon from `subscription_data.coupon` to a top-level `discounts` array:
+In the catch block (line 222+), detect Stripe coupon errors by checking for the `resource_missing` error code or coupon-related messages, and return a structured error with a specific `errorType`:
 
 ```typescript
-const checkoutConfig: any = {
-  customer: customerId,
-  mode: "subscription",
-  line_items: [{ price: priceId, quantity: 1 }],
-  // discounts and allow_promotion_codes are mutually exclusive
-  ...(couponCode ? { discounts: [{ coupon: couponCode }] } : { allow_promotion_codes: true }),
-  metadata: { ... },
-  subscription_data: {
-    metadata: {
-      company_id: companyId,
-      environment: company.environment || 'live',
-    },
-    // coupon removed from here
-  },
-  success_url: ...,
-  cancel_url: ...,
-};
+} catch (error) {
+  console.error("[BILLING-SETUP-CHECKOUT] Error:", error);
+  
+  // Detect invalid coupon errors from Stripe
+  const stripeError = error as any;
+  if (stripeError?.type === 'StripeInvalidRequestError' && 
+      (stripeError?.message?.includes('coupon') || stripeError?.message?.includes('No such coupon'))) {
+    return new Response(
+      JSON.stringify({ 
+        error: "Invalid coupon code",
+        errorType: "invalid_coupon"
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  
+  // ... keep existing generic error handling
+}
 ```
 
-That's the only change -- one line moves from inside `subscription_data` to a top-level `discounts` array.
+### 2. Frontend: `src/components/team/BillingSetupDialog.tsx`
+
+After the `supabase.functions.invoke` call, check for the `invalid_coupon` error type in the response data and show a specific toast:
+
+```typescript
+if (error) {
+  // ... existing auth error checks
+  throw error;
+}
+
+// Check for coupon validation error (returned as 400 with data)
+if (data?.errorType === 'invalid_coupon') {
+  toast.error("This coupon code is not valid. Please check and try again.");
+  setIsSettingUp(false);
+  return;
+}
+```
+
+Note: Supabase's `functions.invoke` returns non-2xx responses in `data` (not `error`) when the response body is valid JSON, so we check `data.errorType`.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `supabase/functions/billing-setup-checkout/index.ts` | Replace `subscription_data.coupon` with top-level `discounts` parameter |
-
+| `supabase/functions/billing-setup-checkout/index.ts` | Detect Stripe coupon errors and return `errorType: "invalid_coupon"` |
+| `src/components/team/BillingSetupDialog.tsx` | Check for `invalid_coupon` error type and show specific toast message |
