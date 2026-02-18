@@ -9,8 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { CreditCard, Shield, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { CreditCard, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
@@ -22,7 +21,6 @@ interface BillingSetupDialogProps {
 
 const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetupDialogProps) => {
   const [isSettingUp, setIsSettingUp] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
   const { companyId, user, firstName, lastName } = useAuth();
   const { memberPriceInCents } = usePlatformSettings();
   const pricePerMember = (memberPriceInCents / 100).toFixed(2);
@@ -54,8 +52,7 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
             name: firstName && lastName ? `${firstName} ${lastName}`.trim() : 'Admin',
             email: user?.email
           },
-          origin,
-          couponCode: couponCode.trim() || undefined
+          origin
         }
       });
       
@@ -68,13 +65,6 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
         throw error;
       }
       
-      // Check for coupon validation error (returned as 400 with data)
-      if (data?.errorType === 'invalid_coupon') {
-        toast.error("This coupon code is not valid. Please check and try again.");
-        setIsSettingUp(false);
-        return;
-      }
-
       if (data?.alreadySubscribed) {
         toast.success("You already have an active subscription!");
         onSetupComplete();
@@ -102,7 +92,7 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
         <DialogHeader>
           <DialogTitle>Start Your Subscription</DialogTitle>
           <DialogDescription>
-            Begin your subscription to start inviting team members. You can apply a coupon at checkout.
+            Begin your subscription to start inviting team members.
           </DialogDescription>
         </DialogHeader>
         
@@ -128,23 +118,7 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
             </div>
           </div>
 
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h4 className="font-medium text-purple-800 mb-2 flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Have a Coupon?
-            </h4>
-            <Input
-              placeholder="Enter coupon code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              className="mt-1 bg-white"
-            />
-            <p className="text-xs text-purple-600 mt-1.5">
-              The coupon will be applied to your subscription and all future charges.
-            </p>
-          </div>
-
-          <Button 
+          <Button
             onClick={handleSetupBilling}
             disabled={isSettingUp}
             className="w-full bg-[#F572FF] hover:bg-[#E061EE] text-white"
