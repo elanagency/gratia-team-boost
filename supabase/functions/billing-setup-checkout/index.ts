@@ -222,6 +222,19 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error("[BILLING-SETUP-CHECKOUT] Error:", error);
     
+    // Detect invalid coupon errors from Stripe
+    const stripeError = error as any;
+    if (stripeError?.type === 'StripeInvalidRequestError' && 
+        (stripeError?.message?.includes('coupon') || stripeError?.message?.includes('No such coupon'))) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid coupon code",
+          errorType: "invalid_coupon"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     let errorMessage = "Internal server error";
     if (error instanceof Error) {
       errorMessage = error.message;

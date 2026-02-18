@@ -68,6 +68,13 @@ const BillingSetupDialog = ({ onSetupComplete, open, onOpenChange }: BillingSetu
         throw error;
       }
       
+      // Check for coupon validation error (returned as 400 with data)
+      if (data?.errorType === 'invalid_coupon') {
+        toast.error("This coupon code is not valid. Please check and try again.");
+        setIsSettingUp(false);
+        return;
+      }
+
       if (data?.alreadySubscribed) {
         toast.success("You already have an active subscription!");
         onSetupComplete();
