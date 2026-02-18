@@ -1,60 +1,29 @@
 
-# Fix: Show "Invalid Coupon" Error Message
+
+# Remove Custom Coupon Field from BillingSetupDialog
 
 ## Overview
 
-When a user enters an invalid coupon code, Stripe throws an error that currently gets caught by the generic error handler, showing "Failed to setup billing." Instead, we should detect coupon-specific errors and show a clear message like "This coupon code is not valid."
+Remove the custom coupon input from the dialog and rely entirely on Stripe's built-in promotion code field on the checkout page. This simplifies the UI and avoids the issues we encountered with passing coupon codes via the API.
 
 ## Changes
 
-### 1. Edge Function: `supabase/functions/billing-setup-checkout/index.ts`
+### 1. Frontend: `src/components/team/BillingSetupDialog.tsx`
 
-In the catch block (line 222+), detect Stripe coupon errors by checking for the `resource_missing` error code or coupon-related messages, and return a structured error with a specific `errorType`:
+- Remove the `couponCode` state variable and `useState` import for it
+- Remove the purple "Have a Coupon?" section with the Input field
+- Remove the `couponCode` from the `body` sent to the edge function
+- Remove the `invalid_coupon` error check (no longer needed)
+- Remove unused imports: `Sparkles`, `Input`
 
-```typescript
-} catch (error) {
-  console.error("[BILLING-SETUP-CHECKOUT] Error:", error);
-  
-  // Detect invalid coupon errors from Stripe
-  const stripeError = error as any;
-  if (stripeError?.type === 'StripeInvalidRequestError' && 
-      (stripeError?.message?.includes('coupon') || stripeError?.message?.includes('No such coupon'))) {
-    return new Response(
-      JSON.stringify({ 
-        error: "Invalid coupon code",
-        errorType: "invalid_coupon"
-      }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-  
-  // ... keep existing generic error handling
-}
-```
+### 2. Edge Function: `supabase/functions/billing-setup-checkout/index.ts`
 
-### 2. Frontend: `src/components/team/BillingSetupDialog.tsx`
+- Remove `couponCode` from the destructured request body
+- Simplify checkout config: always use `allow_promotion_codes: true` (no more conditional `discounts` vs `allow_promotion_codes` logic)
+- Remove the `invalid_coupon` error detection in the catch block (no longer needed)
+- Clean up related log lines referencing `couponCode`
 
-After the `supabase.functions.invoke` call, check for the `invalid_coupon` error type in the response data and show a specific toast:
+## Result
 
-```typescript
-if (error) {
-  // ... existing auth error checks
-  throw error;
-}
+Users will see the coupon/promotion code field directly on Stripe's hosted checkout page, which handles all validation natively.
 
-// Check for coupon validation error (returned as 400 with data)
-if (data?.errorType === 'invalid_coupon') {
-  toast.error("This coupon code is not valid. Please check and try again.");
-  setIsSettingUp(false);
-  return;
-}
-```
-
-Note: Supabase's `functions.invoke` returns non-2xx responses in `data` (not `error`) when the response body is valid JSON, so we check `data.errorType`.
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `supabase/functions/billing-setup-checkout/index.ts` | Detect Stripe coupon errors and return `errorType: "invalid_coupon"` |
-| `src/components/team/BillingSetupDialog.tsx` | Check for `invalid_coupon` error type and show specific toast message |
