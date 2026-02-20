@@ -42,7 +42,7 @@ serve(async (req) => {
     }
     
     // Use the supabase-js admin client to fetch user emails
-    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     
     if (error) {
       throw error;
