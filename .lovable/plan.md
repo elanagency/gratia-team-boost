@@ -1,84 +1,68 @@
 
-# Fix: create-team-member Edge Function Failing for Existing Users
 
-## Problem
+# Change Celebration Feed Messages and Enable Quick Points
 
-The `create-team-member` edge function uses `listUsers()` (line 190) to check if a user already exists. This call has a default pagination limit (~50 users), so it may miss users beyond the first page. When it misses an existing user, it attempts `createUser()` which fails with `email_exists` (HTTP 422), and the function returns a 500 error: "Failed to create user account".
-
-The CSV preview worked correctly (start dates loaded fine), but all 3 users failed during the processing step because of this existing-user detection bug.
-
-## Solution
-
-Replace `listUsers()` with a targeted email lookup. The Supabase admin API does not have `getUserByEmail()` directly, but we can use `listUsers()` with a filter, or better yet, query the auth schema. The most reliable approach is to attempt `createUser()` first and handle the `email_exists` error gracefully by looking up the existing user.
+## Overview
+Two changes based on client feedback:
+1. Update how birthday and work anniversary messages display in the Recognition Feed
+2. Allow users to give quick points on celebration entries (currently disabled)
 
 ## Changes
 
-### `supabase/functions/create-team-member/index.ts`
+### 1. Update celebration message format in the edge function
 
-Replace the user existence check logic (lines 189-230) with a "try to create, handle conflict" pattern:
+**File: `supabase/functions/process-celebration-rewards/index.ts`**
 
-**Before (current broken logic):**
-```ts
-// Check if user already exists
-const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-const userExists = existingUsers.users.some(user => 
-  user.email?.toLowerCase() === email.toLowerCase()
-);
-// ... then branch on userExists
+Update the `point_transactions` descriptions to include the member's name and (for anniversaries) the years of service:
+
+- Birthday: `🎂 Today is [First Name]'s Birthday!`
+- Anniversary: `🎉 Today is [Full Name]'s [X] year work anniversary!`
+
+This changes the `description` field in the `point_transactions.insert()` calls (lines ~188 and ~243).
+
+### 2. Update the Recognition Feed display
+
+**File: `src/components/points/RecognitionFeed.tsx`**
+
+**a) Change celebration rendering (lines 537-551)**
+
+Instead of the current generic "received +X birthday celebration points" format, display the transaction description directly since it will now contain the personalized message. Show it like:
+
+```
+🎂 Today is Pedro's Birthday!
+[+100 badge]
 ```
 
-**After (robust logic):**
-```ts
-let userId: string;
-let isNewUser = false;
-let password: string | undefined;
+or
 
-// First, try to find user by listing with a filter or attempt creation
-// Try creating the user first - if they exist, handle the error
-password = generateSecurePassword();
-const { firstName, lastName } = parseFullName(name);
-
-const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-  email,
-  password,
-  email_confirm: true,
-  user_metadata: { firstName, lastName },
-});
-
-if (createUserError) {
-  if (createUserError.message?.includes('already been registered') || 
-      (createUserError as any).code === 'email_exists') {
-    // User exists - find them by listing with per_page:1 filter workaround
-    // Use listUsers with a small page and filter
-    const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const existingUser = allUsers?.users?.find(
-      u => u.email?.toLowerCase() === email.toLowerCase()
-    );
-    if (!existingUser?.id) {
-      return error response;
-    }
-    userId = existingUser.id;
-    isNewUser = false;
-    password = undefined; // Don't send password for existing users
-  } else {
-    return error response;
-  }
-} else {
-  userId = newUser.user.id;
-  isNewUser = true;
-}
+```
+🎉 Today is Pedro Olinger's 2 year work anniversary!
+[+100 badge]
 ```
 
-This approach:
-1. Attempts to create the user first (the happy path for genuinely new users)
-2. If creation fails with `email_exists`, catches that specific error and finds the existing user
-3. Uses `perPage: 1000` to increase the pagination limit when we do need to search
-4. Eliminates the race condition where the initial check passes but creation fails
+The description from the database will be the primary display text, with the points badge shown separately.
 
-## What stays the same
+**b) Enable quick points on celebration entries (line 590)**
 
-- All the profile upsert logic
-- Email sending logic
-- Department handling
-- The CSV parsing and preview on the frontend
-- The billing/subscription checks
+Remove the `!isCelebration` condition from line 590:
+
+```
+// Before:
+{canGivePoints && !isCelebration && (
+
+// After:
+{canGivePoints && (
+```
+
+This allows any user (except the celebrant themselves) to give quick appreciation points on birthday and anniversary posts.
+
+### 3. Update notification messages (same edge function)
+
+Update the `sendCelebrationNotifications` calls to use the same personalized messages for Slack/Teams notifications, keeping consistency across the platform.
+
+## Technical Details
+
+- The `process-celebration-rewards` edge function already has access to `member.first_name`, `member.last_name`, and `yearsOfService` (for anniversaries) -- no new data needed
+- The Recognition Feed already detects celebrations via the `🎂`/`🎉` prefix pattern -- this continues to work
+- The edge function will need to be redeployed after changes
+- Existing celebration entries in the database will keep their old format; only new ones will use the updated messages
