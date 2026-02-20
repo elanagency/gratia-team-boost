@@ -216,6 +216,31 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         console.error('Failed to send Teams notification:', teamsError);
         // Continue even if Teams notification fails
       }
+
+      // Send email notification for recognition (fire-and-forget)
+      try {
+        const { data: emailData } = await supabase.functions.invoke('get-user-emails', {
+          body: { userIds: [variables.member.user_id] }
+        });
+        const recipientEmail = emailData?.emails?.[variables.member.user_id];
+        if (recipientEmail) {
+          await supabase.functions.invoke('email-service', {
+            body: {
+              type: 'recognition',
+              to: recipientEmail,
+              toName: variables.member.name,
+              templateParams: {
+                recipientName: variables.member.name,
+                senderName: `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim(),
+                points: variables.points,
+                message: cleanMessageText
+              }
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send recognition email:', emailError);
+      }
       
       // Invalidate all relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['userPoints'] });
