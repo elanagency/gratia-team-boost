@@ -196,8 +196,31 @@ Deno.serve(async (req) => {
             description: `🎂 Today is ${birthdayFirstName}'s Birthday!`
           })
 
-          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
-          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, memberName, 'birthday', company.birthday_reward_points)
+          const birthdayMemberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
+          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, birthdayMemberName, 'birthday', company.birthday_reward_points)
+
+          // Send celebration email
+          try {
+            const { data: userData } = await supabase.auth.admin.getUserById(member.id)
+            if (userData?.user?.email) {
+              await fetch(`${supabaseUrl}/functions/v1/email-service`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  type: 'celebration',
+                  to: userData.user.email,
+                  toName: birthdayMemberName,
+                  templateParams: {
+                    fname: member.first_name || 'Team Member',
+                    rewardType: 'birthday',
+                    points: company.birthday_reward_points,
+                  }
+                })
+              })
+            }
+          } catch (e) {
+            console.log('Birthday celebration email skipped:', e.message)
+          }
 
           totalBirthdayRewards++
           console.log(`Birthday reward: ${company.birthday_reward_points} pts to ${member.id} in company ${company.id}`)
@@ -264,9 +287,31 @@ Deno.serve(async (req) => {
             description: `🎉 Today is ${anniversaryFullName}'s ${yearsOfService} year work anniversary!`
           })
 
-          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
-          const yearsOfService = currentYear - startDate.getFullYear()
-          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, memberName, 'anniversary', company.anniversary_reward_points, yearsOfService)
+          await sendCelebrationNotifications(supabaseUrl, supabaseServiceKey, company.id, anniversaryFullName, 'anniversary', company.anniversary_reward_points, yearsOfService)
+
+          // Send celebration email
+          try {
+            const { data: userData } = await supabase.auth.admin.getUserById(member.id)
+            if (userData?.user?.email) {
+              await fetch(`${supabaseUrl}/functions/v1/email-service`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  type: 'celebration',
+                  to: userData.user.email,
+                  toName: anniversaryFullName,
+                  templateParams: {
+                    fname: member.first_name || 'Team Member',
+                    rewardType: 'anniversary',
+                    points: company.anniversary_reward_points,
+                    yearsOfService: yearsOfService,
+                  }
+                })
+              })
+            }
+          } catch (e) {
+            console.log('Anniversary celebration email skipped:', e.message)
+          }
 
           totalAnniversaryRewards++
           console.log(`Anniversary reward: ${company.anniversary_reward_points} pts to ${member.id} in company ${company.id}`)
