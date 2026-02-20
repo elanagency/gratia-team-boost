@@ -197,6 +197,7 @@ const CelebrationSettingsCard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-celebration-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["onboarding-progress"] });
       toast.success("Celebration settings saved");
     },
     onError: () => toast.error("Failed to save settings"),

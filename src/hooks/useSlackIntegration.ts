@@ -93,6 +93,7 @@ export const useSlackIntegration = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['slackIntegration'] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
       toast.success('Slack workspace connected successfully!');
     },
     onError: (error: Error) => {
@@ -164,6 +165,7 @@ export const useSlackIntegration = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['slackIntegration'] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
       toast.success('Slack disconnected');
     },
     onError: (error: Error) => {

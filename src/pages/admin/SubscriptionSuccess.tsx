@@ -34,6 +34,7 @@ const SubscriptionSuccess = () => {
           queryClient.invalidateQueries({ queryKey: ["company-members"] });
           queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
           queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+          queryClient.invalidateQueries({ queryKey: ["onboarding-progress"] });
 
           setTimeout(() => {
             navigate("/dashboard/settings?tab=billing", { replace: true });
