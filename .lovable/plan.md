@@ -1,22 +1,30 @@
 
+# Remove Webhook Fallback from Teams Notifications
 
-# Fix: Step 2 Completes When Any Second User Exists
+## Summary
 
-## Problem
+Remove the "Or connect via Webhook URL (advanced)" collapsible section from the Teams notifications card, since OAuth is now the sole connection method.
 
-The current query for the "Add Team Members" step filters by `is_admin = false`, so it only counts non-admin members. The user wants it to complete as soon as there is more than one person in the company -- regardless of admin status or activation status.
+## Changes
 
-## Change
+### 1. `src/components/settings/TeamsNotificationsCard.tsx`
 
-### File: `src/hooks/useOnboardingProgress.ts`
+- Remove the `Separator` and the entire webhook fallback section (lines 167-220): the collapsible button, the `TeamsWebhookSetupInstructions`, the webhook URL input, channel name input, and "Connect via Webhook" button.
+- Remove unused state variables: `webhookUrl`, `channelName`, `showWebhookFallback` (lines 50-52).
+- Remove the `handleWebhookConnect` function (lines 89-94).
+- Remove unused imports: `Input`, `Label` (from the not-connected section -- they're not used elsewhere in that branch), `ChevronDown`, `ChevronUp`, and the `TeamsWebhookSetupInstructions` component import.
+- Remove `connectTeams` and `isConnecting` from the hook destructure (lines 35, 40).
 
-In the `membersRes` query (around lines 36-41):
+### 2. `src/components/settings/teams/TeamsWebhookSetupInstructions.tsx`
 
-- Remove the `.eq("is_admin", false)` filter
-- Remove the `.in("status", ["active", "invited"])` filter
-- Keep the `company_id` filter and the count-only select
+- Delete this file entirely -- it's no longer referenced.
 
-Then update the `hasMembers` check from `memberCount > 0` to `memberCount > 1` (since the admin themselves is now included in the count).
+### 3. `src/hooks/useTeamsIntegration.ts` (optional cleanup)
 
-This means: as soon as an invite is sent and a second profile row exists in the company, step 2 shows as complete.
+- The `connectTeams` mutation and `isConnecting` can remain in the hook for now since removing them isn't strictly necessary and keeps the hook backward-compatible. No changes needed here.
 
+### What stays
+
+- The OAuth "Connect to Microsoft Teams" button remains as the only connection option.
+- The connected state UI (team/channel picker, test, disconnect, notification toggles) is unchanged.
+- The webhook diagnostics panel for test results stays since it's used for the OAuth test flow too.
