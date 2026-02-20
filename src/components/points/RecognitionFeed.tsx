@@ -537,17 +537,12 @@ export function RecognitionFeed() {
                       {isCelebration ? (
                         <>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm">
-                              {isBirthday ? '🎂' : '🎉'}{' '}
-                              <span className="font-bold">{thread.mainPost.recipient_name}</span>
-                              {' '}received{' '}
+                            <span className="text-sm font-medium">
+                              {thread.mainPost.description}
                             </span>
                             <Badge className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
                               +{thread.mainPost.points}
                             </Badge>
-                            <span className="text-sm">
-                              {isBirthday ? 'birthday' : 'work anniversary'} celebration points
-                            </span>
                           </div>
                         </>
                       ) : (
@@ -587,7 +582,7 @@ export function RecognitionFeed() {
                           {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
                         </div>
                         
-                        {canGivePoints && !isCelebration && (
+                        {canGivePoints && (
                           <div className="flex gap-1">
                              {quickPoints.map((points) => {
                                const recipientId = thread.mainPost.recipient_id;
