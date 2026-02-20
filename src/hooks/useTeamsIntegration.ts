@@ -102,6 +102,7 @@ export function useTeamsIntegration() {
       if (error) throw error;
       toast.success(`Connected to Microsoft Teams as ${data?.display_name || 'user'}`);
       queryClient.invalidateQueries({ queryKey: ['teams-integration', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
     } catch (err) {
       console.error('OAuth callback error:', err);
       toast.error('Failed to connect Microsoft Teams');
@@ -220,6 +221,7 @@ export function useTeamsIntegration() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams-integration', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
       toast.success('Microsoft Teams disconnected');
     },
     onError: () => toast.error('Failed to disconnect Microsoft Teams'),
