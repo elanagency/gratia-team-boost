@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, Unlink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Send, Unlink } from 'lucide-react';
 import { useTeamsIntegration, type MsChannel } from '@/hooks/useTeamsIntegration';
 import { TeamsTestDiagnostics, type TeamsTestDiagnosticsData } from '@/components/settings/teams/TeamsTestDiagnostics';
 import { TeamsNotificationToggleRow } from '@/components/settings/TeamsNotificationToggleRow';
-import { TeamsWebhookSetupInstructions } from '@/components/settings/teams/TeamsWebhookSetupInstructions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +30,10 @@ export default function TeamsNotificationsCard() {
     isConnected,
     isOAuth,
     connectViaOAuth,
-    connectTeams,
     updateNotificationSettings,
     selectTeamAndChannel,
     disconnectTeams,
     testConnectionAsync,
-    isConnecting,
     isUpdating,
     isDisconnecting,
     isTesting,
@@ -47,9 +43,6 @@ export default function TeamsNotificationsCard() {
     fetchChannels,
   } = useTeamsIntegration();
 
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [channelName, setChannelName] = useState('');
-  const [showWebhookFallback, setShowWebhookFallback] = useState(false);
   const [lastTest, setLastTest] = useState<TeamsTestDiagnosticsData | null>(null);
 
   // Channel picker state
@@ -86,12 +79,6 @@ export default function TeamsNotificationsCard() {
       .finally(() => setIsLoadingChannels(false));
   }, [selectedTeamId, isOAuth]);
 
-  const handleWebhookConnect = () => {
-    if (!webhookUrl.trim()) return;
-    connectTeams({ webhookUrl: webhookUrl.trim(), channelName: channelName.trim() || undefined });
-    setWebhookUrl('');
-    setChannelName('');
-  };
 
   const handleToggle = (key: string, value: boolean) => {
     updateNotificationSettings({ [key]: value });
@@ -163,61 +150,6 @@ export default function TeamsNotificationsCard() {
             <p className="text-center text-sm text-muted-foreground">
               Sign in with your Microsoft account to select a Team and Channel
             </p>
-
-            <Separator />
-
-            {/* Secondary: Webhook fallback */}
-            <button
-              onClick={() => setShowWebhookFallback(!showWebhookFallback)}
-              className="flex w-full items-center justify-between text-left text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>Or connect via Webhook URL (advanced)</span>
-              {showWebhookFallback ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-
-            {showWebhookFallback && (
-              <div className="space-y-3 rounded-lg border p-4">
-                <TeamsWebhookSetupInstructions />
-
-                <div className="space-y-2">
-                  <Label htmlFor="webhook-url">Webhook URL</Label>
-                  <Input
-                    id="webhook-url"
-                    type="url"
-                    placeholder="https://outlook.office.com/webhook/..."
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="channel-name">Channel Name (optional)</Label>
-                  <Input
-                    id="channel-name"
-                    type="text"
-                    placeholder="e.g., #general"
-                    value={channelName}
-                    onChange={(e) => setChannelName(e.target.value)}
-                  />
-                </div>
-
-                <Button
-                  onClick={handleWebhookConnect}
-                  disabled={!webhookUrl.trim() || isConnecting}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    'Connect via Webhook'
-                  )}
-                </Button>
-              </div>
-            )}
           </div>
         ) : (
           <div className="space-y-6">
