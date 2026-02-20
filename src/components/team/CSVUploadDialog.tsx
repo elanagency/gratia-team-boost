@@ -217,14 +217,17 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
         header: true,
         skipEmptyLines: true,
         transformHeader: (header: string) => {
-          // Normalize headers to handle common variations
-          const normalized = header.toLowerCase().trim();
-          if (normalized === 'name' || normalized === 'full name' || normalized === 'fullname') return 'name';
-          if (normalized === 'email' || normalized === 'email address' || normalized === 'emailaddress') return 'email';
-          if (normalized === 'department' || normalized === 'dept') return 'department';
-          if (normalized === 'role' || normalized === 'user role' || normalized === 'userrole') return 'role';
-          if (normalized === 'birthday' || normalized === 'date of birth' || normalized === 'dob') return 'birthday';
-          if (normalized === 'start date' || normalized === 'company start date' || normalized === 'startdate') return 'companyStartDate';
+          // Strip non-printable/invisible characters, then lowercase and trim
+          const normalized = header
+            .replace(/[^\x20-\x7E]/g, '')
+            .toLowerCase()
+            .trim();
+          if (['name', 'full name', 'fullname'].includes(normalized)) return 'name';
+          if (['email', 'email address', 'emailaddress'].includes(normalized)) return 'email';
+          if (['department', 'dept'].includes(normalized)) return 'department';
+          if (['role', 'user role', 'userrole'].includes(normalized)) return 'role';
+          if (['birthday', 'date of birth', 'dob'].includes(normalized)) return 'birthday';
+          if (normalized.includes('start date') || normalized === 'startdate') return 'companyStartDate';
           return normalized;
         },
         complete: (results) => {
@@ -249,7 +252,7 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
               department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim(),
               role: roleValue === 'admin' ? 'admin' : 'user',
               birthday: normalizeDate((row.birthday || row.Birthday || row['date of birth'] || row['Date of Birth'] || row.dob || row.DOB || '').toString()),
-              companyStartDate: normalizeDate((row.companyStartDate || row['Company Start Date'] || row['start date'] || row['Start Date'] || '').toString())
+              companyStartDate: normalizeDate((row.companyStartDate || row['company start date'] || row['Company Start Date'] || row['start date'] || row['Start Date'] || '').toString())
             };
           });
           
