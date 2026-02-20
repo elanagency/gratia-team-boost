@@ -48,6 +48,25 @@ interface ProcessingResult {
 
 type DialogStep = 'upload' | 'preview' | 'processing';
 
+function findValueByKeyPattern(row: any, patterns: string[]): string {
+  // First try direct key access
+  for (const pattern of patterns) {
+    if (row[pattern] !== undefined && row[pattern] !== null && row[pattern].toString().trim() !== '') {
+      return row[pattern].toString();
+    }
+  }
+  // Fallback: search all keys case-insensitively for partial match
+  const keys = Object.keys(row);
+  for (const pattern of patterns) {
+    const lowerPattern = pattern.toLowerCase().replace(/[^a-z ]/g, '');
+    const found = keys.find(k => k.toLowerCase().replace(/[^a-z ]/g, '').includes(lowerPattern));
+    if (found && row[found] !== undefined && row[found] !== null && row[found].toString().trim() !== '') {
+      return row[found].toString();
+    }
+  }
+  return '';
+}
+
 function normalizeDate(dateStr: string): string {
   if (!dateStr || !dateStr.trim()) return '';
   const trimmed = dateStr.trim();
@@ -236,10 +255,15 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           console.log('Fields detected:', results.meta?.fields);
           
           if (results.errors.length > 0) {
+          
+          if (results.errors.length > 0) {
             console.error('Papa parse errors:', results.errors);
           }
 
           const rawMembers = results.data as any[];
+          if (rawMembers.length > 0) {
+            console.log('Actual row keys:', Object.keys(rawMembers[0]));
+          }
           console.log('Raw members before mapping:', rawMembers);
           
           // Map raw data to CSVMember format
@@ -251,8 +275,12 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
               email: (row.email || row.Email || row['email address'] || row['Email Address'] || '').toString().trim(),
               department: (row.department || row.Department || row.dept || row.Dept || '').toString().trim(),
               role: roleValue === 'admin' ? 'admin' : 'user',
-              birthday: normalizeDate((row.birthday || row.Birthday || row['date of birth'] || row['Date of Birth'] || row.dob || row.DOB || '').toString()),
-              companyStartDate: normalizeDate((row.companyStartDate || row['company start date'] || row['Company Start Date'] || row['start date'] || row['Start Date'] || '').toString())
+              birthday: normalizeDate(
+                findValueByKeyPattern(row, ['birthday', 'Birthday', 'date of birth', 'Date of Birth', 'dob', 'DOB'])
+              ),
+              companyStartDate: normalizeDate(
+                findValueByKeyPattern(row, ['companyStartDate', 'company start date', 'Company Start Date', 'start date', 'Start Date', 'startdate'])
+              )
             };
           });
           
