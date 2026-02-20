@@ -187,12 +187,13 @@ Deno.serve(async (req) => {
           })
 
           // Create point_transactions record (use recipient as sender for system rewards)
+          const birthdayFirstName = member.first_name || 'Team Member'
           await supabase.from('point_transactions').insert({
             company_id: company.id,
             sender_profile_id: member.id,
             recipient_profile_id: member.id,
             points: company.birthday_reward_points,
-            description: `🎂 Birthday reward`
+            description: `🎂 Today is ${birthdayFirstName}'s Birthday!`
           })
 
           const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
@@ -253,12 +254,14 @@ Deno.serve(async (req) => {
             year: currentYear
           })
 
+          const anniversaryFullName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
+          const yearsOfService = currentYear - startDate.getFullYear()
           await supabase.from('point_transactions').insert({
             company_id: company.id,
             sender_profile_id: member.id,
             recipient_profile_id: member.id,
             points: company.anniversary_reward_points,
-            description: `🎉 Work anniversary reward`
+            description: `🎉 Today is ${anniversaryFullName}'s ${yearsOfService} year work anniversary!`
           })
 
           const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Team Member'
