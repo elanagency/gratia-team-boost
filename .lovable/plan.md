@@ -1,30 +1,57 @@
 
-# Remove Webhook Fallback from Teams Notifications
+# Fix: Onboarding Progress Requires Hard Refresh
 
-## Summary
+## Problem
 
-Remove the "Or connect via Webhook URL (advanced)" collapsible section from the Teams notifications card, since OAuth is now the sole connection method.
+The onboarding checklist only invalidates its query cache after the billing dialog completes. When a user invites a team member, connects Slack/Teams, or saves celebration settings, the progress stays stale until they manually refresh the page.
+
+## Solution
+
+Add `queryClient.invalidateQueries({ queryKey: ["onboarding-progress"] })` to the `onSuccess` callbacks of every mutation that affects an onboarding step.
 
 ## Changes
 
-### 1. `src/components/settings/TeamsNotificationsCard.tsx`
+### 1. `src/components/team/TeamInviteManager.tsx` (Step 2 -- Add Team Members)
 
-- Remove the `Separator` and the entire webhook fallback section (lines 167-220): the collapsible button, the `TeamsWebhookSetupInstructions`, the webhook URL input, channel name input, and "Connect via Webhook" button.
-- Remove unused state variables: `webhookUrl`, `channelName`, `showWebhookFallback` (lines 50-52).
-- Remove the `handleWebhookConnect` function (lines 89-94).
-- Remove unused imports: `Input`, `Label` (from the not-connected section -- they're not used elsewhere in that branch), `ChevronDown`, `ChevronUp`, and the `TeamsWebhookSetupInstructions` component import.
-- Remove `connectTeams` and `isConnecting` from the hook destructure (lines 35, 40).
+After the existing `invalidateQueries` calls (around line 36-38), add:
 
-### 2. `src/components/settings/teams/TeamsWebhookSetupInstructions.tsx`
+```ts
+queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+```
 
-- Delete this file entirely -- it's no longer referenced.
+### 2. `src/hooks/useSlackIntegration.ts` (Step 3 -- Connect Slack)
 
-### 3. `src/hooks/useTeamsIntegration.ts` (optional cleanup)
+In the `connectSlack` mutation's `onSuccess` (around line 95) and `disconnectSlack` mutation's `onSuccess` (around line 165), add:
 
-- The `connectTeams` mutation and `isConnecting` can remain in the hook for now since removing them isn't strictly necessary and keeps the hook backward-compatible. No changes needed here.
+```ts
+queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+```
 
-### What stays
+### 3. `src/hooks/useTeamsIntegration.ts` (Step 3 -- Connect Teams)
 
-- The OAuth "Connect to Microsoft Teams" button remains as the only connection option.
-- The connected state UI (team/channel picker, test, disconnect, notification toggles) is unchanged.
-- The webhook diagnostics panel for test results stays since it's used for the OAuth test flow too.
+In the relevant connect and disconnect mutation `onSuccess` callbacks, add:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+```
+
+### 4. `src/components/settings/CelebrationSettingsCard.tsx` (Step 4 -- Celebrations)
+
+In the save mutation's `onSuccess` (around line 199), add:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+```
+
+### 5. `src/pages/admin/SubscriptionSuccess.tsx` (Step 1 -- Upgrade)
+
+After the existing `invalidateQueries` calls (around line 34-36), add:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+```
+
+## What stays the same
+
+- The existing invalidation in `Dashboard.tsx` `handleBillingSetupComplete` remains.
+- The `useOnboardingProgress` hook itself is unchanged -- it already has a 30-second `staleTime`, which is fine for background staleness. The key fix is ensuring mutations that complete steps trigger an immediate refetch.
