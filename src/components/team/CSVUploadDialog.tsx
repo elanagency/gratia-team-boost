@@ -255,8 +255,6 @@ export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
           console.log('Fields detected:', results.meta?.fields);
           
           if (results.errors.length > 0) {
-          
-          if (results.errors.length > 0) {
             console.error('Papa parse errors:', results.errors);
           }
 
