@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface EmailServiceRequest {
-  type: 'invitation' | 'welcome' | 'redemption' | 'celebration';
+  type: 'invitation' | 'welcome' | 'redemption' | 'celebration' | 'recognition';
   to: string;
   toName: string;
   templateParams: {
@@ -27,6 +27,8 @@ const getBrevoTemplateId = (type: string): number => {
       return 10; // Gift card redemption confirmation template
     case 'celebration':
       return 12; // Birthday/anniversary celebration template
+    case 'recognition':
+      return 13; // Point recognition notification template
     default:
       throw new Error(`Unsupported email type: ${type}`);
   }
