@@ -1,68 +1,32 @@
 
 
-# Change Celebration Feed Messages and Enable Quick Points
-
-## Overview
-Two changes based on client feedback:
-1. Update how birthday and work anniversary messages display in the Recognition Feed
-2. Allow users to give quick points on celebration entries (currently disabled)
+# Client Feedback: Celebration Settings and Buy Points Dialog
 
 ## Changes
 
-### 1. Update celebration message format in the edge function
+### 1. Cost estimator employee count -- count all team members, not just active
 
-**File: `supabase/functions/process-celebration-rewards/index.ts`**
+**File: `src/components/settings/CelebrationSettingsCard.tsx`**
 
-Update the `point_transactions` descriptions to include the member's name and (for anniversaries) the years of service:
+- Change the member count query (lines 83-95) to remove the `.eq("status", "active")` filter, so it counts all employees on the team list (invited, active, etc.)
+- Update the query key from `"company-active-member-count"` to `"company-member-count"`
+- Update the label text (currently line ~247: `"Based on {employees} active employee{s}"`) to say **"Based on X employees"** (removing the word "active")
 
-- Birthday: `🎂 Today is [First Name]'s Birthday!`
-- Anniversary: `🎉 Today is [Full Name]'s [X] year work anniversary!`
+### 2. Buy Points dialog -- switch to dollar-based quick select and input
 
-This changes the `description` field in the `point_transactions.insert()` calls (lines ~188 and ~243).
+**File: `src/components/settings/BuyPointsDialog.tsx`**
 
-### 2. Update the Recognition Feed display
-
-**File: `src/components/points/RecognitionFeed.tsx`**
-
-**a) Change celebration rendering (lines 537-551)**
-
-Instead of the current generic "received +X birthday celebration points" format, display the transaction description directly since it will now contain the personalized message. Show it like:
-
-```
-🎂 Today is Pedro's Birthday!
-[+100 badge]
-```
-
-or
-
-```
-🎉 Today is Pedro Olinger's 2 year work anniversary!
-[+100 badge]
-```
-
-The description from the database will be the primary display text, with the points badge shown separately.
-
-**b) Enable quick points on celebration entries (line 590)**
-
-Remove the `!isCelebration` condition from line 590:
-
-```
-// Before:
-{canGivePoints && !isCelebration && (
-
-// After:
-{canGivePoints && (
-```
-
-This allows any user (except the celebrant themselves) to give quick appreciation points on birthday and anniversary posts.
-
-### 3. Update notification messages (same edge function)
-
-Update the `sendCelebrationNotifications` calls to use the same personalized messages for Slack/Teams notifications, keeping consistency across the platform.
+- Change `QUICK_OPTIONS` from points `[500, 1000, 2500, 5000]` to dollar amounts `[25, 50, 100, 250]`
+- Quick select buttons display as `$25`, `$50`, `$100`, `$250`
+- Rename the input from "Points quantity" to "Dollar amount" with a `$` prefix
+- The state variable tracks dollars instead of points; points are calculated as `dollars / exchangeRate`
+- The cost summary shows: `X points | Total $Y.00 USD`
+- Minimum purchase becomes `$5` (equivalent to 100 points at $0.05/pt)
+- The edge function call still sends `pointsQuantity` in points (converted from dollars before sending)
 
 ## Technical Details
 
-- The `process-celebration-rewards` edge function already has access to `member.first_name`, `member.last_name`, and `yearsOfService` (for anniversaries) -- no new data needed
-- The Recognition Feed already detects celebrations via the `🎂`/`🎉` prefix pattern -- this continues to work
-- The edge function will need to be redeployed after changes
-- Existing celebration entries in the database will keep their old format; only new ones will use the updated messages
+- The exchange rate is already passed as a prop (`exchangeRate: number`) to the dialog
+- Points conversion: `dollarAmount / exchangeRate = points` (e.g., $25 / 0.05 = 500 pts)
+- No edge function changes needed -- only the UI input changes, the API still receives points
+
