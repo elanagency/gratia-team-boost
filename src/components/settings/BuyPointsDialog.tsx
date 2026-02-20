@@ -14,18 +14,19 @@ interface BuyPointsDialogProps {
   exchangeRate: number;
 }
 
-const QUICK_OPTIONS = [500, 1000, 2500, 5000];
+const QUICK_OPTIONS = [25, 50, 100, 250]; // Dollar amounts
 
 const BuyPointsDialog = ({ open, onOpenChange, companyId, exchangeRate }: BuyPointsDialogProps) => {
-  const [quantity, setQuantity] = useState("500");
+  const [dollars, setDollars] = useState("25");
   const [loading, setLoading] = useState(false);
 
-  const points = Math.max(parseInt(quantity) || 0, 0);
-  const totalCost = points * exchangeRate;
+  const dollarAmount = Math.max(parseFloat(dollars) || 0, 0);
+  const points = Math.round(dollarAmount / exchangeRate);
+  const minDollars = 5;
 
   const handleProceed = async () => {
-    if (points < 100) {
-      toast.error("Minimum purchase is 100 points");
+    if (dollarAmount < minDollars) {
+      toast.error(`Minimum purchase is $${minDollars}`);
       return;
     }
 
@@ -82,12 +83,12 @@ const BuyPointsDialog = ({ open, onOpenChange, companyId, exchangeRate }: BuyPoi
               {QUICK_OPTIONS.map((opt) => (
                 <Button
                   key={opt}
-                  variant={parseInt(quantity) === opt ? "default" : "outline"}
+                  variant={parseFloat(dollars) === opt ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setQuantity(String(opt))}
+                  onClick={() => setDollars(String(opt))}
                   className="hover:bg-muted"
                 >
-                  {opt.toLocaleString()} pts
+                  ${opt}
                 </Button>
               ))}
             </div>
@@ -95,30 +96,37 @@ const BuyPointsDialog = ({ open, onOpenChange, companyId, exchangeRate }: BuyPoi
 
           {/* Custom input */}
           <div className="space-y-2">
-            <Label htmlFor="points-qty">Points quantity</Label>
-            <Input
-              id="points-qty"
-              type="number"
-              min="100"
-              step="100"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-            />
-            {points > 0 && points < 100 && (
-              <p className="text-xs text-destructive">Minimum 100 points</p>
+            <Label htmlFor="dollar-amount">Dollar amount</Label>
+            <div className="relative w-40">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+              <Input
+                id="dollar-amount"
+                type="number"
+                min={minDollars}
+                step="1"
+                className="pl-7 w-full"
+                value={dollars}
+                onChange={(e) => setDollars(e.target.value)}
+              />
+            </div>
+            {dollarAmount > 0 && dollarAmount < minDollars && (
+              <p className="text-xs text-destructive">Minimum ${minDollars}</p>
+            )}
+            {dollarAmount >= minDollars && (
+              <p className="text-xs text-muted-foreground">= {points.toLocaleString()} points</p>
             )}
           </div>
 
           {/* Cost display */}
-          {points >= 100 && (
+          {dollarAmount >= minDollars && (
             <div className="rounded-lg bg-muted p-4 space-y-1">
               <div className="flex justify-between text-sm">
                 <span>{points.toLocaleString()} points</span>
-                <span>× ${exchangeRate.toFixed(2)}</span>
+                <span>@ ${exchangeRate.toFixed(2)}/pt</span>
               </div>
               <div className="border-t border-border pt-1 flex justify-between font-semibold">
                 <span>Total</span>
-                <span>${totalCost.toFixed(2)} USD</span>
+                <span>${dollarAmount.toFixed(2)} USD</span>
               </div>
             </div>
           )}
@@ -128,7 +136,7 @@ const BuyPointsDialog = ({ open, onOpenChange, companyId, exchangeRate }: BuyPoi
           <Button variant="outline" onClick={() => onOpenChange(false)} className="hover:bg-muted">
             Cancel
           </Button>
-          <Button onClick={handleProceed} disabled={loading || points < 100}>
+          <Button onClick={handleProceed} disabled={loading || dollarAmount < minDollars}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -82,14 +82,13 @@ const CelebrationSettingsCard = () => {
 
   // Fetch active member count
   const { data: memberCount } = useQuery({
-    queryKey: ["company-active-member-count", companyId],
+    queryKey: ["company-member-count", companyId],
     queryFn: async () => {
       if (!companyId) return 0;
       const { count, error } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
-        .eq("company_id", companyId)
-        .eq("status", "active");
+        .eq("company_id", companyId);
       if (error) throw error;
       return count || 0;
     },
@@ -335,7 +334,7 @@ const CelebrationSettingsCard = () => {
                       <span>${totalAnnualCost.toFixed(2)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Based on {employees} active employee{employees !== 1 ? "s" : ""}
+                      Based on {employees} employee{employees !== 1 ? "s" : ""}
                     </p>
                   </>
                 )}
