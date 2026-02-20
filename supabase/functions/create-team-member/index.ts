@@ -186,78 +186,58 @@ serve(async (req: Request) => {
     
     // Continue with normal member creation (slots are available)
     
-    // Check if user already exists
-    const { data: existingUsers, error: userCheckError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (userCheckError) {
-      console.error("[CREATE-TEAM-MEMBER] Error checking existing users:", userCheckError);
-      return new Response(
-        JSON.stringify({ error: "Failed to check if user already exists" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    const userExists = existingUsers.users.some((user) => 
-      user.email?.toLowerCase() === email.toLowerCase()
-    );
-    
+    // Try to create the user first, handle email_exists gracefully
     let userId: string;
     let isNewUser = false;
     let password: string | undefined;
     
-    if (userExists) {
-      // Find the existing user's ID
-      const existingUser = existingUsers.users.find(
-        (user) => user.email?.toLowerCase() === email.toLowerCase()
-      );
-      
-      if (!existingUser?.id) {
-        return new Response(
-          JSON.stringify({ error: "Found existing user but couldn't get ID" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+    password = generateSecurePassword();
+    const { firstName: parsedFirst, lastName: parsedLast } = parseFullName(name);
+    
+    const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { firstName: parsedFirst, lastName: parsedLast },
+    });
+    
+    if (createUserError) {
+      if (createUserError.message?.includes('already been registered') || 
+          (createUserError as any).code === 'email_exists') {
+        console.log("[CREATE-TEAM-MEMBER] User already exists, looking up by email");
+        // User exists - find them with increased page size
+        const { data: allUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        if (listError) {
+          console.error("[CREATE-TEAM-MEMBER] Error listing users:", listError);
+          return new Response(
+            JSON.stringify({ error: "Failed to look up existing user" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const existingUser = allUsers?.users?.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase()
         );
-      }
-      
-      userId = existingUser.id;
-      console.log("[CREATE-TEAM-MEMBER] User already exists with ID:", userId);
-    } else {
-      // Generate password for new user
-      password = generateSecurePassword();
-      console.log("[CREATE-TEAM-MEMBER] Generated secure password for new user");
-      isNewUser = true;
-      
-      // Parse name into first and last name components
-      const { firstName, lastName } = parseFullName(name);
-      
-      // Create user with admin API
-      const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true, // Skip email verification
-        user_metadata: {
-          firstName,
-          lastName,
-        },
-      });
-      
-      if (createUserError || !newUser?.user) {
+        if (!existingUser?.id) {
+          console.error("[CREATE-TEAM-MEMBER] Could not find existing user by email");
+          return new Response(
+            JSON.stringify({ error: "User exists but could not be found" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        userId = existingUser.id;
+        isNewUser = false;
+        password = undefined;
+        console.log("[CREATE-TEAM-MEMBER] Found existing user with ID:", userId);
+      } else {
         console.error("[CREATE-TEAM-MEMBER] Error creating user:", createUserError);
         return new Response(
           JSON.stringify({ error: "Failed to create user account" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+    } else {
       userId = newUser.user.id;
+      isNewUser = true;
       console.log("[CREATE-TEAM-MEMBER] Created new user with ID:", userId);
     }
     
