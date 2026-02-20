@@ -304,7 +304,6 @@ Deno.serve(async (req) => {
                     fname: member.first_name || 'Team Member',
                     rewardType: 'anniversary',
                     points: company.anniversary_reward_points,
-                    yearsOfService: yearsOfService,
                   }
                 })
               })

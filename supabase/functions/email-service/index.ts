@@ -26,7 +26,7 @@ const getBrevoTemplateId = (type: string): number => {
     case 'redemption':
       return 10; // Gift card redemption confirmation template
     case 'celebration':
-      return 11; // Birthday/anniversary celebration template
+      return 12; // Birthday/anniversary celebration template
     default:
       throw new Error(`Unsupported email type: ${type}`);
   }
