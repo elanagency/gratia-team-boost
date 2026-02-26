@@ -10,7 +10,7 @@ const Terms = () => {
       <div className="pt-32 pb-20 px-4 sm:px-8 flex-1">
         <div className="container mx-auto max-w-4xl">
           <div className="prose prose-lg max-w-none">
-            <h1 className="text-4xl font-bold text-center mb-8 text-gray-900">Grattia Terms of Service</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold text-center mb-8 text-gray-900">Grattia Terms of Service</h1>
             <p className="text-center text-gray-500 mb-12"><strong>Effective Date:</strong> 8/1/2025</p>
             
             <section className="mb-8">
