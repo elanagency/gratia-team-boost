@@ -1,23 +1,26 @@
 
 
-# New "The Solution" Transition Section
-
-## Design from Figma
-
-- **Background gradient**: Fades from white (`#FFFFFF`) at top to light purple (`#F5F3FF`) — creating a smooth transition before the dark sections
-- **"The Solution" pill badge**: Centered, with a sparkle/asterisk icon, rounded-full, border `#FFFFFF40`, background `#FFFFFF20`, shadow that pulsates (grows outward then fades, repeating)
-- **Heading**: "Make recognition a daily habit, not an annual obligation." — Poppins, ~48px bold, `#0F0D33`, centered
-- **Subtitle**: "Empower your team to celebrate wins instantly. Turn moments into actionable data and see your culture in real-time." — ~20px, `#0F0D33` at 80% opacity, centered
-- **Padding**: 96px top, large horizontal padding (~328px), centered content
-- Substantial vertical whitespace below the subtitle
+# TheSolution Section Refinements
 
 ## Changes
 
-1. **Create `src/components/TheSolution.tsx`** — New component with:
-   - `bg-gradient-to-b from-white to-[#F5F3FF]` background
-   - Centered pill badge with sparkle icon and a CSS `@keyframes` pulsating box-shadow animation
-   - Heading and subtitle as described
-   - Generous vertical padding (~96px top, large bottom)
+1. **Copy Grattia symbol** to `src/assets/grattia-symbol.png` and import it in TheSolution.tsx, replacing the `<Sparkles>` icon.
 
-2. **Update `src/pages/Index.tsx`** — Insert `<TheSolution />` between `<ProblemStatement />` and the dark `<div>` block (replacing the hard white-to-dark transition with this smooth fade)
+2. **Update pulse-shadow animation in `tailwind.config.ts`**:
+   - Make it one-directional (expand out only, then reset) instead of pulsing in and out
+   - Slow it down significantly (~4-5s duration)
+   - Keyframes: `0%` starts with no shadow, expands outward through the cycle, then resets at 100%
+
+3. **Update `src/components/TheSolution.tsx`**:
+   - Replace `<Sparkles>` with the imported Grattia symbol image (~16px)
+
+### Animation keyframes change
+```
+'pulse-shadow': {
+  '0%': { boxShadow: '0 0 0 0 rgba(94, 44, 165, 0.35)' },
+  '70%': { boxShadow: '0 0 0 14px rgba(94, 44, 165, 0)' },
+  '100%': { boxShadow: '0 0 0 0 rgba(94, 44, 165, 0)' },
+}
+// Duration: 4s
+```
 
