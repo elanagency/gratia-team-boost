@@ -66,11 +66,11 @@ const SlackFeedSection = () => {
           >
             <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               {/* Slack header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#F8F7FC' }}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#350D36' }}>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm" style={{ color: '#0F0D33' }}># recognition</span>
+                  <span className="font-bold text-sm text-white"># recognition</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-white/70">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   <span>42</span>
                 </div>
@@ -110,7 +110,7 @@ const SlackFeedSection = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-bold leading-tight mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6" style={{ color: '#0F0D33' }}>
               Celebrations that show up right in Slack and Teams
             </h2>
             <p className="text-lg md:text-xl leading-relaxed mb-8" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>

@@ -71,7 +71,7 @@ const RecognitionDemo = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-bold leading-tight mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6" style={{ color: '#0F0D33' }}>
               Recognition that becomes part of how your team works
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
