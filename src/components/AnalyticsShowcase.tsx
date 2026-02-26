@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp } from 'lucide-react';
 
 interface MetricState {
-  metricIndex: number; // 0-3 for dot indicators
+  metricIndex: number;
   title: string;
   bigNumber: string;
   trendLabel: string;
@@ -11,9 +11,11 @@ interface MetricState {
   barColor: string;
   barColorLight: string;
   labels: string[];
-  heights: number[]; // percentages 0-100
-  tooltipBar: number; // which bar gets the tooltip
-  tooltipText: string;
+  heights: number[];
+  tooltipBar: number;
+  tooltipName: string;
+  tooltipValue: string;
+  tooltipLabel: string;
 }
 
 const STATES: MetricState[] = [
@@ -28,7 +30,9 @@ const STATES: MetricState[] = [
     labels: ['Eng', 'Sales', 'Mktg', 'HR', 'Prod'],
     heights: [78, 94, 65, 82, 70],
     tooltipBar: 1,
-    tooltipText: '94% Participation Rate',
+    tooltipName: 'Sales',
+    tooltipValue: '94%',
+    tooltipLabel: 'Participation Rate',
   },
   {
     metricIndex: 0,
@@ -41,7 +45,9 @@ const STATES: MetricState[] = [
     labels: ['Sarah', 'Mike', 'Jess', 'David', 'Emily'],
     heights: [92, 68, 85, 55, 78],
     tooltipBar: 0,
-    tooltipText: '92% Participation',
+    tooltipName: 'Sarah J.',
+    tooltipValue: '92%',
+    tooltipLabel: 'Participation',
   },
   {
     metricIndex: 1,
@@ -54,7 +60,9 @@ const STATES: MetricState[] = [
     labels: ['Sarah', 'Mike', 'Jess', 'David', 'Emily'],
     heights: [95, 72, 60, 85, 50],
     tooltipBar: 0,
-    tooltipText: '45 Recognitions Received',
+    tooltipName: 'Sarah J.',
+    tooltipValue: '45',
+    tooltipLabel: 'Recognitions Received',
   },
   {
     metricIndex: 2,
@@ -67,7 +75,9 @@ const STATES: MetricState[] = [
     labels: ['Eng', 'Sales', 'Mktg', 'HR', 'Prod'],
     heights: [70, 82, 60, 95, 75],
     tooltipBar: 3,
-    tooltipText: '410 Recognitions Sent',
+    tooltipName: 'HR',
+    tooltipValue: '410',
+    tooltipLabel: 'Recognitions Sent',
   },
   {
     metricIndex: 3,
@@ -80,7 +90,9 @@ const STATES: MetricState[] = [
     labels: ['Eng', 'Sales', 'Mktg', 'HR', 'Prod'],
     heights: [58, 72, 90, 65, 48],
     tooltipBar: 2,
-    tooltipText: '65% Redemption Rate',
+    tooltipName: 'Marketing',
+    tooltipValue: '65%',
+    tooltipLabel: 'Redemption Rate',
   },
 ];
 
@@ -99,13 +111,11 @@ const AnalyticsShowcase = () => {
     setStateIndex((prev) => (prev + 1) % STATES.length);
   }, []);
 
-  // Show tooltip after bars animate
   useEffect(() => {
     const tooltipTimer = setTimeout(() => setShowTooltip(true), 800);
     return () => clearTimeout(tooltipTimer);
   }, [stateIndex]);
 
-  // Hold then advance
   useEffect(() => {
     const timer = setTimeout(advance, HOLD_TIME);
     return () => clearTimeout(timer);
@@ -163,9 +173,9 @@ const AnalyticsShowcase = () => {
                     key={label}
                     className="px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300"
                     style={{
-                      border: current.toggle === label ? `1.5px solid ${current.barColor}` : '1.5px solid #E5E7EB',
+                      border: current.toggle === label ? `1.5px solid ${current.barColor}` : '1.5px solid transparent',
                       color: current.toggle === label ? current.barColor : '#9CA3AF',
-                      backgroundColor: current.toggle === label ? `${current.barColor}08` : 'transparent',
+                      backgroundColor: 'transparent',
                     }}
                   >
                     {label}
@@ -177,26 +187,38 @@ const AnalyticsShowcase = () => {
               <div className="flex items-end justify-between gap-3 h-[160px] relative">
                 {current.labels.map((label, i) => (
                   <div key={`${barsKey}-${i}`} className="flex-1 flex flex-col items-center relative h-full justify-end">
-                    {/* Tooltip */}
+                    {/* Tooltip — light card style */}
                     <AnimatePresence>
                       {showTooltip && current.tooltipBar === i && (
                         <motion.div
-                          initial={{ opacity: 0, y: 4 }}
+                          initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 4 }}
+                          exit={{ opacity: 0, y: 6 }}
                           transition={{ duration: 0.3 }}
-                          className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-10"
+                          className="absolute -top-4 left-1/2 -translate-x-1/2 z-10"
+                          style={{ minWidth: 'max-content' }}
                         >
-                          <div
-                            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white shadow-md"
-                            style={{ backgroundColor: current.barColor }}
-                          >
-                            {current.tooltipText}
+                          <div className="bg-white rounded-xl px-3 py-2 shadow-lg border border-gray-100">
+                            <p className="text-[10px] font-medium text-gray-400 leading-tight">
+                              {current.tooltipName}
+                            </p>
+                            <p className="text-[11px] leading-tight mt-0.5">
+                              <span className="font-bold" style={{ color: '#0F0D33' }}>
+                                {current.tooltipValue}
+                              </span>
+                              {' '}
+                              <span className="font-medium" style={{ color: current.barColor }}>
+                                {current.tooltipLabel}
+                              </span>
+                            </p>
                           </div>
-                          <div
-                            className="w-2 h-2 rotate-45 mx-auto -mt-1"
-                            style={{ backgroundColor: current.barColor }}
-                          />
+                          {/* Arrow */}
+                          <div className="flex justify-center -mt-[1px]">
+                            <div
+                              className="w-2.5 h-2.5 rotate-45 border-r border-b border-gray-100"
+                              style={{ backgroundColor: '#ffffff' }}
+                            />
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
