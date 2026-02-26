@@ -8,6 +8,7 @@ import BrandCatalogSection from "@/components/BrandCatalogSection";
 import AnalyticsShowcase from "@/components/AnalyticsShowcase";
 import ReviewCyclesSection from "@/components/ReviewCyclesSection";
 import CelebrationsSection from "@/components/CelebrationsSection";
+import PricingSection from "@/components/PricingSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -24,6 +25,7 @@ const Index = () => {
         <AnalyticsShowcase />
         <ReviewCyclesSection />
         <CelebrationsSection />
+        <PricingSection />
       </main>
       <Footer />
     </div>
