@@ -1,20 +1,16 @@
 
 
-# Update FAQ Section Content to Match Figma Design
+# Update FAQ Rewards & Scale Content to Match Figma
 
 ## Changes to `src/components/FAQSection.tsx`
 
-### 1. Update FAQ content for "Adoption & Usage"
-Replace current questions with:
-- "What if our employees don't use it?" → "The platforms that go unused are the ones that feel like extra work. Grattia lives inside Slack and Teams, takes 30 seconds to use, and taps into something people genuinely want to do. Appreciate each other. Adoption tends to happen naturally once the first few recognitions go out and the whole team can see them."
-- "We already do shoutouts in Slack. Why do we need this?" → "Informal recognition is a great start, but it disappears. It doesn't get logged, it doesn't carry into performance reviews, and leadership has no visibility into it. Grattia keeps the spirit of what you're already doing and makes it permanent, measurable, and useful across your entire HR function."
+### 1. Replace "Rewards" category content (4 questions)
+- "How do employees redeem their points?" → "Employees log into Grattia and choose from 300+ gift card options across top brands. Redemptions are instant and there are no redemption fees ever."
+- "Are gift cards an additional cost?" → "No. When an employee redeems their points for a gift card, there is no additional charge to anyone. The value is already covered by the points included in your monthly seat cost. What you pay for your seats is what funds the rewards. Nothing extra, ever."
+- "Do giving points expire?" → "Yes. Every employee receives 100 fresh points at the start of each month, and unspent points reset when the new month begins. This is intentional. It keeps recognition flowing consistently rather than being saved up and forgotten. Think of it less like a budget and more like a habit. A little appreciation, spread around often, does more for your culture than a big gesture once in a while."
+- "What happens to earned reward points if an employee hasn't redeemed them?" → "Earned reward points accumulate in each employee's account until they're ready to redeem. There's no expiry pressure that would make the reward feel hollow."
 
-### 2. Update FAQ content for "Integrations & Setup"
-Replace current questions with:
-- "Does it work with Slack and Microsoft Teams?" → "Yes. Recognitions sent in Grattia surface directly in your Slack or Teams channels so the whole team can celebrate together in real time."
-- "Do we need IT involved to set this up?" → "No. Grattia requires zero IT involvement. Any HR or people team leader can set it up independently without raising a single ticket."
-- "How long does it take to get set up?" → "Most teams are live the same day they sign up. Grattia is fully self-serve with no IT involvement required. Import your team, connect Slack or Teams, set your company values, and you're ready to go."
-
-### 3. Style: active category tab
-Make the active tab wider/fuller rounded pill to match the Figma (currently looks close but ensure padding matches the wider pill style shown).
+### 2. Replace "Scale" category content (2 questions)
+- "We're a small team right now. Is Grattia worth it at our size?" → "Recognition culture is actually easier to build early than to fix later. Starting with Grattia when your team is small means the habit is already embedded by the time you scale. The earlier you start, the stronger the culture foundation."
+- "What happens when we grow past 500 employees?" → "Grattia's standard pricing applies up to 500 seats. Beyond that we offer volume-based pricing. Reach out and we'll put together a straightforward quote with no surprises."
 
