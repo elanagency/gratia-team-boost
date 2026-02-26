@@ -32,26 +32,31 @@ const faqData: Record<string, { question: string; answer: string }[]> = {
   ],
   "Adoption & Usage": [
     {
-      question: "How long does it take to see results?",
+      question: "What if our employees don't use it?",
       answer:
-        "Most teams see a noticeable increase in peer recognition within the first two weeks. The monthly points reset creates a natural rhythm that keeps engagement consistent.",
+        "The platforms that go unused are the ones that feel like extra work. Grattia lives inside Slack and Teams, takes 30 seconds to use, and taps into something people genuinely want to do. Appreciate each other. Adoption tends to happen naturally once the first few recognitions go out and the whole team can see them.",
     },
     {
-      question: "What if some team members don't participate?",
+      question: "We already do shoutouts in Slack. Why do we need this?",
       answer:
-        "That's completely normal at first. As recognition flows increase and people start receiving points, participation tends to grow organically. The leaderboard and feed features also help drive engagement.",
+        "Informal recognition is a great start, but it disappears. It doesn't get logged, it doesn't carry into performance reviews, and leadership has no visibility into it. Grattia keeps the spirit of what you're already doing and makes it permanent, measurable, and useful across your entire HR function.",
     },
   ],
   "Integrations & Setup": [
     {
-      question: "How long does setup take?",
+      question: "Does it work with Slack and Microsoft Teams?",
       answer:
-        "About 5 minutes. Connect your Slack or Teams workspace, invite your team, and you're ready to go. No IT involvement needed.",
+        "Yes. Recognitions sent in Grattia surface directly in your Slack or Teams channels so the whole team can celebrate together in real time.",
     },
     {
-      question: "Does it work with both Slack and Microsoft Teams?",
+      question: "Do we need IT involved to set this up?",
       answer:
-        "Yes. Grattia integrates natively with both Slack and Microsoft Teams, so your team can send recognition right where they already work.",
+        "No. Grattia requires zero IT involvement. Any HR or people team leader can set it up independently without raising a single ticket.",
+    },
+    {
+      question: "How long does it take to get set up?",
+      answer:
+        "Most teams are live the same day they sign up. Grattia is fully self-serve with no IT involvement required. Import your team, connect Slack or Teams, set your company values, and you're ready to go.",
     },
   ],
   Rewards: [
@@ -102,7 +107,7 @@ const FAQSection = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-colors text-left ${
+                className={`whitespace-nowrap px-6 py-3 rounded-full text-sm font-medium transition-colors text-left w-full ${
                   activeCategory === cat
                     ? "text-white"
                     : "hover:bg-muted"
