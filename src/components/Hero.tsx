@@ -1,53 +1,35 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import ProductAnimation from '@/components/ProductAnimation';
+import RecognitionCarousel from '@/components/hero/RecognitionCarousel';
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center px-4 py-20 overflow-hidden pt-32 lg:pt-20">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-[#7A1BF7]/20 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-[#FC36FF]/20 rounded-full blur-3xl"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-80 h-80 bg-[#00C2FF]/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.3, 1], x: [-100, 100, -100], y: [-50, 50, -50] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
+    <section className="relative min-h-screen flex items-center px-4 py-20 pt-32 lg:pt-20 bg-white">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10 w-full">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
           className="text-center lg:text-left space-y-8"
         >
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-5xl md:text-7xl font-bold leading-tight"
+            className="text-5xl md:text-[64px] font-extrabold leading-[115%] text-[#0F0D33]"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
-            Make Recognition
-            <span className="block text-gradient">Fun & Meaningful</span>
+            Recognition Shouldn't Be Reserved for Review Season
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-lg md:text-xl hero-text-color max-w-2xl mx-auto lg:mx-0"
+            className="text-lg md:text-xl text-gray-500 max-w-xl mx-auto lg:mx-0"
           >
-            Empower employees to recognize each other, earn points, and redeem exciting gift cards! 🎉
+            Grattia helps teams feel recognized daily while providing HR and leadership with real-time culture insights.
           </motion.p>
 
           <motion.div
@@ -64,16 +46,23 @@ const Hero = () => {
                 Get Started
               </Button>
             </Link>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-[#0F0D33] text-[#0F0D33] hover:bg-gray-50 px-8 py-6 text-lg rounded-full transition-all duration-300"
+            >
+              Book a Demo
+            </Button>
           </motion.div>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-          className="relative h-96 flex items-center justify-center w-full"
+          transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' }}
+          className="relative flex items-center justify-center w-full"
         >
-          <ProductAnimation />
+          <RecognitionCarousel />
         </motion.div>
       </div>
     </section>

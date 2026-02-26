@@ -3,30 +3,56 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="fixed top-0 left-0 right-0 z-50 bg-[#0F0533]/80 backdrop-blur-lg"
+      className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/a81380be-c852-4afc-a6f8-7b72de94f671.png" 
-              alt="Grattia Logo" 
-              className="h-8" 
+            <img
+              src="/lovable-uploads/logo-grattia.png"
+              alt="Grattia Logo"
+              className="h-8"
             />
           </div>
+
+          <nav className="hidden md:flex items-center gap-8">
+            <button
+              onClick={() => scrollToSection('features')}
+              className="text-[#0F0D33]/70 hover:text-[#0F0D33] font-medium text-sm transition-colors"
+            >
+              Features
+            </button>
+            <button
+              onClick={() => scrollToSection('pricing')}
+              className="text-[#0F0D33]/70 hover:text-[#0F0D33] font-medium text-sm transition-colors"
+            >
+              Pricing
+            </button>
+            <button
+              onClick={() => scrollToSection('faqs')}
+              className="text-[#0F0D33]/70 hover:text-[#0F0D33] font-medium text-sm transition-colors"
+            >
+              FAQs
+            </button>
+          </nav>
+
           <div className="flex items-center gap-4">
             <Link to="/login">
               <Button
                 variant="ghost"
-                className="text-white hover:bg-white/10"
+                className="text-[#0F0D33] hover:bg-gray-100"
               >
-                Login
+                Log In
               </Button>
             </Link>
             <Link to="/signup">
