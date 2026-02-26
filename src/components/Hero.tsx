@@ -5,7 +5,7 @@ import RecognitionCarousel from '@/components/hero/RecognitionCarousel';
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center px-4 py-20 pt-32 lg:pt-20 bg-white">
+    <section className="relative min-h-screen flex items-center px-6 md:px-[136px] pt-48 pb-36 bg-white">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10 w-full">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -27,9 +27,9 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-lg md:text-xl text-gray-500 max-w-xl mx-auto lg:mx-0"
+            className="text-[20px] font-medium leading-[162.5%] text-[#9996AA] max-w-[570px] mx-auto lg:mx-0"
           >
-            Grattia helps teams feel recognized daily while providing HR and leadership with real-time culture insights.
+            Grattia helps your team feel seen every day, while giving HR and leadership the real-time data to build a culture people want to stay in.
           </motion.p>
 
           <motion.div
@@ -41,7 +41,7 @@ const Hero = () => {
             <Link to="/signup">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-[#FC36FF] to-[#7A1BF7] hover:from-[#fd5eff] hover:to-[#8c3cff] text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-[#FC36FF] via-[#7F78F8] to-[#71F8F7] hover:opacity-90 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Get Started
               </Button>
@@ -49,7 +49,7 @@ const Hero = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-2 border-[#0F0D33] text-[#0F0D33] hover:bg-gray-50 px-8 py-6 text-lg rounded-full transition-all duration-300"
+              className="border border-[#0F0D33] text-[#0F0D33] hover:bg-gray-50 px-8 py-6 text-lg rounded-full transition-all duration-300"
             >
               Book a Demo
             </Button>
