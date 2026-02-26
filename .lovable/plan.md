@@ -1,36 +1,21 @@
 
 
-## Update public pages to new light theme
+## Refine AnalyticsShowcase bar chart to match Figma
 
-Pages still using old dark design: **Terms**, **Privacy**, **ForgotPassword**, **ResetPassword**. NotFound is already light-themed but could use branding.
+### Current vs Figma differences
 
-### Changes
+1. **Tooltip style**: Currently a colored pill with white text. Figma shows a light card with subtle border/shadow — name on first line (gray), bold number + metric label on second line (colored metric text).
+2. **Tooltip content**: Currently single line like "94% Participation Rate". Figma shows two lines: "Sarah J." then "**45** Recognitions Received" (or "Sales" then "**94%** Participation Rate").
+3. **Tooltip position**: Currently centered above bar. Figma shows it offset to the side, anchored near the bar top.
+4. **Toggle styling**: Figma shows the active toggle with a subtle rounded-pill border, inactive is plain text — current implementation already close but the active state in Figma appears as a bordered pill (not colored background).
 
-#### 1. `src/pages/Terms.tsx`
-- White background, black text
-- Replace `<Navbar />` with `<Header />`
-- Replace `<Footer />` with `<AuthFooter />` (or keep full `<Footer />` — these are content pages, full footer makes more sense)
-- Section headings keep `text-grattia-accent`
-- Add `pt-32` for fixed header clearance
+### Changes to `src/components/AnalyticsShowcase.tsx`
 
-#### 2. `src/pages/Privacy.tsx`
-- Same treatment as Terms: white bg, black text, `<Header />`, full `<Footer />`, `pt-32`
-
-#### 3. `src/pages/ForgotPassword.tsx`
-- White background, black/dark text
-- Replace `<Navbar />` with `<Header />`
-- Replace `<Footer />` with `<AuthFooter />`
-- Gradient button (`from-[#FC36FF] via-[#7F78F8] to-[#71F8F7]` rounded-full)
-- Uppercase label, light-themed input (white bg, gray border)
-- `pt-32` for header, update both views (form + email-sent confirmation)
-
-#### 4. `src/pages/ResetPassword.tsx`
-- Same light treatment across all 3 states (loading, invalid, form)
-- Replace `<Navbar />` with `<Header />`, `<Footer />` with `<AuthFooter />`
-- Gradient buttons, light inputs, uppercase labels, `pt-32`
-
-#### 5. `src/pages/NotFound.tsx`
-- Add `<Header />` and `<AuthFooter />`
-- Style the "Return to Home" as a gradient button
-- `pt-32` for header
+1. **Update STATES data** — split tooltip into `tooltipName` (e.g. "Sales", "Sarah J.") and `tooltipValue` + `tooltipLabel` (e.g. "94%", "Participation Rate")
+2. **Restyle tooltip** — white background card with subtle shadow/border, two-line layout:
+   - Line 1: name in gray text (small)
+   - Line 2: bold value + colored metric label
+   - Small caret/arrow pointing down
+3. **Tooltip positioning** — keep above bar but left-aligned or offset to match Figma feel
+4. **Toggle pills** — refine to use a light bordered pill for active state (border color matching the bar color), plain gray text for inactive
 
