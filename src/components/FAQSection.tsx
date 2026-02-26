@@ -61,26 +61,36 @@ const faqData: Record<string, { question: string; answer: string }[]> = {
   ],
   Rewards: [
     {
-      question: "What gift cards are available?",
+      question: "How do employees redeem their points?",
       answer:
-        "We offer a curated catalog of popular brands including Amazon, Starbucks, Nike, Visa, and many more. Team members choose the rewards that matter most to them.",
+        "Employees log into Grattia and choose from 300+ gift card options across top brands. Redemptions are instant and there are no redemption fees ever.",
     },
     {
-      question: "Are there any redemption fees?",
+      question: "Are gift cards an additional cost?",
       answer:
-        "Never. When your team redeems points for gift cards, 100% of the value goes to them. No markups, no processing fees, no hidden charges.",
+        "No. When an employee redeems their points for a gift card, there is no additional charge to anyone. The value is already covered by the points included in your monthly seat cost. What you pay for your seats is what funds the rewards. Nothing extra, ever.",
+    },
+    {
+      question: "Do giving points expire?",
+      answer:
+        "Yes. Every employee receives 100 fresh points at the start of each month, and unspent points reset when the new month begins. This is intentional. It keeps recognition flowing consistently rather than being saved up and forgotten. Think of it less like a budget and more like a habit. A little appreciation, spread around often, does more for your culture than a big gesture once in a while.",
+    },
+    {
+      question: "What happens to earned reward points if an employee hasn't redeemed them?",
+      answer:
+        "Earned reward points accumulate in each employee's account until they're ready to redeem. There's no expiry pressure that would make the reward feel hollow.",
     },
   ],
   Scale: [
     {
-      question: "Can Grattia handle large teams?",
+      question: "We're a small team right now. Is Grattia worth it at our size?",
       answer:
-        "Absolutely. Grattia is built to scale from small teams to organizations with hundreds of employees. For teams over 500, contact us for volume pricing.",
+        "Recognition culture is actually easier to build early than to fix later. Starting with Grattia when your team is small means the habit is already embedded by the time you scale. The earlier you start, the stronger the culture foundation.",
     },
     {
-      question: "Can we add or remove team members anytime?",
+      question: "What happens when we grow past 500 employees?",
       answer:
-        "Yes. Billing adjusts automatically with prorated charges when you add members, and scales down when you remove them.",
+        "Grattia's standard pricing applies up to 500 seats. Beyond that we offer volume-based pricing. Reach out and we'll put together a straightforward quote with no surprises.",
     },
   ],
 };
