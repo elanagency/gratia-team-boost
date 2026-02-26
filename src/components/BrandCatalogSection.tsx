@@ -1,23 +1,58 @@
 import { motion } from 'framer-motion';
+import nikeLogo from '@/assets/brands/nike.png';
+import visaLogo from '@/assets/brands/visa.png';
+import amazonLogo from '@/assets/brands/amazon.png';
+import appleLogo from '@/assets/brands/apple.png';
+import nordstromLogo from '@/assets/brands/nordstrom.png';
+import airbnbLogo from '@/assets/brands/airbnb.png';
+import starbucksLogo from '@/assets/brands/starbucks.png';
 
-const BRANDS_ROW1 = ['Nike', 'Visa', 'Amazon', 'Apple', 'Nordstrom', 'Airbnb', 'Starbucks', 'Target'];
-const BRANDS_ROW2 = ['Uber', 'Sephora', 'DoorDash', 'Spotify', 'Netflix', 'Adidas', 'Walmart', 'Lululemon'];
+interface Brand {
+  name: string;
+  logo?: string;
+}
 
-function BrandCard({ name }: { name: string }) {
+const BRANDS_ROW1: Brand[] = [
+  { name: 'Nike', logo: nikeLogo },
+  { name: 'Visa', logo: visaLogo },
+  { name: 'Amazon', logo: amazonLogo },
+  { name: 'Apple', logo: appleLogo },
+  { name: 'Nordstrom', logo: nordstromLogo },
+  { name: 'Airbnb', logo: airbnbLogo },
+  { name: 'Starbucks', logo: starbucksLogo },
+  { name: 'Target' },
+];
+
+const BRANDS_ROW2: Brand[] = [
+  { name: 'Uber' },
+  { name: 'Sephora' },
+  { name: 'DoorDash' },
+  { name: 'Spotify' },
+  { name: 'Netflix' },
+  { name: 'Adidas' },
+  { name: 'Walmart' },
+  { name: 'Lululemon' },
+];
+
+function BrandCard({ brand }: { brand: Brand }) {
   return (
     <div className="flex-shrink-0 w-[140px] h-[80px] bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center mx-2">
-      <span className="text-sm font-semibold tracking-tight" style={{ color: '#0F0D33' }}>{name}</span>
+      {brand.logo ? (
+        <img src={brand.logo} alt={brand.name} className="max-h-[40px] max-w-[100px] object-contain" />
+      ) : (
+        <span className="text-sm font-semibold tracking-tight" style={{ color: '#0F0D33' }}>{brand.name}</span>
+      )}
     </div>
   );
 }
 
-function MarqueeRow({ brands, direction }: { brands: string[]; direction: 'left' | 'right' }) {
+function MarqueeRow({ brands, direction }: { brands: Brand[]; direction: 'left' | 'right' }) {
   const doubled = [...brands, ...brands];
   return (
     <div className="overflow-hidden">
       <div className={direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'} style={{ display: 'flex', width: 'max-content' }}>
         {doubled.map((brand, i) => (
-          <BrandCard key={`${brand}-${i}`} name={brand} />
+          <BrandCard key={`${brand.name}-${i}`} brand={brand} />
         ))}
       </div>
     </div>
@@ -29,7 +64,6 @@ const BrandCatalogSection = () => {
     <section className="relative py-24 md:py-32 overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Left column — Text */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -44,7 +78,6 @@ const BrandCatalogSection = () => {
             </p>
           </motion.div>
 
-          {/* Right column — Brand grid card */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
