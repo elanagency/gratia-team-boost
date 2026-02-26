@@ -5,7 +5,6 @@ import amazonLogo from '@/assets/brands/amazon.png';
 import appleLogo from '@/assets/brands/apple.png';
 import nordstromLogo from '@/assets/brands/nordstrom.png';
 import airbnbLogo from '@/assets/brands/airbnb.png';
-import starbucksLogo from '@/assets/brands/starbucks.png';
 
 interface Brand {
   name: string;
@@ -19,19 +18,6 @@ const BRANDS_ROW1: Brand[] = [
   { name: 'Apple', logo: appleLogo },
   { name: 'Nordstrom', logo: nordstromLogo },
   { name: 'Airbnb', logo: airbnbLogo },
-  { name: 'Starbucks', logo: starbucksLogo },
-  { name: 'Target' },
-];
-
-const BRANDS_ROW2: Brand[] = [
-  { name: 'Uber' },
-  { name: 'Sephora' },
-  { name: 'DoorDash' },
-  { name: 'Spotify' },
-  { name: 'Netflix' },
-  { name: 'Adidas' },
-  { name: 'Walmart' },
-  { name: 'Lululemon' },
 ];
 
 function BrandCard({ brand }: { brand: Brand }) {
@@ -87,7 +73,6 @@ const BrandCatalogSection = () => {
           >
             <div className="w-full max-w-[520px] rounded-2xl p-6 flex flex-col gap-4" style={{ backgroundColor: '#F5F5F7' }}>
               <MarqueeRow brands={BRANDS_ROW1} direction="left" />
-              <MarqueeRow brands={BRANDS_ROW2} direction="right" />
             </div>
           </motion.div>
         </div>
