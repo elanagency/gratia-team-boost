@@ -1,21 +1,19 @@
 
 
-# Use Actual Brand Logos in Rewards Catalog
+# Fix Cropped Brand Logos
+
+The brand cards are getting clipped at the edges of the gray container because the `overflow: hidden` on the `MarqueeRow` wrapper clips cards that are partially visible at the container edges. The logos themselves inside the cards also need more padding room.
 
 ## Changes
 
-### 1. Copy uploaded brand logos to `src/assets/brands/`
-- `user-uploads://Image_Brand_Logo_-1.png` → Nike
-- `user-uploads://Image_Brand_Logo_-2.png` → Visa
-- `user-uploads://Image_Brand_Logo.png` → Amazon
-- `user-uploads://Image_Brand_Logo_-5.png` → Apple
-- `user-uploads://Image_Brand_Logo_-6.png` → Nordstrom
-- `user-uploads://Image_Brand_Logo_-4.png` → Airbnb
-- `user-uploads://Image_Brand_Logo_-3.png` → (appears to be another brand, possibly Lululemon or similar)
+### `src/components/BrandCatalogSection.tsx`
 
-### 2. Update `src/components/BrandCatalogSection.tsx`
-- Import all brand logo images from `src/assets/brands/`
-- Change `BRANDS_ROW1` and `BRANDS_ROW2` from string arrays to objects with `name` and `logo` properties
-- Update `BrandCard` to render an `<img>` tag instead of text, with the brand name as alt text
-- Keep text fallback for brands without uploaded logos (Starbucks, Target, Uber, Sephora, DoorDash, Spotify, Netflix, Adidas, Walmart, Lululemon)
+1. **Add vertical padding to the marquee overflow container** -- change `overflow-hidden` div to include `py-1` so the top/bottom of card shadows and borders aren't clipped.
+2. **Add horizontal padding** to the overflow container so cards at the edges aren't clipped -- add `px-1` as well.
+3. **Increase logo max dimensions** slightly from `max-h-[40px] max-w-[100px]` to `max-h-[36px] max-w-[90px]` with `p-3` padding on the card to ensure logos have breathing room and aren't touching card edges.
+
+Specifically:
+- On the `BrandCard` wrapper div (line 39): add `p-3` padding inside the card
+- On the `MarqueeRow` overflow div (line 52): add `py-1` to prevent vertical clipping of card borders/shadows
+- Keep `object-contain` on images to prevent any distortion
 
