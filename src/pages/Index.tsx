@@ -4,6 +4,7 @@ import ProblemStatement from "@/components/ProblemStatement";
 import TheSolution from "@/components/TheSolution";
 import RecognitionDemo from "@/components/RecognitionDemo";
 import SlackFeedSection from "@/components/SlackFeedSection";
+import BrandCatalogSection from "@/components/BrandCatalogSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -16,6 +17,7 @@ const Index = () => {
         <TheSolution />
         <RecognitionDemo />
         <SlackFeedSection />
+        <BrandCatalogSection />
       </main>
       <Footer />
     </div>

@@ -129,23 +129,33 @@ export default {
 						boxShadow: '0 0 0 0 rgba(94, 44, 165, 0)',
 					},
 				},
-				'slack-scroll': {
-					'0%': {
-						transform: 'translateY(0)',
-					},
-					'100%': {
-						transform: 'translateY(-50%)',
-					},
+			'slack-scroll': {
+				'0%': {
+					transform: 'translateY(0)',
+				},
+				'100%': {
+					transform: 'translateY(-50%)',
 				},
 			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.5s ease-out',
-				'scale-in': 'scale-in 0.4s ease-out',
-				'pulse-shadow': 'pulse-shadow 4s ease-out infinite',
-				'slack-scroll': 'slack-scroll 30s linear infinite',
-			}
+			'scroll-left': {
+				'0%': { transform: 'translateX(0)' },
+				'100%': { transform: 'translateX(-50%)' },
+			},
+			'scroll-right': {
+				'0%': { transform: 'translateX(-50%)' },
+				'100%': { transform: 'translateX(0)' },
+			},
+		},
+		animation: {
+			'accordion-down': 'accordion-down 0.2s ease-out',
+			'accordion-up': 'accordion-up 0.2s ease-out',
+			'fade-in': 'fade-in 0.5s ease-out',
+			'scale-in': 'scale-in 0.4s ease-out',
+			'pulse-shadow': 'pulse-shadow 4s ease-out infinite',
+			'slack-scroll': 'slack-scroll 30s linear infinite',
+			'scroll-left': 'scroll-left 28s linear infinite',
+			'scroll-right': 'scroll-right 28s linear infinite',
+		}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
