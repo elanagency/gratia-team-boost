@@ -1,20 +1,19 @@
 
 
-## Add Final CTA Section Before Footer
+## Redesign Footer to match Figma
 
-The Figma shows a large centered call-to-action section between the FAQ and the Footer. It needs to be created as a new component.
+Current footer is a simple centered layout. Figma shows a structured two-row layout.
 
-### 1. Create `src/components/FinalCTA.tsx`
-- White background, generous vertical padding (~py-32)
-- Centered bold heading: "Your people are doing great work right now." in dark navy (#0F0D33), large size (~text-5xl/text-6xl), font-weight bold
-- Two lines of subtext in lighter color:
-  - "Someone stayed late. Someone saved a project. None of that was recognized today."
-  - "Grattia makes sure it stops slipping by."
-- Two buttons side by side:
-  - "Get Started" — solid dark navy (#0F0D33) pill button, white text
-  - "Book a Demo" — outlined pill button with dark border
-- Link "Get Started" to `/signup`
+### Changes to `src/components/Footer.tsx`
 
-### 2. Update `src/pages/Index.tsx`
-- Import and add `<FinalCTA />` between `<FAQSection />` and `<Footer />`
+**Row 1** (flex, space-between, items-center):
+- Left: Grattia logo image
+- Center: Navigation links — Features, Pricing, FAQs, Contact (horizontal, text-gray-300, gap-8)
+- Right: LinkedIn icon (outlined circle with "in" icon)
+
+**Row 2** (flex, space-between, smaller text, top border or spacing):
+- Left: "© 2026 Grattia. All rights reserved." in gray-400
+- Right: "Privacy Policy" and "Terms of Service" links in gray-400
+
+Background stays `#0F0533`. Use `lucide-react` Linkedin icon. Link Privacy Policy to `/privacy`, Terms to `/terms`.
 
