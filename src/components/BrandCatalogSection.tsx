@@ -36,9 +36,9 @@ const BRANDS_ROW2: Brand[] = [
 
 function BrandCard({ brand }: { brand: Brand }) {
   return (
-    <div className="flex-shrink-0 w-[140px] h-[80px] bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center mx-2">
+    <div className="flex-shrink-0 w-[140px] h-[80px] bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center mx-2 p-3">
       {brand.logo ? (
-        <img src={brand.logo} alt={brand.name} className="max-h-[40px] max-w-[100px] object-contain" />
+        <img src={brand.logo} alt={brand.name} className="max-h-[36px] max-w-[90px] object-contain" />
       ) : (
         <span className="text-sm font-semibold tracking-tight" style={{ color: '#0F0D33' }}>{brand.name}</span>
       )}
@@ -49,7 +49,7 @@ function BrandCard({ brand }: { brand: Brand }) {
 function MarqueeRow({ brands, direction }: { brands: Brand[]; direction: 'left' | 'right' }) {
   const doubled = [...brands, ...brands];
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden py-1 px-1">
       <div className={direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'} style={{ display: 'flex', width: 'max-content' }}>
         {doubled.map((brand, i) => (
           <BrandCard key={`${brand.name}-${i}`} brand={brand} />
