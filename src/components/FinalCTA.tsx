@@ -31,7 +31,9 @@ const FinalCTA = () => {
             Get Started
           </Link>
           <a
-            href="#"
+            href="https://calendly.com/pedro-grattia/30min"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-full px-8 py-3 text-base font-medium border-2 transition-colors hover:bg-gray-50"
             style={{ borderColor: "#0F0D33", color: "#0F0D33" }}
           >
