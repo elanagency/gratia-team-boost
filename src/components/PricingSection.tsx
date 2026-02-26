@@ -15,8 +15,8 @@ const FEATURES = [
 ];
 
 const PricingSection = () => {
-  const [employees, setEmployees] = useState(25);
-  const [giftValue, setGiftValue] = useState(25);
+  const [employees, setEmployees] = useState(2);
+  const [giftValue, setGiftValue] = useState(0);
 
   const seatCost = employees * 10;
   const celebrationCost = giftValue * Math.round(employees * 0.167);
