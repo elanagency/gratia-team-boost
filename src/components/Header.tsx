@@ -1,9 +1,16 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const scrollToSection = (id: string) => {
+    if (location.pathname !== '/') {
+      navigate('/#' + id);
+      return;
+    }
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
@@ -17,13 +24,13 @@ const Header = () => {
     >
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between h-16 px-8 bg-white/40 backdrop-blur-md rounded-full border border-white/20 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08)]">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <img
               src="/lovable-uploads/grattia-logo-new.png"
               alt="Grattia Logo"
               className="h-8"
             />
-          </div>
+          </Link>
 
           <nav className="hidden md:flex items-center gap-8">
             <button
