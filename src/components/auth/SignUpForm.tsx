@@ -12,47 +12,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const formSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters."
-  }),
-  companyName: z.string().min(2, {
-    message: "Company name must be at least 2 characters."
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address."
-  })
+  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
+  companyName: z.string().min(2, { message: "Company name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
 });
 
-// Define type explicitly to avoid deep instantiation errors
-type FormValues = {
-  fullName: string;
-  companyName: string;
-  email: string;
-};
+type FormValues = { fullName: string; companyName: string; email: string };
 
 const SignUpForm = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [signupData, setSignupData] = useState<{ fullName: string; companyName: string; email: string } | null>(null);
+  const [signupData, setSignupData] = useState<FormValues | null>(null);
   const navigate = useNavigate();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      fullName: "",
-      companyName: "",
-      email: ""
-    }
+    defaultValues: { fullName: "", companyName: "", email: "" },
   });
 
   const onSubmit = async (data: FormValues) => {
     setIsSendingOtp(true);
     try {
       setSignupData(data);
-      
-      // Parse full name into first and last name
       const nameParts = data.fullName.split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
@@ -61,17 +44,10 @@ const SignUpForm = () => {
         email: data.email,
         options: {
           emailRedirectTo: `${window.location.origin}/admin`,
-          data: {
-            firstName: firstName,
-            lastName: lastName,
-            companyName: data.companyName
-          }
-        }
+          data: { firstName, lastName, companyName: data.companyName },
+        },
       });
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setIsOtpSent(true);
       toast.success("We've sent a 6-digit code to your email");
@@ -84,54 +60,33 @@ const SignUpForm = () => {
 
   const handleVerifyOtp = async () => {
     if (!signupData || otp.length !== 6) return;
-    
     setIsVerifying(true);
     try {
       const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-        email: signupData.email,
-        token: otp,
-        type: 'email'
+        email: signupData.email, token: otp, type: 'email',
       });
+      if (verifyError) throw verifyError;
 
-      if (verifyError) {
-        throw verifyError;
-      }
-
-      // Report signup to PartnerStack (non-blocking)
+      // PartnerStack (non-blocking)
       try {
         if (typeof growsumo !== 'undefined' && growsumo) {
           growsumo.data.name = signupData.fullName;
           growsumo.data.email = signupData.email;
           growsumo.data.customer_key = verifyData.user?.id || signupData.email;
           growsumo.createSignup((error, result) => {
-            if (error) {
-              console.error("PartnerStack signup tracking error:", error);
-            } else {
-              console.log("PartnerStack signup tracked successfully");
-            }
+            if (error) console.error("PartnerStack signup tracking error:", error);
           });
         }
       } catch (psError) {
         console.error("PartnerStack error:", psError);
       }
 
-      // Send welcome email via Brevo template ID 5
+      // Welcome email
       try {
         const firstName = signupData.fullName.split(" ")[0] || signupData.fullName;
-        
-        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            email: signupData.email,
-            firstName: firstName,
-            companyName: signupData.companyName
-          }
+        await supabase.functions.invoke('send-welcome-email', {
+          body: { email: signupData.email, firstName, companyName: signupData.companyName },
         });
-        
-        if (emailError) {
-          console.error("Failed to send welcome email:", emailError);
-        } else {
-          console.log("Welcome email sent successfully");
-        }
       } catch (emailError) {
         console.error("Welcome email error:", emailError);
       }
@@ -146,27 +101,21 @@ const SignUpForm = () => {
     }
   };
 
-  // Auto-verify when OTP is complete
   useEffect(() => {
-    if (otp.length === 6) {
-      handleVerifyOtp();
-    }
+    if (otp.length === 6) handleVerifyOtp();
   }, [otp]);
 
-  const handleUseDifferentEmail = () => {
-    setIsOtpSent(false);
-    setOtp("");
-    setSignupData(null);
-  };
+  const inputClass = "bg-white border-gray-300 text-gray-900 h-12 placeholder:text-gray-400";
+  const labelClass = "text-gray-700 uppercase text-xs font-semibold tracking-wider";
+  const otpSlotClass = "bg-white border-gray-300 text-gray-900 h-14 w-12 text-lg";
 
   return (
     <div className="mt-8">
-      {/* Header for Sign Up */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
           {isOtpSent ? "Check your email" : "Create your account"}
         </h1>
-        <p className="text-gray-300 text-lg">
+        <p className="text-gray-500 text-lg">
           {isOtpSent ? `We sent a 6-digit code to ${signupData?.email}` : "Join us and start recognizing your team"}
         </p>
       </div>
@@ -174,88 +123,53 @@ const SignUpForm = () => {
       {!isOtpSent ? (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Full legal name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Jane Doe"
-                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="fullName" render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelClass}>Full Legal Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jane Doe" className={inputClass} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Company name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Acme Inc."
-                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="companyName" render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelClass}>Company Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Acme Inc." className={inputClass} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Company email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="you@company.com"
-                      className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-12"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelClass}>Company Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="you@company.com" className={inputClass} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             
             <Button
               type="submit"
-              className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white h-12 text-base"
+              className="w-full h-12 text-base rounded-full bg-gradient-to-r from-[#FC36FF] via-[#7F78F8] to-[#71F8F7] hover:opacity-90 text-white shadow-lg"
               disabled={isSendingOtp}
             >
               {isSendingOtp ? "Sending Code..." : "Continue"}
             </Button>
             
             <div className="text-center">
-              <p className="text-sm text-gray-400 mt-6">
+              <p className="text-sm text-gray-500 mt-6">
                 By signing up, you agree to our{" "}
-                <Link to="/terms" className="text-[#F572FF] hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy" className="text-[#F572FF] hover:underline">
-                  Privacy Policy
-                </Link>
+                <Link to="/terms" className="text-[#F572FF] hover:underline">Terms of Service</Link>{" "}and{" "}
+                <Link to="/privacy" className="text-[#F572FF] hover:underline">Privacy Policy</Link>
               </p>
-              
-              <p className="text-sm text-gray-400 mt-4">
+              <p className="text-sm text-gray-500 mt-4">
                 Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="text-[#F572FF] hover:underline"
-                >
+                <button type="button" onClick={() => navigate("/login")} className="text-[#F572FF] hover:underline font-medium">
                   Log in
                 </button>
               </p>
@@ -265,48 +179,27 @@ const SignUpForm = () => {
       ) : (
         <div className="space-y-6">
           <div className="flex justify-center">
-            <InputOTP
-              maxLength={6}
-              value={otp}
-              onChange={setOtp}
-              disabled={isVerifying}
-            >
+            <InputOTP maxLength={6} value={otp} onChange={setOtp} disabled={isVerifying}>
               <InputOTPGroup>
-                <InputOTPSlot index={0} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
-                <InputOTPSlot index={1} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
-                <InputOTPSlot index={2} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
-                <InputOTPSlot index={3} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
-                <InputOTPSlot index={4} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
-                <InputOTPSlot index={5} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white h-14 w-12 text-lg" />
+                {[0, 1, 2, 3, 4, 5].map(i => (
+                  <InputOTPSlot key={i} index={i} className={otpSlotClass} />
+                ))}
               </InputOTPGroup>
             </InputOTP>
           </div>
 
-          {isVerifying && (
-            <p className="text-center text-gray-400 text-sm">
-              Verifying your code...
-            </p>
-          )}
+          {isVerifying && <p className="text-center text-gray-400 text-sm">Verifying your code...</p>}
 
           <div className="text-center">
-            <button
-              type="button"
-              onClick={handleUseDifferentEmail}
-              className="text-[#F572FF] hover:underline text-sm"
-              disabled={isVerifying}
-            >
+            <button type="button" onClick={() => { setIsOtpSent(false); setOtp(""); setSignupData(null); }} className="text-[#F572FF] hover:underline text-sm" disabled={isVerifying}>
               Use a different email
             </button>
           </div>
 
           <div className="text-center">
-            <p className="text-sm text-gray-400 mt-4">
+            <p className="text-sm text-gray-500 mt-4">
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="text-[#F572FF] hover:underline"
-              >
+              <button type="button" onClick={() => navigate("/login")} className="text-[#F572FF] hover:underline font-medium">
                 Log in
               </button>
             </p>

@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import AuthFooter from "@/components/auth/AuthFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
@@ -30,19 +30,12 @@ const Login = () => {
   const { user, isPlatformAdmin, isAdmin, isAdminLoading } = useAuth();
   
   useEffect(() => {
-    // If user is already logged in, check their role and redirect accordingly
     if (user && !isAdminLoading) {
-      console.log("User is already logged in, redirecting based on role");
-      
-      // Priority: Platform admin > Company admin > Team member
       if (isPlatformAdmin) {
-        console.log("Redirecting platform admin to platform dashboard");
         navigate("/platform-admin");
       } else if (isAdmin) {
-        console.log("Redirecting company admin to admin dashboard");
         navigate("/dashboard");
       } else {
-        console.log("Redirecting team member to team dashboard");
         navigate("/dashboard-team");
       }
     }
@@ -50,9 +43,7 @@ const Login = () => {
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-    },
+    defaultValues: { email: "" },
   });
 
   const onSubmit = async (data: FormValues) => {
@@ -60,13 +51,10 @@ const Login = () => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
-        options: {
-          shouldCreateUser: false,
-        },
+        options: { shouldCreateUser: false },
       });
 
       if (error) {
-        // Check if the error is because the user doesn't exist
         if (error.message.includes('Signups not allowed') || error.message.includes('otp_disabled')) {
           toast.error("We can't find an account with this email address");
           setIsSendingOtp(false);
@@ -80,7 +68,6 @@ const Login = () => {
       toast.success("Check your email for the login code!");
     } catch (error: any) {
       toast.error(error.message || "Failed to send login code");
-      console.error("OTP send error:", error);
     } finally {
       setIsSendingOtp(false);
     }
@@ -88,7 +75,6 @@ const Login = () => {
 
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-
     if (otp.length !== 6) {
       toast.error("Please enter the complete 6-digit code");
       return;
@@ -97,31 +83,16 @@ const Login = () => {
     setIsVerifying(true);
     try {
       const { data: authData, error } = await supabase.auth.verifyOtp({
-        email: userEmail,
-        token: otp,
-        type: 'email',
+        email: userEmail, token: otp, type: 'email',
       });
+      if (error) throw error;
 
-      if (error) {
-        throw error;
-      }
-
-      // Check user status immediately after OTP verification
       if (authData.user) {
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('status')
-          .eq('id', authData.user.id)
-          .single();
+          .from('profiles').select('status').eq('id', authData.user.id).single();
+        if (profileError) throw profileError;
 
-        if (profileError) {
-          console.error("Error checking user status:", profileError);
-          throw profileError;
-        }
-
-        // Block deactivated users
         if (profileData?.status === 'deactivated') {
-          console.log("Deactivated user attempted to login, signing out");
           await supabase.auth.signOut();
           toast.error("Your account has been deactivated. Please contact your administrator.");
           setOtp("");
@@ -130,51 +101,42 @@ const Login = () => {
         }
       }
 
-      // Record login event for analytics
       if (authData.user) {
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('id', authData.user.id)
-          .single();
-          
+          .from('profiles').select('company_id').eq('id', authData.user.id).single();
         if (profile?.company_id) {
           await supabase.from('login_events').insert({
-            user_id: authData.user.id,
-            company_id: profile.company_id,
+            user_id: authData.user.id, company_id: profile.company_id,
           });
         }
       }
 
       toast.success("Login successful!");
-      // Auth state change will handle redirection based on user role
     } catch (error: any) {
       toast.error(error.message || "Invalid code. Please try again.");
-      console.error("OTP verification error:", error);
       setOtp("");
     } finally {
       setIsVerifying(false);
     }
   };
 
-  // Auto-verify when OTP is complete
   useEffect(() => {
-    if (otp.length === 6 && !isVerifying) {
-      handleVerifyOtp();
-    }
+    if (otp.length === 6 && !isVerifying) handleVerifyOtp();
   }, [otp]);
 
+  const otpSlotClass = "bg-white border-gray-300 text-gray-900";
+
   return (
-    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#0F0533' }}>
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
       
-      <div className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {isOtpSent ? "Check your email" : "Welcome back!"}
             </h1>
-            <p className="text-gray-300 text-lg">
+            <p className="text-gray-500 text-lg">
               {isOtpSent ? "Enter the code sent to your email" : "Sign in to your account to continue"}
             </p>
           </div>
@@ -188,12 +150,12 @@ const Login = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white">Work Email</FormLabel>
+                        <FormLabel className="text-gray-700 uppercase text-xs font-semibold tracking-wider">Work Email</FormLabel>
                         <FormControl>
                           <Input 
                             type="email" 
                             placeholder="john@example.com" 
-                            className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" 
+                            className="bg-white border-gray-300 text-gray-900 h-12 placeholder:text-gray-400" 
                             {...field} 
                           />
                         </FormControl>
@@ -205,19 +167,15 @@ const Login = () => {
                   <Button 
                     type="submit" 
                     disabled={isSendingOtp}
-                    className="w-full bg-[#F572FF] hover:bg-[#F572FF]/90 text-white"
+                    className="w-full h-12 text-base rounded-full bg-gradient-to-r from-[#FC36FF] via-[#7F78F8] to-[#71F8F7] hover:opacity-90 text-white shadow-lg"
                   >
                     {isSendingOtp ? "Sending code..." : "Continue"}
                   </Button>
                   
                   <div className="text-center mt-4">
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-gray-500">
                       Don't have an account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => navigate("/signup")}
-                        className="text-[#F572FF] hover:underline"
-                      >
+                      <button type="button" onClick={() => navigate("/signup")} className="text-[#F572FF] hover:underline font-medium">
                         Sign up
                       </button>
                     </p>
@@ -227,23 +185,15 @@ const Login = () => {
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white text-center block">
+                  <label className="text-sm font-medium text-gray-700 text-center block uppercase tracking-wider">
                     Enter 6-digit code
                   </label>
                   <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={(value) => setOtp(value)}
-                      disabled={isVerifying}
-                    >
+                    <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)} disabled={isVerifying}>
                       <InputOTPGroup>
-                        <InputOTPSlot index={0} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
-                        <InputOTPSlot index={1} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
-                        <InputOTPSlot index={2} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
-                        <InputOTPSlot index={3} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
-                        <InputOTPSlot index={4} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
-                        <InputOTPSlot index={5} className="bg-grattia-purple-dark/40 border-grattia-purple-light/20 text-white" />
+                        {[0, 1, 2, 3, 4, 5].map(i => (
+                          <InputOTPSlot key={i} index={i} className={otpSlotClass} />
+                        ))}
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
@@ -253,27 +203,15 @@ const Login = () => {
                 </div>
 
                 <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsOtpSent(false);
-                      setOtp("");
-                      setUserEmail("");
-                    }}
-                    className="text-sm text-[#F572FF] hover:underline"
-                  >
+                  <button type="button" onClick={() => { setIsOtpSent(false); setOtp(""); setUserEmail(""); }} className="text-sm text-[#F572FF] hover:underline">
                     Use a different email
                   </button>
                 </div>
 
                 <div className="text-center mt-4">
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => navigate("/signup")}
-                      className="text-[#F572FF] hover:underline"
-                    >
+                    <button type="button" onClick={() => navigate("/signup")} className="text-[#F572FF] hover:underline font-medium">
                       Sign up
                     </button>
                   </p>
@@ -284,7 +222,7 @@ const Login = () => {
         </div>
       </div>
       
-      <Footer />
+      <AuthFooter />
     </div>
   );
 };
