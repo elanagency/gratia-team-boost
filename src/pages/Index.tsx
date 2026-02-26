@@ -7,6 +7,7 @@ import SlackFeedSection from "@/components/SlackFeedSection";
 import BrandCatalogSection from "@/components/BrandCatalogSection";
 import AnalyticsShowcase from "@/components/AnalyticsShowcase";
 import ReviewCyclesSection from "@/components/ReviewCyclesSection";
+import CelebrationsSection from "@/components/CelebrationsSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -22,6 +23,7 @@ const Index = () => {
         <BrandCatalogSection />
         <AnalyticsShowcase />
         <ReviewCyclesSection />
+        <CelebrationsSection />
       </main>
       <Footer />
     </div>
