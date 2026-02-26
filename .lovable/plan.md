@@ -1,19 +1,44 @@
 
 
-# Fix Cropped Brand Logos
+# Analytics Showcase Section
 
-The brand cards are getting clipped at the edges of the gray container because the `overflow: hidden` on the `MarqueeRow` wrapper clips cards that are partially visible at the container edges. The logos themselves inside the cards also need more padding room.
+## Layout
+- Two-column: **left = animated analytics card**, **right = text** (reversed from RecognitionDemo)
+- Background: gradient from white to light purple (`#F5F3FF`) or similar
+- Right text: "Analytics that show what's really happening" (Poppins, semibold, `#0F0D33`) + subtitle about recognition trends, engagement rates, participation gaps
+
+## Animated Card (Left Column)
+White rounded card with shadow, containing:
+- **Header row**: metric title + 4 dot indicators (active dot = accent color pill, inactive = gray dots)
+- **Big number** + trend badge (`+12%` with wave icon, green)
+- **Department / Person toggle** (pill-style buttons, active has border)
+- **Bar chart**: 5 bars with labels (Eng, Sales, Mktg, HR, Prod for Department; Sarah, Mike, Jess, David, Emily for Person)
+- **Tooltip**: appears after bars animate, floats above one bar
+
+## Animation Sequence (6 states, looping)
+1. **Participation Rate + Department** -- purple bars grow in, tooltip appears on Sales: "94% Participation Rate"
+2. **Participation Rate + Person** -- toggle flicks to Person, bars re-animate with new heights
+3. **Recognitions Received + Person** -- dot indicator changes, pink/magenta bars, tooltip on Sarah: "45 Recognitions Received"
+4. **Recognitions Sent + Department** -- cyan bars, toggle back to Department, tooltip on HR: "410 Recognitions Sent"
+5. **Redemption Rate + Department** -- orange bars, tooltip on Mktg: "65% Redemption Rate"
+6. Loop back to step 1
+
+Each state: bars animate up (~600ms) → tooltip fades in (~400ms delay) → hold ~2.5s → transition to next
+
+## Colors per metric
+- Participation Rate: purple (`#8B7EC8` / `#B8ACE6`)
+- Recognitions Received: magenta/pink (`#F572FF` / `#F9A8FF`)
+- Recognitions Sent: cyan (`#5DE8E0` / `#9AF0EB`)
+- Redemption Rate: orange (`#F5A623` / `#FCCF7E`)
 
 ## Changes
 
-### `src/components/BrandCatalogSection.tsx`
+### 1. Create `src/components/AnalyticsShowcase.tsx`
+- Self-contained animated component with hardcoded mock data for each metric state
+- Uses Framer Motion for bar growth animations and tooltip fade-in
+- Dot indicators, Department/Person toggle, bar chart, tooltip all rendered with divs (no Recharts)
+- Auto-cycling with `useEffect` timers similar to RecognitionDemo pattern
 
-1. **Add vertical padding to the marquee overflow container** -- change `overflow-hidden` div to include `py-1` so the top/bottom of card shadows and borders aren't clipped.
-2. **Add horizontal padding** to the overflow container so cards at the edges aren't clipped -- add `px-1` as well.
-3. **Increase logo max dimensions** slightly from `max-h-[40px] max-w-[100px]` to `max-h-[36px] max-w-[90px]` with `p-3` padding on the card to ensure logos have breathing room and aren't touching card edges.
-
-Specifically:
-- On the `BrandCard` wrapper div (line 39): add `p-3` padding inside the card
-- On the `MarqueeRow` overflow div (line 52): add `py-1` to prevent vertical clipping of card borders/shadows
-- Keep `object-contain` on images to prevent any distortion
+### 2. Update `src/pages/Index.tsx`
+- Import and add `<AnalyticsShowcase />` after `<BrandCatalogSection />`
 
