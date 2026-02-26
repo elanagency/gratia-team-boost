@@ -7,7 +7,7 @@ const Privacy = () => {
       <Header />
       <main className="pt-32 pb-20 px-4 flex-1">
         <div className="container mx-auto max-w-4xl">
-          <h1 className="text-4xl font-bold text-center mb-4 text-gray-900">Grattia Privacy Policy</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 text-gray-900">Grattia Privacy Policy</h1>
           <p className="text-center text-gray-500 mb-12">Effective Date: 8/1/2025</p>
           
           <div className="prose prose-lg max-w-none">
