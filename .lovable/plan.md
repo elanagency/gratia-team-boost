@@ -1,37 +1,21 @@
 
 
-# Rewards Catalog Section
-
-## Layout
-- White background, two-column layout: left = text, right = brand logo grid card
-- Same layout direction as RecognitionDemo (text left, visual right)
-- Heading: "A rewards catalog employees actually want" -- Poppins, font-semibold, `#0F0D33`
-- Subtitle: "Every recognition received comes with points. Redeem them from 300+ gift card options across top brands, instantly." -- `rgba(15, 13, 51, 0.7)`
-
-## Right Column -- Brand Logo Card
-- Large rounded card with light gray background (`#F5F5F7` or similar)
-- Two rows of 3 brand logos each, displayed in individual white rounded cards with subtle border
-- **Top row scrolls left-to-right**, **bottom row scrolls right-to-left** (opposite directions)
-- Horizontal marquee-style infinite scroll using CSS animation (similar technique to the Slack vertical scroll)
-- Container has `overflow: hidden` to clip the scrolling logos
-- Brands to display (repeating for seamless loop): Nike, Visa, Amazon, Apple, Nordstrom, Airbnb, plus a few more for variety (Starbucks, Target, etc.)
-- Brand logos rendered as text-based representations (styled brand names) since we don't have actual logo image files
-
-## Animation
-- Two new CSS keyframes in tailwind.config.ts: `scroll-left` and `scroll-right`
-- Each row contains doubled brand items for seamless looping
-- Slow speed (~25-30s per cycle)
+# Use Actual Brand Logos in Rewards Catalog
 
 ## Changes
 
-### 1. Create `src/components/BrandCatalogSection.tsx`
-- Two-column section with Framer Motion fade-in
-- Left: heading + subtitle
-- Right: gray rounded card containing two animated rows of brand logo cards scrolling in opposite directions
+### 1. Copy uploaded brand logos to `src/assets/brands/`
+- `user-uploads://Image_Brand_Logo_-1.png` → Nike
+- `user-uploads://Image_Brand_Logo_-2.png` → Visa
+- `user-uploads://Image_Brand_Logo.png` → Amazon
+- `user-uploads://Image_Brand_Logo_-5.png` → Apple
+- `user-uploads://Image_Brand_Logo_-6.png` → Nordstrom
+- `user-uploads://Image_Brand_Logo_-4.png` → Airbnb
+- `user-uploads://Image_Brand_Logo_-3.png` → (appears to be another brand, possibly Lululemon or similar)
 
-### 2. Update `tailwind.config.ts`
-- Add `scroll-left` and `scroll-right` keyframes and animations
-
-### 3. Update `src/pages/Index.tsx`
-- Add `<BrandCatalogSection />` after `<SlackFeedSection />`
+### 2. Update `src/components/BrandCatalogSection.tsx`
+- Import all brand logo images from `src/assets/brands/`
+- Change `BRANDS_ROW1` and `BRANDS_ROW2` from string arrays to objects with `name` and `logo` properties
+- Update `BrandCard` to render an `<img>` tag instead of text, with the brand name as alt text
+- Keep text fallback for brands without uploaded logos (Starbucks, Target, Uber, Sephora, DoorDash, Spotify, Netflix, Adidas, Walmart, Lululemon)
 
