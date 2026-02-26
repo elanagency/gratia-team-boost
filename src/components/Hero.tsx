@@ -46,13 +46,15 @@ const Hero = () => {
                 Get Started
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border border-[#0F0D33] text-[#0F0D33] hover:bg-gray-50 px-8 py-6 text-lg rounded-full transition-all duration-300"
-            >
-              Book a Demo
-            </Button>
+            <a href="https://calendly.com/pedro-grattia/30min" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border border-[#0F0D33] text-[#0F0D33] hover:bg-gray-50 px-8 py-6 text-lg rounded-full transition-all duration-300"
+              >
+                Book a Demo
+              </Button>
+            </a>
           </motion.div>
         </motion.div>
 
