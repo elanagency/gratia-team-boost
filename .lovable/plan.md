@@ -1,11 +1,9 @@
 
 
-## Remove brands without logos from BrandCatalogSection
+## Split brand logos into two marquee rows
 
 ### Change in `src/components/BrandCatalogSection.tsx`
 
-- Remove `starbucksLogo` import
-- Remove `BRANDS_ROW2` entirely (all text-only brands)
-- Update `BRANDS_ROW1` to only contain: Nike, Visa, Amazon, Apple, Nordstrom, Airbnb (remove Starbucks and Target)
-- Remove the second `<MarqueeRow>` call, keep only one row
+- Split the 6 brands into two arrays: row 1 = Nike, Visa, Amazon; row 2 = Apple, Nordstrom, Airbnb
+- Add back the second `<MarqueeRow>` with `direction="right"`
 
