@@ -87,7 +87,7 @@ const RecognitionDemo = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex justify-center lg:justify-end"
           >
-            <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[420px]">
               <AnimatePresence mode="wait">
                 {isSuccess ? (
                   <SuccessState key="success" />
