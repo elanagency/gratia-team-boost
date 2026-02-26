@@ -1,17 +1,12 @@
 
 
-# Remove Old Sections Below RecognitionDemo
+# Fix Recognition Card Height Shift
 
-Remove Features, HowItWorks, Pricing, CTA, and their dark wrapper from Index.tsx. Keep Header, Hero, ProblemStatement, TheSolution, RecognitionDemo, and Footer.
+The card changes height between FormState and SuccessState because they have different content heights. Fix by giving the outer card container a fixed height matching the form state, so the success state centers within it without changing the card dimensions.
 
 ## Changes
 
-1. **`src/pages/Index.tsx`** — Remove imports for Features, HowItWorks, Pricing, CTA and remove the dark `<div>` block containing them. Keep Footer.
-
-2. **Delete files** (no longer needed):
-   - `src/components/Features.tsx`
-   - `src/components/HowItWorks.tsx`
-   - `src/components/Pricing.tsx`
-   - `src/components/CTA.tsx`
-   - `src/components/SlackIntegration.tsx`
+**`src/components/RecognitionDemo.tsx`**:
+- Add a fixed `min-h-[420px]` to the outer card container (line 90) so both states render within the same height
+- The SuccessState already has `min-h-[380px]` but the FormState is taller — set a consistent height on the wrapper so neither state causes layout shift
 
