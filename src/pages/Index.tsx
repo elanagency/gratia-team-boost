@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import ProblemStatement from "@/components/ProblemStatement";
 import TheSolution from "@/components/TheSolution";
 import RecognitionDemo from "@/components/RecognitionDemo";
+import SlackFeedSection from "@/components/SlackFeedSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -14,6 +15,7 @@ const Index = () => {
         <ProblemStatement />
         <TheSolution />
         <RecognitionDemo />
+        <SlackFeedSection />
       </main>
       <Footer />
     </div>
