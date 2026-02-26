@@ -61,7 +61,7 @@ const RecognitionDemo = () => {
   const isDropdownOpen = step === 'dropdown-open';
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: 'linear-gradient(to bottom, #F5F3FF, #ffffff)' }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: '#ffffff' }}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left column */}
