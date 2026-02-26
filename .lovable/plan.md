@@ -1,12 +1,17 @@
 
+Goal
+- Make the area behind and around the Pricing section pure white.
 
-# Remove grey background from FAQ section
+Implementation steps
+1. Update `src/components/PricingSection.tsx`:
+   - Add `bg-white` to the outer `<section id="pricing" ...>` class so the section’s full-width area (including vertical spacing and side gutters) is white.
+2. Keep the pricing card design intact:
+   - Preserve the inner card gradient (`linear-gradient(180deg, #F5F3FF, #ffffff)`), border, and shadow exactly as-is.
+3. Fallback only if any gray still appears:
+   - Update `src/pages/Index.tsx` root wrapper to `className="min-h-screen bg-white"` so landing page background is forced to white without touching dashboard pages.
 
-## Change in `src/components/FAQSection.tsx`
-
-The section already has `bg-white` class. Need to check if there's a parent wrapper or if the issue is the overall page background (`bg-[#f7f8fa]` on body). The FAQ section itself should be fine with `bg-white`, but let me verify the current state of the file.
-
-Looking at the screenshot, the FAQ section appears to be sitting on the page's default `#f7f8fa` background. The section already has `bg-white` in the code. The issue might be that the pricing section above has a colored background that's making the transition visible, or the FAQ section's `bg-white` is not taking effect.
-
-Let me check the current file state.
-
+Technical details
+- Primary file: `src/components/PricingSection.tsx`
+- Optional fallback file: `src/pages/Index.tsx`
+- Scope: styling-only change (no content, spacing structure, or logic updates)
+- Validation: scroll around the Pricing transition area and confirm no light-gray strip remains.
