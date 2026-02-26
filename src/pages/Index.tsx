@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ProblemStatement from "@/components/ProblemStatement";
 import TheSolution from "@/components/TheSolution";
+import RecognitionDemo from "@/components/RecognitionDemo";
 import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import Pricing from "@/components/Pricing";
@@ -16,6 +17,7 @@ const Index = () => {
         <Hero />
         <ProblemStatement />
         <TheSolution />
+        <RecognitionDemo />
         <div className="text-white" style={{ backgroundColor: '#0F0533' }}>
           <Features />
           <HowItWorks />
