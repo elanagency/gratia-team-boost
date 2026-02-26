@@ -1,16 +1,16 @@
 
 
-# Update FAQ Rewards & Scale Content to Match Figma
+# Refine FAQ Section UI to Match Figma Specs
 
 ## Changes to `src/components/FAQSection.tsx`
 
-### 1. Replace "Rewards" category content (4 questions)
-- "How do employees redeem their points?" → "Employees log into Grattia and choose from 300+ gift card options across top brands. Redemptions are instant and there are no redemption fees ever."
-- "Are gift cards an additional cost?" → "No. When an employee redeems their points for a gift card, there is no additional charge to anyone. The value is already covered by the points included in your monthly seat cost. What you pay for your seats is what funds the rewards. Nothing extra, ever."
-- "Do giving points expire?" → "Yes. Every employee receives 100 fresh points at the start of each month, and unspent points reset when the new month begins. This is intentional. It keeps recognition flowing consistently rather than being saved up and forgotten. Think of it less like a budget and more like a habit. A little appreciation, spread around often, does more for your culture than a big gesture once in a while."
-- "What happens to earned reward points if an employee hasn't redeemed them?" → "Earned reward points accumulate in each employee's account until they're ready to redeem. There's no expiry pressure that would make the reward feel hollow."
+### 1. Active category tab styling
+From Figma: background `#7F78F8` (not `#4F46E5`), border-radius `14px` (not full), padding `17px 24px 15px 24px`, box-shadow `0 10px 15px -3px rgba(...)`. White text.
 
-### 2. Replace "Scale" category content (2 questions)
-- "We're a small team right now. Is Grattia worth it at our size?" → "Recognition culture is actually easier to build early than to fix later. Starting with Grattia when your team is small means the habit is already embedded by the time you scale. The earlier you start, the stronger the culture foundation."
-- "What happens when we grow past 500 employees?" → "Grattia's standard pricing applies up to 500 seats. Beyond that we offer volume-based pricing. Reach out and we'll put together a straightforward quote with no surprises."
+### 2. FAQ accordion items
+From Figma: border-radius `16px`, border `1px solid #F3F4F6`, white background `#FFFFFF`, padding `1px` on container. Remove the shadow styling currently applied.
+
+### 3. Implementation
+- Update active tab: `bg-[#7F78F8]` with `rounded-[14px]` and specific padding `py-[15px] px-[24px]`
+- Update accordion items: `border-[#F3F4F6]` with `rounded-[16px]`, remove shadow classes
 
