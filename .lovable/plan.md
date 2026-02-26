@@ -1,32 +1,51 @@
 
 
-# Celebrations Section
+# Pricing Section
 
 ## Layout
-- Two-column: **left = animated celebration card**, **right = text**
-- Background: white
-- Right text: "Birthdays and anniversaries, handled automatically" (Poppins, semibold, `#0F0D33`) + subtitle "Grattia remembers every milestone. Consistent, small moments add up to a culture where people feel valued."
+- `id="pricing"` for nav scroll targeting
+- Background: light lavender gradient (`linear-gradient(180deg, #F5F3FF, #ffffff)`) with rounded border (`1px solid rgba(127,120,248,0.2)`), `border-radius: 24px`, subtle box-shadow
+- Heading: "Transparent pricing, no surprises" (bold, `#0F0D33`)
+- Subtitle: "One flat rate. No hidden fees. Ever.\nWhat you see here is exactly what you pay."
+- Two-column layout below
 
-## Left Column - Celebration Card
-Light gray rounded container holding a white card with:
-- **Avatar**: circular illustration placeholder (use a gradient circle with initials "P" as fallback)
-- **Confetti**: animated colorful dots/shapes (pink, blue, yellow, orange, green) that drop/float down around the avatar
-- **Text**: "Happy Birthday Pedro!" (bold) + "Here's a little something to celebrate you."
-- **Button**: dark navy rounded button "Redeem a $25 gift card"
+## Left Column - Pricing Calculator Card
+White card with rounded corners and shadow:
+- **Company Size**: label + purple badge showing `{n} employees`
+  - Slider: range 2-500, purple thumb, updates employee count
+  - Below: "Platform access and 100 points per user per month" left, "$10 / seat per month" right (hardcoded from platform price)
+- **Celebration Gift Value**: label + "Optional" badge + pink badge `${value} / event`
+  - Slider: range $0-$100, pink thumb
+  - Below: "Monthly cost based on your team's events" left, calculated `$X/mo` right
+- Divider
+- **Total Monthly Cost**: large bold `$X` calculated as `(employees * 10) + celebrationCost`
+- "Platform, points, and celebrations." subtitle
+- **"Get Started"** button (dark navy `#0F0D33`, rounded, links to `/signup`)
 
-## Confetti Animation
-- ~15-20 small colored shapes (circles, squares, diamonds) positioned around the card
-- On scroll into view: confetti particles fall/float downward with slight horizontal drift using Framer Motion
-- Each particle has randomized: color, size (4-8px), start position, delay, duration, rotation
-- Subtle continuous float after initial drop
+## Right Column - Everything Included
+- Icon + bold heading "Everything included"
+- 6 items with green check circles:
+  1. 100 monthly points per user to give as recognition
+  2. Zero redemption fees, always
+  3. Automated birthday and anniversary celebrations
+  4. Slack and Teams integration
+  5. Real-time analytics
+  6. Dedicated support
+- Divider
+- "More than 500 employees? Contact us for volume pricing." with pink link
+
+## Calculation Logic
+- Seat cost: `employees * 10` (hardcoded $10/seat for landing page)
+- Celebration monthly estimate: simplified as `giftValue * (employees * avgEventsPerMonth / 12)` — or simpler: just `giftValue * Math.round(employees * 0.167)` (approx 2 events/employee/year)
+- Total: seat cost + celebration estimate
 
 ## Changes
 
-### 1. Create `src/components/CelebrationsSection.tsx`
-- Two-column layout with celebration card and confetti animation
-- Confetti particles generated with randomized properties, animated with Framer Motion `whileInView`
-- Card with avatar circle, heading, subtitle, and CTA button
+### 1. Create `src/components/PricingSection.tsx`
+- Interactive slider-based pricing calculator
+- "Everything included" feature list
+- Responsive two-column layout
 
 ### 2. Update `src/pages/Index.tsx`
-- Import and add `<CelebrationsSection />` after `<ReviewCyclesSection />`
+- Import and add `<PricingSection />` after `<CelebrationsSection />`
 
