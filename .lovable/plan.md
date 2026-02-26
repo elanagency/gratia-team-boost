@@ -1,19 +1,11 @@
 
 
-## Redesign Footer to match Figma
+## Link "Book a Demo" buttons to Calendly
 
-Current footer is a simple centered layout. Figma shows a structured two-row layout.
+Update both "Book a Demo" buttons to open `https://calendly.com/pedro-grattia/30min` in a new tab.
 
-### Changes to `src/components/Footer.tsx`
+### Changes
 
-**Row 1** (flex, space-between, items-center):
-- Left: Grattia logo image
-- Center: Navigation links — Features, Pricing, FAQs, Contact (horizontal, text-gray-300, gap-8)
-- Right: LinkedIn icon (outlined circle with "in" icon)
-
-**Row 2** (flex, space-between, smaller text, top border or spacing):
-- Left: "© 2026 Grattia. All rights reserved." in gray-400
-- Right: "Privacy Policy" and "Terms of Service" links in gray-400
-
-Background stays `#0F0533`. Use `lucide-react` Linkedin icon. Link Privacy Policy to `/privacy`, Terms to `/terms`.
+1. **`src/components/FinalCTA.tsx`** — Change the "Book a Demo" `<a>` href to the Calendly URL, add `target="_blank"` and `rel="noopener noreferrer"`
+2. **`src/components/Hero.tsx`** — Find the "Book a Demo" button and apply the same Calendly link with `target="_blank"`
 
