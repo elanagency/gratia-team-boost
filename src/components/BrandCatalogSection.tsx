@@ -15,6 +15,9 @@ const BRANDS_ROW1: Brand[] = [
   { name: 'Nike', logo: nikeLogo },
   { name: 'Visa', logo: visaLogo },
   { name: 'Amazon', logo: amazonLogo },
+];
+
+const BRANDS_ROW2: Brand[] = [
   { name: 'Apple', logo: appleLogo },
   { name: 'Nordstrom', logo: nordstromLogo },
   { name: 'Airbnb', logo: airbnbLogo },
@@ -73,6 +76,7 @@ const BrandCatalogSection = () => {
           >
             <div className="w-full max-w-[520px] rounded-2xl p-6 flex flex-col gap-4" style={{ backgroundColor: '#F5F5F7' }}>
               <MarqueeRow brands={BRANDS_ROW1} direction="left" />
+              <MarqueeRow brands={BRANDS_ROW2} direction="right" />
             </div>
           </motion.div>
         </div>
