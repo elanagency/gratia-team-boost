@@ -38,7 +38,7 @@ function BrandCard({ brand }: { brand: Brand }) {
 function MarqueeRow({ brands, direction }: { brands: Brand[]; direction: 'left' | 'right' }) {
   const doubled = [...brands, ...brands];
   return (
-    <div className="overflow-hidden py-1 px-1">
+    <div className="overflow-hidden py-1 px-4">
       <div className={direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'} style={{ display: 'flex', width: 'max-content' }}>
         {doubled.map((brand, i) => (
           <BrandCard key={`${brand.name}-${i}`} brand={brand} />
@@ -74,7 +74,7 @@ const BrandCatalogSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex justify-center lg:justify-end"
           >
-            <div className="w-full max-w-[520px] rounded-2xl p-6 flex flex-col gap-4" style={{ backgroundColor: '#F5F5F7' }}>
+            <div className="w-full max-w-[560px] rounded-2xl p-6 overflow-hidden flex flex-col gap-4" style={{ backgroundColor: '#F5F5F7' }}>
               <MarqueeRow brands={BRANDS_ROW1} direction="left" />
               <MarqueeRow brands={BRANDS_ROW2} direction="right" />
             </div>
