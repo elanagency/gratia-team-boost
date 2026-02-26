@@ -6,6 +6,7 @@ import RecognitionDemo from "@/components/RecognitionDemo";
 import SlackFeedSection from "@/components/SlackFeedSection";
 import BrandCatalogSection from "@/components/BrandCatalogSection";
 import AnalyticsShowcase from "@/components/AnalyticsShowcase";
+import ReviewCyclesSection from "@/components/ReviewCyclesSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -20,6 +21,7 @@ const Index = () => {
         <SlackFeedSection />
         <BrandCatalogSection />
         <AnalyticsShowcase />
+        <ReviewCyclesSection />
       </main>
       <Footer />
     </div>
