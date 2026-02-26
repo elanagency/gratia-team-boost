@@ -19,7 +19,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 px-8 bg-white/40 backdrop-blur-md rounded-full border border-white/20 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08)]">
           <div className="flex items-center gap-2">
             <img
-              src="/lovable-uploads/logo-grattia.png"
+              src="/lovable-uploads/grattia-logo-new.png"
               alt="Grattia Logo"
               className="h-8"
             />
