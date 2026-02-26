@@ -119,11 +119,14 @@ export default {
 					}
 				},
 			'pulse-shadow': {
-					'0%, 100%': {
-						boxShadow: '0 0 0 0 rgba(94, 44, 165, 0.4)',
+					'0%': {
+						boxShadow: '0 0 0 0 rgba(94, 44, 165, 0.35)',
 					},
-					'50%': {
-						boxShadow: '0 0 0 12px rgba(94, 44, 165, 0)',
+					'70%': {
+						boxShadow: '0 0 0 14px rgba(94, 44, 165, 0)',
+					},
+					'100%': {
+						boxShadow: '0 0 0 0 rgba(94, 44, 165, 0)',
 					},
 				},
 			},
@@ -132,7 +135,7 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.5s ease-out',
 				'scale-in': 'scale-in 0.4s ease-out',
-				'pulse-shadow': 'pulse-shadow 2.5s ease-in-out infinite',
+				'pulse-shadow': 'pulse-shadow 4s ease-out infinite',
 			}
 		}
 	},

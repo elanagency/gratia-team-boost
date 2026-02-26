@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import grattiaSymbol from '@/assets/grattia-symbol.png';
 
 const TheSolution = () => {
   return (
@@ -14,7 +14,7 @@ const TheSolution = () => {
           className="flex justify-center mb-10"
         >
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[#E0D4F5] bg-[#F5F3FF] text-[#5e2ca5] text-sm font-medium font-[Poppins] animate-pulse-shadow">
-            <Sparkles size={16} />
+            <img src={grattiaSymbol} alt="Grattia" className="w-4 h-4" />
             The Solution
           </span>
         </motion.div>
