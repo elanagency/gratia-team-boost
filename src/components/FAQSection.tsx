@@ -117,14 +117,15 @@ const FAQSection = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`whitespace-nowrap px-6 py-3 rounded-full text-sm font-medium transition-colors text-left w-full ${
+                className={`whitespace-nowrap rounded-[14px] text-sm font-medium transition-colors text-left w-full ${
                   activeCategory === cat
                     ? "text-white"
-                    : "hover:bg-muted"
+                    : "hover:bg-gray-100"
                 }`}
                 style={{
+                  padding: "15px 24px 17px 24px",
                   backgroundColor:
-                    activeCategory === cat ? "#4F46E5" : "transparent",
+                    activeCategory === cat ? "#7F78F8" : "transparent",
                   color: activeCategory === cat ? "#ffffff" : "#0F0D33",
                 }}
               >
@@ -140,7 +141,7 @@ const FAQSection = () => {
                 <AccordionItem
                   key={`${activeCategory}-${i}`}
                   value={`item-${i}`}
-                  className="border rounded-xl px-6 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] data-[state=open]:shadow-md transition-shadow"
+                  className="border border-[#F3F4F6] rounded-[16px] px-6 bg-white"
                 >
                   <AccordionTrigger className="hover:no-underline text-left [&>svg]:hidden">
                     <span
