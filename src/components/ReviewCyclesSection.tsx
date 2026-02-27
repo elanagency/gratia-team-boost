@@ -56,7 +56,8 @@ const ReviewCyclesSection = () => {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="flex justify-center lg:justify-end"
           >
-            <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="w-full max-w-[576px] rounded-[24px] p-8" style={{ backgroundColor: '#F9FAFB' }}>
+            <div className="w-full max-w-[420px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               {/* Header */}
               <div className="flex items-center gap-3 mb-5">
                 <div
@@ -106,6 +107,7 @@ const ReviewCyclesSection = () => {
                   </motion.div>
                 ))}
               </div>
+            </div>
             </div>
           </motion.div>
         </div>
