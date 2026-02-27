@@ -72,7 +72,7 @@ const RecognitionDemo = () => {
             transition={{ duration: 0.6 }}
             className="max-w-[569px]"
           >
-            <h2 className="font-[Poppins] text-[36px] leading-[111%] font-semibold mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-[36px] leading-[1.3] font-semibold mb-6" style={{ color: '#0F0D33' }}>
               Recognition that becomes part of how your team works
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>

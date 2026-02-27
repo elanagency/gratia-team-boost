@@ -25,9 +25,9 @@ const BRANDS_ROW2: Brand[] = [
 
 function BrandCard({ brand }: { brand: Brand }) {
   return (
-    <div className="flex-shrink-0 w-[140px] h-[80px] bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center mx-2 p-3">
+    <div className="flex-shrink-0 w-[160px] h-[100px] bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center mx-2 p-3">
       {brand.logo ? (
-        <img src={brand.logo} alt={brand.name} className="max-h-[36px] max-w-[90px] object-contain" />
+        <img src={brand.logo} alt={brand.name} className="max-h-[48px] max-w-[110px] object-contain" />
       ) : (
         <span className="text-sm font-semibold tracking-tight" style={{ color: '#0F0D33' }}>{brand.name}</span>
       )}
@@ -59,7 +59,7 @@ const BrandCatalogSection = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-[1.3] mb-6" style={{ color: '#0F0D33' }}>
               A rewards catalog employees actually want
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
@@ -74,7 +74,7 @@ const BrandCatalogSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex justify-center lg:justify-end"
           >
-            <div className="w-full max-w-[560px] rounded-2xl p-6 overflow-hidden flex flex-col gap-4" style={{ backgroundColor: '#F5F5F7' }}>
+            <div className="w-full max-w-[576px] rounded-[24px] p-10 overflow-hidden flex flex-col gap-6" style={{ backgroundColor: '#F9FAFB' }}>
               <MarqueeRow brands={BRANDS_ROW1} direction="left" />
               <MarqueeRow brands={BRANDS_ROW2} direction="right" />
             </div>
