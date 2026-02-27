@@ -1,26 +1,22 @@
 
 
-## Fix FinalCTA section typography and spacing to match Figma
+## Update PartnerStack snippet to match onboarding hub
 
-### Current vs Figma
+The tracking script and signup attribution (step 3) are implemented, but the script snippet doesn't match the recommended one from PartnerStack's onboarding hub.
 
-| Property | Current | Figma |
-|----------|---------|-------|
-| Heading font | Roboto | Poppins |
-| Heading size | responsive (text-4xl to text-6xl) | 60px |
-| Heading weight | bold (700) | 800 (extrabold) |
-| Heading line-height | tight | 75px (125%) |
-| Subtitle font | inherited | Poppins |
-| Subtitle size | text-lg/xl | 20px |
-| Subtitle color | #6B7280 | #4A5565 |
-| Subtitle line-height | default | 32.5px (162.5%) |
-| Two separate `<p>` tags | yes | single paragraph, second line separate |
+### What needs updating
 
-### Changes to `src/components/FinalCTA.tsx`
+**File: `index.html`** (PartnerStack script block, ~lines 42-55)
 
-1. **Heading**: Change to `font-[Poppins] text-[60px] font-extrabold leading-[75px]`, remove inline `fontFamily` style.
+1. Change `gs.src` from `https://js.partnerstack.com/v1/` to `https://get.grattia.com/pr/js`
+2. Update `growsumo._initialize` call to include the domain array: `["get.grattia.com","grattia.partnerlinks.io"]`
+3. Replace `googrowsumoCallback` with `growsumoInit` to match PartnerStack's recommended callback name
 
-2. **Subtitle paragraphs**: Update color from `#6B7280` to `#4A5565`, add `font-[Poppins] text-[20px] leading-[32.5px]`, remove inline color style.
+### What's already done
 
-3. **Spacing**: Increase section vertical padding to match Figma's generous whitespace. Adjust `mb` values between heading, subtitles, and buttons to match the reference.
+- Signup tracking (step 3) in `SignUpForm.tsx` — sets `name`, `email`, `customer_key` and calls `createSignup()`. This is correct.
+
+### What's outside of code (DNS)
+
+- TXT record on `grattia.com` and CNAME for `get.grattia.com` → `partnerlinks.io` — these are configured in your domain registrar, not in the codebase.
 
