@@ -76,7 +76,7 @@ const RecognitionCarousel = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % cards.length);
-    }, 6000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -111,7 +111,7 @@ const RecognitionCarousel = () => {
                   filter: isCenter ? 'blur(0px)' : 'blur(3px)',
                 }}
                 exit={{ opacity: 0, y: -200, scale: 0.8, filter: 'blur(3px)' }}
-                transition={{ duration: 1, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
                 className="absolute w-full"
               >
                 <div
