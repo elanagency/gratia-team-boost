@@ -252,7 +252,7 @@ const AnalyticsShowcase = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-[1.3] mb-6" style={{ color: '#0F0D33' }}>
               Analytics that show what's really happening
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
