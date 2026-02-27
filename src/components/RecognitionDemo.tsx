@@ -61,7 +61,7 @@ const RecognitionDemo = () => {
   const isDropdownOpen = step === 'dropdown-open';
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: '#ffffff' }}>
+    <section className="relative py-24 overflow-hidden" style={{ background: '#ffffff' }}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left column */}
@@ -70,8 +70,9 @@ const RecognitionDemo = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="max-w-[569px]"
           >
-            <h2 className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6" style={{ color: '#0F0D33' }}>
+            <h2 className="font-[Poppins] text-[36px] leading-[111%] font-semibold mb-6" style={{ color: '#0F0D33' }}>
               Recognition that becomes part of how your team works
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
@@ -87,7 +88,8 @@ const RecognitionDemo = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex justify-center lg:justify-end"
           >
-            <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[420px]">
+            <div className="w-full max-w-[576px] rounded-[24px] p-8" style={{ backgroundColor: '#F9FAFB' }}>
+            <div className="w-full max-w-[400px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[420px]">
               <AnimatePresence mode="wait">
                 {isSuccess ? (
                   <SuccessState key="success" />
@@ -104,6 +106,7 @@ const RecognitionDemo = () => {
                   />
                 )}
               </AnimatePresence>
+            </div>
             </div>
           </motion.div>
         </div>
