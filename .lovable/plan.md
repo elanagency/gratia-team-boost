@@ -1,30 +1,26 @@
 
 
-## Make confetti animation loop continuously
+## Fix FinalCTA section typography and spacing to match Figma
 
-The current animation uses `whileInView` with `viewport={{ once: true }}`, so it plays once and stops. Need to switch to a continuously looping animation.
+### Current vs Figma
 
-### Changes to `src/components/CelebrationsSection.tsx`
+| Property | Current | Figma |
+|----------|---------|-------|
+| Heading font | Roboto | Poppins |
+| Heading size | responsive (text-4xl to text-6xl) | 60px |
+| Heading weight | bold (700) | 800 (extrabold) |
+| Heading line-height | tight | 75px (125%) |
+| Subtitle font | inherited | Poppins |
+| Subtitle size | text-lg/xl | 20px |
+| Subtitle color | #6B7280 | #4A5565 |
+| Subtitle line-height | default | 32.5px (162.5%) |
+| Two separate `<p>` tags | yes | single paragraph, second line separate |
 
-**`ParticleShape` component (lines 45-63)**: Replace `whileInView` with `animate` and add `repeat: Infinity` + `repeatDelay` to the transition so particles continuously fall in a loop. Remove `viewport={{ once: true }}`. Each particle will loop independently with its own delay/duration, creating a natural continuous rain effect.
+### Changes to `src/components/FinalCTA.tsx`
 
-```tsx
-<motion.div
-  style={style}
-  animate={{
-    y: [0, 120, 280, 400],
-    x: [0, particle.drift * 0.5, particle.drift, particle.drift * 0.8],
-    opacity: [0, 1, 1, 0],
-    rotate: [0, particle.rotation * 0.5, particle.rotation],
-    scale: [0, 1, 1, 0.5],
-  }}
-  transition={{
-    duration: particle.duration,
-    delay: particle.delay,
-    ease: 'easeIn',
-    repeat: Infinity,
-    repeatDelay: Math.random() * 2 + 0.5,
-  }}
-/>
-```
+1. **Heading**: Change to `font-[Poppins] text-[60px] font-extrabold leading-[75px]`, remove inline `fontFamily` style.
+
+2. **Subtitle paragraphs**: Update color from `#6B7280` to `#4A5565`, add `font-[Poppins] text-[20px] leading-[32.5px]`, remove inline color style.
+
+3. **Spacing**: Increase section vertical padding to match Figma's generous whitespace. Adjust `mb` values between heading, subtitles, and buttons to match the reference.
 
