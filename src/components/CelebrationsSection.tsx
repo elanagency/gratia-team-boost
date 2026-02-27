@@ -8,7 +8,6 @@ const SHAPES = ['circle', 'square', 'diamond'] as const;
 interface Particle {
   id: number;
   x: number;
-  y: number;
   size: number;
   color: string;
   shape: typeof SHAPES[number];
@@ -16,32 +15,26 @@ interface Particle {
   duration: number;
   drift: number;
   rotation: number;
-  angle: number;
 }
 
 const generateParticles = (count: number): Particle[] =>
-  Array.from({ length: count }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-    return {
-      id: i,
-      x: 140 + Math.cos(angle) * (30 + Math.random() * 20),
-      y: 60 + Math.sin(angle) * (20 + Math.random() * 15),
-      size: Math.random() * 5 + 4,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-      delay: Math.random() * 0.8,
-      duration: Math.random() * 1.5 + 2,
-      drift: Math.random() * 60 - 30,
-      rotation: Math.random() * 360,
-      angle,
-    };
-  });
+  Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    size: Math.random() * 5 + 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+    delay: Math.random() * 1.2,
+    duration: Math.random() * 1.5 + 2,
+    drift: Math.random() * 40 - 20,
+    rotation: Math.random() * 720 - 360,
+  }));
 
 const ParticleShape = ({ particle }: { particle: Particle }) => {
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: particle.x,
-    top: particle.y,
+    left: `${particle.x}%`,
+    top: -10,
     width: particle.size,
     height: particle.size,
     backgroundColor: particle.color,
@@ -49,25 +42,22 @@ const ParticleShape = ({ particle }: { particle: Particle }) => {
     transform: particle.shape === 'diamond' ? `rotate(45deg)` : undefined,
   };
 
-  const endX = Math.cos(particle.angle) * (80 + Math.random() * 40);
-  const endY = Math.sin(particle.angle) * (80 + Math.random() * 40) + 60;
-
   return (
     <motion.div
       style={style}
-      initial={{ x: 0, y: 0, opacity: 0, rotate: 0, scale: 0 }}
+      initial={{ y: 0, x: 0, opacity: 0, rotate: 0, scale: 0 }}
       whileInView={{
-        x: [0, endX * 0.5, endX],
-        y: [0, endY * 0.5, endY],
+        y: [0, 120, 280, 400],
+        x: [0, particle.drift * 0.5, particle.drift, particle.drift * 0.8],
         opacity: [0, 1, 1, 0],
-        rotate: [0, particle.rotation],
-        scale: [0, 1.2, 1, 0.6],
+        rotate: [0, particle.rotation * 0.5, particle.rotation],
+        scale: [0, 1, 1, 0.5],
       }}
       viewport={{ once: true }}
       transition={{
         duration: particle.duration,
         delay: particle.delay + 0.3,
-        ease: 'easeOut',
+        ease: 'easeIn',
       }}
     />
   );
@@ -75,7 +65,7 @@ const ParticleShape = ({ particle }: { particle: Particle }) => {
 
 const CelebrationsSection = () => {
   const ref = useRef(null);
-  const particles = useMemo(() => generateParticles(22), []);
+  const particles = useMemo(() => generateParticles(30), []);
 
   return (
     <section
@@ -94,34 +84,34 @@ const CelebrationsSection = () => {
             className="flex justify-center lg:justify-start"
           >
             <div className="relative w-full max-w-[420px] rounded-2xl p-10" style={{ backgroundColor: '#E8EDF5' }}>
-              {/* Confetti container */}
-              <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                {particles.map((p) => (
-                  <ParticleShape key={p.id} particle={p} />
-                ))}
-              </div>
-
               {/* Card */}
-              <div className="relative bg-white rounded-xl shadow-sm p-6 flex flex-col items-center text-center z-10">
+              <div className="relative bg-white rounded-xl shadow-sm p-6 flex flex-col items-center text-center z-10 overflow-hidden">
+                {/* Confetti container inside white card */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {particles.map((p) => (
+                    <ParticleShape key={p.id} particle={p} />
+                  ))}
+                </div>
+
                 {/* Avatar */}
                 <img
                   src={pedroMemoji}
                   alt="Pedro avatar"
-                  className="w-24 h-24 object-contain mb-4"
+                  className="w-24 h-24 object-contain mb-4 relative z-10"
                 />
 
                 <h3
-                  className="font-sans font-bold text-lg mb-1"
+                  className="font-sans font-bold text-lg mb-1 relative z-10"
                   style={{ color: '#0F0D33' }}
                 >
                   Happy Birthday Pedro!
                 </h3>
-                <p className="text-sm mb-5" style={{ color: '#6B7280' }}>
+                <p className="text-sm mb-5 relative z-10" style={{ color: '#6B7280' }}>
                   Here's a little something to celebrate you.
                 </p>
 
                 <button
-                  className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-sm font-medium text-white transition-colors hover:opacity-90"
+                  className="relative z-10 inline-flex items-center justify-center rounded-lg px-8 py-3 text-sm font-medium text-white transition-colors hover:opacity-90"
                   style={{ backgroundColor: '#0F0D33' }}
                 >
                   Redeem a $25 gift card
