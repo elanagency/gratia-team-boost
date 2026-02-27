@@ -28,11 +28,10 @@ const cards: RecognitionCard[] = [
     points: 50,
     category: 'TEAMWORK',
     categoryColor: 'bg-blue-100 text-blue-700',
-    message: '"Your collaboration on the product launch was outstanding. Thanks for always being there for the team!"',
+    message: '"Thanks for jumping in on the Q3 presentation! Couldn\'t have done it without your data wizardry. 🚀"',
     reactions: [
-      { emoji: '🎉', count: 12 },
-      { emoji: '❤️', count: 8 },
-      { emoji: '👏', count: 5 },
+      { emoji: '🎉', count: 0 },
+      { emoji: '❤️', count: 0 },
     ],
   },
   {
@@ -46,11 +45,10 @@ const cards: RecognitionCard[] = [
     points: 100,
     category: 'CULTURE',
     categoryColor: 'bg-orange-100 text-orange-700',
-    message: '"You bring such positive energy to every meeting. Your mentorship has been invaluable to the new hires!"',
+    message: '"Huge shoutout for organizing the team offsite. It was exactly what we needed to recharge."',
     reactions: [
-      { emoji: '🙌', count: 15 },
-      { emoji: '💜', count: 9 },
-      { emoji: '🔥', count: 7 },
+      { emoji: '🙌', count: 0 },
+      { emoji: '💜', count: 0 },
     ],
   },
   {
@@ -64,11 +62,10 @@ const cards: RecognitionCard[] = [
     points: 75,
     category: 'EXCELLENCE',
     categoryColor: 'bg-green-100 text-green-700',
-    message: '"Your attention to detail on the Q3 report saved us hours of revision. Truly exceptional work!"',
+    message: '"Amazing work debugging that critical issue in production. You saved the weekend! 🚀"',
     reactions: [
-      { emoji: '⭐', count: 10 },
-      { emoji: '🏆', count: 6 },
-      { emoji: '💪', count: 4 },
+      { emoji: '⭐', count: 0 },
+      { emoji: '🏆', count: 0 },
     ],
   },
 ];
@@ -79,7 +76,7 @@ const RecognitionCarousel = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % cards.length);
-    }, 4000);
+    }, 6000);
     return () => clearInterval(interval);
   }, []);
 
@@ -105,15 +102,16 @@ const RecognitionCarousel = () => {
               <motion.div
                 key={`${card.id}-${offset}`}
                 layout
-                initial={{ opacity: 0, y: offset * 100, scale: 0.85 }}
+                initial={{ opacity: 0, y: offset * 100, scale: 0.85, filter: 'blur(3px)' }}
                 animate={{
                   opacity: isCenter ? 1 : 0.5,
                   y: offset * 170,
                   scale: isCenter ? 1 : 0.88,
                   zIndex: isCenter ? 20 : 10,
+                  filter: isCenter ? 'blur(0px)' : 'blur(3px)',
                 }}
-                exit={{ opacity: 0, y: -200, scale: 0.8 }}
-                transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                exit={{ opacity: 0, y: -200, scale: 0.8, filter: 'blur(3px)' }}
+                transition={{ duration: 1, ease: [0.4, 0, 0.2, 1] }}
                 className="absolute w-full"
               >
                 <div
@@ -163,10 +161,7 @@ const RecognitionCarousel = () => {
                         key={i}
                         className="inline-flex items-center gap-1 bg-gray-100 rounded-full px-2.5 py-1 text-xs"
                       >
-                        {reaction.emoji}{' '}
-                        <span className="text-gray-500 font-medium">
-                          {reaction.count}
-                        </span>
+                        {reaction.emoji}
                       </span>
                     ))}
                   </div>
