@@ -138,7 +138,7 @@ const CelebrationsSection = () => {
             transition={{ duration: 0.6, delay: 0.15 }}
           >
             <h2
-              className="font-sans text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6"
+              className="font-[Poppins] text-[36px] font-semibold leading-[1.3] mb-6"
               style={{ color: '#0F0D33' }}
             >
               Birthdays and anniversaries, handled automatically
