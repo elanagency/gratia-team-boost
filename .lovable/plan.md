@@ -1,17 +1,16 @@
 
 
-## Fix CelebrationsSection heading to match other sections
+## Add falling confetti animation inside the white card
 
-### `src/components/CelebrationsSection.tsx` line 141
+Currently the confetti particles radiate outward from a central point in the gray wrapper. The Figma shows confetti falling from top to bottom inside the white card area.
 
-Change:
-```
-className="font-sans text-3xl md:text-4xl lg:text-[44px] font-semibold leading-tight mb-6"
-```
-To:
-```
-className="font-[Poppins] text-[36px] font-semibold leading-[1.3] mb-6"
-```
+### Changes to `src/components/CelebrationsSection.tsx`
 
-This aligns it with the RecognitionDemo and all other feature section headings.
+1. **Rework `generateParticles`**: Position particles randomly across the full width at the top of the white card (y near 0), with random x spread across the card width.
+
+2. **Rework `ParticleShape` animation**: Change from radial burst to a falling animation — particles start at the top with `y: 0` and animate downward to the bottom of the card, with slight horizontal drift (wobble) for a natural confetti fall effect.
+
+3. **Move the confetti container** from the gray wrapper into the white card `div`, so particles fall within the white card boundaries and are clipped by its `overflow-hidden rounded-xl`.
+
+4. Keep the same colors, shapes, and sizes. Adjust count to ~30 particles for better coverage.
 
