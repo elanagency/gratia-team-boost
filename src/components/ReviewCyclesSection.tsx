@@ -35,7 +35,7 @@ const ReviewCyclesSection = () => {
             transition={{ duration: 0.6 }}
           >
             <h2
-              className="font-[Poppins] text-3xl md:text-4xl lg:text-[44px] font-semibold leading-[1.3] mb-6"
+              className="font-[Poppins] text-[36px] font-semibold leading-[1.3] mb-6"
               style={{ color: '#0F0D33' }}
             >
               Review cycles that don't start from scratch
