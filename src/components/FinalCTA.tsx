@@ -2,23 +2,20 @@ import { Link } from "react-router-dom";
 
 const FinalCTA = () => {
   return (
-    <section className="py-32 px-4 bg-white">
+    <section className="py-40 px-4 bg-white">
       <div className="max-w-3xl mx-auto text-center">
         <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight"
-          style={{ color: "#0F0D33", fontFamily: "Roboto, sans-serif" }}
+          className="font-[Poppins] text-[60px] font-extrabold leading-[75px] text-[#0F0D33] mb-10"
         >
           Your people are doing great work right now.
         </h2>
         <p
-          className="text-lg md:text-xl mb-2"
-          style={{ color: "#6B7280" }}
+          className="font-[Poppins] text-[20px] leading-[32.5px] text-[#4A5565] mb-1"
         >
           Someone stayed late. Someone saved a project. None of that was recognized today.
         </p>
         <p
-          className="text-lg md:text-xl mb-12"
-          style={{ color: "#6B7280" }}
+          className="font-[Poppins] text-[20px] leading-[32.5px] text-[#4A5565] mb-14"
         >
           Grattia makes sure it stops slipping by.
         </p>
