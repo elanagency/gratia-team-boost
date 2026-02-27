@@ -40,15 +40,15 @@
     <script>
       (function() {
         var gs = document.createElement('script');
-        gs.src = 'https://js.partnerstack.com/v1/';
+        gs.src = 'https://get.grattia.com/pr/js';
         gs.type = 'text/javascript';
         gs.async = 'true';
         gs.onload = gs.onreadystatechange = function() {
           var rs = this.readyState;
           if (rs && rs != 'complete' && rs != 'loaded') return;
           try {
-            growsumo._initialize('pk_Oy99JnUkDuCWNdkCiZCAjmpVdoH6MzLx');
-            if (typeof(googrowsumoCallback) === 'function') { growsumoCallback(); }
+            growsumo._initialize('pk_Oy99JnUkDuCWNdkCiZCAjmpVdoH6MzLx', ["get.grattia.com","grattia.partnerlinks.io"]);
+            if (typeof(growsumoInit) === 'function') { growsumoInit(); }
           } catch (e) {}
         };
         var s = document.getElementsByTagName('script')[0];
