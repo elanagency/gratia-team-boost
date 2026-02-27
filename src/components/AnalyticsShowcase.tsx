@@ -133,7 +133,8 @@ const AnalyticsShowcase = () => {
             transition={{ duration: 0.6 }}
             className="flex justify-center lg:justify-start"
           >
-            <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="w-full max-w-[576px] rounded-[24px] p-8" style={{ backgroundColor: '#F9FAFB' }}>
+             <div className="w-full max-w-[420px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               {/* Header row */}
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-[Poppins] font-semibold text-base" style={{ color: '#0F0D33' }}>
@@ -240,6 +241,7 @@ const AnalyticsShowcase = () => {
                   </div>
                 ))}
               </div>
+            </div>
             </div>
           </motion.div>
 

@@ -64,7 +64,8 @@ const SlackFeedSection = () => {
             transition={{ duration: 0.6 }}
             className="flex justify-center lg:justify-start"
           >
-            <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="w-full max-w-[576px] rounded-[24px] p-8" style={{ backgroundColor: '#F9FAFB' }}>
+            <div className="w-full max-w-[420px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               {/* Slack header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#350D36' }}>
                 <div className="flex items-center gap-2">
@@ -100,6 +101,7 @@ const SlackFeedSection = () => {
                   <span className="text-sm text-gray-400">Message #recognition</span>
                 </div>
               </div>
+            </div>
             </div>
           </motion.div>
 
