@@ -1,9 +1,8 @@
 
 
-## Widen ProblemStatement section to match Figma
+## Expand "The Solution" gradient background
 
-### Changes in `src/components/ProblemStatement.tsx`
+### Change in `src/components/TheSolution.tsx`
 
-1. **Widen the heading container**: Change `max-w-5xl` to `max-w-6xl` for the header area so the title fits on 2 lines instead of 3.
-2. **Widen the cards grid**: Change `max-w-5xl` to `max-w-6xl` for the cards container so the cards stretch wider and match the Figma proportions.
+The gradient background currently transitions too quickly (white → #F5F3FF at 40%, back to white at 60%), making it appear as a thin band. Expand it to cover the full section by changing the gradient stops to start earlier and end later — e.g., white at 0%, #F5F3FF from 10% to 90%, white at 100%. Also increase vertical padding to give the section more breathing room, matching the Figma's spacious feel.
 
