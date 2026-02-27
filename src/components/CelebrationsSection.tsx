@@ -45,19 +45,19 @@ const ParticleShape = ({ particle }: { particle: Particle }) => {
   return (
     <motion.div
       style={style}
-      initial={{ y: 0, x: 0, opacity: 0, rotate: 0, scale: 0 }}
-      whileInView={{
+      animate={{
         y: [0, 120, 280, 400],
         x: [0, particle.drift * 0.5, particle.drift, particle.drift * 0.8],
         opacity: [0, 1, 1, 0],
         rotate: [0, particle.rotation * 0.5, particle.rotation],
         scale: [0, 1, 1, 0.5],
       }}
-      viewport={{ once: true }}
       transition={{
         duration: particle.duration,
-        delay: particle.delay + 0.3,
+        delay: particle.delay,
         ease: 'easeIn',
+        repeat: Infinity,
+        repeatDelay: Math.random() * 2 + 0.5,
       }}
     />
   );
