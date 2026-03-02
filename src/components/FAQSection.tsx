@@ -135,7 +135,7 @@ const FAQSection = () => {
           </div>
 
           {/* FAQ Accordion */}
-          <div>
+          <div className="min-h-[700px]">
             <Accordion type="single" collapsible className="space-y-3">
               {faqData[activeCategory].map((item, i) => (
                 <AccordionItem
