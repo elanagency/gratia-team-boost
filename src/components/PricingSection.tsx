@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Sparkles } from "lucide-react";
+import { Check, LayoutGrid } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const PricingSection = () => {
       >
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: "#0F0D33", fontFamily: "Roboto, sans-serif" }}>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4" style={{ color: "#0F0D33", fontFamily: "Poppins, sans-serif" }}>
             Transparent pricing, no surprises
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
@@ -50,9 +50,12 @@ const PricingSection = () => {
           <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-border/50">
             {/* Company Size */}
             <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center justify-between mb-4">
                 <span className="font-semibold text-sm" style={{ color: "#0F0D33" }}>Company Size</span>
-                <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 text-xs">
+                <Badge
+                  className="border text-xs font-semibold"
+                  style={{ backgroundColor: "#F5F3FF", color: "#7F78F8", borderColor: "rgba(127,120,248,0.2)" }}
+                >
                   {employees} employees
                 </Badge>
               </div>
@@ -72,10 +75,15 @@ const PricingSection = () => {
 
             {/* Celebration Gift Value */}
             <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="font-semibold text-sm" style={{ color: "#0F0D33" }}>Celebration Gift Value</span>
-                <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">Optional</Badge>
-                <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-100 border-0 text-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm" style={{ color: "#0F0D33" }}>Celebration Gift Value</span>
+                  <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">Optional</Badge>
+                </div>
+                <Badge
+                  className="border text-xs font-semibold"
+                  style={{ backgroundColor: "#FDF2F8", color: "#E60076", borderColor: "#FCE7F3" }}
+                >
                   ${giftValue} / event
                 </Badge>
               </div>
@@ -97,13 +105,15 @@ const PricingSection = () => {
             <div className="border-t border-border/50 my-6" />
 
             {/* Total */}
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Total Monthly Cost</p>
-              <p className="text-4xl font-bold mb-1" style={{ color: "#0F0D33" }}>
-                ${totalCost.toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground mb-6">Platform, points, and celebrations.</p>
-              <Button asChild className="rounded-full px-8 py-5 text-sm font-semibold" style={{ backgroundColor: "#0F0D33" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Total Monthly Cost</p>
+                <p className="text-4xl font-bold mb-1" style={{ color: "#0F0D33" }}>
+                  ${totalCost.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">Platform, points, and celebrations.</p>
+              </div>
+              <Button asChild className="rounded-xl px-8 py-5 text-sm font-semibold" style={{ backgroundColor: "#0F0D33" }}>
                 <Link to="/signup">Get Started</Link>
               </Button>
             </div>
@@ -111,8 +121,13 @@ const PricingSection = () => {
 
           {/* Right - Everything Included */}
           <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="w-5 h-5 text-purple-500" />
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className="w-10 h-10 flex items-center justify-center"
+                style={{ borderRadius: "10px", backgroundColor: "rgba(127,120,248,0.1)" }}
+              >
+                <LayoutGrid className="w-5 h-5" style={{ color: "#7F78F8" }} />
+              </div>
               <h3 className="text-xl font-bold" style={{ color: "#0F0D33" }}>Everything included</h3>
             </div>
 
@@ -127,10 +142,10 @@ const PricingSection = () => {
               ))}
             </ul>
 
-            <div className="border-t border-border/50 pt-6">
+            <div className="border-t border-border/50 pt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 More than 500 employees?{" "}
-                <a href="mailto:hello@grattia.com" className="font-medium hover:underline" style={{ color: "#F572FF" }}>
+                <a href="mailto:hello@grattia.com" className="font-semibold hover:underline" style={{ color: "#7F78F8" }}>
                   Contact us for volume pricing.
                 </a>
               </p>
