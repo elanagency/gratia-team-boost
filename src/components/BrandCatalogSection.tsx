@@ -62,7 +62,7 @@ const BrandCatalogSection = () => {
             <h2 className="font-[Poppins] text-[36px] font-semibold leading-[1.3] mb-6" style={{ color: '#0F0D33' }}>
               A rewards catalog employees actually want
             </h2>
-            <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
+            <p className="text-lg leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
               Every recognition received comes with points. Redeem them from 300+ gift card options across top brands, instantly.
             </p>
           </motion.div>
