@@ -1,22 +1,25 @@
 
 
-## Update PartnerStack snippet to match onboarding hub
+## Update Hero Section Avatars with Memoji Images
 
-The tracking script and signup attribution (step 3) are implemented, but the script snippet doesn't match the recommended one from PartnerStack's onboarding hub.
+The uploaded images are labeled "Hero Section Avatars" for three senders in the `RecognitionCarousel`:
 
-### What needs updating
+| Name | Uploaded File |
+|------|--------------|
+| Shomari Love | `image_2.png` |
+| Elena Rodriguez | `image_4.png` |
+| Sarah Jenkins | `image_5.png` |
 
-**File: `index.html`** (PartnerStack script block, ~lines 42-55)
+### Changes
 
-1. Change `gs.src` from `https://js.partnerstack.com/v1/` to `https://get.grattia.com/pr/js`
-2. Update `growsumo._initialize` call to include the domain array: `["get.grattia.com","grattia.partnerlinks.io"]`
-3. Replace `googrowsumoCallback` with `growsumoInit` to match PartnerStack's recommended callback name
+**Step 1: Copy avatar images to `src/assets/avatars/`**
+- `user-uploads://image_2.png` → `src/assets/avatars/shomari-love.png`
+- `user-uploads://image_4.png` → `src/assets/avatars/elena-rodriguez.png`
+- `user-uploads://image_5.png` → `src/assets/avatars/sarah-jenkins.png`
 
-### What's already done
-
-- Signup tracking (step 3) in `SignUpForm.tsx` — sets `name`, `email`, `customer_key` and calls `createSignup()`. This is correct.
-
-### What's outside of code (DNS)
-
-- TXT record on `grattia.com` and CNAME for `get.grattia.com` → `partnerlinks.io` — these are configured in your domain registrar, not in the codebase.
+**Step 2: Update `src/components/hero/RecognitionCarousel.tsx`**
+- Import the three avatar images
+- Add an optional `senderAvatar` field to the `RecognitionCard` interface
+- Set avatar paths on each card's data
+- Replace the colored initials `<div>` with an `<img>` tag when `senderAvatar` is present, keeping the same 36px rounded-full sizing
 
