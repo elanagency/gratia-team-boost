@@ -1,15 +1,16 @@
 
 
-## Fix ProblemStatement Heading — Still Wrapping to 3 Lines
+## Fix ProblemStatement Heading — Reduce Font Size to Fit Two Lines
 
-The problem: on a ~1440px screen, the section's `md:px-[136px]` padding (272px total) limits the content area to ~1168px, which is less than `max-w-[1300px]`. At 48px bold Poppins, the first sentence still overflows that width.
+The core issue: "Your people appreciate each other more than you know." at 48px bold Poppins is simply too long for any reasonable container width. Even with `md:px-[80px]` and `max-w-[1300px]`, the first sentence alone exceeds the available space.
 
 ### Change — `src/components/ProblemStatement.tsx`
-Reduce the section's horizontal padding from `md:px-[136px]` to `md:px-[80px]` (line 24). This gives the heading ~1280px of horizontal space — enough for the first sentence on one line while still maintaining generous side padding.
+
+Reduce the desktop heading font size from `md:text-[48px]` to `md:text-[42px]` (line 31). At 42px bold Poppins, the first sentence fits comfortably on one line within ~1200px, and the `<br>` keeps the second sentence on line two.
 
 | Line | Before | After |
 |------|--------|-------|
-| 24 | `md:px-[136px]` | `md:px-[80px]` |
+| 31 | `md:text-[48px]` | `md:text-[42px]` |
 
-The cards grid below will also get slightly wider, which is fine — they remain in a 2-column layout.
+The 42px size is still large and impactful — only a 12.5% reduction — and ensures the heading never wraps to three lines on standard desktop widths (1280px+).
 
