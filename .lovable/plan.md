@@ -1,19 +1,15 @@
 
 
-## Small Landing Page & Signup Fixes
+## Fix ProblemStatement Heading Width
 
-### 1. TheSolution heading line break — `src/components/TheSolution.tsx`
-- Insert a `<br />` before "not" so line 1 reads "Make recognition a daily habit," and line 2 reads "not an annual obligation."
-- Line 29: `Make recognition a daily habit,<br className="hidden md:block" /> not an annual obligation.`
+The heading is wrapping to 3 lines because `max-w-7xl` (80rem/1280px) still isn't wide enough at the current 48px font size with the section's horizontal padding.
 
-### 2. ProblemStatement heading line break — `src/components/ProblemStatement.tsx`
-- Insert a `<br />` after "know." so the first sentence stays on line 1 and the second sentence starts on line 2.
-- Line 33: `Your people appreciate each other more than you know.<br className="hidden md:block" /> The problem is, that appreciation is invisible.`
+### Change — `src/components/ProblemStatement.tsx`
+- Remove the `max-w-7xl` constraint on the text container (line 25) and replace with a wider value. Since the section already has `md:px-[136px]` padding, the content area is naturally constrained. Change `max-w-7xl` to a custom max-width like `max-w-[1300px]` which should give enough room for the first sentence to fit on one line while still being bounded.
 
-### 3. Final CTA "Get Started" button pulse — `src/components/FinalCTA.tsx`
-- Add a subtle pulsing animation to the "Get Started" link using `animate-pulse` or a custom shadow pulse to draw attention without being garish. A shadow-based pulse (scaling box-shadow) is more tasteful than opacity pulse.
-- Add a CSS animation class or inline Framer Motion animate prop with a repeating scale/shadow pulse.
+| Line | Before | After |
+|------|--------|-------|
+| 25 | `max-w-7xl` | `max-w-[1300px]` |
 
-### 4. SignUp form label — `src/components/auth/SignUpForm.tsx`
-- Line 130: Change `Full Legal Name` to `Full Name`.
+This keeps the responsive behavior intact — on smaller screens the padding collapses and text will naturally wrap as needed.
 
