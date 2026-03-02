@@ -37,7 +37,7 @@ const Footer = () => {
             <button onClick={() => scrollToSection('pricing')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Pricing</button>
             <button onClick={() => scrollToSection('faqs')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">FAQs</button>
             <div className="relative group">
-              <button className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Contact</button>
+              <button onClick={copyEmail} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Contact</button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
                 <div
                   className="bg-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 cursor-pointer min-w-[220px]"
