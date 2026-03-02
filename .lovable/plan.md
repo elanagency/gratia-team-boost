@@ -1,12 +1,8 @@
 
 
-## Update Brand Logos in Rewards Catalog Section
+## Update Analytics Section Body Text
 
-### Changes
-
-**Copy new assets** to replace existing ones:
-- Copy `user-uploads://Amazon.png` to `src/assets/brands/amazon.png`
-- Copy `user-uploads://Nordstrom.png` to `src/assets/brands/nordstrom.png`
-
-No code changes needed — `BrandCatalogSection.tsx` already imports from these exact paths.
+### Change
+**`src/components/AnalyticsShowcase.tsx` (line 188)**
+- Replace the current paragraph text with: "Your dashboard surfaces recognition trends, engagement rates, and participation gaps—so you can spot who's thriving and where connection is fraying."
 
