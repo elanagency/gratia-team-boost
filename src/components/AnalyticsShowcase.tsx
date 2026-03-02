@@ -188,7 +188,7 @@ const AnalyticsShowcase = () => {
               <div className="flex items-end justify-between gap-3 h-[160px] relative">
                 {current.labels.map((label, i) => (
                   <div key={`${barsKey}-${i}`} className="flex-1 flex flex-col items-center relative h-full justify-end">
-                    {/* Tooltip — light card style */}
+                     {/* Tooltip — light card style */}
                     <AnimatePresence>
                       {showTooltip && current.tooltipBar === i && (
                         <motion.div
@@ -196,7 +196,9 @@ const AnalyticsShowcase = () => {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 6 }}
                           transition={{ duration: 0.3 }}
-                          className="absolute -top-4 left-1/2 -translate-x-1/2 z-10"
+                          className={`absolute -top-4 z-10 ${
+                            i <= 1 ? 'left-0' : i >= 3 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+                          }`}
                           style={{ minWidth: 'max-content' }}
                         >
                           <div className="bg-white rounded-xl px-3 py-2 shadow-lg border border-gray-100">
@@ -214,7 +216,9 @@ const AnalyticsShowcase = () => {
                             </p>
                           </div>
                           {/* Arrow */}
-                          <div className="flex justify-center -mt-[1px]">
+                          <div className={`flex -mt-[1px] ${
+                            i <= 1 ? 'justify-start pl-3' : i >= 3 ? 'justify-end pr-3' : 'justify-center'
+                          }`}>
                             <div
                               className="w-2.5 h-2.5 rotate-45 border-r border-b border-gray-100"
                               style={{ backgroundColor: '#ffffff' }}
