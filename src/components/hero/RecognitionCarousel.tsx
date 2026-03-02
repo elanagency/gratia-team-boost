@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import shomariAvatar from '@/assets/avatars/shomari-love.png';
+import elenaAvatar from '@/assets/avatars/elena-rodriguez.png';
+import sarahAvatar from '@/assets/avatars/sarah-jenkins.png';
 
 interface RecognitionCard {
   id: number;
   sender: string;
   senderInitials: string;
   senderColor: string;
+  senderAvatar?: string;
   recipient: string;
   recipientInitials: string;
   recipientColor: string;
@@ -22,6 +26,7 @@ const cards: RecognitionCard[] = [
     sender: 'Sarah Jenkins',
     senderInitials: 'SJ',
     senderColor: 'bg-pink-400',
+    senderAvatar: sarahAvatar,
     recipient: 'Alex Chen',
     recipientInitials: 'AC',
     recipientColor: 'bg-blue-400',
@@ -39,6 +44,7 @@ const cards: RecognitionCard[] = [
     sender: 'Shomari Love',
     senderInitials: 'SL',
     senderColor: 'bg-emerald-400',
+    senderAvatar: shomariAvatar,
     recipient: 'Priya Patel',
     recipientInitials: 'PP',
     recipientColor: 'bg-purple-400',
@@ -56,6 +62,7 @@ const cards: RecognitionCard[] = [
     sender: 'Elena Rodriguez',
     senderInitials: 'ER',
     senderColor: 'bg-amber-400',
+    senderAvatar: elenaAvatar,
     recipient: 'David Kim',
     recipientInitials: 'DK',
     recipientColor: 'bg-teal-400',
@@ -124,11 +131,15 @@ const RecognitionCarousel = () => {
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div
-                        className={`w-9 h-9 rounded-full ${card.senderColor} flex items-center justify-center text-white text-xs font-bold`}
-                      >
-                        {card.senderInitials}
-                      </div>
+                      {card.senderAvatar ? (
+                        <img src={card.senderAvatar} alt={card.sender} className="w-9 h-9 rounded-full object-cover" />
+                      ) : (
+                        <div
+                          className={`w-9 h-9 rounded-full ${card.senderColor} flex items-center justify-center text-white text-xs font-bold`}
+                        >
+                          {card.senderInitials}
+                        </div>
+                      )}
                       <div>
                         <p className="text-sm font-semibold text-[#0F0D33]">
                           {card.sender}{' '}
