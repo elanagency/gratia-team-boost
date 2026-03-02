@@ -256,7 +256,7 @@ const AnalyticsShowcase = () => {
               Analytics that show what's really happening
             </h2>
             <p className="text-lg md:text-xl leading-relaxed" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
-              Track recognition trends, engagement rates, and participation gaps across your entire organization. Make data-driven decisions about your team culture.
+              Your dashboard surfaces recognition trends, engagement rates, and participation gaps—so you can spot who's thriving and where connection is fraying.
             </p>
           </motion.div>
         </div>
