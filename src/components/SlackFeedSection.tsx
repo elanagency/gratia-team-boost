@@ -1,14 +1,20 @@
 import { motion } from 'framer-motion';
 import slackLogo from '@/assets/slack-logo.webp';
 import teamsLogo from '@/assets/teams-logo.png';
+import lucasAvatar from '@/assets/avatars/lucas.png';
+import jamesAvatar from '@/assets/avatars/james.png';
+import mikeAvatar from '@/assets/avatars/mike.png';
+import davidAvatar from '@/assets/avatars/david.png';
+import emmaAvatar from '@/assets/avatars/emma.png';
+import nourAvatar from '@/assets/avatars/nour.png';
 
 const RECOGNITION_ENTRIES = [
-  { sender: 'Lucas', senderInitials: 'LC', senderColor: 'bg-blue-100 text-blue-600', recipient: 'Daniel', value: 'Support', message: 'Thanks for helping me with the onboarding.', fire: 1, clap: 2, time: '10:24 AM' },
-  { sender: 'James', senderInitials: 'JM', senderColor: 'bg-green-100 text-green-600', recipient: 'Grace', value: 'Excellence', message: 'Customer feedback has been amazing.', fire: 3, clap: 1, time: '10:31 AM' },
-  { sender: 'Mike', senderInitials: 'MK', senderColor: 'bg-orange-100 text-orange-600', recipient: 'Jessica', value: 'Innovation', message: 'Love the new design concepts.', fire: 3, clap: 5, time: '11:02 AM' },
-  { sender: 'David', senderInitials: 'DV', senderColor: 'bg-purple-100 text-purple-600', recipient: 'Emily', value: 'Leadership', message: 'Thanks for leading the sprint planning.', fire: 4, clap: 2, time: '11:15 AM' },
-  { sender: 'Emma', senderInitials: 'EM', senderColor: 'bg-pink-100 text-pink-600', recipient: 'Chris', value: 'Dedication', message: 'Staying late to fix that bug was heroic.', fire: 5, clap: 3, time: '11:42 AM' },
-  { sender: 'Nour', senderInitials: 'NR', senderColor: 'bg-teal-100 text-teal-600', recipient: 'Sophie', value: 'Creativity', message: 'The new ad copy is brilliant!', fire: 2, clap: 4, time: '12:08 PM' },
+  { sender: 'Lucas', senderInitials: 'LC', senderColor: 'bg-blue-100 text-blue-600', senderAvatar: lucasAvatar, recipient: 'Daniel', value: 'Support', message: 'Thanks for helping me with the onboarding.', fire: 1, clap: 2, time: '10:24 AM' },
+  { sender: 'James', senderInitials: 'JM', senderColor: 'bg-green-100 text-green-600', senderAvatar: jamesAvatar, recipient: 'Grace', value: 'Excellence', message: 'Customer feedback has been amazing.', fire: 3, clap: 1, time: '10:31 AM' },
+  { sender: 'Mike', senderInitials: 'MK', senderColor: 'bg-orange-100 text-orange-600', senderAvatar: mikeAvatar, recipient: 'Jessica', value: 'Innovation', message: 'Love the new design concepts.', fire: 3, clap: 5, time: '11:02 AM' },
+  { sender: 'David', senderInitials: 'DV', senderColor: 'bg-purple-100 text-purple-600', senderAvatar: davidAvatar, recipient: 'Emily', value: 'Leadership', message: 'Thanks for leading the sprint planning.', fire: 4, clap: 2, time: '11:15 AM' },
+  { sender: 'Emma', senderInitials: 'EM', senderColor: 'bg-pink-100 text-pink-600', senderAvatar: emmaAvatar, recipient: 'Chris', value: 'Dedication', message: 'Staying late to fix that bug was heroic.', fire: 5, clap: 3, time: '11:42 AM' },
+  { sender: 'Nour', senderInitials: 'NR', senderColor: 'bg-teal-100 text-teal-600', senderAvatar: nourAvatar, recipient: 'Sophie', value: 'Creativity', message: 'The new ad copy is brilliant!', fire: 2, clap: 4, time: '12:08 PM' },
 ];
 
 // Duplicate for seamless loop
@@ -18,9 +24,13 @@ function RecognitionEntry({ entry }: { entry: typeof RECOGNITION_ENTRIES[0] }) {
   return (
     <div className="px-4 py-3 hover:bg-gray-50/50 transition-colors">
       <div className="flex gap-2.5">
-        <div className={`w-9 h-9 rounded-lg ${entry.senderColor} flex items-center justify-center text-xs font-bold shrink-0 mt-0.5`}>
-          {entry.senderInitials}
-        </div>
+        {entry.senderAvatar ? (
+          <img src={entry.senderAvatar} alt={entry.sender} className="w-9 h-9 rounded-lg object-cover shrink-0 mt-0.5" />
+        ) : (
+          <div className={`w-9 h-9 rounded-lg ${entry.senderColor} flex items-center justify-center text-xs font-bold shrink-0 mt-0.5`}>
+            {entry.senderInitials}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
             <span className="font-bold text-sm" style={{ color: '#0F0D33' }}>{entry.sender}</span>
