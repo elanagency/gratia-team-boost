@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Linkedin } from "lucide-react";
+import { Linkedin, Mail, Check } from "lucide-react";
 
 const Footer = () => {
+  const [copied, setCopied] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -12,6 +14,12 @@ const Footer = () => {
     }
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const copyEmail = () => {
+    navigator.clipboard.writeText('hello@grattia.com');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -28,6 +36,24 @@ const Footer = () => {
             <button onClick={() => scrollToSection('features')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Features</button>
             <button onClick={() => scrollToSection('pricing')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Pricing</button>
             <button onClick={() => scrollToSection('faqs')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">FAQs</button>
+            <div className="relative group">
+              <button className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Contact</button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+                <div
+                  className="bg-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 cursor-pointer min-w-[220px]"
+                  onClick={copyEmail}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    {copied ? <Check size={16} className="text-green-600" /> : <Mail size={16} className="text-gray-600" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">hello@grattia.com</p>
+                    <p className="text-xs text-gray-400">{copied ? 'Copied!' : 'Click to copy'}</p>
+                  </div>
+                </div>
+                <div className="w-3 h-3 bg-white rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1.5 shadow-sm" />
+              </div>
+            </div>
           </nav>
           <a
             href="https://linkedin.com"
