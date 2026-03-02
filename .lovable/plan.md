@@ -1,14 +1,11 @@
 
 
-## Fix FAQ Section Layout Shift
+## Reduce FAQ Section Min-Height
 
-### Problem
-When an accordion item expands, the FAQ section grows in height and pushes all content below it down the page.
+The current `min-h-[700px]` is too generous, leaving excessive empty space. Based on the screenshots, the tallest expanded state (e.g., "Pricing & Value" with 4 items, one expanded) needs roughly 500px.
 
-### Solution
-Set a fixed `min-height` on the FAQ section's content area so it always reserves enough space for an expanded accordion. The tallest category ("Pricing & Value" with 4 items, one expanded) needs roughly 700px. We'll apply this to the accordion container div.
+### Change — `src/components/FAQSection.tsx`
+- Line 138: Change `min-h-[700px]` to `min-h-[500px]`
 
-### Changes — `src/components/FAQSection.tsx`
-
-1. Add `min-h-[700px]` to the accordion wrapper `<div>` (line 138) so the section always reserves vertical space for expanded content, preventing layout shifts below.
+This keeps enough reserved space to prevent layout shifts when an item is expanded, while eliminating the large empty gap below the FAQ items.
 
