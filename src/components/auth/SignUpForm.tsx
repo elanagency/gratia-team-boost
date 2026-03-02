@@ -127,7 +127,7 @@ const SignUpForm = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField control={form.control} name="fullName" render={({ field }) => (
               <FormItem>
-                <FormLabel className={labelClass}>Full Legal Name</FormLabel>
+                <FormLabel className={labelClass}>Full Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Jane Doe" className={inputClass} {...field} />
                 </FormControl>

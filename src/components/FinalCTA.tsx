@@ -39,13 +39,19 @@ const FinalCTA = () => {
           transition={{ duration: 0.6, delay: 0.35 }}
           className="flex items-center justify-center gap-4"
         >
-          <Link
-            to="/signup"
-            className="inline-flex items-center justify-center rounded-full px-8 py-3 text-base font-medium text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: "#0F0D33" }}
+          <motion.div
+            animate={{ boxShadow: ["0 0 0 0 rgba(245, 114, 255, 0.4)", "0 0 0 12px rgba(245, 114, 255, 0)", "0 0 0 0 rgba(245, 114, 255, 0)"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="rounded-full"
           >
-            Get Started
-          </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-full px-8 py-3 text-base font-medium text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: "#0F0D33" }}
+            >
+              Get Started
+            </Link>
+          </motion.div>
           <a
             href="https://calendly.com/pedro-grattia/30min"
             target="_blank"
