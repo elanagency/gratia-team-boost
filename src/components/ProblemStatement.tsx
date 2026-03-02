@@ -21,7 +21,7 @@ const cards = [
 
 const ProblemStatement = () => {
   return (
-    <section className="bg-white py-24 px-6 md:px-[136px]">
+    <section className="bg-white py-24 px-6 md:px-[80px]">
       <div className="max-w-[1300px] mx-auto text-center mb-16">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
