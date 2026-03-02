@@ -136,9 +136,11 @@ const Login = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {isOtpSent ? "Check your email" : "Welcome back!"}
             </h1>
-            <p className="text-gray-500 text-lg">
-              {isOtpSent ? "Enter the code sent to your email" : "Sign in to your account to continue"}
-            </p>
+            {isOtpSent && (
+              <p className="text-gray-500 text-lg">
+                Enter the code sent to your email
+              </p>
+            )}
           </div>
           
           <div className="mt-10">

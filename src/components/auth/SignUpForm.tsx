@@ -115,9 +115,11 @@ const SignUpForm = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           {isOtpSent ? "Check your email" : "Create your account"}
         </h1>
-        <p className="text-gray-500 text-lg">
-          {isOtpSent ? `We sent a 6-digit code to ${signupData?.email}` : "Join us and start recognizing your team"}
-        </p>
+        {isOtpSent && (
+          <p className="text-gray-500 text-lg">
+            We sent a 6-digit code to {signupData?.email}
+          </p>
+        )}
       </div>
 
       {!isOtpSent ? (
