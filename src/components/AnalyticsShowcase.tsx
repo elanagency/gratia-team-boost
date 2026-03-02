@@ -197,7 +197,7 @@ const AnalyticsShowcase = () => {
                           exit={{ opacity: 0, y: 6 }}
                           transition={{ duration: 0.3 }}
                           className={`absolute -top-4 z-10 ${
-                            i <= 1 ? 'left-0' : i >= 3 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+                            i <= 2 ? 'left-0' : 'right-0'
                           }`}
                           style={{ minWidth: 'max-content' }}
                         >
@@ -217,7 +217,7 @@ const AnalyticsShowcase = () => {
                           </div>
                           {/* Arrow */}
                           <div className={`flex -mt-[1px] ${
-                            i <= 1 ? 'justify-start pl-3' : i >= 3 ? 'justify-end pr-3' : 'justify-center'
+                            i <= 2 ? 'justify-start pl-3' : 'justify-end pr-3'
                           }`}>
                             <div
                               className="w-2.5 h-2.5 rotate-45 border-r border-b border-gray-100"
