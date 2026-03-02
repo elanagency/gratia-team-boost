@@ -28,7 +28,7 @@ const ProblemStatement = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="font-[Poppins] text-[32px] md:text-[48px] font-bold leading-[125%] text-[#0F0D33] mb-6"
+          className="font-[Poppins] text-[32px] md:text-[42px] font-bold leading-[125%] text-[#0F0D33] mb-6"
         >
           Your people appreciate each other more than you know.<br className="hidden md:block" /> The problem is, that appreciation is invisible.
         </motion.h2>
