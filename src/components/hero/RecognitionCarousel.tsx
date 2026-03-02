@@ -92,11 +92,11 @@ const RecognitionCarousel = () => {
   };
 
   return (
-    <div className="relative h-[480px] w-full max-w-[420px] mx-auto overflow-hidden">
+    <div className="relative h-[580px] w-full max-w-[420px] mx-auto overflow-hidden">
       {/* Top fade */}
-      <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
 
       <div className="relative h-full flex flex-col items-center justify-center">
         <AnimatePresence mode="popLayout">
@@ -118,7 +118,7 @@ const RecognitionCarousel = () => {
                   filter: isCenter ? 'blur(0px)' : 'blur(3px)',
                 }}
                 exit={{ opacity: 0, y: -200, scale: 0.8, filter: 'blur(3px)' }}
-                transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
                 className="absolute w-full"
               >
                 <div
