@@ -1,30 +1,22 @@
 
 
-## Add Slack Feed Section Avatars
+## Fix Section Navigation (Header + Footer)
 
-The Slack screenshot labels these as "Slack Feature Avatars" for the 6 senders in `SlackFeedSection`:
-
-| Name | Uploaded File | Description |
-|------|--------------|-------------|
-| David | `image_3.png` | Bald man with glasses/beard |
-| Mike | `image_6.png` | Man in suit waving |
-| Nour | `image_7.png` | Woman in pink hijab |
-| Lucas | `image_8.png` | Boy in blue hoodie |
-| James | `image_9.png` | Person in yellow top |
-| Emma | `image_10.png` | Redhead making heart |
+### Problems Found
+1. **No `id="features"` on any section** — Header/Footer link to `#features` but no element has that ID
+2. **FAQ ID mismatch** — Section has `id="faq"` but links target `#faqs`
+3. **Footer uses plain `<a href>` tags** — These only work on the Index page, not from `/signup` or other pages
+4. **Footer links to `#contact`** — No such section exists; should be removed
 
 ### Changes
 
-**Step 1: Copy 6 avatar images to `src/assets/avatars/`**
-- `image_3.png` → `src/assets/avatars/david.png`
-- `image_6.png` → `src/assets/avatars/mike.png`
-- `image_7.png` → `src/assets/avatars/nour.png`
-- `image_8.png` → `src/assets/avatars/lucas.png`
-- `image_9.png` → `src/assets/avatars/james.png`
-- `image_10.png` → `src/assets/avatars/emma.png`
+**1. `src/components/TheSolution.tsx`** — Add `id="features"` to the section tag (this is the "Recognition that becomes part of how your team works" section)
 
-**Step 2: Update `src/components/SlackFeedSection.tsx`**
-- Import all 6 avatar images
-- Add an optional `senderAvatar` field to each entry in `RECOGNITION_ENTRIES`
-- In the `RecognitionEntry` component, render an `<img>` with the avatar instead of the colored initials `<div>` when `senderAvatar` is present (same `w-9 h-9 rounded-lg` sizing)
+**2. `src/components/FAQSection.tsx`** — Change `id="faq"` to `id="faqs"` to match what the Header and Footer link to
+
+**3. `src/components/Footer.tsx`** — Replace `<a href="#...">` links with buttons using the same cross-page `scrollToSection` pattern from Header:
+- Import `useLocation` and `useNavigate` from react-router-dom
+- Add `scrollToSection` helper (navigate to `/#section` if not on `/`, otherwise scroll directly)
+- Remove the "Contact" link (no section exists)
+- Convert Features, Pricing, FAQs to `<button onClick>` elements
 
