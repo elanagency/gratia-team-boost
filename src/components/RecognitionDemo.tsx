@@ -89,7 +89,7 @@ const RecognitionDemo = () => {
             className="flex justify-center lg:justify-end"
           >
             <div className="w-full max-w-[576px] rounded-[24px] p-8" style={{ backgroundColor: '#F9FAFB' }}>
-            <div className="w-full max-w-[400px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden min-h-[420px]">
+            <div className="w-full max-w-[400px] mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden h-[420px]">
               <AnimatePresence mode="wait">
                 {isSuccess ? (
                   <SuccessState key="success" />
