@@ -30,7 +30,7 @@ const ProblemStatement = () => {
           transition={{ duration: 0.6 }}
           className="font-[Poppins] text-[32px] md:text-[48px] font-bold leading-[125%] text-[#0F0D33] mb-6"
         >
-          Your people appreciate each other more than you know. The problem is, that appreciation is invisible.
+          Your people appreciate each other more than you know.<br className="hidden md:block" /> The problem is, that appreciation is invisible.
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}

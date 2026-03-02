@@ -26,7 +26,7 @@ const TheSolution = () => {
           transition={{ delay: 0.15, duration: 0.6 }}
           className="font-[Poppins] text-[32px] md:text-[48px] font-bold leading-[125%] text-[#0F0D33] mb-6"
         >
-          Make recognition a daily habit, not an annual obligation.
+          Make recognition a daily habit,<br className="hidden md:block" /> not an annual obligation.
         </motion.h2>
 
         <motion.p
