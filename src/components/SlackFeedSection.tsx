@@ -125,7 +125,7 @@ const SlackFeedSection = () => {
             <h2 className="font-[Poppins] text-[36px] font-semibold leading-[1.3] mb-6" style={{ color: '#0F0D33' }}>
               Celebrations that show up right in Slack and Teams
             </h2>
-            <p className="text-lg md:text-xl leading-relaxed mb-8" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
+            <p className="text-lg leading-relaxed mb-8" style={{ color: 'rgba(15, 13, 51, 0.7)' }}>
               When someone gets recognized in Grattia, it shows up directly in your Slack or Microsoft Teams channels. The whole team can celebrate together, right where conversations already happen.
             </p>
             <div className="flex flex-wrap gap-3">
