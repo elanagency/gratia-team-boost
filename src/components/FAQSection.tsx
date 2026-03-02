@@ -101,7 +101,7 @@ const FAQSection = () => {
   const [activeCategory, setActiveCategory] = useState(categories[0]);
 
   return (
-    <section className="py-24 px-4 bg-white" id="faq">
+    <section className="py-24 px-4 bg-white" id="faqs">
       <div className="max-w-6xl mx-auto">
         <h2
           className="text-4xl md:text-5xl font-bold text-center mb-16"

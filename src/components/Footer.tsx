@@ -1,7 +1,19 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Linkedin } from "lucide-react";
 
 const Footer = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const scrollToSection = (id: string) => {
+    if (location.pathname !== '/') {
+      navigate('/#' + id);
+      return;
+    }
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <footer className="bg-[#0F0533] py-12 px-4">
       <div className="max-w-7xl mx-auto">
@@ -13,10 +25,9 @@ const Footer = () => {
             className="h-8"
           />
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Features</a>
-            <a href="#pricing" className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Pricing</a>
-            <a href="#faqs" className="text-gray-300 hover:text-gray-100 text-sm transition-colors">FAQs</a>
-            <a href="#contact" className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Contact</a>
+            <button onClick={() => scrollToSection('features')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Features</button>
+            <button onClick={() => scrollToSection('pricing')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">Pricing</button>
+            <button onClick={() => scrollToSection('faqs')} className="text-gray-300 hover:text-gray-100 text-sm transition-colors">FAQs</button>
           </nav>
           <a
             href="https://linkedin.com"

@@ -3,7 +3,7 @@ import grattiaSymbol from '@/assets/grattia-symbol.png';
 
 const TheSolution = () => {
   return (
-    <section className="pt-32 pb-40 px-6 md:px-[136px]" style={{ background: 'linear-gradient(to bottom, #ffffff 0%, #F5F3FF 10%, #F5F3FF 90%, #ffffff 100%)' }}>
+    <section id="features" className="pt-32 pb-40 px-6 md:px-[136px]" style={{ background: 'linear-gradient(to bottom, #ffffff 0%, #F5F3FF 10%, #F5F3FF 90%, #ffffff 100%)' }}>
       <div className="max-w-4xl mx-auto text-center">
         {/* Pulsating pill badge */}
         <motion.div
