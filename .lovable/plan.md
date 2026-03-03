@@ -1,16 +1,18 @@
 
 
-## Fix ProblemStatement Heading — Reduce Font Size to Fit Two Lines
+## Add Datafast Analytics Script
 
-The core issue: "Your people appreciate each other more than you know." at 48px bold Poppins is simply too long for any reasonable container width. Even with `md:px-[80px]` and `max-w-[1300px]`, the first sentence alone exceeds the available space.
+Add the Datafast analytics tracking script to `index.html` in the `<head>` section, alongside the existing Apollo and Marker.io scripts.
 
-### Change — `src/components/ProblemStatement.tsx`
+### Change — `index.html`
+Add the following script tag in the `<head>`, after the Apollo tracking script block:
 
-Reduce the desktop heading font size from `md:text-[48px]` to `md:text-[42px]` (line 31). At 42px bold Poppins, the first sentence fits comfortably on one line within ~1200px, and the `<br>` keeps the second sentence on line two.
-
-| Line | Before | After |
-|------|--------|-------|
-| 31 | `md:text-[48px]` | `md:text-[42px]` |
-
-The 42px size is still large and impactful — only a 12.5% reduction — and ensures the heading never wraps to three lines on standard desktop widths (1280px+).
+```html
+<script
+  defer
+  data-website-id="dfid_fzdkTEEHu12hltS9HNa4V"
+  data-domain="grattia.com"
+  src="https://datafa.st/js/script.js">
+</script>
+```
 
