@@ -1,38 +1,30 @@
 
 
-## Fix Company Deletion — Two Issues Found
+## Fix: Clear `department_id` before deleting departments
 
-### Issue 1: Wrong deletion order causes FK constraint violations
+The logs show: `"departments" violates foreign key constraint "profiles_department_id_fkey" on table "profiles"`. Profiles still reference departments via `department_id` when we try to delete them.
 
-The edge function deletes auth users (step 2) before deleting `point_transactions` and `celebration_rewards_log` (step 3). Deleting auth users cascades to delete `profiles`, but `point_transactions` has FK references to `profiles` (`sender_profile_id`, `recipient_profile_id`) and `celebration_rewards_log` has a FK to `profiles` (`profile_id`). Without `ON DELETE CASCADE` on those FKs, the profile deletion is blocked.
+The profile deactivation step (which sets `company_id = null`) currently runs AFTER the departments deletion. It also doesn't clear `department_id`.
 
-**Fix**: Move auth user deletion to AFTER all related table deletions, not before.
+### Change — `supabase/functions/delete-company/index.ts`
 
-### Issue 2: Missing config.toml entry
+Move the profile deactivation step to BEFORE the departments deletion, and also set `department_id: null`:
 
-The `delete-company` function has no entry in `supabase/config.toml`. It needs `verify_jwt = true` to be explicitly configured.
-
-### Changes
-
-**`supabase/functions/delete-company/index.ts`** — Restructure deletion order:
-
-1. Delete `point_transactions` (references profiles)
-2. Delete `celebration_rewards_log` (references profiles)
-3. Delete `redemptions`, `login_events`, `monthly_points_allocations`, `company_point_transactions`
-4. Delete integrations (`slack_integrations`, `teams_integrations`)
-5. Delete `subscription_events`, `company_regions`, `departments`
-6. Delete `platform_product_blacklist` entries by users in this company
-7. Update profiles to `deactivated`
-8. Delete auth users (NOW safe — no FKs block profile cascade)
-9. Delete company
-
-Also add proper error logging with the specific step that failed.
-
-**`supabase/config.toml`** — Add:
-```toml
-[functions.delete-company]
-verify_jwt = true
+```typescript
+.update({ status: 'deactivated', company_id: null, department_id: null })
 ```
 
-**Redeploy** the edge function after changes.
+The updated deletion order becomes:
+1. Backup users
+2. Delete `point_transactions`, `celebration_rewards_log`
+3. Delete `redemptions`, `login_events`, `monthly_points_allocations`, `company_point_transactions`
+4. Delete `slack_integrations`, `teams_integrations`
+5. Delete `subscription_events`, `company_regions`
+6. Delete `platform_product_blacklist`
+7. **Deactivate profiles** (set `company_id`, `department_id` to null) — moved UP
+8. Delete `departments` — now safe
+9. Delete auth users
+10. Delete company
+
+Redeploy the edge function after changes.
 
