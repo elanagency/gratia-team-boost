@@ -117,7 +117,6 @@ serve(async (req) => {
       // 4. Company structure
       { name: 'subscription_events', query: supabase.from('subscription_events').delete().eq('company_id', companyId) },
       { name: 'company_regions', query: supabase.from('company_regions').delete().eq('company_id', companyId) },
-      { name: 'departments', query: supabase.from('departments').delete().eq('company_id', companyId) },
     ]
 
     // Execute deletions sequentially
@@ -143,10 +142,10 @@ serve(async (req) => {
       console.log('Deleted platform_product_blacklist')
     }
 
-    // 6. Deactivate profiles and detach from company
+    // 6. Deactivate profiles and detach from company AND departments
     const { error: deactivateError } = await supabase
       .from('profiles')
-      .update({ status: 'deactivated', company_id: null })
+      .update({ status: 'deactivated', company_id: null, department_id: null })
       .eq('company_id', companyId)
     if (deactivateError) {
       console.error('Failed to deactivate profiles:', deactivateError)
@@ -154,7 +153,18 @@ serve(async (req) => {
     }
     console.log('Profiles deactivated')
 
-    // 7. Delete auth users (NOW safe — no FK references block profile cascade)
+    // 7. Delete departments (now safe — profiles detached)
+    const { error: deptError } = await supabase
+      .from('departments')
+      .delete()
+      .eq('company_id', companyId)
+    if (deptError) {
+      console.error('Deletion failed at step "departments":', deptError)
+      throw new Error('Step: departments — ' + deptError.message)
+    }
+    console.log('Deleted departments')
+
+    // 8. Delete auth users (NOW safe — no FK references block profile cascade)
     if (userIds.length > 0) {
       console.log('Deleting auth users...')
       for (const userId of userIds) {
