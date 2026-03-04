@@ -6,7 +6,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,7 +13,6 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
-    // Verify the user is a platform admin
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
@@ -27,7 +25,6 @@ serve(async (req) => {
       )
     }
 
-    // Check if user is platform admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_platform_admin')
@@ -53,10 +50,7 @@ serve(async (req) => {
 
     console.log('Deleting company:', companyId)
 
-    // Step 1: Backup user data before deletion
-    console.log('Backing up user data...')
-    
-    // Get company name for backup
+    // Get company info
     const { data: company } = await supabase
       .from('companies')
       .select('name')
@@ -70,104 +64,113 @@ serve(async (req) => {
       )
     }
 
-    // Get all users associated with the company for backup
+    // Get all users for backup and later auth deletion
     const { data: usersToBackup } = await supabase
       .from('profiles')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        points,
-        department,
-        role
-      `)
+      .select('id, first_name, last_name, points, department, role')
       .eq('company_id', companyId)
 
-    console.log('Found users to backup:', usersToBackup?.length || 0)
+    const userIds = usersToBackup?.map(u => u.id) || []
+    console.log('Found users:', userIds.length)
 
+    // Backup user data
     if (usersToBackup && usersToBackup.length > 0) {
-      // Get email addresses from auth.users
-      const userIds = usersToBackup.map(u => u.id)
       const { data: authData } = await supabase.auth.admin.listUsers()
       const emailMap = authData.users.reduce((acc, authUser) => {
-        if (authUser.email) {
-          acc[authUser.id] = authUser.email;
-        }
+        if (authUser.email) acc[authUser.id] = authUser.email
         return acc
       }, {} as Record<string, string>)
 
-      // Create backup records
-      const backupRecords = usersToBackup.map(userToBackup => ({
-        original_user_id: userToBackup.id,
-        first_name: userToBackup.first_name,
-        last_name: userToBackup.last_name,
-        email: emailMap[userToBackup.id] || '',
+      const backupRecords = usersToBackup.map(u => ({
+        original_user_id: u.id,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        email: emailMap[u.id] || '',
         company_name: company.name,
-        points: userToBackup.points || 0,
-        department: userToBackup.department,
-        role: userToBackup.role,
-        deleted_by: user.id // Platform admin who performed the deletion
+        points: u.points || 0,
+        department: u.department,
+        role: u.role,
+        deleted_by: user.id
       }))
 
-      // Insert backup records
-      const { error: backupError } = await supabase
-        .from('backup_users')
-        .insert(backupRecords)
-
+      const { error: backupError } = await supabase.from('backup_users').insert(backupRecords)
       if (backupError) {
         console.error('Failed to backup user data:', backupError)
-        throw new Error('Failed to backup user data: ' + backupError.message)
+        throw new Error('Step: backup_users — ' + backupError.message)
       }
-
       console.log('User data backed up successfully')
+    }
 
-      // Step 2: Delete auth.users records
+    // Delete in correct FK-safe order
+    const steps: { name: string; query: Promise<any> }[] = [
+      // 1. Tables referencing profiles
+      { name: 'point_transactions', query: supabase.from('point_transactions').delete().eq('company_id', companyId) },
+      { name: 'celebration_rewards_log', query: supabase.from('celebration_rewards_log').delete().eq('company_id', companyId) },
+      // 2. Other company-scoped tables
+      { name: 'redemptions', query: supabase.from('redemptions').delete().eq('company_id', companyId) },
+      { name: 'login_events', query: supabase.from('login_events').delete().eq('company_id', companyId) },
+      { name: 'monthly_points_allocations', query: supabase.from('monthly_points_allocations').delete().eq('company_id', companyId) },
+      { name: 'company_point_transactions', query: supabase.from('company_point_transactions').delete().eq('company_id', companyId) },
+      // 3. Integrations
+      { name: 'slack_integrations', query: supabase.from('slack_integrations').delete().eq('company_id', companyId) },
+      { name: 'teams_integrations', query: supabase.from('teams_integrations').delete().eq('company_id', companyId) },
+      // 4. Company structure
+      { name: 'subscription_events', query: supabase.from('subscription_events').delete().eq('company_id', companyId) },
+      { name: 'company_regions', query: supabase.from('company_regions').delete().eq('company_id', companyId) },
+      { name: 'departments', query: supabase.from('departments').delete().eq('company_id', companyId) },
+    ]
+
+    // Execute deletions sequentially
+    for (const step of steps) {
+      const { error } = await step.query
+      if (error) {
+        console.error(`Deletion failed at step "${step.name}":`, error)
+        throw new Error(`Step: ${step.name} — ${error.message}`)
+      }
+      console.log(`Deleted ${step.name}`)
+    }
+
+    // 5. Delete platform_product_blacklist entries by users in this company
+    if (userIds.length > 0) {
+      const { error } = await supabase
+        .from('platform_product_blacklist')
+        .delete()
+        .in('disabled_by', userIds)
+      if (error) {
+        console.error('Deletion failed at step "platform_product_blacklist":', error)
+        throw new Error('Step: platform_product_blacklist — ' + error.message)
+      }
+      console.log('Deleted platform_product_blacklist')
+    }
+
+    // 6. Deactivate profiles
+    const { error: deactivateError } = await supabase
+      .from('profiles')
+      .update({ status: 'deactivated' })
+      .eq('company_id', companyId)
+    if (deactivateError) {
+      console.error('Failed to deactivate profiles:', deactivateError)
+      throw new Error('Step: deactivate_profiles — ' + deactivateError.message)
+    }
+    console.log('Profiles deactivated')
+
+    // 7. Delete auth users (NOW safe — no FK references block profile cascade)
+    if (userIds.length > 0) {
       console.log('Deleting auth users...')
       for (const userId of userIds) {
         const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId)
         if (deleteAuthError) {
           console.error('Failed to delete auth user:', userId, deleteAuthError)
-          // Continue with other deletions even if one fails
         }
       }
-      console.log('Auth users deleted successfully')
+      console.log('Auth users deleted')
     }
 
-    // Step 3: Delete company-related data in correct order
-    const deletions = [
-      // Delete integration records
-      supabase.from('slack_integrations').delete().eq('company_id', companyId),
-      supabase.from('teams_integrations').delete().eq('company_id', companyId),
-      
-      // Delete point and transaction records
-      supabase.from('monthly_points_allocations').delete().eq('company_id', companyId),
-      supabase.from('point_transactions').delete().eq('company_id', companyId),
-      supabase.from('company_point_transactions').delete().eq('company_id', companyId),
-      supabase.from('celebration_rewards_log').delete().eq('company_id', companyId),
-      
-      // Delete redemptions and login events
-      supabase.from('redemptions').delete().eq('company_id', companyId),
-      supabase.from('login_events').delete().eq('company_id', companyId),
-      
-      // Delete company structure records
-      supabase.from('subscription_events').delete().eq('company_id', companyId),
-      supabase.from('company_regions').delete().eq('company_id', companyId),
-      supabase.from('departments').delete().eq('company_id', companyId),
-      
-      // Deactivate profiles (already backed up)
-      supabase.from('profiles').update({ status: 'deactivated' }).eq('company_id', companyId),
-      
-      // Finally delete the company
-      supabase.from('companies').delete().eq('id', companyId)
-    ]
-
-    // Execute all deletions
-    for (const deletion of deletions) {
-      const { error } = await deletion
-      if (error) {
-        console.error('Deletion error:', error)
-        throw error
-      }
+    // 8. Delete company
+    const { error: deleteCompanyError } = await supabase.from('companies').delete().eq('id', companyId)
+    if (deleteCompanyError) {
+      console.error('Failed to delete company:', deleteCompanyError)
+      throw new Error('Step: delete_company — ' + deleteCompanyError.message)
     }
 
     console.log('Company deleted successfully:', companyId)
