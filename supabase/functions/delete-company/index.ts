@@ -143,10 +143,10 @@ serve(async (req) => {
       console.log('Deleted platform_product_blacklist')
     }
 
-    // 6. Deactivate profiles
+    // 6. Deactivate profiles and detach from company
     const { error: deactivateError } = await supabase
       .from('profiles')
-      .update({ status: 'deactivated' })
+      .update({ status: 'deactivated', company_id: null })
       .eq('company_id', companyId)
     if (deactivateError) {
       console.error('Failed to deactivate profiles:', deactivateError)
