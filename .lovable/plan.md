@@ -1,41 +1,54 @@
 
 
-## Slack Slash Command — `/grattia`
+## Auto-Link Slack Users to Grattia Profiles
 
-### Single new edge function
+### How it works
 
-**`supabase/functions/slack-slash-command/index.ts`**
+**Auto-linking**: When triggered, the system fetches all Slack workspace users via `users.list` API, then matches each to a Grattia profile using normalized email (stripping `+alias` parts). Matches are saved as `slack_user_id` on the `profiles` table.
 
-Slack sends slash commands as `application/x-www-form-urlencoded` POST with fields: `team_id`, `user_id`, `text`, `response_url`.
+**Manual linking**: A UI in the company admin Settings page shows unlinked Slack users alongside a dropdown of unlinked Grattia profiles, letting the admin manually pair them.
 
-Flow:
-1. Verify request signature using `SLACK_SIGNING_SECRET` (timestamp + HMAC-SHA256)
-2. Parse `text` — expected format: `@user [points] [message]`
-3. Use `team_id` to look up the company's `slack_integrations` row (get `bot_token` + `company_id`)
-4. Call Slack API `users.info` with sender's `user_id` → get email
-5. Resolve mentioned user's Slack ID from text → `users.info` → get email
-6. Look up both emails in `auth.users` → get Supabase user IDs
-7. Call `transfer_points_between_users` RPC with sender, recipient, company, points, message
-8. Return Slack-formatted JSON response (ephemeral or in-channel)
+### Changes
 
-### Config update
+#### 1. Database migration
+- Add `slack_user_id TEXT` column to `profiles` table
+- Add unique index on `slack_user_id` (one Slack user per profile)
 
-**`supabase/config.toml`** — add:
-```toml
-[functions.slack-slash-command]
-verify_jwt = false
+#### 2. New edge function: `slack-auto-link`
+- Called by company admin (JWT-authenticated)
+- Fetches company's `bot_token` from `slack_integrations`
+- Calls Slack `users.list` to get all workspace members with emails
+- For each Slack user:
+  - Normalize email (strip `+alias` before `@`)
+  - Match against `auth.users` emails (also normalized)
+  - If match found and profile belongs to same company → set `profiles.slack_user_id`
+- Returns: `{ linked: [...], unlinked: [...] }` so the frontend knows what still needs manual attention
+
+#### 3. Update `slack-slash-command/index.ts`
+- **Primary lookup**: Query `profiles` by `slack_user_id` (instant, exact)
+- **Fallback**: Current email-based lookup with normalization (strip `+alias`)
+
+#### 4. Admin UI in Settings (Slack section)
+- "Link Slack Users" button triggers auto-link
+- After auto-link, shows results: successfully linked users and unlinked Slack users
+- Unlinked users get a dropdown to manually select a Grattia team member
+- Admin can also unlink/relink existing mappings
+
+### Flow summary
+
+```text
+Admin clicks "Link Slack Users"
+         │
+         ▼
+  slack-auto-link edge function
+         │
+    Slack users.list API
+         │
+    Normalize emails, match to profiles
+         │
+    ┌────┴────┐
+    │         │
+ Linked    Unlinked
+ (auto)    (show in UI for manual linking)
 ```
-
-`verify_jwt = false` because Slack authenticates via its own signing secret, not JWT.
-
-### Manual step (you do this in Slack App Dashboard)
-
-1. Go to [Slack App Dashboard](https://api.slack.com/apps) → your Grattia app → Slash Commands
-2. Add command `/grattia` with Request URL: `https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/slack-slash-command`
-3. Set usage hint: `@user [points] [message]`
-4. Reinstall app to workspace
-
-### No new secrets, no DB changes, no frontend changes
-
-Everything needed already exists.
 
