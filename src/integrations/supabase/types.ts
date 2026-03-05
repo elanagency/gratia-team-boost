@@ -717,6 +717,7 @@ export type Database = {
           monthly_points: number
           points: number
           role: string
+          slack_user_id: string | null
           status: string
           temporary_password: string | null
           updated_at: string
@@ -738,6 +739,7 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
+          slack_user_id?: string | null
           status?: string
           temporary_password?: string | null
           updated_at?: string
@@ -759,6 +761,7 @@ export type Database = {
           monthly_points?: number
           points?: number
           role?: string
+          slack_user_id?: string | null
           status?: string
           temporary_password?: string | null
           updated_at?: string

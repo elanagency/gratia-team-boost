@@ -10,6 +10,7 @@ import slackLogo from "@/assets/slack-logo.webp";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SlackUserLinking from "./SlackUserLinking";
 
 const SlackNotificationsCard = () => {
   const {
@@ -310,6 +311,13 @@ const SlackNotificationsCard = () => {
                 ))}
               </div>
             </div>
+
+            <Separator />
+
+            {/* Slack User Linking */}
+            {integration?.company_id && (
+              <SlackUserLinking companyId={integration.company_id} />
+            )}
 
             <div className="pt-4 border-t">
               <p className="text-sm text-gray-500 text-center">

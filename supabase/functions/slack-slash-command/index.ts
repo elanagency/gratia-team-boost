@@ -63,6 +63,12 @@ function parseCommandText(text: string): { slackUserId: string | null; points: n
   return null;
 }
 
+function normalizeEmail(email: string): string {
+  const [local, domain] = email.toLowerCase().split('@');
+  if (!domain) return email.toLowerCase();
+  return `${local.replace(/\+.*$/, '')}@${domain}`;
+}
+
 async function getSlackUserEmail(botToken: string, slackUserId: string): Promise<string | null> {
   const res = await fetch(`https://slack.com/api/users.info?user=${slackUserId}`, {
     headers: { Authorization: `Bearer ${botToken}` },
@@ -175,74 +181,90 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Get emails for both sender and recipient
-    const [senderEmail, recipientEmail] = await Promise.all([
-      getSlackUserEmail(bot_token, senderSlackUserId),
-      getSlackUserEmail(bot_token, recipientSlackUserId),
-    ]);
-
-    if (!senderEmail) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ Could not find your email in Slack. Make sure your Slack profile has an email.' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!recipientEmail) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ Could not find that user\'s email in Slack. Make sure their profile has an email.' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 4. Look up Supabase user IDs by email
-    const { data: { users: allUsers }, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    if (listError) throw listError;
-
-    const senderAuthUser = allUsers.find((u) => u.email?.toLowerCase() === senderEmail.toLowerCase());
-    const recipientAuthUser = allUsers.find((u) => u.email?.toLowerCase() === recipientEmail.toLowerCase());
-
-    if (!senderAuthUser) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: `❌ No Grattia account found for your email (${senderEmail}). Sign up at grattia.com first.` }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!recipientAuthUser) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: `❌ No Grattia account found for ${recipientEmail}. They need to be registered in Grattia.` }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 5. Get sender and recipient profiles to confirm company membership and get names
-    const { data: profiles } = await supabase
+    // 3. Try to resolve profiles by slack_user_id first (fast path)
+    const { data: slackLinkedProfiles } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, monthly_points, company_id')
-      .in('id', [senderAuthUser.id, recipientAuthUser.id]);
+      .select('id, first_name, last_name, monthly_points, company_id, slack_user_id')
+      .eq('company_id', company_id)
+      .in('slack_user_id', [senderSlackUserId, recipientSlackUserId]);
 
-    const senderProfile = profiles?.find((p) => p.id === senderAuthUser.id);
-    const recipientProfile = profiles?.find((p) => p.id === recipientAuthUser.id);
+    let senderProfile = slackLinkedProfiles?.find((p) => p.slack_user_id === senderSlackUserId);
+    let recipientProfile = slackLinkedProfiles?.find((p) => p.slack_user_id === recipientSlackUserId);
 
-    if (!senderProfile || senderProfile.company_id !== company_id) {
+    // Fallback: email-based lookup with normalization for any unresolved users
+    if (!senderProfile || !recipientProfile) {
+      const missingSlackIds: string[] = [];
+      if (!senderProfile) missingSlackIds.push(senderSlackUserId);
+      if (!recipientProfile) missingSlackIds.push(recipientSlackUserId);
+
+      const emailPromises = missingSlackIds.map((id) => getSlackUserEmail(bot_token, id));
+      const emails = await Promise.all(emailPromises);
+
+      const senderEmail = !senderProfile ? emails[0] : null;
+      const recipientEmail = !recipientProfile ? emails[missingSlackIds.indexOf(recipientSlackUserId)] : null;
+
+      if (!senderProfile) {
+        if (!senderEmail) {
+          return new Response(
+            JSON.stringify({ response_type: 'ephemeral', text: '❌ Could not find your email in Slack. Make sure your Slack profile has an email, or ask your admin to link your account in Settings.' }),
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        // Normalize and match
+        const { data: { users: allUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const normalizedSenderEmail = normalizeEmail(senderEmail);
+        const senderAuthUser = allUsers.find((u) => u.email && normalizeEmail(u.email) === normalizedSenderEmail);
+        if (senderAuthUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, monthly_points, company_id, slack_user_id')
+            .eq('id', senderAuthUser.id)
+            .eq('company_id', company_id)
+            .single();
+          senderProfile = profile;
+        }
+      }
+
+      if (!recipientProfile) {
+        if (!recipientEmail) {
+          return new Response(
+            JSON.stringify({ response_type: 'ephemeral', text: '❌ Could not find that user\'s email in Slack. Ask your admin to link their account in Settings.' }),
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        const { data: { users: allUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const normalizedRecipientEmail = normalizeEmail(recipientEmail);
+        const recipientAuthUser = allUsers.find((u) => u.email && normalizeEmail(u.email) === normalizedRecipientEmail);
+        if (recipientAuthUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, monthly_points, company_id, slack_user_id')
+            .eq('id', recipientAuthUser.id)
+            .eq('company_id', company_id)
+            .single();
+          recipientProfile = profile;
+        }
+      }
+    }
+
+    if (!senderProfile) {
       return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ Your Grattia account is not linked to this workspace\'s company.' }),
+        JSON.stringify({ response_type: 'ephemeral', text: '❌ Your Grattia account could not be found. Ask your admin to link your Slack account in Settings.' }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!recipientProfile || recipientProfile.company_id !== company_id) {
+    if (!recipientProfile) {
       return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ That user is not a member of your company in Grattia.' }),
+        JSON.stringify({ response_type: 'ephemeral', text: '❌ That user is not linked to a Grattia account. Ask your admin to link their account in Settings.' }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     // 6. Transfer points via RPC
     const { data: result, error: rpcError } = await supabase.rpc('transfer_points_between_users', {
-      sender_user_id: senderAuthUser.id,
-      recipient_user_id: recipientAuthUser.id,
+      sender_user_id: senderProfile.id,
+      recipient_user_id: recipientProfile.id,
       transfer_company_id: company_id,
       points_amount: parsed.points,
       transfer_description: parsed.message,
