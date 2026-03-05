@@ -228,3 +228,6 @@ verify_jwt = false
 
 [functions.slack-slash-command]
 verify_jwt = false
+
+[functions.slack-auto-link]
+verify_jwt = true
