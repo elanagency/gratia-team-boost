@@ -225,3 +225,6 @@ verify_jwt = false
 
 [functions.delete-company]
 verify_jwt = false
+
+[functions.slack-slash-command]
+verify_jwt = false
