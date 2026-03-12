@@ -205,6 +205,7 @@ export const useOptimizedAuth = () => {
     totalPoints,
     department,
     status,
+    avatarUrl,
     signOut,
   };
 };
