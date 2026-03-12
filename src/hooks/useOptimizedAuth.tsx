@@ -8,6 +8,7 @@ type UserProfile = {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
   company_id: string | null;
   company_name: string;
   is_admin: boolean;
@@ -38,7 +39,7 @@ export const useOptimizedAuth = () => {
       
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
+        .select('first_name, last_name, avatar_url, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
         .eq('id', userId)
         .maybeSingle();
 
@@ -60,6 +61,7 @@ export const useOptimizedAuth = () => {
         id: userId,
         first_name: profileData?.first_name || null,
         last_name: profileData?.last_name || null,
+        avatar_url: profileData?.avatar_url || null,
         company_id: profileData?.company_id || null,
         company_name: companyName,
         is_admin: profileData?.is_admin || false,
@@ -168,6 +170,7 @@ export const useOptimizedAuth = () => {
   const totalPoints = useMemo(() => recognitionPoints + monthlyPoints, [recognitionPoints, monthlyPoints]);
   const department = useMemo(() => profile?.department || null, [profile?.department]);
   const status = useMemo(() => profile?.status || 'invited', [profile?.status]);
+  const avatarUrl = useMemo(() => profile?.avatar_url || null, [profile?.avatar_url]);
 
   const signOut = async () => {
     try {
@@ -202,6 +205,7 @@ export const useOptimizedAuth = () => {
     totalPoints,
     department,
     status,
+    avatarUrl,
     signOut,
   };
 };

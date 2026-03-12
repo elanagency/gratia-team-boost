@@ -16,7 +16,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { useQueryClient } from "@tanstack/react-query";
-// Internal interface for the dialog
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 interface DialogTeamMember {
   id: string;
   name: string;
@@ -26,6 +27,7 @@ interface DialogTeamMember {
   department: string;
   status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
+  avatar_url?: string | null;
 }
 
 interface GivePointsDialogProps {
@@ -123,12 +125,13 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         return {
           id: profile.id,
           name: memberName || 'No Name',
-          email: '', // We don't have email in the profiles table
+          email: '',
           user_id: profile.id,
           points: profile.points || 0,
           department: profile.department || '',
           status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
-          first_login_at: profile.first_login_at
+          first_login_at: profile.first_login_at,
+          avatar_url: (profile as any).avatar_url || null
         };
       });
       
@@ -356,9 +359,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
                       onClick={() => setSelectedMember(member)}
                     >
                       <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF]">
-                          {member.name.charAt(0)}
-                        </div>
+                        <Avatar className="h-8 w-8">
+                          {member.avatar_url && <AvatarImage src={member.avatar_url} alt={member.name} />}
+                          <AvatarFallback className="bg-[#F572FF]/10 text-[#F572FF] text-sm">
+                            {member.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="ml-3">
                           <p className="font-medium">{member.name}</p>
                           <p className="text-xs text-gray-500">Team Member</p>
@@ -379,9 +385,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           <div className="space-y-4">
             <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF]">
-                  {selectedMember.name.charAt(0)}
-                </div>
+                <Avatar className="h-10 w-10">
+                  {selectedMember.avatar_url && <AvatarImage src={selectedMember.avatar_url} alt={selectedMember.name} />}
+                  <AvatarFallback className="bg-[#F572FF]/10 text-[#F572FF]">
+                    {selectedMember.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="ml-3">
                   <p className="font-medium">{selectedMember.name}</p>
                   <p className="text-sm text-gray-500">Team Member</p>

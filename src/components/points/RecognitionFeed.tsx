@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Clock, Heart, Cake, PartyPopper } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +23,7 @@ type PointTransaction = {
   created_at: string;
   sender_name: string;
   recipient_name: string;
+  sender_avatar_url?: string;
 };
 
 type ThreadedRecognition = {
@@ -140,15 +141,18 @@ export function RecognitionFeed() {
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', userIds);
       
       if (profilesError) throw profilesError;
       
       // Create profile map
-      const profileMap = new Map();
+      const profileMap = new Map<string, { name: string; avatar_url: string | null }>();
       profiles?.forEach(profile => {
-        profileMap.set(profile.id, `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User');
+        profileMap.set(profile.id, {
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User',
+          avatar_url: profile.avatar_url
+        });
       });
       
       // Format transactions
@@ -161,8 +165,9 @@ export function RecognitionFeed() {
         structured_message: transaction.structured_message,
         gif_url: (transaction as any).gif_url || undefined,
         created_at: transaction.created_at,
-        sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
-        recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
+        sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
+        recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
+        sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined
       }));
       
       setTransactions(formattedTransactions);
@@ -522,6 +527,9 @@ export function RecognitionFeed() {
                   {/* Main Post */}
                   <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
+                      {!isCelebration && thread.mainPost.sender_avatar_url && (
+                        <AvatarImage src={thread.mainPost.sender_avatar_url} alt={thread.mainPost.sender_name} />
+                      )}
                       <AvatarFallback className={`text-xs ${
                         isCelebration 
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 

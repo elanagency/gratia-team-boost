@@ -18,7 +18,8 @@ const UnifiedDashboardLayout = () => {
     isAdmin,
     isPlatformAdmin,
     status,
-    companyId
+    companyId,
+    avatarUrl
   } = useAuth();
   const sessionTrackedRef = useRef(false);
   
@@ -92,6 +93,7 @@ const UnifiedDashboardLayout = () => {
         lastName={lastName}
         handleLogout={signOut}
         isAdmin={isAdmin}
+        avatarUrl={avatarUrl}
       />
       
       {/* Main Content */}
