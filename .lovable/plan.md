@@ -3,69 +3,52 @@
 ## Add GIPHY GIF Picker to Recognition Composer
 
 ### Overview
-Add a GIF button to the recognition composer toolbar (next to "Mention" and "Amount") that opens a GIPHY search popover. When a GIF is selected, it appears as a preview below the text editor, attached to the recognition message. The GIF URL is stored alongside the message and displayed in the recognition feed.
+Integrate GIPHY search into the recognition composer, adding a GIF button to the toolbar. Users can search/browse trending GIFs, select one, see a preview below the editor, and attach it to their recognition. The GIF displays in the recognition feed.
 
-### UI/UX Flow
+### Changes
 
-```text
-┌──────────────────────────────────────────┐
-│  Give Recognition                        │
-│  ─────────────────────────────────────── │
-│  [@Mention] [+Amount] [🎬 GIF]          │  ← toolbar (GIF button added)
-│  ─────────────────────────────────────── │
-│  Thanks for the amazing workshop!        │
-│  @Pedro +25                              │
-│  ─────────────────────────────────────── │
-│  ┌────────────────────┐                  │
-│  │   [selected GIF]   │  ✕              │  ← GIF preview with remove button
-│  │                    │                  │
-│  └────────────────────┘                  │
-│  ─────────────────────────────────────── │
-│  25 pts × 1 person = 25 total    [Send] │
-└──────────────────────────────────────────┘
+**1. Add GIPHY API key as a Supabase secret**
+- Store the user's GIPHY API key as `GIPHY_API_KEY`
+
+**2. Create `giphy-search` edge function**
+- Proxies requests to `api.giphy.com` (trending + search endpoints)
+- Uses `GIPHY_API_KEY` secret server-side
+- Returns simplified GIF objects: `{ id, url, previewUrl, width, height }`
+- Add config entry in `supabase/config.toml` with `verify_jwt = false`
+
+**3. Database: add `gif_url` column to `point_transactions`**
+```sql
+ALTER TABLE point_transactions ADD COLUMN gif_url TEXT;
 ```
+No RLS changes needed (existing policies cover it).
 
-When clicking the GIF button, a popover opens with:
-- A search input (searches GIPHY API)
-- Trending GIFs shown by default
-- A grid of GIF results (thumbnails)
-- Click a GIF to select it; popover closes and GIF preview appears below the editor
+**4. Modify `transfer_points_between_users` DB function**
+- Add optional `transfer_gif_url TEXT DEFAULT NULL` parameter
+- Insert `gif_url` into the `point_transactions` row alongside the existing fields
 
-Only one GIF per recognition message. Selecting a new one replaces the previous.
+**5. Create `src/components/points/GiphyPicker.tsx`**
+- Popover triggered by a "GIF" button
+- Search input with debounce (300ms)
+- Shows trending GIFs on open, search results when typing
+- 2-column grid of GIF thumbnails (using `fixed_height_small` rendition)
+- Click to select → returns `{ id, url, previewUrl }` → closes popover
 
-### Technical Changes
-
-**1. Store GIPHY API Key as a Supabase secret**
-- Add the GIPHY API key as a secret (user has credentials)
-
-**2. Create edge function `giphy-search/index.ts`**
-- Proxies search requests to GIPHY API (keeps API key server-side)
-- Endpoints: trending GIFs and search GIFs
-- Returns simplified response (id, url, preview url, dimensions)
-
-**3. Create `src/components/points/GiphyPicker.tsx`**
-- Popover component with search input and GIF grid
-- Calls the edge function for trending/search
-- Debounced search input
-- Returns selected GIF object `{ id, url, previewUrl, width, height }`
-
-**4. Update `src/components/points/GivePointsCard.tsx`**
+**6. Update `src/components/points/GivePointsCard.tsx`**
 - Add `selectedGif` state
-- Add GIF button to toolbar (next to Mention and Amount)
-- Show GIF preview below the RichTextEditor with a remove (✕) button
-- Pass `gif_url` in the submit payload (stored in `point_transactions.description` as structured data, or as a separate field)
+- Add GIF button (with film icon) to toolbar next to Mention and Amount
+- Show GIF preview with remove (✕) button between the editor and bottom bar
+- Pass `gif_url` in the `transfer_points_between_users` RPC call
+- Reset `selectedGif` on submit
 
-**5. Database: add `gif_url` column to `point_transactions`**
-- `ALTER TABLE point_transactions ADD COLUMN gif_url TEXT;`
-- No RLS changes needed (existing policies cover it)
+**7. Update `src/components/points/GivePointsDialog.tsx`**
+- Same GIF picker integration for the dialog version
 
-**6. Update `src/components/points/RecognitionFeed.tsx`**
-- Render the GIF image below the recognition message text when `gif_url` is present
+**8. Update `src/components/points/RecognitionFeed.tsx`**
+- When `gif_url` is present on a transaction, render an `<img>` below the message text
+- Rounded corners, max-width constraint, lazy loading
 
-**7. Update Slack/Teams notifications**
-- Include GIF URL as an image block in Slack notifications
-- Include GIF as an image in Teams adaptive card
-
-### What's Needed from You
-- Confirm you'd like to proceed, and I'll ask you to add the GIPHY API key as a secret
+**9. Update Slack/Teams notifications**
+- Pass `gif_url` in the notification body
+- In `send-slack-notification`: add an image block when `gif_url` is present
+- In `send-teams-notification`: add an image element to the adaptive card
 
