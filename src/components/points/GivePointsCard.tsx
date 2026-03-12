@@ -350,7 +350,8 @@ export function GivePointsCard() {
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
               recipient_name: mention.name,
               points: totalPointsToGive,
-              message: cleanMessageText
+              message: cleanMessageText,
+              gif_url: selectedGif?.url || undefined
             }
           });
         } catch (teamsError) {
