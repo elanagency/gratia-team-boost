@@ -279,7 +279,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     givePoints({
       member: selectedMember,
       points: points,
-      description: description
+      description: description,
+      gifUrl: selectedGif?.url
     });
   };
 
