@@ -15,6 +15,7 @@ interface TeamsNotificationPayload {
   message?: string;
   title?: string;
   summary_data?: Record<string, unknown>;
+  gif_url?: string;
 }
 
 interface TeamsIntegration {
