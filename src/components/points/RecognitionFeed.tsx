@@ -23,6 +23,7 @@ type PointTransaction = {
   created_at: string;
   sender_name: string;
   recipient_name: string;
+  sender_avatar_url?: string;
 };
 
 type ThreadedRecognition = {
