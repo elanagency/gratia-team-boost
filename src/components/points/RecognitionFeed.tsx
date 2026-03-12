@@ -562,6 +562,18 @@ export function RecognitionFeed() {
                           <div className="text-sm text-muted-foreground">
                             {parsed.cleanText}
                           </div>
+
+                          {/* GIF attachment */}
+                          {thread.mainPost.gif_url && (
+                            <div className="mt-2">
+                              <img
+                                src={thread.mainPost.gif_url}
+                                alt="GIF"
+                                className="max-w-[280px] max-h-[200px] rounded-lg object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
                        
                           {(() => {
                             const parsed = parseStructuredMessage(thread.mainPost);

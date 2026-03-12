@@ -78,6 +78,26 @@ Deno.serve(async (req) => {
 
     console.log('[SEND-SLACK-NOTIFICATION] Sending message to Slack');
 
+    // Build blocks for rich messaging
+    const blocks: any[] = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: formattedMessage,
+        },
+      },
+    ];
+
+    // Add GIF image block if provided
+    if (payload.gif_url) {
+      blocks.push({
+        type: 'image',
+        image_url: payload.gif_url,
+        alt_text: 'GIF',
+      });
+    }
+
     // Send message to Slack
     const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
@@ -88,6 +108,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         channel: integration.default_channel_id,
         text: formattedMessage,
+        blocks,
         mrkdwn: true,
       }),
     });

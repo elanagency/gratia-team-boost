@@ -211,7 +211,7 @@ function buildHtmlMessage(payload: TeamsNotificationPayload): string {
 
 /** Build MessageCard for webhook */
 function buildWebhookMessage(payload: TeamsNotificationPayload): Record<string, unknown> {
-  const { notification_type, sender_name, recipient_name, points, message, title, summary_data } = payload;
+  const { notification_type, sender_name, recipient_name, points, message, title, summary_data, gif_url } = payload;
 
   switch (notification_type) {
     case 'recognition':
