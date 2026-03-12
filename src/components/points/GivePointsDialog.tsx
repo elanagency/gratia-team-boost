@@ -150,7 +150,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
         recipient_user_id: variables.member.user_id,
         transfer_company_id: companyId,
         points_amount: variables.points,
-        transfer_description: variables.description
+        transfer_description: variables.description,
+        transfer_gif_url: variables.gifUrl || null
       });
 
       if (error) throw error;
