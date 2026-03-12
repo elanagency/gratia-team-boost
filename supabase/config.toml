@@ -231,3 +231,6 @@ verify_jwt = false
 
 [functions.slack-auto-link]
 verify_jwt = true
+
+[functions.giphy-search]
+verify_jwt = false

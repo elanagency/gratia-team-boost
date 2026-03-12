@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Loader2, Trophy, AlertCircle } from "lucide-react";
+import { Search, Loader2, Trophy, AlertCircle, X } from "lucide-react";
+import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
@@ -40,6 +41,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<GifSelection | null>(null);
   
   const [companyPoints, setCompanyPoints] = useState(0);
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
@@ -59,6 +61,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       setDescription("");
       setPoints(1);
       setShowInsufficientPoints(false);
+      setSelectedGif(null);
     }
   }, [open, companyId]);
 
@@ -141,13 +144,14 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   };
 
   const { mutate: givePoints, isLoading: isSubmitting } = useOptimisticMutation({
-    mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string }) => {
+    mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string; gifUrl?: string }) => {
       const { data, error } = await supabase.rpc('transfer_points_between_users', {
         sender_user_id: user!.id,
         recipient_user_id: variables.member.user_id,
         transfer_company_id: companyId,
         points_amount: variables.points,
-        transfer_description: variables.description
+        transfer_description: variables.description,
+        transfer_gif_url: variables.gifUrl || null
       });
 
       if (error) throw error;
@@ -254,6 +258,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       setSelectedMember(null);
       setDescription("");
       setPoints(1);
+      setSelectedGif(null);
       setOpen(false);
     },
     successMessage: `Successfully gave ${points} points to ${selectedMember?.name}!`,
@@ -274,7 +279,8 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
     givePoints({
       member: selectedMember,
       points: points,
-      description: description
+      description: description,
+      gifUrl: selectedGif?.url
     });
   };
 
@@ -416,6 +422,34 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            {/* GIF Picker & Preview */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <GiphyPicker
+                  onSelect={(gif) => setSelectedGif(gif)}
+                  disabled={isSubmitting}
+                />
+                {selectedGif && (
+                  <span className="text-xs text-muted-foreground">GIF attached</span>
+                )}
+              </div>
+              {selectedGif && (
+                <div className="relative inline-block">
+                  <img
+                    src={selectedGif.previewUrl}
+                    alt="Selected GIF"
+                    className="max-w-[180px] max-h-[120px] rounded-md"
+                  />
+                  <button
+                    onClick={() => setSelectedGif(null)}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

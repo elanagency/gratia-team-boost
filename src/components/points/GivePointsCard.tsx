@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, Send, AtSign, Plus } from "lucide-react";
+import { Heart, Send, AtSign, Plus, X } from "lucide-react";
+import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
 
@@ -25,6 +26,7 @@ export function GivePointsCard() {
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const [selectedPointIndex, setSelectedPointIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<GifSelection | null>(null);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -310,7 +312,8 @@ export function GivePointsCard() {
           recipient_user_id: mention.userId,
           transfer_company_id: companyId,
           points_amount: totalPointsToGive,
-          transfer_description: structuredMessage
+          transfer_description: structuredMessage,
+          transfer_gif_url: selectedGif?.url || null
         });
 
         if (error) throw error;
@@ -329,7 +332,8 @@ export function GivePointsCard() {
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
               recipient_name: mention.name,
               points: totalPointsToGive,
-              message: cleanMessageText
+              message: cleanMessageText,
+              gif_url: selectedGif?.url || undefined
             }
           });
         } catch (slackError) {
@@ -346,7 +350,8 @@ export function GivePointsCard() {
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
               recipient_name: mention.name,
               points: totalPointsToGive,
-              message: cleanMessageText
+              message: cleanMessageText,
+              gif_url: selectedGif?.url || undefined
             }
           });
         } catch (teamsError) {
@@ -361,6 +366,7 @@ export function GivePointsCard() {
       setText("");
       setMentions([]);
       setPoints([]);
+      setSelectedGif(null);
       
       // Invalidate all relevant queries to refresh feeds and points
       await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
@@ -427,6 +433,10 @@ export function GivePointsCard() {
                 <Plus className="h-3 w-3" />
                 Amount
               </Button>
+              <GiphyPicker
+                onSelect={(gif) => setSelectedGif(gif)}
+                disabled={isSubmitting}
+              />
             </div>
             <RichTextEditor
               ref={editorRef}
@@ -439,6 +449,25 @@ export function GivePointsCard() {
               mentions={mentions}
               points={points}
             />
+
+            {/* GIF Preview */}
+            {selectedGif && (
+              <div className="px-3 py-2 border-t">
+                <div className="relative inline-block">
+                  <img
+                    src={selectedGif.previewUrl}
+                    alt="Selected GIF"
+                    className="max-w-[200px] max-h-[150px] rounded-md"
+                  />
+                  <button
+                    onClick={() => setSelectedGif(null)}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">

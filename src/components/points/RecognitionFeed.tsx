@@ -19,6 +19,7 @@ type PointTransaction = {
   points: number;
   description: string;
   structured_message?: string;
+  gif_url?: string;
   created_at: string;
   sender_name: string;
   recipient_name: string;
@@ -158,6 +159,7 @@ export function RecognitionFeed() {
         points: transaction.points,
         description: transaction.description,
         structured_message: transaction.structured_message,
+        gif_url: (transaction as any).gif_url || undefined,
         created_at: transaction.created_at,
         sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
         recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
@@ -560,6 +562,18 @@ export function RecognitionFeed() {
                           <div className="text-sm text-muted-foreground">
                             {parsed.cleanText}
                           </div>
+
+                          {/* GIF attachment */}
+                          {thread.mainPost.gif_url && (
+                            <div className="mt-2">
+                              <img
+                                src={thread.mainPost.gif_url}
+                                alt="GIF"
+                                className="max-w-[280px] max-h-[200px] rounded-lg object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
                        
                           {(() => {
                             const parsed = parseStructuredMessage(thread.mainPost);

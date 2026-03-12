@@ -1,54 +1,22 @@
 
 
-## Add GIPHY GIF Picker to Recognition Composer
+## Clean up duplicate Slack integrations
 
-### Overview
-Integrate GIPHY search into the recognition composer, adding a GIF button to the toolbar. Users can search/browse trending GIFs, select one, see a preview below the editor, and attach it to their recognition. The GIF displays in the recognition feed.
+### Problem
+There are 7 `slack_integrations` rows all pointing to the same Slack workspace (`T06F9TXE0N8`). Only the **Grattia Sandbox** row (company: `807718ad-dbe3-4d79-812b-ee0dc662e674`) should remain. The duplicates cause the `/grattia` slash command to fail because `.single()` finds multiple rows.
 
 ### Changes
 
-**1. Add GIPHY API key as a Supabase secret**
-- Store the user's GIPHY API key as `GIPHY_API_KEY`
+**Delete 6 stale rows** from `slack_integrations` using a data operation (not migration):
 
-**2. Create `giphy-search` edge function**
-- Proxies requests to `api.giphy.com` (trending + search endpoints)
-- Uses `GIPHY_API_KEY` secret server-side
-- Returns simplified GIF objects: `{ id, url, previewUrl, width, height }`
-- Add config entry in `supabase/config.toml` with `verify_jwt = false`
-
-**3. Database: add `gif_url` column to `point_transactions`**
 ```sql
-ALTER TABLE point_transactions ADD COLUMN gif_url TEXT;
+DELETE FROM slack_integrations 
+WHERE company_id != '807718ad-dbe3-4d79-812b-ee0dc662e674';
 ```
-No RLS changes needed (existing policies cover it).
 
-**4. Modify `transfer_points_between_users` DB function**
-- Add optional `transfer_gif_url TEXT DEFAULT NULL` parameter
-- Insert `gif_url` into the `point_transactions` row alongside the existing fields
+This removes integrations for: beyey9, Grattia Live, Tesla, NBA, Notion, Stripe — keeping only Grattia Sandbox.
 
-**5. Create `src/components/points/GiphyPicker.tsx`**
-- Popover triggered by a "GIF" button
-- Search input with debounce (300ms)
-- Shows trending GIFs on open, search results when typing
-- 2-column grid of GIF thumbnails (using `fixed_height_small` rendition)
-- Click to select → returns `{ id, url, previewUrl }` → closes popover
+After cleanup, the `/grattia` slash command's `.single()` query on `workspace_id = 'T06F9TXE0N8'` will return exactly one row and work correctly.
 
-**6. Update `src/components/points/GivePointsCard.tsx`**
-- Add `selectedGif` state
-- Add GIF button (with film icon) to toolbar next to Mention and Amount
-- Show GIF preview with remove (✕) button between the editor and bottom bar
-- Pass `gif_url` in the `transfer_points_between_users` RPC call
-- Reset `selectedGif` on submit
-
-**7. Update `src/components/points/GivePointsDialog.tsx`**
-- Same GIF picker integration for the dialog version
-
-**8. Update `src/components/points/RecognitionFeed.tsx`**
-- When `gif_url` is present on a transaction, render an `<img>` below the message text
-- Rounded corners, max-width constraint, lazy loading
-
-**9. Update Slack/Teams notifications**
-- Pass `gif_url` in the notification body
-- In `send-slack-notification`: add an image block when `gif_url` is present
-- In `send-teams-notification`: add an image element to the adaptive card
+No code changes needed.
 
