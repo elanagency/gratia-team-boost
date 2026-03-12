@@ -26,6 +26,7 @@ export function GivePointsCard() {
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const [selectedPointIndex, setSelectedPointIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<GifSelection | null>(null);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
