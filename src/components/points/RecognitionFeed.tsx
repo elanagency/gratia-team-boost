@@ -141,15 +141,18 @@ export function RecognitionFeed() {
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', userIds);
       
       if (profilesError) throw profilesError;
       
       // Create profile map
-      const profileMap = new Map();
+      const profileMap = new Map<string, { name: string; avatar_url: string | null }>();
       profiles?.forEach(profile => {
-        profileMap.set(profile.id, `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User');
+        profileMap.set(profile.id, {
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User',
+          avatar_url: profile.avatar_url
+        });
       });
       
       // Format transactions
