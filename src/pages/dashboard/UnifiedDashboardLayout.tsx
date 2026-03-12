@@ -93,7 +93,7 @@ const UnifiedDashboardLayout = () => {
         lastName={lastName}
         handleLogout={signOut}
         isAdmin={isAdmin}
-        avatarUrl={(useAuth as any)() ? undefined : undefined}
+        avatarUrl={avatarUrl}
       />
       
       {/* Main Content */}
