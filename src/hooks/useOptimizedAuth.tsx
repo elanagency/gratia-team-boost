@@ -39,7 +39,7 @@ export const useOptimizedAuth = () => {
       
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
+        .select('first_name, last_name, avatar_url, is_platform_admin, company_id, is_admin, points, monthly_points, department, status')
         .eq('id', userId)
         .maybeSingle();
 
