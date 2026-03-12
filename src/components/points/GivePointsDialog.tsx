@@ -61,6 +61,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       setDescription("");
       setPoints(1);
       setShowInsufficientPoints(false);
+      setSelectedGif(null);
     }
   }, [open, companyId]);
 
