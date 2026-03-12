@@ -359,9 +359,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
                       onClick={() => setSelectedMember(member)}
                     >
                       <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF]">
-                          {member.name.charAt(0)}
-                        </div>
+                        <Avatar className="h-8 w-8">
+                          {member.avatar_url && <AvatarImage src={member.avatar_url} alt={member.name} />}
+                          <AvatarFallback className="bg-[#F572FF]/10 text-[#F572FF] text-sm">
+                            {member.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="ml-3">
                           <p className="font-medium">{member.name}</p>
                           <p className="text-xs text-gray-500">Team Member</p>
