@@ -258,6 +258,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
       setSelectedMember(null);
       setDescription("");
       setPoints(1);
+      setSelectedGif(null);
       setOpen(false);
     },
     successMessage: `Successfully gave ${points} points to ${selectedMember?.name}!`,
