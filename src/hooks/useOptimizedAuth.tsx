@@ -170,6 +170,7 @@ export const useOptimizedAuth = () => {
   const totalPoints = useMemo(() => recognitionPoints + monthlyPoints, [recognitionPoints, monthlyPoints]);
   const department = useMemo(() => profile?.department || null, [profile?.department]);
   const status = useMemo(() => profile?.status || 'invited', [profile?.status]);
+  const avatarUrl = useMemo(() => profile?.avatar_url || null, [profile?.avatar_url]);
 
   const signOut = async () => {
     try {
