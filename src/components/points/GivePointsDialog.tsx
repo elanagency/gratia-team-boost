@@ -16,7 +16,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { useQueryClient } from "@tanstack/react-query";
-// Internal interface for the dialog
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 interface DialogTeamMember {
   id: string;
   name: string;
@@ -26,6 +27,7 @@ interface DialogTeamMember {
   department: string;
   status: 'invited' | 'active' | 'deactivated';
   first_login_at?: string;
+  avatar_url?: string | null;
 }
 
 interface GivePointsDialogProps {
