@@ -165,8 +165,9 @@ export function RecognitionFeed() {
         structured_message: transaction.structured_message,
         gif_url: (transaction as any).gif_url || undefined,
         created_at: transaction.created_at,
-        sender_name: profileMap.get(transaction.sender_profile_id) || 'Unknown User',
-        recipient_name: profileMap.get(transaction.recipient_profile_id) || 'Unknown User'
+        sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
+        recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
+        sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined
       }));
       
       setTransactions(formattedTransactions);
