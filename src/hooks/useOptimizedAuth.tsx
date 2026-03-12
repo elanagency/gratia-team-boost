@@ -61,6 +61,7 @@ export const useOptimizedAuth = () => {
         id: userId,
         first_name: profileData?.first_name || null,
         last_name: profileData?.last_name || null,
+        avatar_url: profileData?.avatar_url || null,
         company_id: profileData?.company_id || null,
         company_name: companyName,
         is_admin: profileData?.is_admin || false,
