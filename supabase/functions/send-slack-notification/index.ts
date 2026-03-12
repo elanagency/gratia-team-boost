@@ -11,6 +11,7 @@ interface NotificationPayload {
   sender_name?: string;
   recipient_name?: string;
   points?: number;
+  gif_url?: string;
 }
 
 Deno.serve(async (req) => {
