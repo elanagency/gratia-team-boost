@@ -446,6 +446,25 @@ export function GivePointsCard() {
               points={points}
             />
 
+            {/* GIF Preview */}
+            {selectedGif && (
+              <div className="px-3 py-2 border-t">
+                <div className="relative inline-block">
+                  <img
+                    src={selectedGif.previewUrl}
+                    alt="Selected GIF"
+                    className="max-w-[200px] max-h-[150px] rounded-md"
+                  />
+                  <button
+                    onClick={() => setSelectedGif(null)}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">
               {/* Summary */}
