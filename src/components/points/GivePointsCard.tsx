@@ -312,7 +312,8 @@ export function GivePointsCard() {
           recipient_user_id: mention.userId,
           transfer_company_id: companyId,
           points_amount: totalPointsToGive,
-          transfer_description: structuredMessage
+          transfer_description: structuredMessage,
+          transfer_gif_url: selectedGif?.url || null
         });
 
         if (error) throw error;
