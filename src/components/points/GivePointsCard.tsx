@@ -433,10 +433,6 @@ export function GivePointsCard() {
                 <Plus className="h-3 w-3" />
                 Amount
               </Button>
-              <GiphyPicker
-                onSelect={(gif) => setSelectedGif(gif)}
-                disabled={isSubmitting}
-              />
             </div>
             <RichTextEditor
               ref={editorRef}
@@ -471,13 +467,19 @@ export function GivePointsCard() {
 
             {/* Bottom Bar */}
             <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-              {/* Summary */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {mentions.length > 0 && points.length > 0 && (
-                  <span>
-                    {points.reduce((sum, point) => sum + point.value, 0)} pts × {mentions.length} {mentions.length === 1 ? 'person' : 'people'} = {points.reduce((sum, point) => sum + point.value, 0) * mentions.length} total
-                  </span>
-                )}
+              {/* Left side: GIF + Summary */}
+              <div className="flex items-center gap-3">
+                <GiphyPicker
+                  onSelect={(gif) => setSelectedGif(gif)}
+                  disabled={isSubmitting}
+                />
+                <div className="text-xs text-muted-foreground">
+                  {mentions.length > 0 && points.length > 0 && (
+                    <span>
+                      {points.reduce((sum, point) => sum + point.value, 0)} pts × {mentions.length} {mentions.length === 1 ? 'person' : 'people'} = {points.reduce((sum, point) => sum + point.value, 0) * mentions.length} total
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Send Button */}
