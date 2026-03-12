@@ -41,6 +41,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<GifSelection | null>(null);
   
   const [companyPoints, setCompanyPoints] = useState(0);
   const [showInsufficientPoints, setShowInsufficientPoints] = useState(false);
