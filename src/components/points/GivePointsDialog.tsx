@@ -423,6 +423,34 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
+            {/* GIF Picker & Preview */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <GiphyPicker
+                  onSelect={(gif) => setSelectedGif(gif)}
+                  disabled={isSubmitting}
+                />
+                {selectedGif && (
+                  <span className="text-xs text-muted-foreground">GIF attached</span>
+                )}
+              </div>
+              {selectedGif && (
+                <div className="relative inline-block">
+                  <img
+                    src={selectedGif.previewUrl}
+                    alt="Selected GIF"
+                    className="max-w-[180px] max-h-[120px] rounded-md"
+                  />
+                  <button
+                    onClick={() => setSelectedGif(null)}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
         
