@@ -1,22 +1,20 @@
 
 
-## Clean up duplicate Slack integrations
+## Move GIF Button to Bottom Bar
 
-### Problem
-There are 7 `slack_integrations` rows all pointing to the same Slack workspace (`T06F9TXE0N8`). Only the **Grattia Sandbox** row (company: `807718ad-dbe3-4d79-812b-ee0dc662e674`) should remain. The duplicates cause the `/grattia` slash command to fail because `.single()` finds multiple rows.
+Currently the GIF picker button sits in the **top toolbar** alongside Mention and Amount. The user wants it moved to the **bottom bar**, on the left side opposite the Send Recognition button.
 
-### Changes
+### Change
 
-**Delete 6 stale rows** from `slack_integrations` using a data operation (not migration):
+**`src/components/points/GivePointsCard.tsx`**
 
-```sql
-DELETE FROM slack_integrations 
-WHERE company_id != '807718ad-dbe3-4d79-812b-ee0dc662e674';
+1. Remove the `<GiphyPicker>` from the toolbar (lines 436-439)
+2. Add the `<GiphyPicker>` to the bottom bar (line 473), on the left side before the summary text
+
+The bottom bar layout becomes:
+```
+[ GIF button ] [ summary text ]                    [ Send Recognition ]
 ```
 
-This removes integrations for: beyey9, Grattia Live, Tesla, NBA, Notion, Stripe — keeping only Grattia Sandbox.
-
-After cleanup, the `/grattia` slash command's `.single()` query on `workspace_id = 'T06F9TXE0N8'` will return exactly one row and work correctly.
-
-No code changes needed.
+This is a single-file, ~5 line change.
 
