@@ -429,6 +429,10 @@ export function GivePointsCard() {
                 <Plus className="h-3 w-3" />
                 Amount
               </Button>
+              <GiphyPicker
+                onSelect={(gif) => setSelectedGif(gif)}
+                disabled={isSubmitting}
+              />
             </div>
             <RichTextEditor
               ref={editorRef}
