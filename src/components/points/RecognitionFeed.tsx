@@ -527,6 +527,9 @@ export function RecognitionFeed() {
                   {/* Main Post */}
                   <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
+                      {!isCelebration && thread.mainPost.sender_avatar_url && (
+                        <AvatarImage src={thread.mainPost.sender_avatar_url} alt={thread.mainPost.sender_name} />
+                      )}
                       <AvatarFallback className={`text-xs ${
                         isCelebration 
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 
