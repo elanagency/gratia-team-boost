@@ -385,9 +385,12 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           <div className="space-y-4">
             <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF]">
-                  {selectedMember.name.charAt(0)}
-                </div>
+                <Avatar className="h-10 w-10">
+                  {selectedMember.avatar_url && <AvatarImage src={selectedMember.avatar_url} alt={selectedMember.name} />}
+                  <AvatarFallback className="bg-[#F572FF]/10 text-[#F572FF]">
+                    {selectedMember.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="ml-3">
                   <p className="font-medium">{selectedMember.name}</p>
                   <p className="text-sm text-gray-500">Team Member</p>
