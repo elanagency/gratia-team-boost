@@ -8,6 +8,7 @@ type UserProfile = {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
   company_id: string | null;
   company_name: string;
   is_admin: boolean;
