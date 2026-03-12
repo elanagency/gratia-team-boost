@@ -182,20 +182,31 @@ async function sendViaWebhook(
 
 /** Build HTML message for Graph API */
 function buildHtmlMessage(payload: TeamsNotificationPayload): string {
-  const { notification_type, sender_name, recipient_name, points, message, title } = payload;
+  const { notification_type, sender_name, recipient_name, points, message, title, gif_url } = payload;
 
+  let html = '';
   switch (notification_type) {
     case 'recognition':
-      return `<p><strong>🎉 Recognition Alert</strong></p><p><strong>${sender_name}</strong> gave <strong>${points} points</strong> to <strong>${recipient_name}</strong></p><p>${message || 'Great work!'}</p>`;
+      html = `<p><strong>🎉 Recognition Alert</strong></p><p><strong>${sender_name}</strong> gave <strong>${points} points</strong> to <strong>${recipient_name}</strong></p><p>${message || 'Great work!'}</p>`;
+      break;
     case 'point_allocation':
-      return `<p><strong>📊 Monthly Points Allocation</strong></p><p>${message || 'All team members have received their monthly points.'}</p>`;
+      html = `<p><strong>📊 Monthly Points Allocation</strong></p><p>${message || 'All team members have received their monthly points.'}</p>`;
+      break;
     case 'milestone':
-      return `<p><strong>🏆 ${title || 'Team Milestone'}</strong></p><p>${message || 'Congratulations on reaching this milestone!'}</p>`;
+      html = `<p><strong>🏆 ${title || 'Team Milestone'}</strong></p><p>${message || 'Congratulations on reaching this milestone!'}</p>`;
+      break;
     case 'summary':
-      return `<p><strong>📈 ${title || 'Weekly Recognition Summary'}</strong></p><p>${message || 'Here is your team recognition summary.'}</p>`;
+      html = `<p><strong>📈 ${title || 'Weekly Recognition Summary'}</strong></p><p>${message || 'Here is your team recognition summary.'}</p>`;
+      break;
     default:
-      return `<p><strong>📢 Notification</strong></p><p>${message || 'You have a new notification from Grattia.'}</p>`;
+      html = `<p><strong>📢 Notification</strong></p><p>${message || 'You have a new notification from Grattia.'}</p>`;
   }
+
+  if (gif_url) {
+    html += `<p><img src="${gif_url}" alt="GIF" width="300" /></p>`;
+  }
+
+  return html;
 }
 
 /** Build MessageCard for webhook */
