@@ -144,7 +144,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
   };
 
   const { mutate: givePoints, isLoading: isSubmitting } = useOptimisticMutation({
-    mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string }) => {
+    mutationFn: async (variables: { member: DialogTeamMember; points: number; description: string; gifUrl?: string }) => {
       const { data, error } = await supabase.rpc('transfer_points_between_users', {
         sender_user_id: user!.id,
         recipient_user_id: variables.member.user_id,
