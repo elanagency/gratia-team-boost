@@ -13,7 +13,7 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   isAdminLoading: boolean;
-  isAuthLoading: boolean; // Alias for isLoading for clarity
+  isAuthLoading: boolean;
   firstName: string;
   lastName: string;
   userName: string;
@@ -26,6 +26,7 @@ type AuthContextType = {
   totalPoints: number;
   department: string | null;
   status: string;
+  avatarUrl: string | null;
   signOut: () => Promise<void>;
 };
 
