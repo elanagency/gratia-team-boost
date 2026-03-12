@@ -19,6 +19,7 @@ type PointTransaction = {
   points: number;
   description: string;
   structured_message?: string;
+  gif_url?: string;
   created_at: string;
   sender_name: string;
   recipient_name: string;
