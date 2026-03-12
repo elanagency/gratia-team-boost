@@ -132,7 +132,7 @@ export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps
           status: (profile.status as 'invited' | 'active' | 'deactivated') || 'invited',
           first_login_at: profile.first_login_at,
           avatar_url: (profile as any).avatar_url || null
-      });
+        };
       });
       
       setTeamMembers(formattedMembers);
