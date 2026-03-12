@@ -18,7 +18,8 @@ const UnifiedDashboardLayout = () => {
     isAdmin,
     isPlatformAdmin,
     status,
-    companyId
+    companyId,
+    avatarUrl
   } = useAuth();
   const sessionTrackedRef = useRef(false);
   
