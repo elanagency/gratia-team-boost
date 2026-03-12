@@ -366,6 +366,7 @@ export function GivePointsCard() {
       setText("");
       setMentions([]);
       setPoints([]);
+      setSelectedGif(null);
       
       // Invalidate all relevant queries to refresh feeds and points
       await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
