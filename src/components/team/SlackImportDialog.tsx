@@ -336,7 +336,7 @@ const SlackImportDialog: React.FC<SlackImportDialogProps> = ({ open, onOpenChang
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Import result */}
             {importResult && (

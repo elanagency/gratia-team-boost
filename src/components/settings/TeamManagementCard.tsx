@@ -198,6 +198,12 @@ export const TeamManagementCard = () => {
         member={memberToEdit}
         onSuccess={handleEditSuccess}
       />
+
+      <SlackImportDialog
+        open={slackImportOpen}
+        onOpenChange={setSlackImportOpen}
+        onSuccess={fetchTeamMembers}
+      />
     </>
   );
 };
