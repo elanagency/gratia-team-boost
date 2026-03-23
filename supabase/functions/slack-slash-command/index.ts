@@ -198,7 +198,8 @@ Deno.serve(async (req) => {
   const text = params.get('text') || '';
   const triggerId = params.get('trigger_id');
 
-  console.log('[SLACK-SLASH-COMMAND] Received command:', { teamId, senderSlackUserId, text, hasTriggerId: !!triggerId });
+  const command = params.get('command');
+  console.log('[SLACK-SLASH-COMMAND] Received command:', { command, teamId, senderSlackUserId, text, hasTriggerId: !!triggerId });
 
   if (!teamId || !senderSlackUserId) {
     return new Response(
@@ -207,8 +208,8 @@ Deno.serve(async (req) => {
     );
   }
 
-  // If no text provided, open the Block Kit modal instead
-  if (!text.trim() && triggerId) {
+  // /give_recognition always opens the Block Kit modal
+  if (command === '/give_recognition' && triggerId) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: integration, error: integrationError } = await supabase
