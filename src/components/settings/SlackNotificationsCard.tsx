@@ -316,6 +316,31 @@ const SlackNotificationsCard = () => {
 
             <Separator />
 
+            {/* Import from Slack */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+              <div>
+                <h4 className="font-medium text-foreground text-sm">Import Team from Slack</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Invite workspace members directly — they'll be auto-linked for the /grattia command.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSlackImportOpen(true)}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Import Members
+              </Button>
+            </div>
+
+            <SlackImportDialog
+              open={slackImportOpen}
+              onOpenChange={setSlackImportOpen}
+            />
+
+            <Separator />
+
             {/* Slack User Linking */}
             {integration?.company_id && (
               <SlackUserLinking companyId={integration.company_id} />

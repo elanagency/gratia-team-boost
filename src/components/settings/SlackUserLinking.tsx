@@ -159,6 +159,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
 
       <p className="text-sm text-muted-foreground">
         Match Slack workspace members to Grattia profiles so the <code className="text-xs bg-muted px-1 py-0.5 rounded">/grattia</code> command works even when emails differ.
+        You can also <strong>import new members directly from Slack</strong> using the Import Members button above.
       </p>
 
       {result && (
