@@ -1,47 +1,60 @@
 
+Current read: no, this is not the ideal setup for the UX you want.
 
-## Separate `/give_recognition` Modal Command + Fix Signature Issue
+Your screenshots strongly suggest:
+- The duplicate `/grattia` and `/give_recognition` entries are coming from the Slack App Dashboard, where those commands were created more than once.
+- The Google Calendar-style “Create event” item is not a slash command. It’s a Slack shortcut/action, which is why it appears without a leading `/`.
+- The modal also is not opening because the current slash-command request is still failing signature verification (`[SLACK-SLASH-COMMAND] Invalid signature` in logs), so Slack never reaches the modal-opening step.
 
-### Summary
+Implementation plan
 
-Two slash commands instead of one:
-- `/grattia @user 50 message` -- keeps existing text-based flow (no changes)
-- `/give_recognition` -- opens the Block Kit modal popup
+1. Pivot the popup flow to the correct Slack feature
+- Keep `/grattia` as the legacy text command only.
+- Remove the new `/give_recognition` slash-command approach.
+- Replace it with a Slack shortcut labeled `Give recognition`, so it behaves more like the Google Calendar action you showed.
 
-Both commands will point to the same `slack-slash-command` edge function, which will check the `command` parameter to decide behavior.
+2. Clean up the Slack app configuration
+- In Slack App Dashboard → Slash Commands:
+  - keep exactly one `/grattia`
+  - delete both `/give_recognition` entries
+  - delete any duplicate `/grattia` entries
+- In Slack App Dashboard → Shortcuts:
+  - add one shortcut named `Give recognition`
+  - set its callback ID to something stable like `give_recognition`
+- Keep Interactivity enabled and pointed at `slack-interactions`
 
-### Root Cause of Current Issue
+3. Update backend flow
+- `slack-slash-command`
+  - handle only `/grattia @user [points] [message]`
+  - stop trying to open the modal
+- `slack-interactions`
+  - handle `type=shortcut` for the new `Give recognition` shortcut
+  - use the shortcut `trigger_id` to call `views.open`
+  - continue handling `view_submission` for the modal submit
+- Reuse the existing transfer logic so both flows create recognition the same way
 
-The `slack-interactions` function is failing with "Invalid signature". This is likely because Supabase's edge function infrastructure may be interfering with the raw body before our code reads it. The fix is to ensure we read the body correctly and add debug logging to diagnose if the issue persists.
+4. Fix the real blocker: Slack signature validation
+- Add consistent request logging to both Slack endpoints
+- Tighten signature verification so we can tell whether the issue is:
+  - wrong signing secret in Supabase
+  - different Slack app installed than the one being edited
+  - malformed request body handling
+- If the secret mismatch is confirmed, update `SLACK_SIGNING_SECRET` to match the exact Slack app currently installed in this workspace
 
-### Implementation
+5. Test the final Slack UX
+- Verify `/grattia @user 50 message` still works
+- Verify `Give recognition` opens the modal from Slack’s action menu
+- Verify submit closes the modal and posts the recognition successfully
+- Verify there is only one visible `/grattia` and one `Give recognition`
 
-**1. Update `slack-slash-command/index.ts`**
-- Remove the "empty text = open modal" logic from `/grattia`
-- Add a check for `params.get('command')`: if it equals `/give_recognition`, open the Block Kit modal
-- `/grattia` stays purely text-based as before
-- Add more detailed error logging for the `views.open` call
+Technical details
+- Right now the codebase supports slash commands and modal submissions, but not shortcut-triggered modal opening.
+- `slack-interactions` currently only handles `view_submission`; it needs to also handle Slack shortcut payloads.
+- The database looks clean: only one `slack_integrations` row exists, so the duplicate menu items are not coming from Supabase.
+- There are no recent `slack-interactions` logs, which fits the symptom: the modal is not opening, so no submission is reaching that endpoint.
 
-**2. Fix `slack-interactions/index.ts` signature verification**
-- Add debug logging to capture the raw body length, timestamp, and signature headers
-- Ensure the body string is read exactly once and used consistently
-- Add a fallback: if `SLACK_SIGNING_SECRET` is empty/undefined, log an explicit error
-
-**3. Slack App Dashboard (manual, one-time)**
-- Create a new slash command `/give_recognition` pointing to the same URL: `https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/slack-slash-command`
-- The Interactivity Request URL stays as: `https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/slack-interactions`
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `supabase/functions/slack-slash-command/index.ts` | Route by `command` param: `/give_recognition` opens modal, `/grattia` stays text-only |
-| `supabase/functions/slack-interactions/index.ts` | Add debug logging to signature verification for diagnosing failures |
-
-### User Action Required After Deploy
-
-In the Slack App Dashboard under **Slash Commands**, create a new command:
-- Command: `/give_recognition`
-- Request URL: `https://kbjcjtycmfdjfnduxiud.supabase.co/functions/v1/slack-slash-command`
-- Short description: "Open a form to give recognition to a team member"
-
+Expected result after implementation
+- `/grattia` remains the typed command
+- `Give recognition` becomes the cleaner popup action
+- the duplicate command clutter disappears
+- the modal behaves like the Slack-native action style you were expecting
