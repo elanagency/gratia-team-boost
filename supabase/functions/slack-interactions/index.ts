@@ -331,21 +331,6 @@ Deno.serve(async (req) => {
 
     console.log('[SLACK-INTERACTIONS] Points transferred successfully:', { sender: senderName, recipient: recipientName, points });
 
-    if (integration.default_channel_id) {
-      try {
-        await fetch('https://slack.com/api/chat.postMessage', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${bot_token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            channel: integration.default_channel_id,
-            text: `🎉 *${senderName}* gave *${points} points* to *${recipientName}*!\n_"${message.trim()}"_`,
-            mrkdwn: true,
-          }),
-        });
-      } catch (postError) {
-        console.warn('[SLACK-INTERACTIONS] Failed to post confirmation (non-blocking):', postError);
-      }
-    }
 
     try {
       await supabase.functions.invoke('send-slack-notification', {
