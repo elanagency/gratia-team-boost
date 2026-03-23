@@ -54,6 +54,23 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
     enabled: !!companyId,
   });
 
+  // Fetch already-linked profiles on mount
+  const { data: initialLinkedProfiles } = useQuery({
+    queryKey: ['linkedSlackProfiles', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, slack_user_id')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('slack_user_id', 'is', null)
+        .order('first_name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
+
   const handleAutoLink = async () => {
     setIsLinking(true);
     try {
@@ -63,7 +80,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
       if (error) throw error;
       setResult(data as AutoLinkResult);
       queryClient.invalidateQueries({ queryKey: ['companyMembersForLinking'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['linkedSlackProfiles'] });
       const linkedCount = (data as AutoLinkResult).linked.length;
       if (linkedCount > 0) {
         toast.success(`Auto-linked ${linkedCount} user${linkedCount > 1 ? 's' : ''}`);
@@ -108,6 +125,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
         }
       }
       queryClient.invalidateQueries({ queryKey: ['companyMembersForLinking'] });
+      queryClient.invalidateQueries({ queryKey: ['linkedSlackProfiles'] });
     } catch (error) {
       toast.error('Failed to link user');
     } finally {
@@ -131,6 +149,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
         });
       }
       queryClient.invalidateQueries({ queryKey: ['companyMembersForLinking'] });
+      queryClient.invalidateQueries({ queryKey: ['linkedSlackProfiles'] });
     } catch (error) {
       toast.error('Failed to unlink user');
     }
@@ -161,6 +180,34 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
         Match Slack workspace members to Grattia profiles so the <code className="text-xs bg-muted px-1 py-0.5 rounded">/grattia</code> command works even when emails differ.
         You can also <strong>import new members directly from Slack</strong> using the Import Members button above.
       </p>
+
+      {/* Show already-linked from initial query when auto-link hasn't been run yet */}
+      {!result && initialLinkedProfiles && initialLinkedProfiles.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Link2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">
+              Linked ({initialLinkedProfiles.length})
+            </span>
+          </div>
+          <div className="space-y-1">
+            {initialLinkedProfiles.map((p) => (
+              <div key={p.id} className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm">
+                <span>{p.first_name} {p.last_name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => handleUnlink(p.id)}
+                >
+                  <Unlink className="h-3 w-3 mr-1" />
+                  Unlink
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className="space-y-4">
