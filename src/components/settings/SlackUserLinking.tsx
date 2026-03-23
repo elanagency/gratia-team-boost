@@ -54,6 +54,23 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
     enabled: !!companyId,
   });
 
+  // Fetch already-linked profiles on mount
+  const { data: initialLinkedProfiles } = useQuery({
+    queryKey: ['linkedSlackProfiles', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, slack_user_id')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('slack_user_id', 'is', null)
+        .order('first_name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
+
   const handleAutoLink = async () => {
     setIsLinking(true);
     try {
