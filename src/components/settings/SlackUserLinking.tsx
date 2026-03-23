@@ -149,6 +149,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
         });
       }
       queryClient.invalidateQueries({ queryKey: ['companyMembersForLinking'] });
+      queryClient.invalidateQueries({ queryKey: ['linkedSlackProfiles'] });
     } catch (error) {
       toast.error('Failed to unlink user');
     }
