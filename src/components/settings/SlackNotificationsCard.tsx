@@ -28,6 +28,7 @@ const SlackNotificationsCard = () => {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState(false);
+  const [slackImportOpen, setSlackImportOpen] = useState(false);
 
   const inviteCommand = "/invite @Grattia";
 
