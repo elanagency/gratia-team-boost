@@ -94,7 +94,7 @@ serve(async (req: Request) => {
   }
   
   try {
-    const { name, email, department, companyId, role = "member", is_admin = false, invitedBy, origin, birthday, companyStartDate } = await req.json();
+    const { name, email, department, companyId, role = "member", is_admin = false, invitedBy, origin, birthday, companyStartDate, slack_user_id } = await req.json();
     
     // Validate required inputs
     if (!name || !email || !companyId || !invitedBy) {
