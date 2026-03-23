@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info, UserPlus } from "lucide-react";
+import SlackImportDialog from "@/components/team/SlackImportDialog";
 import slackLogo from "@/assets/slack-logo.webp";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ const SlackNotificationsCard = () => {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState(false);
+  const [slackImportOpen, setSlackImportOpen] = useState(false);
 
   const inviteCommand = "/invite @Grattia";
 
@@ -311,6 +313,31 @@ const SlackNotificationsCard = () => {
                 ))}
               </div>
             </div>
+
+            <Separator />
+
+            {/* Import from Slack */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+              <div>
+                <h4 className="font-medium text-foreground text-sm">Import Team from Slack</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Invite workspace members directly — they'll be auto-linked for the /grattia command.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSlackImportOpen(true)}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Import Members
+              </Button>
+            </div>
+
+            <SlackImportDialog
+              open={slackImportOpen}
+              onOpenChange={setSlackImportOpen}
+            />
 
             <Separator />
 
