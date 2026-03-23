@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Users, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { NewDepartmentCombobox } from "./NewDepartmentCombobox";
+import NewDepartmentCombobox from "./NewDepartmentCombobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
