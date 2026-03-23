@@ -179,6 +179,34 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
         You can also <strong>import new members directly from Slack</strong> using the Import Members button above.
       </p>
 
+      {/* Show already-linked from initial query when auto-link hasn't been run yet */}
+      {!result && initialLinkedProfiles && initialLinkedProfiles.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Link2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">
+              Linked ({initialLinkedProfiles.length})
+            </span>
+          </div>
+          <div className="space-y-1">
+            {initialLinkedProfiles.map((p) => (
+              <div key={p.id} className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm">
+                <span>{p.first_name} {p.last_name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => handleUnlink(p.id)}
+                >
+                  <Unlink className="h-3 w-3 mr-1" />
+                  Unlink
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {result && (
         <div className="space-y-4">
           {/* Newly linked */}
