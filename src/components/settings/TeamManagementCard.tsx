@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle, Building2 } from "lucide-react";
+import { Users, AlertTriangle, Building2, MessageSquare } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
@@ -11,6 +11,8 @@ import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import EditTeamMemberDialog from "@/components/team/EditTeamMemberDialog";
 import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
+import SlackImportDialog from "@/components/team/SlackImportDialog";
+import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
