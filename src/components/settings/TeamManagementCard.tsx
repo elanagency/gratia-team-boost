@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle, Building2 } from "lucide-react";
+import { Users, AlertTriangle, Building2, MessageSquare } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
@@ -11,10 +11,14 @@ import TeamMemberTable from "@/components/team/TeamMemberTable";
 import DeleteMemberDialog from "@/components/team/DeleteMemberDialog";
 import EditTeamMemberDialog from "@/components/team/EditTeamMemberDialog";
 import { CSVUploadDialog } from "@/components/team/CSVUploadDialog";
+import SlackImportDialog from "@/components/team/SlackImportDialog";
+import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TeamManagementCard = () => {
+  const { isConnected: isSlackConnected } = useSlackIntegration();
+  const [slackImportOpen, setSlackImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -145,6 +149,16 @@ export const TeamManagementCard = () => {
                 <DepartmentManagement embedded />
               </DialogContent>
             </Dialog>
+            {isSlackConnected && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSlackImportOpen(true)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Import from Slack
+              </Button>
+            )}
             <TeamInviteManager onSuccess={fetchTeamMembers} />
             <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>
@@ -183,6 +197,12 @@ export const TeamManagementCard = () => {
         onOpenChange={setEditDialogOpen}
         member={memberToEdit}
         onSuccess={handleEditSuccess}
+      />
+
+      <SlackImportDialog
+        open={slackImportOpen}
+        onOpenChange={setSlackImportOpen}
+        onSuccess={fetchTeamMembers}
       />
     </>
   );
