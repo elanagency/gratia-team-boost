@@ -129,10 +129,10 @@ serve(async (req) => {
     // Points remain with the inactive profile to preserve transaction history
     console.log('[DELETE-MEMBER] Member points will remain with inactive profile:', member.points)
 
-    // Mark profile as inactive instead of deleting auth user
+    // Mark profile as inactive and clear slack_user_id to free the Slack identity
     const { error: profileUpdateError } = await supabase
       .from('profiles')
-      .update({ status: 'deactivated' })
+      .update({ status: 'deactivated', slack_user_id: null })
       .eq('id', userId)
 
     if (profileUpdateError) {
