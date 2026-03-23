@@ -311,16 +311,17 @@ serve(async (req: Request) => {
         first_name: firstName,
         last_name: lastName,
         company_id: companyId,
-        is_admin: is_admin === true, // Use the passed is_admin value
+        is_admin: is_admin === true,
         role: role.toLowerCase(),
         department_id: departmentId,
-        department: department || null, // Keep legacy field for backward compatibility
-        points: 0, // New team members start with 0 points, get monthly allocation on first login
-        monthly_points: 100, // Give initial monthly points
-        status: 'invited', // Set initial status as invited
-        temporary_password: password, // Store the generated password for resending invites
+        department: department || null,
+        points: 0,
+        monthly_points: 100,
+        status: 'invited',
+        temporary_password: password,
         birthday: birthday || null,
         company_start_date: companyStartDate || null,
+        ...(slack_user_id ? { slack_user_id } : {}),
       })
       .select()
       .single();
