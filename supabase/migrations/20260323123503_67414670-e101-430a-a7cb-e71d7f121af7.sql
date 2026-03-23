@@ -1,0 +1,1 @@
+UPDATE public.profiles SET slack_user_id = NULL WHERE status = 'deactivated' AND slack_user_id IS NOT NULL;

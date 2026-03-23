@@ -83,6 +83,13 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Clear any stale link on deactivated profiles first to avoid unique constraint violation
+      await supabase
+        .from('profiles')
+        .update({ slack_user_id: null })
+        .eq('slack_user_id', slack_user_id)
+        .eq('status', 'deactivated');
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ slack_user_id })
