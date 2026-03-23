@@ -149,6 +149,16 @@ export const TeamManagementCard = () => {
                 <DepartmentManagement embedded />
               </DialogContent>
             </Dialog>
+            {isSlackConnected && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSlackImportOpen(true)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Import from Slack
+              </Button>
+            )}
             <TeamInviteManager onSuccess={fetchTeamMembers} />
             <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>
