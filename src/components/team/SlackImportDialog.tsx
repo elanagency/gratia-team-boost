@@ -243,7 +243,7 @@ const SlackImportDialog: React.FC<SlackImportDialogProps> = ({ open, onOpenChang
               )}
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 max-h-[400px] -mx-6 px-6">
+            <div className="flex-1 min-h-0 overflow-y-auto max-h-[400px] -mx-6 px-6">
               {/* Available members */}
               {filteredAvailable.length > 0 && (
                 <div className="space-y-1">
