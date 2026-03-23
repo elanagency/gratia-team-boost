@@ -86,105 +86,25 @@ async function lookupSlackUserByUsername(botToken: string, username: string): Pr
   return user?.id || null;
 }
 
-async function openRecognitionModal(botToken: string, triggerId: string): Promise<boolean> {
-  const modal = {
-    type: 'modal' as const,
-    callback_id: 'grattia_recognition',
-    title: {
-      type: 'plain_text' as const,
-      text: '🎉 Give Recognition',
-    },
-    submit: {
-      type: 'plain_text' as const,
-      text: 'Send Recognition',
-    },
-    close: {
-      type: 'plain_text' as const,
-      text: 'Cancel',
-    },
-    blocks: [
-      {
-        type: 'input',
-        block_id: 'recipient_block',
-        label: {
-          type: 'plain_text' as const,
-          text: 'Who do you want to recognize?',
-        },
-        element: {
-          type: 'users_select',
-          action_id: 'recipient_user',
-          placeholder: {
-            type: 'plain_text' as const,
-            text: 'Select a team member',
-          },
-        },
-      },
-      {
-        type: 'input',
-        block_id: 'points_block',
-        label: {
-          type: 'plain_text' as const,
-          text: 'Points',
-        },
-        element: {
-          type: 'plain_text_input',
-          action_id: 'points_value',
-          placeholder: {
-            type: 'plain_text' as const,
-            text: 'e.g. 50',
-          },
-        },
-        hint: {
-          type: 'plain_text' as const,
-          text: 'Enter a positive number of points to give.',
-        },
-      },
-      {
-        type: 'input',
-        block_id: 'message_block',
-        label: {
-          type: 'plain_text' as const,
-          text: 'Recognition Message',
-        },
-        element: {
-          type: 'plain_text_input',
-          action_id: 'message_text',
-          multiline: true,
-          placeholder: {
-            type: 'plain_text' as const,
-            text: 'Amazing teamwork on the project!',
-          },
-        },
-      },
-    ],
-  };
-
-  const res = await fetch('https://slack.com/api/views.open', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${botToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      trigger_id: triggerId,
-      view: modal,
-    }),
-  });
-
-  const data = await res.json();
-  if (!data.ok) {
-    console.error('[SLACK-SLASH-COMMAND] views.open failed:', data.error);
-    return false;
-  }
-  return true;
-}
-
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
   const body = await req.text();
+
+  // Debug logging
+  console.log('[SLACK-SLASH-COMMAND] Request received:', {
+    bodyLength: body.length,
+    hasTimestamp: !!req.headers.get('x-slack-request-timestamp'),
+    hasSignature: !!req.headers.get('x-slack-signature'),
+    signingSecretLength: SLACK_SIGNING_SECRET?.length ?? 0,
+  });
+
+  if (!SLACK_SIGNING_SECRET) {
+    console.error('[SLACK-SLASH-COMMAND] SLACK_SIGNING_SECRET is not set!');
+    return new Response('Server misconfigured', { status: 500 });
+  }
 
   const isValid = await verifySlackSignature(req, body);
   if (!isValid) {
@@ -196,10 +116,8 @@ Deno.serve(async (req) => {
   const teamId = params.get('team_id');
   const senderSlackUserId = params.get('user_id');
   const text = params.get('text') || '';
-  const triggerId = params.get('trigger_id');
 
-  const command = params.get('command');
-  console.log('[SLACK-SLASH-COMMAND] Received command:', { command, teamId, senderSlackUserId, text, hasTriggerId: !!triggerId });
+  console.log('[SLACK-SLASH-COMMAND] Parsed command:', { teamId, senderSlackUserId, text });
 
   if (!teamId || !senderSlackUserId) {
     return new Response(
@@ -208,42 +126,13 @@ Deno.serve(async (req) => {
     );
   }
 
-  // /give_recognition always opens the Block Kit modal
-  if (command === '/give_recognition' && triggerId) {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    const { data: integration, error: integrationError } = await supabase
-      .from('slack_integrations')
-      .select('bot_token')
-      .eq('workspace_id', teamId)
-      .single();
-
-    if (integrationError || !integration) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ Grattia is not connected to this Slack workspace.' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const opened = await openRecognitionModal(integration.bot_token, triggerId);
-    if (!opened) {
-      return new Response(
-        JSON.stringify({ response_type: 'ephemeral', text: '❌ Could not open the recognition form. Please try again.' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Return empty 200 — the modal handles the rest
-    return new Response('', { status: 200 });
-  }
-
-  // ===== FALLBACK: Text-based command parsing (existing logic) =====
+  // This function only handles /grattia text-based commands
   const parsed = parseCommandText(text);
   if (!parsed) {
     return new Response(
       JSON.stringify({
         response_type: 'ephemeral',
-        text: '❌ Usage: `/grattia @user [points] [message]`\nOr use `/give_recognition` to open the recognition form.\nExample: `/grattia @john 50 Amazing teamwork on the project!`',
+        text: '❌ Usage: `/grattia @user [points] [message]`\nExample: `/grattia @john 50 Amazing teamwork on the project!`',
       }),
       { headers: { 'Content-Type': 'application/json' } }
     );
