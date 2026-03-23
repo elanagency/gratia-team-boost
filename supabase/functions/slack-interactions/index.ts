@@ -298,6 +298,7 @@ Deno.serve(async (req) => {
       transfer_company_id: company_id,
       points_amount: points,
       transfer_description: message.trim(),
+      transfer_gif_url: null,
     });
 
     if (rpcError) {
