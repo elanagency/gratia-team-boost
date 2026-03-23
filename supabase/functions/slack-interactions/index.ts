@@ -52,11 +52,9 @@ async function resolveProfile(
   companyId: string,
   linkedProfiles: any[] | null
 ) {
-  // Try slack_user_id first
   let profile = linkedProfiles?.find((p: any) => p.slack_user_id === slackUserId);
   if (profile) return profile;
 
-  // Fallback: email-based lookup
   const email = await getSlackUserEmail(botToken, slackUserId);
   if (!email) return null;
 
@@ -75,6 +73,75 @@ async function resolveProfile(
   return data;
 }
 
+async function openRecognitionModal(botToken: string, triggerId: string): Promise<boolean> {
+  const modal = {
+    type: 'modal' as const,
+    callback_id: 'grattia_recognition',
+    title: {
+      type: 'plain_text' as const,
+      text: '🎉 Give Recognition',
+    },
+    submit: {
+      type: 'plain_text' as const,
+      text: 'Send Recognition',
+    },
+    close: {
+      type: 'plain_text' as const,
+      text: 'Cancel',
+    },
+    blocks: [
+      {
+        type: 'input',
+        block_id: 'recipient_block',
+        label: { type: 'plain_text' as const, text: 'Who do you want to recognize?' },
+        element: {
+          type: 'users_select',
+          action_id: 'recipient_user',
+          placeholder: { type: 'plain_text' as const, text: 'Select a team member' },
+        },
+      },
+      {
+        type: 'input',
+        block_id: 'points_block',
+        label: { type: 'plain_text' as const, text: 'Points' },
+        element: {
+          type: 'plain_text_input',
+          action_id: 'points_value',
+          placeholder: { type: 'plain_text' as const, text: 'e.g. 50' },
+        },
+        hint: { type: 'plain_text' as const, text: 'Enter a positive number of points to give.' },
+      },
+      {
+        type: 'input',
+        block_id: 'message_block',
+        label: { type: 'plain_text' as const, text: 'Recognition Message' },
+        element: {
+          type: 'plain_text_input',
+          action_id: 'message_text',
+          multiline: true,
+          placeholder: { type: 'plain_text' as const, text: 'Amazing teamwork on the project!' },
+        },
+      },
+    ],
+  };
+
+  const res = await fetch('https://slack.com/api/views.open', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${botToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ trigger_id: triggerId, view: modal }),
+  });
+
+  const data = await res.json();
+  if (!data.ok) {
+    console.error('[SLACK-INTERACTIONS] views.open failed:', data.error, data);
+    return false;
+  }
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -82,15 +149,12 @@ Deno.serve(async (req) => {
 
   const body = await req.text();
 
-  // Debug logging for signature verification
-  const timestamp = req.headers.get('x-slack-request-timestamp');
-  const slackSig = req.headers.get('x-slack-signature');
-  console.log('[SLACK-INTERACTIONS] Signature debug:', {
+  // Debug logging
+  console.log('[SLACK-INTERACTIONS] Request received:', {
     bodyLength: body.length,
-    hasTimestamp: !!timestamp,
-    hasSignature: !!slackSig,
+    hasTimestamp: !!req.headers.get('x-slack-request-timestamp'),
+    hasSignature: !!req.headers.get('x-slack-signature'),
     signingSecretLength: SLACK_SIGNING_SECRET?.length ?? 0,
-    bodyPreview: body.substring(0, 100),
   });
 
   if (!SLACK_SIGNING_SECRET) {
@@ -100,7 +164,7 @@ Deno.serve(async (req) => {
 
   const isValid = await verifySlackSignature(req, body);
   if (!isValid) {
-    console.error('[SLACK-INTERACTIONS] Invalid signature - computed did not match');
+    console.error('[SLACK-INTERACTIONS] Invalid signature');
     return new Response('Invalid signature', { status: 401 });
   }
 
@@ -113,11 +177,45 @@ Deno.serve(async (req) => {
   }
 
   const payload = JSON.parse(payloadStr);
-  console.log('[SLACK-INTERACTIONS] Received interaction:', payload.type, payload.view?.callback_id);
+  console.log('[SLACK-INTERACTIONS] Received interaction:', payload.type, payload.callback_id || payload.view?.callback_id);
 
-  // Only handle view_submission for our modal
+  // ==========================================
+  // Handle Global Shortcut: "Give recognition"
+  // ==========================================
+  if (payload.type === 'shortcut' && payload.callback_id === 'give_recognition') {
+    const triggerId = payload.trigger_id;
+    const teamId = payload.team?.id;
+
+    if (!triggerId || !teamId) {
+      console.error('[SLACK-INTERACTIONS] Shortcut missing trigger_id or team.id');
+      return new Response('', { status: 200 });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const { data: integration, error: integrationError } = await supabase
+      .from('slack_integrations')
+      .select('bot_token')
+      .eq('workspace_id', teamId)
+      .single();
+
+    if (integrationError || !integration) {
+      console.error('[SLACK-INTERACTIONS] No integration for workspace:', teamId);
+      return new Response('', { status: 200 });
+    }
+
+    const opened = await openRecognitionModal(integration.bot_token, triggerId);
+    if (!opened) {
+      console.error('[SLACK-INTERACTIONS] Failed to open modal for shortcut');
+    }
+
+    return new Response('', { status: 200 });
+  }
+
+  // ==========================================
+  // Handle Modal Submission
+  // ==========================================
   if (payload.type !== 'view_submission' || payload.view?.callback_id !== 'grattia_recognition') {
-    // Acknowledge unknown interactions
     return new Response('', { status: 200 });
   }
 
@@ -125,45 +223,28 @@ Deno.serve(async (req) => {
   const senderSlackUserId = payload.user.id;
   const teamId = payload.user.team_id;
 
-  // Extract form values
   const recipientSlackUserId = values.recipient_block.recipient_user.selected_user;
   const pointsText = values.points_block.points_value.value;
   const message = values.message_block.message_text.value;
 
-  // Validate points
   const points = parseInt(pointsText, 10);
   if (isNaN(points) || points <= 0) {
     return new Response(
-      JSON.stringify({
-        response_action: 'errors',
-        errors: {
-          points_block: 'Please enter a valid positive number.',
-        },
-      }),
+      JSON.stringify({ response_action: 'errors', errors: { points_block: 'Please enter a valid positive number.' } }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   }
 
   if (!message || !message.trim()) {
     return new Response(
-      JSON.stringify({
-        response_action: 'errors',
-        errors: {
-          message_block: 'Please enter a recognition message.',
-        },
-      }),
+      JSON.stringify({ response_action: 'errors', errors: { message_block: 'Please enter a recognition message.' } }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   }
 
   if (senderSlackUserId === recipientSlackUserId) {
     return new Response(
-      JSON.stringify({
-        response_action: 'errors',
-        errors: {
-          recipient_block: "You can't give points to yourself! 😄",
-        },
-      }),
+      JSON.stringify({ response_action: 'errors', errors: { recipient_block: "You can't give points to yourself! 😄" } }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -171,7 +252,6 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // Look up integration
     const { data: integration, error: integrationError } = await supabase
       .from('slack_integrations')
       .select('company_id, bot_token, default_channel_id')
@@ -180,19 +260,13 @@ Deno.serve(async (req) => {
 
     if (integrationError || !integration) {
       return new Response(
-        JSON.stringify({
-          response_action: 'errors',
-          errors: {
-            recipient_block: 'Grattia is not connected to this Slack workspace.',
-          },
-        }),
+        JSON.stringify({ response_action: 'errors', errors: { recipient_block: 'Grattia is not connected to this Slack workspace.' } }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     const { company_id, bot_token } = integration;
 
-    // Resolve both profiles
     const { data: slackLinkedProfiles } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, monthly_points, company_id, slack_user_id')
@@ -206,29 +280,18 @@ Deno.serve(async (req) => {
 
     if (!senderProfile) {
       return new Response(
-        JSON.stringify({
-          response_action: 'errors',
-          errors: {
-            recipient_block: 'Your Grattia account could not be found. Ask your admin to link your Slack account.',
-          },
-        }),
+        JSON.stringify({ response_action: 'errors', errors: { recipient_block: 'Your Grattia account could not be found. Ask your admin to link your Slack account.' } }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     if (!recipientProfile) {
       return new Response(
-        JSON.stringify({
-          response_action: 'errors',
-          errors: {
-            recipient_block: 'That user is not linked to a Grattia account. Ask your admin to link their account.',
-          },
-        }),
+        JSON.stringify({ response_action: 'errors', errors: { recipient_block: 'That user is not linked to a Grattia account. Ask your admin to link their account.' } }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Transfer points
     const { data: result, error: rpcError } = await supabase.rpc('transfer_points_between_users', {
       sender_user_id: senderProfile.id,
       recipient_user_id: recipientProfile.id,
@@ -240,12 +303,7 @@ Deno.serve(async (req) => {
     if (rpcError) {
       console.error('[SLACK-INTERACTIONS] RPC error:', rpcError);
       return new Response(
-        JSON.stringify({
-          response_action: 'errors',
-          errors: {
-            points_block: 'Something went wrong transferring points. Please try again.',
-          },
-        }),
+        JSON.stringify({ response_action: 'errors', errors: { points_block: 'Something went wrong transferring points. Please try again.' } }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -262,35 +320,21 @@ Deno.serve(async (req) => {
         errorBlock = 'recipient_block';
       }
       return new Response(
-        JSON.stringify({
-          response_action: 'errors',
-          errors: {
-            [errorBlock]: errorMsg,
-          },
-        }),
+        JSON.stringify({ response_action: 'errors', errors: { [errorBlock]: errorMsg } }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Success — post in-channel message
     const recipientName = `${recipientProfile.first_name} ${recipientProfile.last_name}`;
     const senderName = `${senderProfile.first_name} ${senderProfile.last_name}`;
 
-    console.log('[SLACK-INTERACTIONS] Points transferred successfully:', {
-      sender: senderName,
-      recipient: recipientName,
-      points,
-    });
+    console.log('[SLACK-INTERACTIONS] Points transferred successfully:', { sender: senderName, recipient: recipientName, points });
 
-    // Post confirmation to default channel
     if (integration.default_channel_id) {
       try {
         await fetch('https://slack.com/api/chat.postMessage', {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${bot_token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { Authorization: `Bearer ${bot_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             channel: integration.default_channel_id,
             text: `🎉 *${senderName}* gave *${points} points* to *${recipientName}*!\n_"${message.trim()}"_`,
@@ -302,7 +346,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Also trigger the standard notification flow
     try {
       await supabase.functions.invoke('send-slack-notification', {
         body: {
@@ -318,7 +361,6 @@ Deno.serve(async (req) => {
       console.warn('[SLACK-INTERACTIONS] Failed to send notification (non-blocking):', notifError);
     }
 
-    // Close the modal
     return new Response(
       JSON.stringify({ response_action: 'clear' }),
       { headers: { 'Content-Type': 'application/json' } }
@@ -326,12 +368,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[SLACK-INTERACTIONS] Unexpected error:', error);
     return new Response(
-      JSON.stringify({
-        response_action: 'errors',
-        errors: {
-          points_block: 'An unexpected error occurred. Please try again.',
-        },
-      }),
+      JSON.stringify({ response_action: 'errors', errors: { points_block: 'An unexpected error occurred. Please try again.' } }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   }
