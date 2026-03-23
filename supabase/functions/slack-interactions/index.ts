@@ -82,9 +82,25 @@ Deno.serve(async (req) => {
 
   const body = await req.text();
 
+  // Debug logging for signature verification
+  const timestamp = req.headers.get('x-slack-request-timestamp');
+  const slackSig = req.headers.get('x-slack-signature');
+  console.log('[SLACK-INTERACTIONS] Signature debug:', {
+    bodyLength: body.length,
+    hasTimestamp: !!timestamp,
+    hasSignature: !!slackSig,
+    signingSecretLength: SLACK_SIGNING_SECRET?.length ?? 0,
+    bodyPreview: body.substring(0, 100),
+  });
+
+  if (!SLACK_SIGNING_SECRET) {
+    console.error('[SLACK-INTERACTIONS] SLACK_SIGNING_SECRET is not set!');
+    return new Response('Server misconfigured', { status: 500 });
+  }
+
   const isValid = await verifySlackSignature(req, body);
   if (!isValid) {
-    console.error('[SLACK-INTERACTIONS] Invalid signature');
+    console.error('[SLACK-INTERACTIONS] Invalid signature - computed did not match');
     return new Response('Invalid signature', { status: 401 });
   }
 

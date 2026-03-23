@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         response_type: 'ephemeral',
-        text: '❌ Usage: `/grattia @user [points] [message]`\nOr just type `/grattia` to open the recognition form.\nExample: `/grattia @john 50 Amazing teamwork on the project!`',
+        text: '❌ Usage: `/grattia @user [points] [message]`\nOr use `/give_recognition` to open the recognition form.\nExample: `/grattia @john 50 Amazing teamwork on the project!`',
       }),
       { headers: { 'Content-Type': 'application/json' } }
     );
