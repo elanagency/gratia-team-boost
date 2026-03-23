@@ -1072,28 +1072,17 @@ export type Database = {
         Args: { target_environment?: string }
         Returns: number
       }
-      transfer_points_between_users:
-        | {
-            Args: {
-              points_amount: number
-              recipient_user_id: string
-              sender_user_id: string
-              transfer_company_id: string
-              transfer_description: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              points_amount: number
-              recipient_user_id: string
-              sender_user_id: string
-              transfer_company_id: string
-              transfer_description: string
-              transfer_gif_url?: string
-            }
-            Returns: Json
-          }
+      transfer_points_between_users: {
+        Args: {
+          points_amount: number
+          recipient_user_id: string
+          sender_user_id: string
+          transfer_company_id: string
+          transfer_description: string
+          transfer_gif_url?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
