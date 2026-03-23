@@ -80,7 +80,7 @@ const SlackUserLinking = ({ companyId }: SlackUserLinkingProps) => {
       if (error) throw error;
       setResult(data as AutoLinkResult);
       queryClient.invalidateQueries({ queryKey: ['companyMembersForLinking'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['linkedSlackProfiles'] });
       const linkedCount = (data as AutoLinkResult).linked.length;
       if (linkedCount > 0) {
         toast.success(`Auto-linked ${linkedCount} user${linkedCount > 1 ? 's' : ''}`);
