@@ -501,7 +501,7 @@ export function RecognitionFeed() {
   const TabButton = ({ tab, label }: { tab: 'all' | 'received' | 'sent'; label: string }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+      className={`px-3 py-1 rounded-[7px] text-xs font-medium transition-colors ${
         activeTab === tab
           ? 'bg-foreground text-background'
           : 'text-muted-foreground hover:text-foreground'
