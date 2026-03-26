@@ -125,16 +125,16 @@ export const DashboardSidebar = ({
 
   const giveRecognitionTrigger = (
     <button
-      className="w-full py-2.5 rounded-xl text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
+      className="w-full py-[9.375px] rounded-[13.375px] text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
     >
       Give Recognition
     </button>
   );
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground font-['Inter']">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground font-['Inter'] p-[15px]">
       {/* Logo - centered */}
-      <div className="px-4 pt-6 pb-5 flex justify-center">
+      <div className="pb-[15px] flex justify-center">
         <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
           <img
             src={grattiaLogo}
@@ -145,8 +145,8 @@ export const DashboardSidebar = ({
       </div>
 
       {/* Company card */}
-      <div className="mx-4 mb-4 p-3 rounded-lg bg-white/5">
-        <div className="flex items-center gap-3">
+      <div className="mb-[15px] h-[55px] px-[11.25px] rounded-[13.375px] bg-white/5 flex items-center">
+        <div className="flex items-center gap-[11.25px]">
           {company?.logo_url ? (
             <img
               src={company.logo_url}
@@ -162,7 +162,7 @@ export const DashboardSidebar = ({
             <p className="text-[13px] font-medium text-white truncate">
               {company?.name || companyName || "Company"}
             </p>
-            <p className="text-[11px] text-white/45">
+            <p className="text-[11px] font-normal text-white/45">
               {memberCount ?? "–"} teammate{memberCount !== 1 ? "s" : ""}
             </p>
           </div>
@@ -170,21 +170,21 @@ export const DashboardSidebar = ({
       </div>
 
       {/* Give Recognition button */}
-      <div className="px-4 mb-5">
+      <div className="mb-[22.5px]">
         <GivePointsDialog trigger={giveRecognitionTrigger} />
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 space-y-1">
         {menuItems.map((item) => (
           <Link
             key={item.name}
             to={item.path}
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] leading-[21px] transition-colors ${
+            className={`flex items-center gap-[11.25px] px-[11.25px] py-[7.5px] rounded-[13.375px] text-[14px] leading-[21px] transition-colors ${
               isActive(item.path)
-                ? "bg-white/10 text-white font-medium"
-                : "text-white/70 font-normal hover:text-white hover:bg-white/5"
+                ? "bg-white/[0.06] text-white font-medium"
+                : "text-white/70 font-normal hover:text-white hover:bg-white/[0.03]"
             }`}
           >
             <item.icon className="h-[18px] w-[18px]" />
@@ -194,7 +194,7 @@ export const DashboardSidebar = ({
       </nav>
 
       {/* User footer */}
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/10 pt-[15px]">
         <input
           ref={fileInputRef}
           type="file"
