@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu, Trophy } from "lucide-react";
+import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
