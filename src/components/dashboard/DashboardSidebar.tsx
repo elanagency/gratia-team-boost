@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu, Trophy } from "lucide-react";
+import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -125,15 +125,14 @@ export const DashboardSidebar = ({
 
   const giveRecognitionTrigger = (
     <button
-      className="w-full py-2.5 rounded-xl text-white font-medium text-sm bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center gap-2"
+      className="w-full py-2.5 rounded-xl text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
     >
-      <Trophy className="h-4 w-4" />
       Give Recognition
     </button>
   );
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground font-['Inter']">
       {/* Logo - centered */}
       <div className="px-4 pt-6 pb-5 flex justify-center">
         <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
@@ -243,7 +242,7 @@ export const DashboardSidebar = ({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[260px] flex-shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:flex w-[240px] flex-shrink-0 h-screen sticky top-0">
         {sidebarContent}
       </aside>
 
