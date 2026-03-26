@@ -594,5 +594,6 @@ export function GivePointsCard() {
           )}
         </div>
       </CardContent>
+    </Card>
   );
 }
