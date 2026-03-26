@@ -254,7 +254,7 @@ export const DashboardSidebar = ({
               <Menu className="h-6 w-6" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-[350px] border-0 bg-sidebar">
+          <SheetContent side="left" className="p-0 w-[450px] border-0 bg-sidebar">
             {sidebarContent}
           </SheetContent>
         </Sheet>
