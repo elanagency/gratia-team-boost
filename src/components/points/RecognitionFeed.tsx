@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Cake, PartyPopper, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
@@ -629,14 +630,56 @@ export function RecognitionFeed() {
                             ))}
                           </div>
 
-                          {/* Add Points link */}
-                          <button
-                            onClick={() => handleQuickPoints(thread.mainPost.recipient_id, 10, parsed.cleanText)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors pt-1"
-                          >
-                            <Plus className="h-3 w-3" />
-                            Add Points
-                          </button>
+                          {/* Add Points popover */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="inline-flex items-center gap-1 text-xs font-medium border border-border rounded-full px-3 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors mt-1">
+                                <Plus className="h-3 w-3" />
+                                Add Points
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2" side="bottom" align="start" sideOffset={4}>
+                              <div className="flex items-center gap-2">
+                                {[1, 5, 10].map((pts) => (
+                                  <button
+                                    key={pts}
+                                    onClick={() => handleQuickPoints(thread.mainPost.recipient_id, pts, parsed.cleanText)}
+                                    className="px-3 py-1 text-xs font-medium border border-border rounded-full hover:bg-accent hover:text-accent-foreground transition-colors"
+                                  >
+                                    +{pts}
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+
+                          {/* Tagged along section */}
+                          {thread.comments.length > 0 && (
+                            <div className="pt-2 space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Tagged along:</span>
+                                <Badge className="bg-green-100 text-green-700 border-0 px-2 py-0 rounded-full text-xs font-semibold">
+                                  +{thread.comments.reduce((sum, c) => sum + c.points, 0)} pts
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {thread.comments.map((comment) => (
+                                  <div key={comment.id} className="inline-flex items-center gap-1.5 border border-border rounded-full px-2 py-0.5">
+                                    <Avatar className="h-5 w-5">
+                                      {comment.sender_avatar_url && (
+                                        <AvatarImage src={comment.sender_avatar_url} alt={comment.sender_name} />
+                                      )}
+                                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                                        {getInitials(comment.sender_name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs text-foreground">{comment.sender_name}</span>
+                                    <span className="text-xs font-medium text-green-600">+{comment.points}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
