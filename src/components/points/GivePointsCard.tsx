@@ -596,4 +596,5 @@ export function GivePointsCard() {
       </CardContent>
     </Card>
   );
+  );
 }
