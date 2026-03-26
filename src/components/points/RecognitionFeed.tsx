@@ -501,7 +501,7 @@ export function RecognitionFeed() {
   const TabButton = ({ tab, label }: { tab: 'all' | 'received' | 'sent'; label: string }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+      className={`px-3 py-1 rounded-[7px] text-xs font-medium transition-colors ${
         activeTab === tab
           ? 'bg-foreground text-background'
           : 'text-muted-foreground hover:text-foreground'
@@ -533,12 +533,13 @@ export function RecognitionFeed() {
         {/* Header with tabs */}
         <div className="flex items-center justify-between mb-4">
           <span className="text-base font-semibold" style={{ color: '#0F0533', lineHeight: '24px' }}>Recognition Feed</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
             <TabButton tab="all" label="All" />
             <TabButton tab="received" label="Received" />
             <TabButton tab="sent" label="Sent" />
           </div>
         </div>
+        <Separator className="mb-4" />
 
         {filteredThreads.length > 0 ? (
           <div className="flex flex-col">
