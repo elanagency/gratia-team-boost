@@ -125,9 +125,8 @@ export const DashboardSidebar = ({
 
   const giveRecognitionTrigger = (
     <button
-      className="w-full py-2.5 rounded-xl text-white font-medium text-sm bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center gap-2"
+      className="w-full py-2.5 rounded-xl text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
     >
-      <Trophy className="h-4 w-4" />
       Give Recognition
     </button>
   );
