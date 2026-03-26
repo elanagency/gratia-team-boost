@@ -515,7 +515,11 @@ export function GivePointsCard() {
                           <button
                             key={emoji}
                             onClick={() => {
-                              editorRef.current?.insertText(emoji);
+                              // Insert emoji into the editor by focusing and using execCommand
+                              editorRef.current?.focus();
+                              setTimeout(() => {
+                                document.execCommand('insertText', false, emoji);
+                              }, 0);
                               setEmojiPickerOpen(false);
                             }}
                             className="p-1.5 text-lg hover:bg-muted rounded transition-colors"
