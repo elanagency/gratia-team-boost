@@ -490,18 +490,36 @@ export function RecognitionFeed() {
     return parts;
   };
 
+  const filteredThreads = threadedRecognitions.filter((thread) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'received') return thread.mainPost.recipient_id === user?.id;
+    if (activeTab === 'sent') return thread.mainPost.sender_id === user?.id;
+    return true;
+  });
+
+  const TabButton = ({ tab, label }: { tab: 'all' | 'received' | 'sent'; label: string }) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+        activeTab === tab
+          ? 'bg-foreground text-background'
+          : 'text-muted-foreground hover:text-foreground'
+      }`}
+      style={{ fontSize: '12px', lineHeight: '18px', fontWeight: 500 }}
+    >
+      {label}
+    </button>
+  );
+
   if (isLoading) {
     return (
-    <Card className="dashboard-card h-full">
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-[#F572FF]" />
-            Recognition Feed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
+      <Card className="border border-border rounded-xl shadow-none">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-base font-semibold" style={{ color: '#0F0533', lineHeight: '24px' }}>Recognition Feed</span>
+          </div>
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F572FF]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -509,38 +527,37 @@ export function RecognitionFeed() {
   }
 
   return (
-    <Card className="dashboard-card h-full flex flex-col">
-      <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-[#F572FF]" />
-          Recognition Feed
-        </CardTitle>
-        <CardDescription className="text-sm">
-          Recent team recognitions and celebrations
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0 flex-1 min-h-0 flex flex-col">
-        {threadedRecognitions.length > 0 ? (
-          <div className="space-y-6 flex-1 overflow-y-auto">
-            {threadedRecognitions.map((thread) => {
+    <Card className="border border-border rounded-xl shadow-none flex flex-col">
+      <CardContent className="p-5">
+        {/* Header with tabs */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-base font-semibold" style={{ color: '#0F0533', lineHeight: '24px' }}>Recognition Feed</span>
+          <div className="flex items-center gap-1">
+            <TabButton tab="all" label="All" />
+            <TabButton tab="received" label="Received" />
+            <TabButton tab="sent" label="Sent" />
+          </div>
+        </div>
+
+        {filteredThreads.length > 0 ? (
+          <div className="flex flex-col">
+            {filteredThreads.map((thread, index) => {
               const parsed = parseStructuredMessage(thread.mainPost);
-              const canGivePoints = user?.id !== thread.mainPost.recipient_id && user?.id !== thread.mainPost.sender_id;
               const isCelebration = thread.mainPost.sender_id === thread.mainPost.recipient_id && 
                 (/^🎂/.test(thread.mainPost.description) || /^🎉/.test(thread.mainPost.description));
               const isBirthday = /^🎂/.test(thread.mainPost.description);
               
               return (
-                <div key={thread.mainPost.id} className="border-b border-border/50 pb-6 last:border-b-0">
-                  {/* Main Post */}
-                  <div className="flex gap-3">
+                <div key={thread.mainPost.id}>
+                  <div className="flex gap-3 py-4">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       {!isCelebration && thread.mainPost.sender_avatar_url && (
                         <AvatarImage src={thread.mainPost.sender_avatar_url} alt={thread.mainPost.sender_name} />
                       )}
                       <AvatarFallback className={`text-xs ${
                         isCelebration 
-                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 
-                          : 'bg-[#F572FF]/10 text-[#F572FF]'
+                          ? 'bg-amber-100 text-amber-700' 
+                          : 'bg-primary/10 text-primary'
                       }`}>
                         {isCelebration ? (
                           isBirthday ? <Cake className="h-4 w-4" /> : <PartyPopper className="h-4 w-4" />
@@ -557,30 +574,42 @@ export function RecognitionFeed() {
                             <span className="text-sm font-medium">
                               {thread.mainPost.description}
                             </span>
-                            <Badge className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                            <Badge className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
                               +{thread.mainPost.points}
                             </Badge>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-sm">{thread.mainPost.sender_name}</span>
-                            <span className="text-xs text-muted-foreground">gave</span>
-                            <Badge className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                              +{thread.mainPost.points}
+                          {/* Header line */}
+                          <div className="flex items-center gap-1 text-sm">
+                            <span className="font-semibold">{thread.mainPost.sender_name}</span>
+                            <span className="text-muted-foreground">recognized</span>
+                            <span className="font-semibold">{thread.mainPost.recipient_name}</span>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-muted-foreground text-xs">
+                              {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+
+                          {/* Value badge + points badge */}
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-primary/10 text-primary border-0 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                              Teamwork
                             </Badge>
-                            <span className="text-xs text-muted-foreground">to</span>
-                            <span className="font-bold text-sm">{thread.mainPost.recipient_name}</span>
+                            <Badge className="bg-green-100 text-green-700 border-0 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                              +{thread.mainPost.points} pts
+                            </Badge>
                           </div>
                       
+                          {/* Message text */}
                           <div className="text-sm text-muted-foreground">
                             {parsed.cleanText}
                           </div>
 
                           {/* GIF attachment */}
                           {thread.mainPost.gif_url && (
-                            <div className="mt-2">
+                            <div className="mt-1">
                               <img
                                 src={thread.mainPost.gif_url}
                                 alt="GIF"
@@ -589,98 +618,30 @@ export function RecognitionFeed() {
                               />
                             </div>
                           )}
-                       
-                          {(() => {
-                            const parsed = parseStructuredMessage(thread.mainPost);
-                            return parsed.hashtags.length > 0 && (
-                              <div className="flex gap-1 flex-wrap">
-                                {parsed.hashtags.map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    #{tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            );
-                          })()}
+
+                          {/* Emoji reactions */}
+                          <div className="flex items-center gap-3 pt-1">
+                            {MOCK_REACTIONS.map((reaction, i) => (
+                              <button key={i} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                <span>{reaction.emoji}</span>
+                                <span>{reaction.count}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Add Points link */}
+                          <button
+                            onClick={() => handleQuickPoints(thread.mainPost.recipient_id, 10, parsed.cleanText)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors pt-1"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add Points
+                          </button>
                         </>
                       )}
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(thread.mainPost.created_at), { addSuffix: true })}
-                        </div>
-                        
-                        {canGivePoints && (
-                          <div className="flex gap-1">
-                             {quickPoints.map((points) => {
-                               const recipientId = thread.mainPost.recipient_id;
-                               const isGiving = processingQuickPoints.has(recipientId);
-                               const hasEnoughPoints = (optimisticAuth.monthlyPoints || 0) >= points;
-                              
-                              return (
-                                <Button
-                                  key={points}
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleQuickPoints(thread.mainPost.recipient_id, points, parsed.cleanText)}
-                                  disabled={isGiving || !hasEnoughPoints}
-                                  className={`h-6 px-2 text-xs hover:bg-[#F572FF]/10 hover:text-[#F572FF] ${
-                                    !hasEnoughPoints ? 'opacity-50 cursor-not-allowed' : ''
-                                  }`}
-                                  title={!hasEnoughPoints ? `You need ${points} points (you have ${optimisticAuth.monthlyPoints || 0})` : `Give ${points} additional points`}
-                                >
-                                  {isGiving ? (
-                                    <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
-                                  ) : (
-                                    <>
-                                      <Heart className="h-3 w-3 mr-1" />
-                                      +{points}
-                                    </>
-                                  )}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
-
-                  {/* Comments/Appreciations */}
-                  {thread.comments.length > 0 && (
-                    <div className="mt-4 ml-11 space-y-3">
-                      {/* Appreciations Title */}
-                       <div className="text-xs text-muted-foreground font-medium border-t border-border/30 pt-2">
-                         Appreciations ({thread.comments.length})
-                       </div>
-                      
-                      {thread.comments
-                        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                        .map((comment) => (
-                        <div key={comment.id} className="flex gap-2 items-start">
-                          <div className="w-px bg-border h-6 mt-1"></div>
-                          <Avatar className="h-6 w-6 flex-shrink-0">
-                            <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-                              {getInitials(comment.sender_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-xs">{comment.sender_name}</span>
-                              <span className="text-xs text-muted-foreground">gave</span>
-                              <span className="text-xs text-[#F572FF] font-medium">
-                                +{comment.points} points
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {index < filteredThreads.length - 1 && <Separator />}
                 </div>
               );
             })}
