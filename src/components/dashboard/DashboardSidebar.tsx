@@ -31,7 +31,7 @@ export const DashboardSidebar = ({
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
-  const { companyId, companyName, role } = useAuth();
+  const { companyId, companyName } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const { data: memberCount } = useQuery({
