@@ -30,8 +30,12 @@ export function GivePointsCard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { user, companyId, monthlyPoints, isAuthLoading } = useAuth();
+  const { user, companyId, monthlyPoints, isAuthLoading, avatarUrl } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
+  const [pointsInputValue, setPointsInputValue] = useState("100");
+  const [isEditingPoints, setIsEditingPoints] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Debug logging for points availability
   useEffect(() => {
