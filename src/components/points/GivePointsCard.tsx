@@ -439,39 +439,66 @@ export function GivePointsCard() {
               </div>
             )}
 
-            {/* Bottom Bar */}
-            <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-              {/* Left side: GIF + Summary */}
-              <div className="flex items-center gap-3">
-                <GiphyPicker
-                  onSelect={(gif) => setSelectedGif(gif)}
-                  disabled={isSubmitting}
-                />
-                <div className="text-xs text-muted-foreground">
-                  {mentions.length > 0 && points.length > 0 && (
-                    <span>
-                      {points.reduce((sum, point) => sum + point.value, 0)} pts × {mentions.length} {mentions.length === 1 ? 'person' : 'people'} = {points.reduce((sum, point) => sum + point.value, 0) * mentions.length} total
-                    </span>
-                  )}
-                </div>
               </div>
 
-              {/* Send Button */}
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
-                size="sm"
-                className="gap-1 bg-accent hover:bg-accent/90"
-              >
-                {isSubmitting ? (
-                  "Posting..."
-                ) : (
-                  <>
-                    <Send className="h-3 w-3" />
-                    Send Recognition
-                  </>
-                )}
-              </Button>
+              {/* Pill filter buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleMentionButtonClick}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  Select teammate
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  Company value
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAmountButtonClick}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  100 pts
+                </button>
+              </div>
+
+              {/* Bottom bar: icons left, send right */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2">
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <Smile className="h-4 w-4" />
+                  </button>
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <ImageIcon className="h-4 w-4" />
+                  </button>
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
+                  className="inline-flex items-center gap-1.5 text-white text-sm font-medium rounded-full transition-opacity disabled:opacity-50"
+                  style={{
+                    background: 'linear-gradient(135deg, #7F2BFE, #FC5BFF)',
+                    padding: '6.6px 14.9px 4.1px 15px',
+                  }}
+                >
+                  {isSubmitting ? "Posting..." : (
+                    <>
+                      Send
+                      <Send className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
           
