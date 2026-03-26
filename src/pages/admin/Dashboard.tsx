@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GivePointsCard } from "@/components/points/GivePointsCard";
 import { RecognitionFeed } from "@/components/points/RecognitionFeed";
@@ -6,6 +6,8 @@ import { LeaderboardCard } from "@/components/points/LeaderboardCard";
 import { RegionSetupDialog } from "@/components/onboarding/RegionSetupDialog";
 import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 import BillingSetupDialog from "@/components/team/BillingSetupDialog";
+import { PersonalStatsCard } from "@/components/dashboard/PersonalStatsCard";
+import { UpcomingCelebrations } from "@/components/dashboard/UpcomingCelebrations";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,18 +16,6 @@ const Dashboard = () => {
   const [showRegionSetup, setShowRegionSetup] = useState(false);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const queryClient = useQueryClient();
-  const leftColRef = useRef<HTMLDivElement>(null);
-  const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
-
-  useEffect(() => {
-    const el = leftColRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      setLeftColHeight(entries[0].contentRect.height);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // Check if region setup is needed for admins
   const { data: company, refetch: refetchCompany } = useQuery({
