@@ -242,7 +242,7 @@ export const DashboardSidebar = ({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[260px] flex-shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:flex w-[240px] flex-shrink-0 h-screen sticky top-0">
         {sidebarContent}
       </aside>
 
