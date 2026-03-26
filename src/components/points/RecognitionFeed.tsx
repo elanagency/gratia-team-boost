@@ -44,6 +44,8 @@ export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [threadedRecognitions, setThreadedRecognitions] = useState<ThreadedRecognition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'received' | 'sent'>('all');
+  const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
   const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
   
   const { user, companyId, isLoading: isAuthLoading } = useAuth();
