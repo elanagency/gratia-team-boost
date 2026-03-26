@@ -1,12 +1,14 @@
 
+Increase the sidebar width again from 350px to 450px in `src/components/dashboard/DashboardSidebar.tsx`.
 
-## Increase Sidebar Width to Match Figma
+What to change:
+- Desktop sidebar: `w-[350px]` → `w-[450px]`
+- Mobile sheet: `w-[350px]` → `w-[450px]`
 
-The Figma sidebar is visibly wider than our current 300px. Based on the proportions in the Figma screenshot, the sidebar should be approximately **350px**.
+Why:
+- The current file confirms the sidebar is still set to 350px, so moving to 450px will create a clearly visible difference.
 
-### Changes
-
-**File: `src/components/dashboard/DashboardSidebar.tsx`**
-- Desktop aside: `w-[300px]` → `w-[350px]`
-- Mobile sheet: `w-[300px]` → `w-[350px]`
-
+Technical note:
+- Your current viewport is 1050px wide, which is above the `lg` breakpoint, so the desktop `<aside>` is the element being shown right now.
+- The sidebar font is already forced to Inter via inline `style={{ fontFamily: "'Inter', sans-serif" }}`.
+- No other typography changes are needed for this request.
