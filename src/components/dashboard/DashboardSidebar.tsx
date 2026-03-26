@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu } from "lucide-react";
+import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { GivePointsDialog } from "@/components/points/GivePointsDialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import grattiaLogo from "@/assets/grattia-logo-white.png";
 
 type DashboardSidebarProps = {
   user: any;
@@ -122,15 +123,24 @@ export const DashboardSidebar = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const giveRecognitionTrigger = (
+    <button
+      className="w-full py-2.5 rounded-xl text-white font-medium text-sm bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center gap-2"
+    >
+      <Trophy className="h-4 w-4" />
+      Give Recognition
+    </button>
+  );
+
   const sidebarContent = (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
-      <div className="px-5 pt-6 pb-4">
+      {/* Logo - centered */}
+      <div className="px-4 pt-6 pb-5 flex justify-center">
         <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
           <img
-            src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png"
+            src={grattiaLogo}
             alt="Grattia Logo"
-            className="h-8 w-auto"
+            className="h-[26px] w-auto"
           />
         </Link>
       </div>
@@ -145,15 +155,15 @@ export const DashboardSidebar = ({
               className="h-9 w-9 rounded-lg object-cover"
             />
           ) : (
-            <div className="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center text-sm font-semibold">
+            <div className="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center text-[13px] font-medium">
               {(company?.name || companyName || "C").charAt(0)}
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate">
+            <p className="text-[13px] font-medium text-white truncate">
               {company?.name || companyName || "Company"}
             </p>
-            <p className="text-xs text-white/60">
+            <p className="text-[11px] text-white/45">
               {memberCount ?? "–"} teammate{memberCount !== 1 ? "s" : ""}
             </p>
           </div>
@@ -162,7 +172,7 @@ export const DashboardSidebar = ({
 
       {/* Give Recognition button */}
       <div className="px-4 mb-5">
-        <GivePointsDialog />
+        <GivePointsDialog trigger={giveRecognitionTrigger} />
       </div>
 
       {/* Nav items */}
@@ -172,7 +182,7 @@ export const DashboardSidebar = ({
             key={item.name}
             to={item.path}
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium leading-[21px] transition-colors ${
               isActive(item.path)
                 ? "bg-white/10 text-white"
                 : "text-white/70 hover:text-white hover:bg-white/5"
@@ -212,11 +222,11 @@ export const DashboardSidebar = ({
             <Link
               to="/dashboard/profile"
               onClick={() => setMobileOpen(false)}
-              className="text-sm font-medium text-white truncate block hover:underline"
+              className="text-[13px] font-medium text-white truncate block hover:underline"
             >
               {displayName}
             </Link>
-            <p className="text-xs text-white/60">{roleLabel}</p>
+            <p className="text-[11px] text-white/45">{roleLabel}</p>
           </div>
           <button
             onClick={handleLogout}
@@ -251,7 +261,7 @@ export const DashboardSidebar = ({
         </Sheet>
         <Link to="/dashboard">
           <img
-            src="/lovable-uploads/9b86fd8b-fc4f-4456-8dcb-4970ae47f7f5.png"
+            src={grattiaLogo}
             alt="Grattia Logo"
             className="h-7 w-auto"
           />

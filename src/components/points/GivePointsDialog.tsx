@@ -294,10 +294,12 @@ export function GivePointsDialog({ isTeamMember = false, trigger }: GivePointsDi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#F572FF] hover:bg-[#E061EE]">
-          <Trophy className="mr-2 h-4 w-4" />
-          Give Points
-        </Button>
+        {trigger || (
+          <Button className="bg-[#F572FF] hover:bg-[#E061EE]">
+            <Trophy className="mr-2 h-4 w-4" />
+            Give Points
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
