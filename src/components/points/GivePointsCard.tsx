@@ -386,65 +386,39 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="dashboard-card h-full flex flex-col border border-border rounded-xl shadow-none">
-      <CardHeader className="p-4 sm:p-6 flex-shrink-0">
-        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-          <Heart className="h-5 w-5 text-[#F572FF]" />
-          Give Recognition
-        </CardTitle>
-        <CardDescription className="text-sm">
-          Recognize team members with points
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0 space-y-4 flex-1 flex flex-col">
-        {/* Available Points */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              You have <Badge className="mx-1 bg-green-100 text-green-600">{monthlyPoints}</Badge> points to give
-            </span>
-          </div>
+    <Card className="border border-border rounded-xl shadow-none flex flex-col" style={{ padding: '19.75px' }}>
+      <CardContent className="p-0 space-y-4 flex-1 flex flex-col">
+        {/* Points to give indicator */}
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-normal" style={{ color: '#9996AA' }}>Points to give</span>
+          <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-semibold">
+            {monthlyPoints}
+          </span>
         </div>
 
-        {/* Composer */}
+        {/* Composer with avatar */}
         <div className="relative flex-1 flex flex-col" ref={containerRef}>
-          <div className="border rounded-lg bg-card flex flex-col flex-1">
-            {/* Toolbar */}
-            <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleMentionButtonClick}
-                disabled={isSubmitting}
-                className={`gap-1 ${showMentionDropdown ? 'bg-accent' : ''}`}
-              >
-                <AtSign className="h-3 w-3" />
-                Mention
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAmountButtonClick}
-                disabled={isSubmitting}
-                className={`gap-1 ${showPointDropdown ? 'bg-accent' : ''}`}
-              >
-                <Plus className="h-3 w-3" />
-                Amount
-              </Button>
-            </div>
-            <RichTextEditor
-              ref={editorRef}
-              value={text}
-              onChange={handleTextChange}
-              onMentionTrigger={handleMentionTrigger}
-              onPointTrigger={handlePointTrigger}
-              placeholder="Give recognition... Type @ to mention someone and + to add points"
-              disabled={isSubmitting}
-              mentions={mentions}
-              points={points}
-            />
+          <div className="flex gap-3">
+            {/* User Avatar */}
+            <Avatar className="h-[30px] w-[30px] flex-shrink-0 mt-1">
+              <AvatarFallback className="text-xs bg-muted">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="border border-border rounded-lg bg-card flex flex-col">
+                <RichTextEditor
+                  ref={editorRef}
+                  value={text}
+                  onChange={handleTextChange}
+                  onMentionTrigger={handleMentionTrigger}
+                  onPointTrigger={handlePointTrigger}
+                  placeholder="Recognize a teammate..."
+                  disabled={isSubmitting}
+                  mentions={mentions}
+                  points={points}
+                />
 
             {/* GIF Preview */}
             {selectedGif && (
