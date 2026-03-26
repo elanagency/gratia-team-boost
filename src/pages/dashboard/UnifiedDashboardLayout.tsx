@@ -3,7 +3,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { DashboardTopNavigation } from "@/components/dashboard/DashboardTopNavigation";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay } from "date-fns";
 
