@@ -163,14 +163,7 @@ export const DashboardSidebar = ({
 
       {/* Give Recognition button */}
       <div className="px-4 mb-5">
-        <GivePointsDialog
-          trigger={
-            <Button className="w-full h-10 rounded-lg font-semibold text-sm text-white bg-gradient-to-r from-[hsl(264,99%,58%)] to-[hsl(302,100%,67%)] hover:opacity-90 transition-opacity border-0">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Give Recognition
-            </Button>
-          }
-        />
+        <GivePointsDialog />
       </div>
 
       {/* Nav items */}
