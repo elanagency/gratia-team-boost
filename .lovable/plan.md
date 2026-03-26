@@ -1,20 +1,23 @@
 
 
-## Sidebar Polish: Match Figma Exactly
+## Fix Sidebar: Fonts, Width, and Button Icon
+
+### Problems
+1. **Inter font is not imported** -- it's referenced in class names but never loaded, so the browser falls back to a system font
+2. **Sidebar width** is 260px, Figma spec is 240px
+3. **Give Recognition button** has a Trophy icon that shouldn't be there
 
 ### Changes
 
 | File | Change |
 |------|--------|
-| Copy `user-uploads://Image_Grattia.png` → `src/assets/grattia-logo-white.png` | New logo asset for sidebar |
-| `src/components/dashboard/DashboardSidebar.tsx` | 1. **Logo**: Import from `@/assets/grattia-logo-white.png`, center it horizontally, size ~110x26px. 2. **Company card**: Company name Inter Medium 13px white, teammate count Inter Regular 11px white/45%. 3. **Give Recognition button**: Replace `<GivePointsDialog />` with a custom styled button that opens the dialog -- solid `#7F2BFE` background (not gradient), full sidebar width with `rounded-xl` (~13px radius), Inter Medium 14px white text saying "Give Recognition". 4. **Nav items**: Inter Medium 14px, icon + text with gap, active state `bg-white/10` with rounded corners. Add Leaderboard nav item between Analytics and Redeem Points. 5. **Spacing**: Match Figma padding/gaps (px-4 for content areas, consistent vertical spacing). |
-| `src/components/points/GivePointsDialog.tsx` | Add an optional `trigger` prop so the sidebar can pass a custom trigger button instead of the default pink button. Update the component to render `{trigger}` as `DialogTrigger` when provided, otherwise use the existing default button. |
+| `src/index.css` | Add Inter font import: `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');` |
+| `src/components/dashboard/DashboardSidebar.tsx` | 1. Add `font-family: 'Inter'` to the sidebar root container via `style` or a Tailwind `font-['Inter']` class. 2. Change desktop width from `w-[260px]` to `w-[240px]`. 3. Remove `<Trophy>` icon from the Give Recognition button trigger. 4. Ensure font sizes match Figma exactly: company name 13px medium, teammate count 11px regular (font-normal), button text 14px medium, nav items 14px medium with line-height 21px, user name 13px medium, role 11px regular. |
 
-### Design specs from Figma
-- **Logo**: Centered, ~110x26px
-- **Company name**: Inter Medium 13px, `#FFFFFF`
-- **Teammate count**: Inter Regular 11px, `#FFFFFF` at 45% opacity
-- **Give Recognition button**: `#7F2BFE` fill, corner radius ~13px, Inter Medium 14px, full width within sidebar padding
-- **Nav text**: Inter Medium 14px, line-height 21px, white when active, white/70 when inactive
-- **Nav items**: Home, Analytics, Leaderboard, Redeem Points, Settings (admin-conditional for Analytics & Settings)
+### Figma Font Specs (confirmed from screenshots)
+- **Company name**: Inter Medium 13px
+- **Teammate count**: Inter Regular 11px, line-height 16.5px, white at 45% opacity
+- **Give Recognition text**: Inter Medium 14px, line-height 21px, white 100%
+- **Nav items**: Inter Medium 14px, line-height 21px
+- **User footer**: same pattern as company card (13px name, 11px role)
 
