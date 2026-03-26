@@ -514,8 +514,8 @@ export function RecognitionFeed() {
 
   if (isLoading) {
     return (
-      <Card className="border border-border rounded-xl shadow-none">
-        <CardContent className="p-5">
+      <Card className="border-0 shadow-none">
+        <CardContent className="p-5 px-0">
           <div className="flex items-center justify-between mb-4">
             <span className="text-base font-semibold" style={{ color: '#0F0533', lineHeight: '24px' }}>Recognition Feed</span>
           </div>
