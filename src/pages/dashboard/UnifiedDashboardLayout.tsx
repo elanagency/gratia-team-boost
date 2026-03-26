@@ -85,7 +85,7 @@ const UnifiedDashboardLayout = () => {
   }
   
   return (
-    <div className="min-h-screen bg-muted flex">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <DashboardSidebar
         user={user}
