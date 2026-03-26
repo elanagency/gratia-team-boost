@@ -1,34 +1,31 @@
 
 
-## Dashboard Spacing and Recognition Composer Refinements
+## "+ Add Points" Interaction and Tagged Along Section
 
-### 1. Increase main content padding (UnifiedDashboardLayout)
-**File: `src/pages/dashboard/UnifiedDashboardLayout.tsx`**
-- Change `<main>` padding from `p-4 lg:p-6` to match Figma: `padding: 72px 145.5px 0 145.5px` on desktop (use `lg:px-[145px] lg:pt-[72px]`). On smaller screens keep reasonable padding.
+### 1. Replace "+ Add Points" with popover quick-select (RecognitionFeed.tsx)
 
-### 2. Redesign GivePointsCard composer layout
-**File: `src/components/points/GivePointsCard.tsx`**
+**Current**: The "+ Add Points" button directly calls `handleQuickPoints` with a hardcoded 10 points.
 
-**Remove internal bordered box**: Currently the text area is wrapped in a `border border-border rounded-lg` div (line 410). Remove that border — the outer card border is enough. Instead, add two horizontal divider lines:
-- One below "Points to give" row
-- One above the bottom icon/send row
+**New behavior**:
+- Restyle "+ Add Points" as a subtle outlined pill button with "+" prefix
+- On click, show a small Popover (using Radix Popover) directly below the button with three pill buttons in a row: **+1**, **+5**, **+10**
+- Each pill is a small bordered button; clicking one calls `handleQuickPoints` with that amount and closes the popover
+- Add `showAddPoints` state (tracks which thread's popover is open by thread ID)
 
-**Avatar**: Use the user's actual profile picture from `avatarUrl` (from `useAuth()`) instead of the generic User icon fallback.
+### 2. "Tagged along" section for comments/appreciations
 
-**"100 pts" pill becomes an editable input**: Replace the static "100 pts" button with a controlled input that:
-- Displays as a pill (fully rounded) by default showing the current points value
-- On click, becomes an editable number input within the pill
-- User can type a custom point amount
-- This value feeds into the recognition submission
+**Current**: The `ThreadedRecognition` type already has a `comments` array (populated from "Quick appreciation:" transactions). The old "Appreciations" UI is gone.
 
-**Fully rounded pill corners**: The three pills ("Select teammate", "Company value", "100 pts") already use `rounded-full` — confirm they render as fully rounded.
+**New behavior** — render below each feed item's reactions/add-points when `thread.comments.length > 0`:
+- Label: "Tagged along:" in muted gray text (`text-muted-foreground text-xs`)
+- Green badge showing total additional points from all comments (e.g. "+15 pts")
+- Below that, a row of compact inline chips per commenter: avatar (20x20) + name + points (e.g. "Priya Sharma +5")
+- Subtle horizontal divider (`<Separator />`) after the tagged-along section
 
-**Bottom icons — wire up functionality**:
-- Emoji button (Smile icon): Open an emoji picker (use a simple emoji popover or the native emoji input)
-- Image button (ImageIcon): Open a file picker to attach an image
-- GIF button (LayoutGrid icon): Wire up to the existing `GiphyPicker` component (currently disconnected after the redesign)
+### 3. Remove old appreciations section
 
-### 3. Files to modify
-1. `src/pages/dashboard/UnifiedDashboardLayout.tsx` — increase main content padding
-2. `src/components/points/GivePointsCard.tsx` — remove inner box border, add dividers, use real avatar, make points pill editable, wire up emoji/image/GIF buttons
+The old "Appreciations" header/section from the previous build is already removed. Confirm no remnants remain.
+
+### Files to modify
+1. **`src/components/points/RecognitionFeed.tsx`** — add popover to "+ Add Points", render "Tagged along" section from `thread.comments`
 
