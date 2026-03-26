@@ -1,18 +1,19 @@
 
 
-## Fix Column Spacing and Recognition Feed Border
+## Recognition Feed Header Fixes
 
-### 1. Adjust grid gap and add right-column separator (Dashboard.tsx)
-**File: `src/pages/admin/Dashboard.tsx`**
-- Increase the grid gap from `gap-6` to `gap-8` to better match the Figma spacing between columns
-- Add a left border (`border-l border-border`) and left padding (`pl-8`) to the right column to create a vertical divider/breaker between the middle and right columns
+### Changes to `src/components/points/RecognitionFeed.tsx`
 
-### 2. Remove border from Recognition Feed (RecognitionFeed.tsx)
-**File: `src/components/points/RecognitionFeed.tsx`**
-- Remove the `border border-border rounded-xl` from the outer `<Card>` wrapper (line 531) — the feed should sit directly below the composer without a card border
-- Also update the loading state card similarly (line 517)
+**1. Add horizontal divider below the header row**
+- After the header `<div>` containing "Recognition Feed" and the tabs (line 541), add a `<Separator />` or `<div className="border-t border-border" />` to create the line breaker shown in Figma.
+
+**2. Wrap tabs in a gray pill container**
+- Wrap the three `<TabButton>` elements (line 536) in a container with a gray background pill: `bg-muted rounded-lg p-0.5` (matching Figma's grouped tab bar style with `border-radius: 7.375px` ≈ `rounded-lg`).
+
+**3. Fix active tab corner radius**
+- The active tab currently uses `rounded-full` (fully rounded). Per Figma, the active tab background (`#0F0533`) should use `rounded-[7px]` to match the container's inner radius, not fully rounded. Update the TabButton's active class from `rounded-full` to `rounded-[7px]`.
+- Inactive tabs should also use `rounded-[7px]` for consistency.
 
 ### Files to modify
-1. `src/pages/admin/Dashboard.tsx` — grid gap + right column border-left separator
-2. `src/components/points/RecognitionFeed.tsx` — remove card border from feed
+1. `src/components/points/RecognitionFeed.tsx` — tab container styling, active tab radius, separator after header
 
