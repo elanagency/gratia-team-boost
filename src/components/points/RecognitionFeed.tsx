@@ -46,7 +46,6 @@ export function RecognitionFeed() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'received' | 'sent'>('all');
   const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
-  const [processingQuickPoints, setProcessingQuickPoints] = useState<Set<string>>(new Set());
   
   const { user, companyId, isLoading: isAuthLoading } = useAuth();
   const optimisticAuth = useOptimisticAuth();
