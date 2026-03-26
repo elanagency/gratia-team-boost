@@ -242,7 +242,7 @@ export const DashboardSidebar = ({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[300px] flex-shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:flex w-[350px] flex-shrink-0 h-screen sticky top-0">
         {sidebarContent}
       </aside>
 
@@ -254,7 +254,7 @@ export const DashboardSidebar = ({
               <Menu className="h-6 w-6" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-[300px] border-0 bg-sidebar">
+          <SheetContent side="left" className="p-0 w-[350px] border-0 bg-sidebar">
             {sidebarContent}
           </SheetContent>
         </Sheet>
