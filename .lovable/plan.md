@@ -1,19 +1,20 @@
 
 
-## Recognition Feed Header Fixes
+## Fix Middle Column Spacing Symmetry
 
-### Changes to `src/components/points/RecognitionFeed.tsx`
+### Problem
+The middle column has unequal padding: the grid `gap-8` provides 32px between columns, but the right column also has `pl-8` (32px extra), making the right side of the middle column appear wider than the left side. The Figma shows equal spacing on both sides of the middle column with a vertical divider centered between middle and right columns.
 
-**1. Add horizontal divider below the header row**
-- After the header `<div>` containing "Recognition Feed" and the tabs (line 541), add a `<Separator />` or `<div className="border-t border-border" />` to create the line breaker shown in Figma.
+### Solution (Dashboard.tsx)
 
-**2. Wrap tabs in a gray pill container**
-- Wrap the three `<TabButton>` elements (line 536) in a container with a gray background pill: `bg-muted rounded-lg p-0.5` (matching Figma's grouped tab bar style with `border-radius: 7.375px` ≈ `rounded-lg`).
+**Remove the grid gap and use manual padding so the border-l sits with equal space on both sides:**
 
-**3. Fix active tab corner radius**
-- The active tab currently uses `rounded-full` (fully rounded). Per Figma, the active tab background (`#0F0533`) should use `rounded-[7px]` to match the container's inner radius, not fully rounded. Update the TabButton's active class from `rounded-full` to `rounded-[7px]`.
-- Inactive tabs should also use `rounded-[7px]` for consistency.
+- Change `gap-8` to `gap-0` on the grid
+- Add `pr-8` to the left/middle column (32px right padding)
+- Keep `border-l border-border pl-8` on the right column (32px left padding)
 
-### Files to modify
-1. `src/components/points/RecognitionFeed.tsx` — tab container styling, active tab radius, separator after header
+This creates symmetrical 32px spacing on both sides of the vertical divider.
+
+### File to modify
+1. `src/pages/admin/Dashboard.tsx` — lines 80-92, adjust grid gap and column padding
 
