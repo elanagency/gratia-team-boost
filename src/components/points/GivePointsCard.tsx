@@ -386,7 +386,7 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="dashboard-card h-full flex flex-col">
+    <Card className="dashboard-card h-full flex flex-col border border-border rounded-xl shadow-none">
       <CardHeader className="p-4 sm:p-6 flex-shrink-0">
         <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
           <Heart className="h-5 w-5 text-[#F572FF]" />

@@ -52,7 +52,7 @@ export function PersonalStatsCard() {
   ];
 
   return (
-    <Card>
+    <Card className="border border-border rounded-xl shadow-none">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Your Stats</CardTitle>
       </CardHeader>

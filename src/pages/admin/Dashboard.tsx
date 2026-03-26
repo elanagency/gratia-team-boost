@@ -71,23 +71,16 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
-      </div>
-
       {/* Onboarding Checklist for admins */}
       {isAdmin && (
         <OnboardingChecklist onUpgradeClick={() => setBillingDialogOpen(true)} />
       )}
 
-      {/* Give Points composer */}
-      <GivePointsCard />
-
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left Column - Recognition Feed */}
-        <div className="lg:col-span-2">
+        {/* Left Column - Composer + Recognition Feed */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <GivePointsCard />
           <RecognitionFeed />
         </div>
 
