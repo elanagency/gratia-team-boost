@@ -81,20 +81,21 @@ const Dashboard = () => {
         <OnboardingChecklist onUpgradeClick={() => setBillingDialogOpen(true)} />
       )}
 
+      {/* Give Points composer */}
+      <GivePointsCard />
+
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column - Stacked Cards */}
-        <div ref={leftColRef} className="flex flex-col gap-6">
-          <GivePointsCard />
-          <LeaderboardCard />
-        </div>
-        
-        {/* Right Column - Recognition Feed constrained to left column height */}
-        <div
-          className="h-full min-h-0 overflow-hidden"
-          style={leftColHeight ? { maxHeight: leftColHeight } : undefined}
-        >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Column - Recognition Feed */}
+        <div className="lg:col-span-2">
           <RecognitionFeed />
+        </div>
+
+        {/* Right Column - Widgets */}
+        <div className="flex flex-col gap-6">
+          <PersonalStatsCard />
+          <LeaderboardCard />
+          <UpcomingCelebrations />
         </div>
       </div>
     </div>

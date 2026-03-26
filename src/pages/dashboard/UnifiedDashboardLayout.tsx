@@ -85,9 +85,9 @@ const UnifiedDashboardLayout = () => {
   }
   
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
-      {/* Top Navigation */}
-      <DashboardTopNavigation 
+    <div className="min-h-screen bg-muted flex">
+      {/* Sidebar */}
+      <DashboardSidebar
         user={user}
         firstName={firstName}
         lastName={lastName}
@@ -95,9 +95,9 @@ const UnifiedDashboardLayout = () => {
         isAdmin={isAdmin}
         avatarUrl={avatarUrl}
       />
-      
+
       {/* Main Content */}
-      <main className="p-4 lg:p-6 w-full transition-all duration-200 ease-in-out">
+      <main className="flex-1 min-w-0 p-4 lg:p-6 pt-16 lg:pt-6">
         <div className="animate-in fade-in-50 duration-200">
           <Outlet />
         </div>
