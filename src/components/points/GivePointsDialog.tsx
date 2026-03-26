@@ -32,9 +32,10 @@ interface DialogTeamMember {
 
 interface GivePointsDialogProps {
   isTeamMember?: boolean;
+  trigger?: React.ReactNode;
 }
 
-export function GivePointsDialog({ isTeamMember = false }: GivePointsDialogProps) {
+export function GivePointsDialog({ isTeamMember = false, trigger }: GivePointsDialogProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [teamMembers, setTeamMembers] = useState<DialogTeamMember[]>([]);
