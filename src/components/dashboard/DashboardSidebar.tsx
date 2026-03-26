@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { GivePointsDialog } from "@/components/points/GivePointsDialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
