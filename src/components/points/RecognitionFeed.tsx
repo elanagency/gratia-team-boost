@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Clock, Heart, Cake, PartyPopper } from "lucide-react";
+import { MessageCircle, Cake, PartyPopper, Plus } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { useOptimisticAuth } from "@/hooks/useOptimisticAuth";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
