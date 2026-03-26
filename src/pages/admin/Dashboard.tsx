@@ -77,9 +77,9 @@ const Dashboard = () => {
       )}
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 items-start">
         {/* Left Column - Composer + Recognition Feed */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
+        <div className="lg:col-span-2 flex flex-col gap-5 pr-0 lg:pr-8">
           <GivePointsCard />
           <RecognitionFeed />
         </div>
