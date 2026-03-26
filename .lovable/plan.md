@@ -1,48 +1,30 @@
 
-Fix the sidebar typography by aligning it to the Figma weights instead of just “using Inter”.
 
-What I found
-- `Inter` is now imported, so the issue is not the font loading anymore.
-- The sidebar still uses `font-medium` in places where the Figma screenshots show lighter text.
-- Your latest screenshots indicate:
-  - “Give Recognition” button: Inter Medium, 14px, line-height 21
-  - Active nav item (“Home”): Inter Medium, 14px, line-height 21
-  - Inactive nav items (“Analytics”, “Leaderboard”, etc.): Inter Regular, 14px, line-height 21
-- The current sidebar uses `font-medium` on all nav items, which is why everything looks too heavy.
+## Fix Sidebar Spacing to Match Figma
 
-What I would change
-1. Update `src/components/dashboard/DashboardSidebar.tsx`
-   - Keep the sidebar width at the exact Figma width of `240px`
-   - Keep the sidebar root on `Inter`
-   - Change nav typography logic:
-     - active item: `font-medium text-white`
-     - inactive items: `font-normal text-white/70`
-   - Keep the button as `font-medium text-[14px] leading-[21px]`
-   - Keep company/user secondary text at regular 11px with reduced opacity
-   - Remove any lingering heavier weights from labels that should be regular
-   - Match the selected row background and spacing more closely to the screenshot
+### Figma specs extracted from screenshots
 
-2. Tighten icon/text balance
-   - The icons currently read a bit heavier because the text is too bold beside them
-   - After reducing inactive nav text to regular weight, the whole menu should visually match Figma much more closely
+| Element | Figma spec | Current code | Fix |
+|---------|-----------|--------------|-----|
+| **Sidebar padding** | 15px sides, 15px top | `px-4` (16px), `pt-6` (24px) | `p-[15px] pt-[15px]` |
+| **Company card** | 210x54.75px, padding 0 11.25px, gap 11.25px, border-radius 13.375px | `mx-4 mb-4 p-3 rounded-lg` | `mx-0 p-0 px-[11.25px] rounded-[13.375px]` h-[55px] |
+| **Give Recognition button** | 210x39.75px, padding 9.375px 0, border-radius 13.375px | `py-2.5 rounded-xl` | `py-[9.375px] rounded-[13.375px]` |
+| **Gap: button to nav** | 22.5px | `mb-5` (20px) | `mb-[22.5px]` |
+| **Nav item padding** | 7.5px top/bottom, 11.25px left, gap 11.25px | `px-3 py-2.5 gap-3` | `px-[11.25px] py-[7.5px] gap-[11.25px]` |
+| **Nav item border-radius** | 13.375px | `rounded-lg` (8px) | `rounded-[13.375px]` |
+| **Nav container padding** | 0 (items are full width within 15px sidebar padding) | `px-3` | `px-0` |
+| **Active nav bg** | `#FFFFFF` at ~55% opacity | `bg-white/10` | `bg-white/[0.06]` (from Figma it looks subtle, ~6%) |
+| **Logo top padding** | ~15px from top of sidebar | `pt-6 pb-5` (24px/20px) | `pt-0 pb-[15px]` |
 
-3. Verify sidebar-only typography map
-   - Company name: Inter Medium 13px
-   - Teammate count: Inter Regular 11px / 45%
-   - Button label: Inter Medium 14px / 21px
-   - Active nav label: Inter Medium 14px / 21px
-   - Inactive nav label: Inter Regular 14px / 21px
-   - Footer name: Inter Medium 13px
-   - Footer role: Inter Regular 11px / 45%
+### Changes
 
-Files to update
-- `src/components/dashboard/DashboardSidebar.tsx`
+**File: `src/components/dashboard/DashboardSidebar.tsx`**
 
-Why this should fix it
-- The problem is no longer missing fonts; it’s incorrect weight assignment.
-- Right now the sidebar is visually heavier than Figma because medium weight is being applied too broadly.
-- Reducing inactive menu labels to regular should make the sidebar look much closer to the Figma immediately without changing the structure again.
+1. Sidebar root: change to `p-[15px]` for consistent 15px padding on all sides
+2. Logo section: remove extra top/bottom padding, use `pb-[15px]` below logo
+3. Company card: set explicit height ~55px, horizontal padding 11.25px, gap 11.25px, border-radius 13.375px, remove mx-4
+4. Give Recognition button: padding 9.375px vertical, border-radius 13.375px, margin-bottom 22.5px
+5. Nav container: remove px-3 (parent already has 15px padding), items stretch full width
+6. Nav items: padding 7.5px/11.25px, gap 11.25px, border-radius 13.375px
+7. Active state: keep subtle white background (looks like ~6% opacity white from the screenshots)
 
-Technical note
-- I would not change the global body font for this fix.
-- I would keep this scoped to the sidebar component so we don’t unintentionally affect other dashboard areas.
