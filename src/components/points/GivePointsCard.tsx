@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, Send, AtSign, Plus, X } from "lucide-react";
+import { Send, AtSign, Plus, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
 import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
@@ -386,65 +386,39 @@ export function GivePointsCard() {
   };
 
   return (
-    <Card className="dashboard-card h-full flex flex-col border border-border rounded-xl shadow-none">
-      <CardHeader className="p-4 sm:p-6 flex-shrink-0">
-        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-          <Heart className="h-5 w-5 text-[#F572FF]" />
-          Give Recognition
-        </CardTitle>
-        <CardDescription className="text-sm">
-          Recognize team members with points
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0 space-y-4 flex-1 flex flex-col">
-        {/* Available Points */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              You have <Badge className="mx-1 bg-green-100 text-green-600">{monthlyPoints}</Badge> points to give
-            </span>
-          </div>
+    <Card className="border border-border rounded-xl shadow-none flex flex-col" style={{ padding: '19.75px' }}>
+      <CardContent className="p-0 space-y-4 flex-1 flex flex-col">
+        {/* Points to give indicator */}
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-normal" style={{ color: '#9996AA' }}>Points to give</span>
+          <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-semibold">
+            {monthlyPoints}
+          </span>
         </div>
 
-        {/* Composer */}
+        {/* Composer with avatar */}
         <div className="relative flex-1 flex flex-col" ref={containerRef}>
-          <div className="border rounded-lg bg-card flex flex-col flex-1">
-            {/* Toolbar */}
-            <div className="flex items-center gap-2 p-3 border-b bg-muted/10">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleMentionButtonClick}
-                disabled={isSubmitting}
-                className={`gap-1 ${showMentionDropdown ? 'bg-accent' : ''}`}
-              >
-                <AtSign className="h-3 w-3" />
-                Mention
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAmountButtonClick}
-                disabled={isSubmitting}
-                className={`gap-1 ${showPointDropdown ? 'bg-accent' : ''}`}
-              >
-                <Plus className="h-3 w-3" />
-                Amount
-              </Button>
-            </div>
-            <RichTextEditor
-              ref={editorRef}
-              value={text}
-              onChange={handleTextChange}
-              onMentionTrigger={handleMentionTrigger}
-              onPointTrigger={handlePointTrigger}
-              placeholder="Give recognition... Type @ to mention someone and + to add points"
-              disabled={isSubmitting}
-              mentions={mentions}
-              points={points}
-            />
+          <div className="flex gap-3">
+            {/* User Avatar */}
+            <Avatar className="h-[30px] w-[30px] flex-shrink-0 mt-1">
+              <AvatarFallback className="text-xs bg-muted">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="border border-border rounded-lg bg-card flex flex-col">
+                <RichTextEditor
+                  ref={editorRef}
+                  value={text}
+                  onChange={handleTextChange}
+                  onMentionTrigger={handleMentionTrigger}
+                  onPointTrigger={handlePointTrigger}
+                  placeholder="Recognize a teammate..."
+                  disabled={isSubmitting}
+                  mentions={mentions}
+                  points={points}
+                />
 
             {/* GIF Preview */}
             {selectedGif && (
@@ -465,39 +439,66 @@ export function GivePointsCard() {
               </div>
             )}
 
-            {/* Bottom Bar */}
-            <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-              {/* Left side: GIF + Summary */}
-              <div className="flex items-center gap-3">
-                <GiphyPicker
-                  onSelect={(gif) => setSelectedGif(gif)}
-                  disabled={isSubmitting}
-                />
-                <div className="text-xs text-muted-foreground">
-                  {mentions.length > 0 && points.length > 0 && (
-                    <span>
-                      {points.reduce((sum, point) => sum + point.value, 0)} pts × {mentions.length} {mentions.length === 1 ? 'person' : 'people'} = {points.reduce((sum, point) => sum + point.value, 0) * mentions.length} total
-                    </span>
-                  )}
-                </div>
               </div>
 
-              {/* Send Button */}
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
-                size="sm"
-                className="gap-1 bg-accent hover:bg-accent/90"
-              >
-                {isSubmitting ? (
-                  "Posting..."
-                ) : (
-                  <>
-                    <Send className="h-3 w-3" />
-                    Send Recognition
-                  </>
-                )}
-              </Button>
+              {/* Pill filter buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleMentionButtonClick}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  Select teammate
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  Company value
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAmountButtonClick}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  100 pts
+                </button>
+              </div>
+
+              {/* Bottom bar: icons left, send right */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2">
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <Smile className="h-4 w-4" />
+                  </button>
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <ImageIcon className="h-4 w-4" />
+                  </button>
+                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
+                  className="inline-flex items-center gap-1.5 text-white text-sm font-medium rounded-full transition-opacity disabled:opacity-50"
+                  style={{
+                    background: 'linear-gradient(135deg, #7F2BFE, #FC5BFF)',
+                    padding: '6.6px 14.9px 4.1px 15px',
+                  }}
+                >
+                  {isSubmitting ? "Posting..." : (
+                    <>
+                      Send
+                      <Send className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
           
