@@ -1,17 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, AtSign, Plus, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
+import { Send, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
 import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
 import { RichTextEditor, type RichTextEditorRef, type Mention, type PointBalloon } from "@/components/ui/rich-text-editor";
 
 export function GivePointsCard() {
@@ -32,8 +30,12 @@ export function GivePointsCard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { user, companyId, monthlyPoints, isAuthLoading } = useAuth();
+  const { user, companyId, monthlyPoints, isAuthLoading, avatarUrl } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
+  const [pointsInputValue, setPointsInputValue] = useState("100");
+  const [isEditingPoints, setIsEditingPoints] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Debug logging for points availability
   useEffect(() => {
@@ -387,27 +389,33 @@ export function GivePointsCard() {
 
   return (
     <Card className="border border-border rounded-xl shadow-none flex flex-col" style={{ padding: '19.75px' }}>
-      <CardContent className="p-0 space-y-4 flex-1 flex flex-col">
+      <CardContent className="p-0 flex-1 flex flex-col">
         {/* Points to give indicator */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pb-3">
           <span className="text-[13px] font-normal" style={{ color: '#9996AA' }}>Points to give</span>
           <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-semibold">
             {monthlyPoints}
           </span>
         </div>
 
+        {/* Divider after points to give */}
+        <div className="border-t border-border" />
+
         {/* Composer with avatar */}
-        <div className="relative flex-1 flex flex-col" ref={containerRef}>
+        <div className="relative flex-1 flex flex-col pt-3" ref={containerRef}>
           <div className="flex gap-3">
             {/* User Avatar */}
             <Avatar className="h-[30px] w-[30px] flex-shrink-0 mt-1">
+              {avatarUrl ? (
+                <AvatarImage src={avatarUrl} alt="Your avatar" />
+              ) : null}
               <AvatarFallback className="text-xs bg-muted">
                 <User className="h-4 w-4 text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 flex flex-col gap-3">
-              <div className="border border-border rounded-lg bg-card flex flex-col">
+              <div className="flex flex-col">
                 <RichTextEditor
                   ref={editorRef}
                   value={text}
@@ -420,25 +428,24 @@ export function GivePointsCard() {
                   points={points}
                 />
 
-            {/* GIF Preview */}
-            {selectedGif && (
-              <div className="px-3 py-2 border-t">
-                <div className="relative inline-block">
-                  <img
-                    src={selectedGif.previewUrl}
-                    alt="Selected GIF"
-                    className="max-w-[200px] max-h-[150px] rounded-md"
-                  />
-                  <button
-                    onClick={() => setSelectedGif(null)}
-                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            )}
-
+                {/* GIF Preview */}
+                {selectedGif && (
+                  <div className="py-2">
+                    <div className="relative inline-block">
+                      <img
+                        src={selectedGif.previewUrl}
+                        alt="Selected GIF"
+                        className="max-w-[200px] max-h-[150px] rounded-md"
+                      />
+                      <button
+                        onClick={() => setSelectedGif(null)}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Pill filter buttons */}
@@ -458,28 +465,99 @@ export function GivePointsCard() {
                 >
                   Company value
                 </button>
-                <button
-                  type="button"
-                  onClick={handleAmountButtonClick}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                >
-                  100 pts
-                </button>
+                {isEditingPoints ? (
+                  <input
+                    type="number"
+                    min="1"
+                    max={monthlyPoints}
+                    value={pointsInputValue}
+                    onChange={(e) => setPointsInputValue(e.target.value)}
+                    onBlur={() => {
+                      setIsEditingPoints(false);
+                      if (!pointsInputValue || Number(pointsInputValue) < 1) {
+                        setPointsInputValue("100");
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setIsEditingPoints(false);
+                    }}
+                    autoFocus
+                    className="w-20 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground text-center outline-none focus:ring-2 focus:ring-ring"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPoints(true)}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                  >
+                    {pointsInputValue} pts
+                  </button>
+                )}
               </div>
 
+              {/* Divider above bottom bar */}
+              <div className="border-t border-border" />
+
               {/* Bottom bar: icons left, send right */}
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
-                    <Smile className="h-4 w-4" />
-                  </button>
-                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                  {/* Emoji picker */}
+                  <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
+                        <Smile className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-2 z-[200]" align="start" sideOffset={8}>
+                      <div className="grid grid-cols-8 gap-1">
+                        {['😀','😂','😍','🥳','🎉','💪','🔥','⭐','💯','👏','🙌','❤️','💚','🤩','😎','👍','🚀','✨','🏆','💎','🌟','😊','🤗','💐'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              // Insert emoji into the editor by focusing and using execCommand
+                              editorRef.current?.focus();
+                              setTimeout(() => {
+                                document.execCommand('insertText', false, emoji);
+                              }, 0);
+                              setEmojiPickerOpen(false);
+                            }}
+                            className="p-1.5 text-lg hover:bg-muted rounded transition-colors"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Image upload */}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        toast.info("Image attachments coming soon!");
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors"
+                  >
                     <ImageIcon className="h-4 w-4" />
                   </button>
-                  <button type="button" className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors">
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
+
+                  {/* GIF picker */}
+                  <GiphyPicker
+                    onSelect={(gif) => setSelectedGif(gif)}
+                    disabled={isSubmitting}
+                  />
                 </div>
 
                 <button
@@ -502,7 +580,7 @@ export function GivePointsCard() {
             </div>
           </div>
           
-          {/* Mention Dropdown - positioned near cursor */}
+          {/* Mention Dropdown */}
           {showMentionDropdown && filteredMembers.length > 0 && (
             <div 
               ref={dropdownRef}
@@ -539,7 +617,7 @@ export function GivePointsCard() {
             </div>
           )}
 
-          {/* Point Dropdown - positioned near cursor */}
+          {/* Point Dropdown */}
           {showPointDropdown && (
             <div 
               ref={dropdownRef}
@@ -565,7 +643,7 @@ export function GivePointsCard() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                    <span className="inline-flex items-center justify-center w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full">
                       +
                     </span>
                     <span className="text-sm font-medium">{value} points</span>
@@ -583,7 +661,7 @@ export function GivePointsCard() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="inline-block w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                    <span className="inline-flex items-center justify-center w-6 h-6 bg-green-600 text-white text-xs font-semibold rounded-full">
                       +
                     </span>
                     <span className="text-sm font-medium">{pointQuery} points (custom)</span>

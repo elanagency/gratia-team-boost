@@ -97,7 +97,7 @@ const UnifiedDashboardLayout = () => {
       />
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 p-4 lg:p-6 pt-16 lg:pt-6">
+      <main className="flex-1 min-w-0 p-4 pt-16 lg:px-[145px] lg:pt-[72px]">
         <div className="animate-in fade-in-50 duration-200">
           <Outlet />
         </div>
