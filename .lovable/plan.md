@@ -1,83 +1,20 @@
 
 
-## Dashboard Redesign: Top Nav to Sidebar + New Layout
+## Sidebar Polish: Match Figma Exactly
 
-### Summary
-
-Replace the current top navigation bar with a dark sidebar matching the Figma design, and restructure the dashboard page layout to a new 3-column arrangement: Give Recognition composer at top, Recognition Feed on the left, and a right sidebar with personal stats, leaderboard, and upcoming celebrations.
-
-### Design Details (from Figma screenshots)
-
-- **Sidebar background**: `#0F0533` (dark purple/blue) -- already defined as `--sidebar-background`
-- **Give Recognition button**: gradient from `#7F2BFE` to `#FC5BFF`
-- **Active nav item**: white text with 10% white background, rounded
-- **Nav items**: Home, Analytics, Leaderboard, Redeem Points, Settings
-- **Sidebar header**: Grattia logo, then company card (logo + name + member count)
-- **Sidebar footer**: User avatar, name, role, Sign out
-- **Right panel cards**: Personal stats card (Points, Received, Sent), Leaderboard (top 5), Upcoming Celebrations
-
-### Files to Change
+### Changes
 
 | File | Change |
 |------|--------|
-| `src/components/dashboard/DashboardSidebar.tsx` | **New file.** Dark sidebar with logo, company info, "Give Recognition" button, nav links, user footer. |
-| `src/pages/dashboard/UnifiedDashboardLayout.tsx` | Replace `DashboardTopNavigation` with new `DashboardSidebar`. Change layout from vertical (top nav + content) to horizontal (sidebar + content). |
-| `src/pages/admin/Dashboard.tsx` | Restructure layout: onboarding at top, then GivePointsCard spanning full width, then 2-column grid with RecognitionFeed (left, wider) and right sidebar (personal stats + leaderboard + celebrations). Remove old height-sync logic. |
-| `src/components/dashboard/PersonalStatsCard.tsx` | **New file.** Shows logged-in user's total points, received count, sent count with avatar and role. |
-| `src/components/dashboard/UpcomingCelebrations.tsx` | **New file.** Lists upcoming birthdays and work anniversaries from company profiles. |
-| `src/components/dashboard/DashboardTopNavigation.tsx` | Keep file but it will no longer be used in the layout (can remove import). |
+| Copy `user-uploads://Image_Grattia.png` → `src/assets/grattia-logo-white.png` | New logo asset for sidebar |
+| `src/components/dashboard/DashboardSidebar.tsx` | 1. **Logo**: Import from `@/assets/grattia-logo-white.png`, center it horizontally, size ~110x26px. 2. **Company card**: Company name Inter Medium 13px white, teammate count Inter Regular 11px white/45%. 3. **Give Recognition button**: Replace `<GivePointsDialog />` with a custom styled button that opens the dialog -- solid `#7F2BFE` background (not gradient), full sidebar width with `rounded-xl` (~13px radius), Inter Medium 14px white text saying "Give Recognition". 4. **Nav items**: Inter Medium 14px, icon + text with gap, active state `bg-white/10` with rounded corners. Add Leaderboard nav item between Analytics and Redeem Points. 5. **Spacing**: Match Figma padding/gaps (px-4 for content areas, consistent vertical spacing). |
+| `src/components/points/GivePointsDialog.tsx` | Add an optional `trigger` prop so the sidebar can pass a custom trigger button instead of the default pink button. Update the component to render `{trigger}` as `DialogTrigger` when provided, otherwise use the existing default button. |
 
-### Sidebar Structure
-
-```text
-+---------------------------+
-|  ✦ grattia (logo)         |
-+---------------------------+
-|  [logo] Acme Corp         |
-|         12 teammates      |
-+---------------------------+
-|  [ Give Recognition ]     |  <-- gradient button
-+---------------------------+
-|  🏠 Home          (active)|
-|  📊 Analytics             |
-|  🏆 Leaderboard           |
-|  🎁 Redeem Points         |
-|  ⚙️ Settings              |
-+---------------------------+
-|                           |
-|  (spacer)                 |
-|                           |
-+---------------------------+
-|  [avatar] Priya Sharma    |
-|           Manager         |
-|  ↪ Sign out               |
-+---------------------------+
-```
-
-### Dashboard Content Layout
-
-```text
-+-----------------------------------------------+
-| [Onboarding checklist - if incomplete]         |
-+-----------------------------------------------+
-| Points to give: 100                            |
-| [Recognition composer - full width]            |
-+------------------------+----------------------+
-|                        | Personal Stats Card  |
-| Recognition Feed       |----------------------|
-| (scrollable)           | Leaderboard (top 5)  |
-|                        |----------------------|
-|                        | Upcoming Celebrations|
-+------------------------+----------------------+
-```
-
-### Technical Notes
-
-- The sidebar needs company name and member count: query `companies` table for name and `profiles` count for the company.
-- Company logo comes from `companies.logo_url`.
-- Upcoming celebrations: query `profiles` for `birthday` and `company_start_date` fields where dates are within the next 30 days.
-- Personal stats (Points, Received, Sent): user's `points` from profile, plus aggregated `point_transactions` counts.
-- Nav items differ for admin vs team member (admin sees Analytics + Settings, team member sees Redeem Points).
-- The "Give Recognition" button in the sidebar opens the GivePointsDialog or scrolls to the composer.
-- Mobile: sidebar collapses to a hamburger menu or off-canvas drawer.
+### Design specs from Figma
+- **Logo**: Centered, ~110x26px
+- **Company name**: Inter Medium 13px, `#FFFFFF`
+- **Teammate count**: Inter Regular 11px, `#FFFFFF` at 45% opacity
+- **Give Recognition button**: `#7F2BFE` fill, corner radius ~13px, Inter Medium 14px, full width within sidebar padding
+- **Nav text**: Inter Medium 14px, line-height 21px, white when active, white/70 when inactive
+- **Nav items**: Home, Analytics, Leaderboard, Redeem Points, Settings (admin-conditional for Analytics & Settings)
 
