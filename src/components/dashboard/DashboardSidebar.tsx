@@ -132,7 +132,7 @@ export const DashboardSidebar = ({
   );
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground font-['Inter']">
       {/* Logo - centered */}
       <div className="px-4 pt-6 pb-5 flex justify-center">
         <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
