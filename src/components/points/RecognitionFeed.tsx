@@ -528,7 +528,7 @@ export function RecognitionFeed() {
   }
 
   return (
-    <Card className="border border-border rounded-xl shadow-none flex flex-col">
+    <Card className="border-0 shadow-none flex flex-col">
       <CardContent className="p-5">
         {/* Header with tabs */}
         <div className="flex items-center justify-between mb-4">
