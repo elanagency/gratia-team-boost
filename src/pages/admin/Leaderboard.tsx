@@ -194,9 +194,20 @@ const Leaderboard = () => {
                       {topPerformer.department ? `${topPerformer.department} · ` : ""}
                       {topPerformer.role === "admin" ? "Admin" : "Member"}
                     </p>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: "#22C55E", marginTop: 4 }}>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#22C55E",
+                        background: "rgba(34,197,94,0.1)",
+                        borderRadius: 9999,
+                        padding: "4px 14px",
+                        display: "inline-block",
+                        marginTop: 4,
+                      }}
+                    >
                       {topPerformer.points.toLocaleString()} points
-                    </p>
+                    </span>
                   </div>
                 </div>
               </div>
