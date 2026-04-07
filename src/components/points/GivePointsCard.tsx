@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
+import { Send, X, Smile, ImageIcon, LayoutGrid, User, Plus } from "lucide-react";
 import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
+import { useCompanyValues, type CompanyValue } from "@/hooks/useCompanyValues";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,6 +34,12 @@ export function GivePointsCard() {
 
   const { user, companyId, monthlyPoints, isAuthLoading, avatarUrl } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
+  const { values: companyValues, addValue: addCompanyValue } = useCompanyValues();
+  const [selectedValue, setSelectedValue] = useState<CompanyValue | null>(null);
+  const [valuePopoverOpen, setValuePopoverOpen] = useState(false);
+  const [newValueName, setNewValueName] = useState("");
+  const [newValueColor, setNewValueColor] = useState("#7F2BFE");
+  const [isAddingValue, setIsAddingValue] = useState(false);
   const [pointsInputValue, setPointsInputValue] = useState("100");
   const [isEditingPoints, setIsEditingPoints] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -369,6 +377,7 @@ export function GivePointsCard() {
       setMentions([]);
       setPoints([]);
       setSelectedGif(null);
+      setSelectedValue(null);
       
       // Invalidate all relevant queries to refresh feeds and points
       await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
@@ -458,13 +467,109 @@ export function GivePointsCard() {
                 >
                   Select teammate
                 </button>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                >
-                  Company value
-                </button>
+                <Popover open={valuePopoverOpen} onOpenChange={setValuePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors disabled:opacity-50"
+                      style={selectedValue ? {
+                        backgroundColor: selectedValue.color + '20',
+                        color: selectedValue.color,
+                        borderColor: selectedValue.color + '40',
+                      } : undefined}
+                    >
+                      {selectedValue ? (
+                        <>
+                          {selectedValue.name}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedValue(null);
+                            }}
+                          />
+                        </>
+                      ) : (
+                        'Company value'
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2 z-[200]" align="start" sideOffset={8}>
+                    <div className="flex flex-col gap-1">
+                      {companyValues.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pb-2 border-b border-border mb-1">
+                          {companyValues.map((value) => (
+                            <button
+                              key={value.id}
+                              onClick={() => {
+                                setSelectedValue(value);
+                                setValuePopoverOpen(false);
+                              }}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                              style={{
+                                backgroundColor: value.color + '20',
+                                color: value.color,
+                              }}
+                            >
+                              {value.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {isAddingValue ? (
+                        <div className="flex flex-col gap-2 p-1">
+                          <Input
+                            placeholder="Value name"
+                            value={newValueName}
+                            onChange={(e) => setNewValueName(e.target.value)}
+                            className="h-8 text-xs"
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {['#7F2BFE', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'].map((c) => (
+                                <button
+                                  key={c}
+                                  onClick={() => setNewValueColor(c)}
+                                  className="w-5 h-5 rounded-full border-2 transition-all"
+                                  style={{
+                                    backgroundColor: c,
+                                    borderColor: newValueColor === c ? '#0F0533' : 'transparent',
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (!newValueName.trim()) return;
+                                const result = await addCompanyValue(newValueName.trim(), newValueColor);
+                                if (result) {
+                                  setSelectedValue(result);
+                                  setNewValueName("");
+                                  setNewValueColor("#7F2BFE");
+                                  setIsAddingValue(false);
+                                  setValuePopoverOpen(false);
+                                }
+                              }}
+                              className="ml-auto text-xs font-medium px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setIsAddingValue(true)}
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground p-1 transition-colors"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add new value
+                        </button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 {isEditingPoints ? (
                   <input
                     type="number"

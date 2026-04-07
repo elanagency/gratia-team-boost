@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ const UnifiedDashboardLayout = () => {
     avatarUrl
   } = useAuth();
   const sessionTrackedRef = useRef(false);
+  const location = useLocation();
+  const isDashboardIndex = location.pathname === "/dashboard";
   
   useEffect(() => {
     if (user) {
@@ -99,8 +101,7 @@ const UnifiedDashboardLayout = () => {
         avatarUrl={avatarUrl}
       />
 
-      {/* Main Content + Right Panel */}
-      <main className="flex-1 min-w-0 lg:pr-[350px]">
+      <main className={`flex-1 min-w-0 ${isDashboardIndex ? 'lg:pr-[350px]' : ''}`}>
         {/* Scrollable Center Area */}
         <div className="flex-1 min-w-0 p-4 pt-16 lg:px-[60px] lg:pt-[72px] overflow-y-auto">
           <div className="animate-in fade-in-50 duration-200">
@@ -109,12 +110,14 @@ const UnifiedDashboardLayout = () => {
         </div>
       </main>
 
-      {/* Right Panel - Fixed Sidebar */}
-      <aside className="hidden lg:flex flex-col fixed right-0 top-0 w-[350px] h-screen border-l border-[#E8E6F0] overflow-y-auto p-4 pt-[72px] gap-6 bg-background z-30">
-        <PersonalStatsCard />
-        <LeaderboardCard />
-        <UpcomingCelebrations />
-      </aside>
+      {/* Right Panel - Fixed Sidebar (only on dashboard index) */}
+      {isDashboardIndex && (
+        <aside className="hidden lg:flex flex-col fixed right-0 top-0 w-[350px] h-screen border-l border-[#E8E6F0] overflow-y-auto p-4 pt-[72px] gap-6 bg-background z-30">
+          <PersonalStatsCard />
+          <LeaderboardCard />
+          <UpcomingCelebrations />
+        </aside>
+      )}
     </div>
   );
 };
