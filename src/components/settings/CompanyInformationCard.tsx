@@ -215,10 +215,6 @@ export const CompanyInformationCard = () => {
                 <span style={{ fontSize: 12, color: "#9996AA" }}>(default)</span>
               </div>
             )}
-            <div className="flex items-center gap-1 mt-2" style={{ fontSize: 12, color: "#9996AA" }}>
-              <Info size={12} />
-              <span>Contact support to modify available regions</span>
-            </div>
           </div>
 
           {/* Edit / Save buttons */}
