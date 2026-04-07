@@ -174,8 +174,8 @@ const Leaderboard = () => {
             {/* Hero card for #1 */}
             {topPerformer && topPerformer.points > 0 && (
               <div
-                className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 bg-white flex flex-col items-center"
-                style={{ padding: "18px 24px 16px" }}
+                className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 flex flex-col items-center"
+                style={{ padding: "18px 24px 16px", background: "linear-gradient(135deg, rgba(127,43,254,0.06) 0%, rgba(127,43,254,0.02) 100%)" }}
               >
                 <div className="flex items-center gap-4">
                   <Avatar style={{ width: 56, height: 56 }}>
@@ -264,10 +264,20 @@ const Leaderboard = () => {
                     </span>
 
                     {/* Points */}
-                    <span
-                      style={{ width: 90, textAlign: "right", fontSize: 14, fontWeight: 600, color: "#22C55E" }}
-                    >
-                      {member.points.toLocaleString()}
+                    <span style={{ width: 90, display: "flex", justifyContent: "flex-end" }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#22C55E",
+                          background: "rgba(34,197,94,0.1)",
+                          borderRadius: 9999,
+                          padding: "4px 12px",
+                          display: "inline-block",
+                        }}
+                      >
+                        {member.points.toLocaleString()}
+                      </span>
                     </span>
                   </div>
                 ))
