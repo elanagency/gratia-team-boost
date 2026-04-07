@@ -94,10 +94,18 @@ export const useOptimizedAuth = () => {
       console.log('[useOptimizedAuth] Auth state change:', event, 'user:', newSession?.user?.email);
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      
+
+      const currentUserId = newSession?.user?.id;
+
       if (event === "SIGNED_OUT") {
         console.log('[useOptimizedAuth] User signed out, clearing queries');
         queryClient.removeQueries({ queryKey: ['user-profile'] });
+        return;
+      }
+
+      if (currentUserId && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+        console.log('[useOptimizedAuth] Refreshing cached profile for user:', currentUserId);
+        queryClient.removeQueries({ queryKey: ['user-profile', currentUserId], exact: true });
       }
     });
 
