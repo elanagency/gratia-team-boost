@@ -100,21 +100,21 @@ const UnifiedDashboardLayout = () => {
       />
 
       {/* Main Content + Right Panel */}
-      <main className="flex-1 min-w-0 flex">
+      <main className="flex-1 min-w-0 lg:pr-[350px]">
         {/* Scrollable Center Area */}
-        <div className="flex-1 min-w-0 p-4 pt-16 lg:px-[145px] lg:pt-[72px] overflow-y-auto">
+        <div className="flex-1 min-w-0 p-4 pt-16 lg:px-[60px] lg:pt-[72px] overflow-y-auto">
           <div className="animate-in fade-in-50 duration-200">
             <Outlet />
           </div>
         </div>
-
-        {/* Right Panel - Sticky Sidebar */}
-        <aside className="hidden lg:flex flex-col w-[300px] min-w-[300px] h-screen sticky top-0 border-l border-[#E8E6F0] overflow-y-auto p-6 pt-[72px] gap-6">
-          <PersonalStatsCard />
-          <LeaderboardCard />
-          <UpcomingCelebrations />
-        </aside>
       </main>
+
+      {/* Right Panel - Fixed Sidebar */}
+      <aside className="hidden lg:flex flex-col fixed right-0 top-0 w-[350px] h-screen border-l border-[#E8E6F0] overflow-y-auto p-4 pt-[72px] gap-6 bg-background z-30">
+        <PersonalStatsCard />
+        <LeaderboardCard />
+        <UpcomingCelebrations />
+      </aside>
     </div>
   );
 };
