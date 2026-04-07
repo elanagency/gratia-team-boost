@@ -607,7 +607,8 @@ export function RecognitionFeed() {
                           <div className="flex items-center gap-2">
                             {thread.mainPost.company_value_name ? (
                               <Badge 
-                                className="border-0 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                className="border-0 rounded-full text-xs font-medium"
+                                style-padding="1.88px 9.375px"
                                 style={{
                                   backgroundColor: (thread.mainPost.company_value_color || '#7F2BFE') + '20',
                                   color: thread.mainPost.company_value_color || '#7F2BFE',
