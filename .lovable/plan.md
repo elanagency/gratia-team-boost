@@ -1,74 +1,37 @@
 
 
-## Redesign Analytics Page to Match Figma
+## Refine Analytics Filters to Match Figma Specs
 
-### Current State
-The analytics page has a left sidebar with metric tabs (Received, Sent, Engagement, Redemptions, DAU), showing one chart at a time with a data table below.
+From the Figma screenshots, several small details differ from the current implementation:
 
-### New Design (from Figma)
-All metrics displayed as separate chart cards on a single scrollable page. No left sidebar. Three chart sections stacked vertically:
+### 1. Active granularity button color
+- **Current**: `backgroundColor: '#7F2BFE'` (purple)
+- **Figma**: `background: #0F0533` (dark navy), `color: #FFF`, `border-radius: 7.375px`
+- Fix line 85
 
-1. **Recognition Trend** — grouped bar chart with Sent (#7F2BFE) and Received (#FC5BFF) side by side
-2. **Participation Rate** — line chart in purple (#7F2BFE)
-3. **Redemptions** — bar chart in purple (#7F2BFE)
+### 2. Granularity toggle container border-radius
+- **Current**: `rounded-[9.375px]`
+- **Figma**: The container has no visible border-radius separate from the buttons; each button has `border-radius: 7.375px`. The container itself should use `rounded-[7.375px]`
+- Fix line 107
 
-### Figma Specs
-- **Page title**: "Analytics" — Inter, large/bold, color #0F0533
-- **Filters row**: "All Departments" dropdown + Daily | Weekly | **Monthly** toggle + Custom button, right-aligned
-- **Chart cards**: `border-radius: 15px`, `border: 1px solid #E8E6F0`, white bg, `padding: 19.75px`
-- **Chart titles**: Inter 15px, weight 600, color #0F0533
-- **Y-axis labels**: Inter 12px, weight 400, color #9996AA, right-aligned
-- **X-axis labels**: Inter 12px, weight 400, color #9996AA (month abbreviations: Oct, Nov, Dec...)
-- **Grid lines**: dashed, stroke #E8E6F0, horizontal only
-- **Recognition Trend legend**: bottom-center, "Sent" (purple square) + "Received" (pink square), Inter 12px weight 400 color #FC5BFF/#7F2BFE
-- **Bar colors**: Sent = #7F2BFE, Received = #FC5BFF
-- **Participation Rate line**: stroke #7F2BFE, smooth curve
-- **Redemptions bars**: fill #7F2BFE
+### 3. "All Departments" dropdown
+- **Current**: `rounded-[9.375px]`, `w-[160px]`
+- **Figma**: `border-radius: 13.375px`, Inter 12px weight 500 color `#0F0533`
+- Fix line 96: change to `rounded-[13.375px]`, add inline style for font
 
-### Table View
-Add a simple Graph/Table toggle so users can flip to the existing table view for any metric. The table remains available but isn't the default.
+### 4. "Custom" date button
+- **Current**: `rounded-[9.375px]`
+- **Figma**: `border-radius: 13.375px`, `border: 1px solid #E8E6F0`, text color `#9996AA`
+- Fix line 132: change to `rounded-[13.375px]`
 
-### Technical Plan
+### 5. Department dropdown content
+- **Figma** shows items like "All Departments" (highlighted), "Engineering", "Design", "Product", "People Ops", "Other" — these should come from the actual departments. For now, keep the existing segment options but ensure the popover styling matches.
 
-**1. Rewrite `src/pages/admin/Analytics.tsx`**
-- Remove `AnalyticsMetricsSidebar` import and rendering
-- Remove `selectedMetric` state — no longer switching between metrics
-- Keep `dateRange`, `segmentBy`, `granularity` state
-- Fetch all three datasets (recognition combined sent+received, engagement, redemptions) using three separate `useAnalyticsData` calls
-- Add a `viewMode` state: `'chart' | 'table'`
-- Render filters row at top, then three chart cards stacked vertically (or table view)
-- Full-width layout (no sidebar)
+### 6. Button text label
+- **Current**: Shows preset label like "Last 30 days"
+- **Figma**: Shows "Custom" with a calendar icon
+- Fix line 136-138: Always show "Custom" as the button label
 
-**2. Create `src/components/analytics/AnalyticsAllCharts.tsx`**
-- Three chart card sections:
-  - **RecognitionTrendChart**: Uses `BarChart` with two `Bar` components (sent + received), grouped. Colors: `#7F2BFE` and `#FC5BFF`. Legend at bottom.
-  - **ParticipationRateChart**: Uses `LineChart` with single `Line`, stroke `#7F2BFE`, smooth `monotone` type
-  - **RedemptionsChart**: Uses `BarChart` with single `Bar`, fill `#7F2BFE`
-- Each card: `rounded-[15px] border border-[#E8E6F0] bg-white`, padding `19.75px`
-- Title: Inter 15px weight 600 color #0F0533
-- Shared axis styling: color #9996AA, 12px, weight 400
-- Grid: dashed #E8E6F0, horizontal only
-
-**3. Update `src/components/analytics/AnalyticsFilters.tsx`**
-- Remove `segmentBy` selector from the main filter bar (keep it internally or in a secondary control)
-- Match Figma: "All Departments" dropdown on left, Daily/Weekly/Monthly toggle pills, Custom date button
-- Monthly toggle: filled purple (#7F2BFE) when active
-
-**4. Update `src/hooks/useAnalyticsData.ts`**
-- No structural changes needed — we'll just call the hook three times with different metrics
-- Or add a new hook that fetches all metrics at once for efficiency
-
-**5. Delete or deprecate `src/components/analytics/AnalyticsMetricsSidebar.tsx`**
-- No longer used
-
-**6. Keep `src/components/analytics/AnalyticsDataTable.tsx`**
-- Used when user toggles to table view
-- May need minor updates for multi-metric table display
-
-### Files to modify/create
-1. `src/pages/admin/Analytics.tsx` — full rewrite
-2. `src/components/analytics/AnalyticsAllCharts.tsx` — new component
-3. `src/components/analytics/AnalyticsFilters.tsx` — simplify to match Figma
-4. `src/components/analytics/AnalyticsChartArea.tsx` — can be removed/replaced
-5. `src/components/analytics/AnalyticsMetricsSidebar.tsx` — remove
+### Files to modify
+1. `src/components/analytics/AnalyticsFilters.tsx` — update border-radius values, active button bg color, and Custom button label
 
