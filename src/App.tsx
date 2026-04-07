@@ -18,6 +18,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Settings from "./pages/admin/Settings";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 import Analytics from "./pages/admin/Analytics";
+import Leaderboard from "./pages/admin/Leaderboard";
 import SubscriptionSuccess from "./pages/admin/SubscriptionSuccess";
 
 import GiftCardShop from "./pages/team/GiftCardShop";
@@ -95,6 +96,7 @@ const App = () => (
               <Route path="/dashboard" element={<UnifiedDashboardLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="analytics" element={<Analytics />} />
+                <Route path="leaderboard" element={<Leaderboard />} />
                 <Route path="gift-cards" element={<GiftCardShop />} />
                 <Route path="billing" element={<Navigate to="/dashboard/settings" replace />} />
                 <Route path="settings" element={<Settings />} />
