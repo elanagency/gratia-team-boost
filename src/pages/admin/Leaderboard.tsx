@@ -143,7 +143,7 @@ const Leaderboard = () => {
               fontSize: 13,
               fontWeight: selectedMonth === m.value ? 600 : 400,
               color: selectedMonth === m.value ? "#fff" : "#9996AA",
-              background: selectedMonth === m.value ? "#7F2BFE" : "transparent",
+              background: selectedMonth === m.value ? "#5B21B6" : "transparent",
               borderRadius: 9999,
               padding: "7px 14px",
             }}
