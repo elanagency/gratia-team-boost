@@ -175,26 +175,30 @@ const Leaderboard = () => {
             {topPerformer && topPerformer.points > 0 && (
               <div
                 className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 bg-white flex flex-col items-center"
-                style={{ padding: "30px 30px 24px" }}
+                style={{ padding: "18px 24px 16px" }}
               >
-                <Avatar style={{ width: 80, height: 80 }}>
-                  <AvatarFallback
-                    className={avatarColors[0]}
-                    style={{ fontSize: 28, fontWeight: 600 }}
-                  >
-                    {getInitials(topPerformer.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <p style={{ fontSize: 18, fontWeight: 700, color: "#0F0533", marginTop: 14 }}>
-                  {topPerformer.name}
-                </p>
-                <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginTop: 4 }}>
-                  {topPerformer.department ? `${topPerformer.department} · ` : ""}
-                  {topPerformer.role === "admin" ? "Admin" : "Member"}
-                </p>
-                <p style={{ fontSize: 22, fontWeight: 700, color: "#22C55E", marginTop: 10 }}>
-                  {topPerformer.points.toLocaleString()} points
-                </p>
+                <div className="flex items-center gap-4">
+                  <Avatar style={{ width: 56, height: 56 }}>
+                    <AvatarFallback
+                      className={avatarColors[0]}
+                      style={{ fontSize: 20, fontWeight: 600 }}
+                    >
+                      {getInitials(topPerformer.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: "#0F0533", lineHeight: "22px" }}>
+                      {topPerformer.name}
+                    </p>
+                    <p style={{ fontSize: 12, fontWeight: 400, color: "#9996AA", marginTop: 2 }}>
+                      {topPerformer.department ? `${topPerformer.department} · ` : ""}
+                      {topPerformer.role === "admin" ? "Admin" : "Member"}
+                    </p>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: "#22C55E", marginTop: 4 }}>
+                      {topPerformer.points.toLocaleString()} points
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
