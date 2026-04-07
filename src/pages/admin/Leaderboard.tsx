@@ -177,33 +177,37 @@ const Leaderboard = () => {
                 className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 flex items-center gap-4"
                 style={{ padding: "18px 24px", background: "linear-gradient(135deg, rgba(127,43,254,0.06) 0%, rgba(127,43,254,0.02) 100%)" }}
               >
-                {/* Rank badge */}
-                <span
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 9999,
-                    background: "#7F2BFE",
-                    color: "#fff",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  1
-                </span>
-                <div className="flex items-center gap-4">
-                  <Avatar style={{ width: 56, height: 56 }}>
+                <div className="relative" style={{ width: 64, height: 64, flexShrink: 0 }}>
+                  <Avatar style={{ width: 64, height: 64 }}>
                     <AvatarFallback
                       className={avatarColors[0]}
-                      style={{ fontSize: 20, fontWeight: 600 }}
+                      style={{ fontSize: 22, fontWeight: 600 }}
                     >
                       {getInitials(topPerformer.name)}
                     </AvatarFallback>
                   </Avatar>
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: -2,
+                      right: -2,
+                      width: 22,
+                      height: 22,
+                      borderRadius: 9999,
+                      background: "#6C2BD9",
+                      color: "#fff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px solid #fff",
+                    }}
+                  >
+                    1
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
                   <div>
                     <p style={{ fontSize: 16, fontWeight: 700, color: "#0F0533", lineHeight: "22px" }}>
                       {topPerformer.name}
