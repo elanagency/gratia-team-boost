@@ -1,11 +1,8 @@
-
 import React, { useState } from "react";
 import { useRewardsShop, GiftCard } from "@/hooks/useRewardsShop";
 import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { RedemptionSuccessDialog } from "./RedemptionSuccessDialog";
-import { Input } from "@/components/ui/input";
-import { RealTimeStatus } from "@/components/ui/real-time-status";
 import { Search } from "lucide-react";
 
 export const RewardShop = () => {
@@ -21,7 +18,6 @@ export const RewardShop = () => {
   
   const { giftCards, exchangeRate, isLoading, error } = useRewardsShop();
 
-  // Filter rewards based on search term
   const filteredRewards = giftCards.filter(reward => {
     return reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (reward.description && reward.description.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -47,19 +43,24 @@ export const RewardShop = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Gift Cards Shop</h2>
-        <RealTimeStatus />
-      </div>
-
       {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-        <Input
+      <div className="relative w-full">
+        <Search className="absolute left-[15px] top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+        <input
           placeholder="Search gift cards..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          style={{
+            width: '100%',
+            height: 38,
+            borderRadius: 13.375,
+            border: '1px solid #E8E6F0',
+            background: '#F5F5F7',
+            padding: '7.5px 15px 7.5px 33.75px',
+            fontSize: 14,
+            fontFamily: 'Inter, sans-serif',
+            outline: 'none',
+          }}
         />
       </div>
       
