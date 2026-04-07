@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
+import { Send, X, Smile, ImageIcon, LayoutGrid, User, Plus } from "lucide-react";
 import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
+import { useCompanyValues, type CompanyValue } from "@/hooks/useCompanyValues";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,6 +34,12 @@ export function GivePointsCard() {
 
   const { user, companyId, monthlyPoints, isAuthLoading, avatarUrl } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
+  const { values: companyValues, addValue: addCompanyValue } = useCompanyValues();
+  const [selectedValue, setSelectedValue] = useState<CompanyValue | null>(null);
+  const [valuePopoverOpen, setValuePopoverOpen] = useState(false);
+  const [newValueName, setNewValueName] = useState("");
+  const [newValueColor, setNewValueColor] = useState("#7F2BFE");
+  const [isAddingValue, setIsAddingValue] = useState(false);
   const [pointsInputValue, setPointsInputValue] = useState("100");
   const [isEditingPoints, setIsEditingPoints] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
