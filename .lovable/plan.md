@@ -1,32 +1,27 @@
 
 
-## Fix Settings Page Layout
+## Fix Settings Sidebar & Divider to Be Fixed/Floating
 
-Two issues to fix:
+### Problem
+The settings sidebar and divider sit inside the dashboard's scrollable content area (`p-4 pt-16 lg:px-[60px] lg:pt-[72px]`), so they scroll with the page and the divider doesn't reach the top.
 
-### 1. Push content to top and extend divider full height
+### Solution
+Use negative margins on the sidebar+divider container to pull them up and to the left, counteracting the parent padding. Make the sidebar and divider `position: fixed` so they float independently of the scroll, while the content area gets a left margin/padding to account for the fixed sidebar.
 
-The Settings page currently has `space-y-6` on the outer div and `p-4 pt-16 lg:px-[60px] lg:pt-[72px]` from the parent layout. The "Settings" title and sidebar/content sit inside this padded area. To make it feel flush against the top and have the divider extend full height:
+### Changes to `src/pages/admin/Settings.tsx`
 
-- Remove the `space-y-6` gap between title and content
-- Make the sidebar + divider + content section stretch to fill the available height using `min-h-[calc(100vh-72px)]` (accounting for the layout's top padding)
-- The divider already uses `flexShrink: 0` but needs explicit height — change it to `align-self: stretch` so it fills the flex container height
+1. **Remove the current flex layout** that groups sidebar + divider + content together
+2. **Make the sidebar fixed**: `position: fixed`, anchored at `top: 0`, `left: 240px` (after the dashboard sidebar which is ~240px wide), full viewport height, with its own vertical padding matching the layout's `pt-[72px]`
+3. **Make the divider fixed**: sits right after the sidebar column, `position: fixed`, `top: 0`, `height: 100vh`
+4. **Offset the content**: add `padding-left` or `margin-left` to the content area equal to the sidebar width (~220px) + divider + gap
+5. **Keep the "Settings" title** above the content, also offset to the right of the fixed sidebar
 
-**File: `src/pages/admin/Settings.tsx`**
-- Line 52: Change outer div from `space-y-6` to a flex column with specific gap for the title area only
-- Line 64: Add `min-h-[calc(100vh-120px)]` to the flex row so the divider stretches
-- Line 99: Add `alignSelf: 'stretch'` to the divider div
-- Line 66: Make sidebar sticky/floating at the top with `position: sticky; top: 72px`
-
-### 2. Wrap Company Profile and Company Values in a single bordered card
-
-From the Figma: both sections are inside one container with `border-radius: 15px`, `border: 1px solid #E8E6F0`, `padding: 15px` on all sides, with `padding-right: 300px` area (the 300 is the right-side dead space in Figma, not relevant here — the card itself is `600px` wide in Figma).
-
-**File: `src/components/settings/CompanyInformationCard.tsx`**
-- Line 115: Wrap the entire return content in a single card div with `border-radius: 15px`, `border: 1px solid #E8E6F0`, `padding: 15px`
-- Remove the horizontal divider (line 267) — in the Figma the two sections are separated by visual spacing only within the same card, or keep a subtle divider inside the card
+Specifically:
+- Sidebar: `position: fixed; top: 0; left: 240px; width: 220px; height: 100vh; padding-top: 72px; padding-right: 18.75px; border-right: 1px solid #E8E6F0;`
+- The divider becomes the sidebar's right border (simpler than a separate element)
+- Content: `margin-left: 240px` (220px sidebar + ~20px gap)
+- The "Settings" title sits above the content, also with the same left margin
 
 ### Files to modify
-1. `src/pages/admin/Settings.tsx` — layout fixes for full-height divider and top alignment
-2. `src/components/settings/CompanyInformationCard.tsx` — wrap in single bordered card
+1. `src/pages/admin/Settings.tsx` — restructure to fixed sidebar with border-right as divider
 
