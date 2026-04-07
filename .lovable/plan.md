@@ -1,40 +1,39 @@
 
 
-## Right-Side Fixed Panel Layout
+## Right Panel and Your Stats Redesign
 
-### Overview
-Restructure the dashboard so the right column (PersonalStatsCard, Leaderboard, Celebrations) acts as a fixed/sticky sidebar pinned to the right edge, separated by a full-height vertical border (#E8E6F0). The middle column scrolls independently. The onboarding checklist moves into the middle column.
+### 1. Widen and fix the right panel (`UnifiedDashboardLayout.tsx`)
 
-### Architecture Change
+**Current**: `w-[300px]`, `sticky top-0`, with `p-6 pt-[72px]`
 
-The current approach puts everything inside a single grid in `Dashboard.tsx` within a scrollable `<main>`. Instead:
+**Changes**:
+- Increase width from `w-[300px] min-w-[300px]` to `w-[350px] min-w-[350px]` (closer to Figma's ~301px content + 16px padding each side)
+- Change from `sticky top-0` to true fixed positioning: remove from flex flow, use `fixed right-0 top-0 h-screen` so it floats like the left sidebar
+- Add corresponding `mr-[350px]` or `pr-[350px]` to the main content area so it doesn't overlap
+- Reduce center padding from `lg:px-[145px]` to something smaller (e.g. `lg:px-[60px]`) since the wider right panel eats into available space
+- Keep `border-l border-[#E8E6F0]`, `overflow-y-auto`, `p-4 pt-[72px]`, `gap-6`
 
-1. **UnifiedDashboardLayout.tsx** — Split `<main>` into two sections:
-   - A scrollable center area (flex-1, overflow-y-auto)
-   - A fixed right panel (fixed width ~300px, full height, border-left #E8E6F0, overflow-y-auto)
+### 2. Redesign PersonalStatsCard to match Figma (`PersonalStatsCard.tsx`)
 
-2. **Dashboard.tsx** — Remove the 3-column grid entirely. The middle column content (onboarding, composer, feed) renders as a single column. The right panel widgets move up to the layout level or are rendered via a portal/context.
+**Figma specs observed**:
+- Card has `border-radius: 13.375px`, `border: 1px solid #E8E6F0`, subtle gradient background (`linear-gradient(135deg, #7F2BFE 6%, #FC5BFF 6%)` at very low opacity)
+- Padding: 16px all sides, gap 15px between elements
+- Top section: user avatar (small) + name + role/title, left-aligned
+- Below: three stats in a row — "1,680 Points", "30 Received", "45 Sent"
+  - Numbers: Inter font, 18px, weight 600, color #0F0533, centered
+  - Labels: Inter font, 14px, weight 600, color #0F0533, centered
+- No icons above the numbers (unlike current design with Award/Arrow icons)
+- No "Your Stats" header title — the card is self-explanatory with user info at top
 
-### Detailed Plan
-
-#### 1. Modify `UnifiedDashboardLayout.tsx`
-- Change the `<main>` area from a single scrollable container to a flex row with two children:
-  - **Center content area**: `flex-1 overflow-y-auto` with the existing padding (`lg:px-[145px] lg:pt-[72px]`). This renders `<Outlet />`.
-  - **Right panel**: Fixed-width (`w-[300px] min-w-[300px]`), `h-screen sticky top-0`, with `border-l` using color `#E8E6F0`, `overflow-y-auto`, padding `p-6 pt-[72px]`. This renders the right-side widgets directly.
-- Import and render `PersonalStatsCard`, `LeaderboardCard`, `UpcomingCelebrations` in the right panel.
-- Use border color `border-[#E8E6F0]` consistently.
-- On mobile (below `lg`), hide the right panel or stack it below.
-
-#### 2. Simplify `Dashboard.tsx`
-- Remove the 3-column grid layout entirely.
-- Remove imports for `PersonalStatsCard`, `LeaderboardCard`, `UpcomingCelebrations` (they move to the layout).
-- Render only: dialogs, onboarding checklist, `GivePointsCard`, `RecognitionFeed` — all as a single column with `space-y-6`.
-
-#### 3. Border color consistency
-- Replace all `border-border` references on the dashboard page with `border-[#E8E6F0]`.
-- This applies to the right panel separator and any card borders on the page.
+**Rebuild the component**:
+- Remove the Card/CardHeader/CardTitle wrapper; use a plain `div` with `rounded-[13.375px] border border-[#E8E6F0] p-4`
+- Add subtle gradient background matching Figma
+- Top row: avatar + user name + role (from auth context — `firstName lastName`, role/title if available)
+- Stats row: three equal columns, each showing the number (18px, font-semibold, #0F0533) and label below (14px, font-semibold, #0F0533)
+- Use Inter font via inline style
+- Labels: "Points", "Received", "Sent" (no icons)
 
 ### Files to modify
-1. **`src/pages/dashboard/UnifiedDashboardLayout.tsx`** — add right panel with widgets, split main into center + right
-2. **`src/pages/admin/Dashboard.tsx`** — simplify to single column, remove right-side widgets
+1. **`src/pages/dashboard/UnifiedDashboardLayout.tsx`** — widen right panel, make it fixed, adjust center content offset
+2. **`src/components/dashboard/PersonalStatsCard.tsx`** — full redesign to match Figma layout with user info + 3-column stats
 
