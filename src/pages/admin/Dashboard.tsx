@@ -2,12 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GivePointsCard } from "@/components/points/GivePointsCard";
 import { RecognitionFeed } from "@/components/points/RecognitionFeed";
-import { LeaderboardCard } from "@/components/points/LeaderboardCard";
 import { RegionSetupDialog } from "@/components/onboarding/RegionSetupDialog";
 import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 import BillingSetupDialog from "@/components/team/BillingSetupDialog";
-import { PersonalStatsCard } from "@/components/dashboard/PersonalStatsCard";
-import { UpcomingCelebrations } from "@/components/dashboard/UpcomingCelebrations";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -76,20 +73,10 @@ const Dashboard = () => {
         <OnboardingChecklist onUpgradeClick={() => setBillingDialogOpen(true)} />
       )}
 
-      {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 items-start">
-        {/* Left Column - Composer + Recognition Feed */}
-        <div className="lg:col-span-2 flex flex-col gap-5 pr-0 lg:pr-8">
-          <GivePointsCard />
-          <RecognitionFeed />
-        </div>
-
-        {/* Right Column - Widgets */}
-        <div className="flex flex-col gap-6 border-l border-border pl-8">
-          <PersonalStatsCard />
-          <LeaderboardCard />
-          <UpcomingCelebrations />
-        </div>
+      {/* Main Content - Single Column */}
+      <div className="flex flex-col gap-5">
+        <GivePointsCard />
+        <RecognitionFeed />
       </div>
     </div>
   );

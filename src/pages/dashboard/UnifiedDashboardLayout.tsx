@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay } from "date-fns";
+import { PersonalStatsCard } from "@/components/dashboard/PersonalStatsCard";
+import { LeaderboardCard } from "@/components/points/LeaderboardCard";
+import { UpcomingCelebrations } from "@/components/dashboard/UpcomingCelebrations";
 
 const UnifiedDashboardLayout = () => {
   const { 
@@ -96,11 +99,21 @@ const UnifiedDashboardLayout = () => {
         avatarUrl={avatarUrl}
       />
 
-      {/* Main Content */}
-      <main className="flex-1 min-w-0 p-4 pt-16 lg:px-[145px] lg:pt-[72px]">
-        <div className="animate-in fade-in-50 duration-200">
-          <Outlet />
+      {/* Main Content + Right Panel */}
+      <main className="flex-1 min-w-0 flex">
+        {/* Scrollable Center Area */}
+        <div className="flex-1 min-w-0 p-4 pt-16 lg:px-[145px] lg:pt-[72px] overflow-y-auto">
+          <div className="animate-in fade-in-50 duration-200">
+            <Outlet />
+          </div>
         </div>
+
+        {/* Right Panel - Sticky Sidebar */}
+        <aside className="hidden lg:flex flex-col w-[300px] min-w-[300px] h-screen sticky top-0 border-l border-[#E8E6F0] overflow-y-auto p-6 pt-[72px] gap-6">
+          <PersonalStatsCard />
+          <LeaderboardCard />
+          <UpcomingCelebrations />
+        </aside>
       </main>
     </div>
   );
