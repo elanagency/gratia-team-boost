@@ -66,6 +66,17 @@ const Settings = () => {
           background: "#fff",
         }}
       >
+        <h1
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 22,
+            fontWeight: 600,
+            color: "#0F0533",
+            marginBottom: 18.75,
+          }}
+        >
+          Settings
+        </h1>
         <div className="flex flex-col gap-[4px]">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -100,18 +111,7 @@ const Settings = () => {
       </div>
 
       {/* Content area offset to the right of the fixed sidebar */}
-      <div style={{ marginLeft: 160 }}>
-        <h1
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 22,
-            fontWeight: 600,
-            color: "#0F0533",
-            marginBottom: 18.75,
-          }}
-        >
-          Settings
-        </h1>
+      <div style={{ marginLeft: 160, paddingTop: 22.5 }}>
         {renderContent()}
       </div>
     </>
