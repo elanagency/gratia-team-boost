@@ -94,8 +94,7 @@ export function PersonalStatsCard() {
                 {item.value.toLocaleString()}
               </span>
               <span
-                className="font-semibold"
-                style={{ fontSize: "14px", color: "#0F0533" }}
+                style={{ fontSize: "11px", color: "#9996AA", fontWeight: 400, lineHeight: "16.5px" }}
               >
                 {item.label}
               </span>
