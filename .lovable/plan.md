@@ -1,15 +1,22 @@
 
 
-## Move "Settings" Title Into Sidebar & Add Content Padding
+## Add Horizontal Padding to Settings Content Area
 
-### Changes
+### Problem
+The content (Company Profile card) is flush against the vertical divider line because the `marginLeft: 160` only offsets to the divider position but adds no breathing room.
 
-**`src/pages/admin/Settings.tsx`**
+### Fix
 
-1. **Move "Settings" title into the fixed sidebar** — place the `<h1>Settings</h1>` inside the fixed sidebar div, above the tab buttons, with `marginBottom: 18.75px`
-2. **Add top padding to the content area** — add `paddingTop` to the content div so the Company Profile card doesn't start flush at the top. From the Figma, the content area has roughly 22.5px padding from the top before the card starts (matching the sidebar's title area alignment)
+**File: `src/pages/admin/Settings.tsx`** (line 114)
 
-### Specifics
-- In the fixed sidebar: insert `<h1>Settings</h1>` (Inter 22px, weight 600, color #0F0533) before the tab buttons, with ~18.75px bottom margin
-- Content area: remove the `<h1>` from there, keep `marginLeft: 160` but no title above the content anymore
+Add `paddingLeft` and `paddingRight` to the content area div so the card has even spacing on both sides:
+
+```tsx
+<div style={{ marginLeft: 160, paddingTop: 22.5, paddingLeft: 22.5, paddingRight: 22.5 }}>
+```
+
+This adds ~22.5px padding on both left (after the divider) and right sides, matching the Figma spacing pattern used elsewhere in the app.
+
+### Files to modify
+1. `src/pages/admin/Settings.tsx` — add horizontal padding to content wrapper (line 114)
 
