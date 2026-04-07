@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { LoadingSpinner } from "@/components/dashboard/LoadingSpinner";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";

@@ -259,6 +259,41 @@ export type Database = {
           },
         ]
       }
+      company_values: {
+        Row: {
+          color: string
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          color?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          color?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_values_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           company_id: string
@@ -647,6 +682,7 @@ export type Database = {
       point_transactions: {
         Row: {
           company_id: string
+          company_value_id: string | null
           created_at: string
           description: string
           gif_url: string | null
@@ -658,6 +694,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          company_value_id?: string | null
           created_at?: string
           description: string
           gif_url?: string | null
@@ -669,6 +706,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          company_value_id?: string | null
           created_at?: string
           description?: string
           gif_url?: string | null
@@ -684,6 +722,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_company_value_id_fkey"
+            columns: ["company_value_id"]
+            isOneToOne: false
+            referencedRelation: "company_values"
             referencedColumns: ["id"]
           },
           {
