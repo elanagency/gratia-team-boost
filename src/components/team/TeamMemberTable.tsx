@@ -43,8 +43,6 @@ const getRoleLabel = (member: TeamMember) => {
 const getRoleSubtitle = (member: TeamMember) => {
   if (member.is_admin) return "Account Owner";
   const dept = member.department;
-  const role = member.role;
-  if (role && role !== "user") return role;
   if (dept) return dept;
   return "Team Member";
 };
