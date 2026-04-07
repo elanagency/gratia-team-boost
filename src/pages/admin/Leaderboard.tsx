@@ -174,32 +174,27 @@ const Leaderboard = () => {
             {/* Hero card for #1 */}
             {topPerformer && topPerformer.points > 0 && (
               <div
-                className="rounded-[13.375px] border border-[#E8E6F0] bg-white flex items-center gap-[22.5px]"
-                style={{ padding: "22.5px 30px" }}
+                className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 bg-white flex flex-col items-center"
+                style={{ padding: "30px 30px 24px" }}
               >
-                <Avatar style={{ width: 64, height: 64 }}>
+                <Avatar style={{ width: 80, height: 80 }}>
                   <AvatarFallback
                     className={avatarColors[0]}
-                    style={{ fontSize: 22, fontWeight: 600 }}
+                    style={{ fontSize: 28, fontWeight: 600 }}
                   >
                     {getInitials(topPerformer.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p style={{ fontSize: 18, fontWeight: 700, color: "#0F0533" }}>
-                    {topPerformer.name}
-                  </p>
-                  <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginTop: 2 }}>
-                    {topPerformer.department ? `${topPerformer.department} · ` : ""}
-                    {topPerformer.role === "admin" ? "Admin" : "Member"}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p style={{ fontSize: 28, fontWeight: 700, color: "#22C55E" }}>
-                    {topPerformer.points.toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: "#9996AA" }}>points earned</p>
-                </div>
+                <p style={{ fontSize: 18, fontWeight: 700, color: "#0F0533", marginTop: 14 }}>
+                  {topPerformer.name}
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginTop: 4 }}>
+                  {topPerformer.department ? `${topPerformer.department} · ` : ""}
+                  {topPerformer.role === "admin" ? "Admin" : "Member"}
+                </p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: "#22C55E", marginTop: 10 }}>
+                  {topPerformer.points.toLocaleString()} points
+                </p>
               </div>
             )}
 
@@ -208,7 +203,7 @@ const Leaderboard = () => {
               {/* Table header */}
               <div
                 className="flex items-center border-b border-[#E8E6F0]"
-                style={{ height: 42, padding: "0 22.5px", fontSize: 11, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.04em" }}
+                style={{ height: 42, padding: "0 22.5px", fontSize: 11, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.04em", background: "#F8F6FF" }}
               >
                 <span style={{ width: 50 }}>Rank</span>
                 <span className="flex-1">Name</span>
@@ -266,7 +261,7 @@ const Leaderboard = () => {
 
                     {/* Points */}
                     <span
-                      style={{ width: 90, textAlign: "right", fontSize: 14, fontWeight: 600, color: "#0F0533" }}
+                      style={{ width: 90, textAlign: "right", fontSize: 14, fontWeight: 600, color: "#22C55E" }}
                     >
                       {member.points.toLocaleString()}
                     </span>
