@@ -1,11 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Award, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function PersonalStatsCard() {
-  const { user, companyId, totalPoints } = useAuth();
+  const { user, companyId, totalPoints, firstName, lastName, avatarUrl } = useAuth();
 
   const { data: stats } = useQuery({
     queryKey: ["personal-transaction-stats", user?.id, companyId],
@@ -30,48 +29,80 @@ export function PersonalStatsCard() {
     enabled: !!user?.id && !!companyId,
   });
 
-  const items = [
-    {
-      label: "Points",
-      value: totalPoints,
-      icon: Award,
-      color: "text-primary",
-    },
-    {
-      label: "Received",
-      value: stats?.received ?? 0,
-      icon: ArrowDownLeft,
-      color: "text-emerald-500",
-    },
-    {
-      label: "Sent",
-      value: stats?.sent ?? 0,
-      icon: ArrowUpRight,
-      color: "text-blue-500",
-    },
+  const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  const statItems = [
+    { value: totalPoints, label: "Points" },
+    { value: stats?.received ?? 0, label: "Received" },
+    { value: stats?.sent ?? 0, label: "Sent" },
   ];
 
   return (
-    <Card className="border border-border rounded-xl shadow-none">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Your Stats</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-3">
-          {items.map((item) => (
-            <div
-              key={item.label}
-              className="flex flex-col items-center gap-1 p-3 rounded-lg bg-muted/50"
+    <div
+      className="relative overflow-hidden border border-[#E8E6F0] p-4"
+      style={{
+        borderRadius: "13.375px",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      {/* Subtle gradient background */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          background: "linear-gradient(135deg, #7F2BFE 0%, #FC5BFF 100%)",
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative flex flex-col gap-[15px]">
+        {/* User info row */}
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={avatarUrl ?? undefined} alt={fullName} />
+            <AvatarFallback
+              className="text-xs font-semibold text-white"
+              style={{ backgroundColor: "#7F2BFE" }}
             >
-              <item.icon className={`h-5 w-5 ${item.color}`} />
-              <span className="text-xl font-bold text-foreground">
-                {item.value}
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span
+              className="font-semibold leading-tight"
+              style={{ fontSize: "14px", color: "#0F0533" }}
+            >
+              {fullName}
+            </span>
+            <span
+              className="leading-tight"
+              style={{ fontSize: "12px", color: "#8E8C95" }}
+            >
+              Team Member
+            </span>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2">
+          {statItems.map((item) => (
+            <div key={item.label} className="flex flex-col items-center gap-0.5">
+              <span
+                className="font-semibold"
+                style={{ fontSize: "18px", color: "#0F0533" }}
+              >
+                {item.value.toLocaleString()}
               </span>
-              <span className="text-xs text-muted-foreground">{item.label}</span>
+              <span
+                className="font-semibold"
+                style={{ fontSize: "14px", color: "#0F0533" }}
+              >
+                {item.label}
+              </span>
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
