@@ -49,21 +49,21 @@ const Settings = () => {
   };
 
   return (
-    <>
-      {/* Fixed sidebar with integrated divider */}
+    <div style={{ display: "flex", minHeight: "100%", marginTop: -40, marginLeft: -16, marginRight: -16 }}>
+      {/* Sidebar navigation */}
       <div
         style={{
-          position: "fixed",
-          top: 0,
-          left: 300,
           width: 220,
-          height: "100vh",
+          minWidth: 220,
           borderRight: "1px solid #E8E6F0",
-          paddingTop: 72,
+          paddingTop: 24,
           paddingLeft: 15,
           paddingRight: 18.75,
-          zIndex: 10,
           background: "#fff",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
         }}
       >
         <h1
@@ -110,11 +110,11 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Content area offset to the right of the fixed sidebar */}
-      <div style={{ marginLeft: 220, paddingTop: 22.5, paddingLeft: 22.5, paddingRight: 22.5 }}>
+      {/* Content area */}
+      <div style={{ flex: 1, minWidth: 0, padding: "24px 22.5px" }}>
         {renderContent()}
       </div>
-    </>
+    </div>
   );
 };
 
