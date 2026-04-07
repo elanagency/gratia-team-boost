@@ -83,7 +83,7 @@ export function UpcomingCelebrations() {
         </span>
       </div>
 
-      <div style={{ padding: "11.25px 15px 0 15px" }}>
+      <div style={{ padding: "11.25px 15px 11.25px 15px" }}>
         {isLoading ? (
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", color: "#9996AA" }}>
             Loading...
