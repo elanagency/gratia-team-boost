@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ExternalLink, Users, CreditCard, DollarSign } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -47,392 +45,250 @@ export const BillingCard = () => {
   const { user, companyId } = useAuth();
   const { memberPriceInCents, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
 
-
   const fetchCompanyData = async () => {
     if (!companyId) return null;
-    
     const { data: company, error } = await supabase
       .from('companies')
-      .select(`
-        id,
-        name,
-        subscription_status,
-        stripe_customer_id,
-        stripe_subscription_id,
-        environment,
-        stripe_customer_id_test,
-        stripe_customer_id_live
-      `)
+      .select(`id, name, subscription_status, stripe_customer_id, stripe_subscription_id, environment, stripe_customer_id_test, stripe_customer_id_live`)
       .eq('id', companyId)
       .single();
-
-    if (error) {
-      console.error('Error fetching company data:', error);
-      return null;
-    }
-
+    if (error) { console.error('Error fetching company data:', error); return null; }
     return company;
   };
 
   const fetchPaymentMethodDetails = useCallback(async () => {
     if (!hasBillingSetup) return;
-    
     setIsLoadingPaymentMethod(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-payment-method-details');
-      
-      if (error) {
-        console.error('Error fetching payment method details:', error);
-        return;
-      }
-      
-      if (data?.paymentMethod) {
-        setPaymentMethod(data.paymentMethod);
-      }
-    } catch (error) {
-      console.error('Error fetching payment method details:', error);
-    } finally {
-      setIsLoadingPaymentMethod(false);
-    }
+      if (error) { console.error('Error fetching payment method details:', error); return; }
+      if (data?.paymentMethod) setPaymentMethod(data.paymentMethod);
+    } catch (error) { console.error('Error fetching payment method details:', error); }
+    finally { setIsLoadingPaymentMethod(false); }
   }, [hasBillingSetup]);
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!user || !companyId) return;
-
     setIsLoading(true);
     try {
       const company = await fetchCompanyData();
-      if (!company) {
-        throw new Error('Company not found');
-      }
-      
+      if (!company) throw new Error('Company not found');
       setCompanyData(company);
-
-      // Check if billing is set up (customer exists in Stripe) - environment aware
       const environment = company?.environment || 'test';
-      const stripeCustomerId = environment === 'live' 
-        ? company?.stripe_customer_id_live 
-        : company?.stripe_customer_id_test;
+      const stripeCustomerId = environment === 'live' ? company?.stripe_customer_id_live : company?.stripe_customer_id_test;
       const billingSetup = !!stripeCustomerId;
       setHasBillingSetup(billingSetup);
-
-      // Get active member count (only active members for billing)
-      const { count: memberCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('status', 'active');
-
+      const { count: memberCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active');
       const teamMembers = memberCount || 0;
-      
-      // Use pricing from the platform settings hook - throw error if not available
-      if (!memberPriceInCents) {
-        throw new Error('Platform pricing settings not available');
-      }
+      if (!memberPriceInCents) throw new Error('Platform pricing settings not available');
       const amountPerMember = memberPriceInCents;
-      
       if (company?.stripe_subscription_id) {
-        // Try to get subscription details from check-subscription-status
         try {
           const { data: checkResult, error: checkError } = await supabase.functions.invoke('check-subscription-status');
-          
           if (!checkError && checkResult) {
-            setSubscriptionStatus({
-              has_subscription: checkResult.has_subscription,
-              status: checkResult.status,
-              team_members: teamMembers,
-              next_billing_date: checkResult.next_billing_date,
-              amount_per_member: amountPerMember,
-              monthly_cost: amountPerMember * teamMembers
-            });
+            setSubscriptionStatus({ has_subscription: checkResult.has_subscription, status: checkResult.status, team_members: teamMembers, next_billing_date: checkResult.next_billing_date, amount_per_member: amountPerMember, monthly_cost: amountPerMember * teamMembers });
             setHasExistingSubscription(true);
             return;
           }
-        } catch (error) {
-          console.log("check-subscription-status failed, using fallback data");
-        }
-
-        // Fallback: construct status from database
-        setSubscriptionStatus({
-          has_subscription: true,
-          status: company.subscription_status || 'active',
-          team_members: teamMembers,
-          next_billing_date: null,
-          amount_per_member: amountPerMember,
-          monthly_cost: amountPerMember * teamMembers
-        });
+        } catch (error) { console.log("check-subscription-status failed, using fallback data"); }
+        setSubscriptionStatus({ has_subscription: true, status: company.subscription_status || 'active', team_members: teamMembers, next_billing_date: null, amount_per_member: amountPerMember, monthly_cost: amountPerMember * teamMembers });
         setHasExistingSubscription(true);
       } else {
-        // No subscription - show current team members for cost estimation
-        setSubscriptionStatus({
-          has_subscription: false,
-          status: 'inactive',
-          team_members: teamMembers,
-          next_billing_date: null,
-          amount_per_member: amountPerMember,
-          monthly_cost: amountPerMember * teamMembers
-        });
-
+        setSubscriptionStatus({ has_subscription: false, status: 'inactive', team_members: teamMembers, next_billing_date: null, amount_per_member: amountPerMember, monthly_cost: amountPerMember * teamMembers });
         setHasExistingSubscription(false);
       }
     } catch (error) {
       console.error('Error fetching subscription status:', error);
       toast.error('Failed to fetch subscription status');
-      
-      // Set error state - no fallback values
       setSubscriptionStatus(null);
       setHasExistingSubscription(false);
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   }, [user, companyId, memberPriceInCents]);
 
+  useEffect(() => { if (!isPricingLoading) fetchSubscriptionStatus(); }, [fetchSubscriptionStatus, isPricingLoading]);
+  useEffect(() => { if (hasBillingSetup) fetchPaymentMethodDetails(); }, [fetchPaymentMethodDetails, hasBillingSetup]);
   useEffect(() => {
-    if (!isPricingLoading) {
-      fetchSubscriptionStatus();
-    }
-  }, [fetchSubscriptionStatus, isPricingLoading]);
-
-  useEffect(() => {
-    if (hasBillingSetup) {
-      fetchPaymentMethodDetails();
-    }
-  }, [fetchPaymentMethodDetails, hasBillingSetup]);
-
-  // Listen for billing-updated event (dispatched after Stripe checkout verification)
-  useEffect(() => {
-    const handler = () => {
-      console.log('billing-updated event received, refreshing billing data');
-      fetchSubscriptionStatus();
-    };
+    const handler = () => { console.log('billing-updated event received'); fetchSubscriptionStatus(); };
     window.addEventListener('billing-updated', handler);
     return () => window.removeEventListener('billing-updated', handler);
   }, [fetchSubscriptionStatus]);
-
-  // Real-time subscription for profiles changes (member additions/deletions)
   useEffect(() => {
     if (!companyId) return;
-
-    const profilesChannel = supabase
-      .channel('billing-profiles-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-          filter: `company_id=eq.${companyId}`
-        },
-        (payload) => {
-          console.log('Profile change detected, refreshing billing data:', payload);
-          // Debounce the refresh to avoid excessive calls
-          setTimeout(() => {
-            fetchSubscriptionStatus();
-          }, 1000);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(profilesChannel);
-    };
+    const ch = supabase.channel('billing-profiles-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `company_id=eq.${companyId}` }, () => { setTimeout(() => fetchSubscriptionStatus(), 1000); }).subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [companyId, fetchSubscriptionStatus]);
-
-  // Real-time subscription for company subscription changes
   useEffect(() => {
     if (!companyId) return;
-
-    const companiesChannel = supabase
-      .channel('billing-companies-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'companies',
-          filter: `id=eq.${companyId}`
-        },
-        (payload) => {
-          console.log('Company subscription change detected, refreshing billing data:', payload);
-          // Debounce the refresh to avoid excessive calls
-          setTimeout(() => {
-            fetchSubscriptionStatus();
-          }, 500);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(companiesChannel);
-    };
+    const ch = supabase.channel('billing-companies-changes').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'companies', filter: `id=eq.${companyId}` }, () => { setTimeout(() => fetchSubscriptionStatus(), 500); }).subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [companyId, fetchSubscriptionStatus]);
 
   const handleManageBilling = async () => {
     setIsPortalLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      } else {
-        throw new Error('No portal URL received');
-      }
+      if (error) throw error;
+      if (data?.url) window.open(data.url, '_blank');
+      else throw new Error('No portal URL received');
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast.error('Failed to open billing portal. Please try again.');
-    } finally {
-      setIsPortalLoading(false);
-    }
+    } finally { setIsPortalLoading(false); }
   };
+
+  const containerStyle: React.CSSProperties = {
+    fontFamily: "Inter, sans-serif",
+    border: "1px solid #E8E6F0",
+    borderRadius: 15,
+    padding: 20,
+    background: "#fff",
+  };
+
+  const labelStyle: React.CSSProperties = { fontSize: 13, color: "#9996AA", fontFamily: "Inter, sans-serif" };
+  const valueStyle: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: "#0F0533", fontFamily: "Inter, sans-serif" };
 
   if (isLoading || isPricingLoading) {
     return (
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Billing Overview</h2>
-        </div>
-        <div className="p-6 flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </Card>
+      <div style={containerStyle}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Current Plan</h2>
+        <p style={labelStyle}>Loading billing information...</p>
+      </div>
     );
   }
 
   if (isPricingError || !memberPriceInCents) {
     return (
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Billing Overview</h2>
-        </div>
-        <div className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-medium">Error loading platform pricing settings</p>
-            <p className="text-sm mt-2">Unable to load billing information. Please contact support.</p>
-          </div>
-        </div>
-      </Card>
+      <div style={containerStyle}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Current Plan</h2>
+        <p style={{ fontSize: 13, color: "#E53E3E" }}>Error loading platform pricing settings. Please contact support.</p>
+      </div>
     );
   }
 
   if (!subscriptionStatus) {
     return (
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Billing Overview</h2>
-        </div>
-        <div className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-medium">Error loading subscription data</p>
-            <p className="text-sm mt-2">Unable to fetch billing information. Please try refreshing the page.</p>
-          </div>
-        </div>
-      </Card>
+      <div style={containerStyle}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Current Plan</h2>
+        <p style={{ fontSize: 13, color: "#E53E3E" }}>Error loading subscription data. Please refresh the page.</p>
+      </div>
     );
   }
 
+  const pricePerSeat = (memberPriceInCents / 100).toFixed(0);
+  const seats = subscriptionStatus.team_members || 0;
+  const totalCost = (seats * memberPriceInCents / 100).toFixed(2);
+  const nextBillingDate = subscriptionStatus.next_billing_date
+    ? new Date(subscriptionStatus.next_billing_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : null;
+
+  const paymentMethodText = hasBillingSetup
+    ? isLoadingPaymentMethod
+      ? "Loading..."
+      : paymentMethod
+        ? `${paymentMethod.brand?.charAt(0).toUpperCase()}${paymentMethod.brand?.slice(1)} ending in ${paymentMethod.last4}`
+        : "Card on file"
+    : "Not set";
+
   return (
-    <Card className="dashboard-card">
-      <div className="card-header">
-        <h2 className="card-title">Billing Overview</h2>
-      </div>
-      
-      <div className="p-6">
+    <div style={containerStyle}>
+      {/* Header */}
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>Current Plan</h2>
+      <p style={{ ...labelStyle, marginBottom: 20 }}>Manage your subscription and billing</p>
 
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 ${!hasExistingSubscription ? 'opacity-50' : ''}`}>
-          {/* Your Plan */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              Your plan
-            </div>
-            <div className="font-semibold">
-              {hasExistingSubscription ? `Team Subscription` : 'No Active Plan'}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              ${(memberPriceInCents / 100).toFixed(2)} per seat/month
-            </div>
+      {/* Plan card */}
+      <div
+        style={{
+          borderRadius: 13.375,
+          border: "1px solid #E8E6F0",
+          background: "linear-gradient(135deg, #F8F5FF 0%, #FFF 100%)",
+          padding: "14px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+            Current Plan
           </div>
-
-          {/* Active Seats */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              Active seats
-            </div>
-            <div className="font-semibold">
-              {hasExistingSubscription ? (subscriptionStatus?.team_members || 0) : 0}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'All active members' : 'Start subscription to add'}
-            </div>
-          </div>
-
-          {/* Monthly Cost */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <DollarSign className="h-4 w-4" />
-              Monthly cost
-            </div>
-            <div className="font-semibold">
-              ${((subscriptionStatus?.team_members || 0) * memberPriceInCents / 100).toFixed(2)}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasExistingSubscription ? 'Prorated on changes' : 'No charges yet'}
-            </div>
-          </div>
-
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CreditCard className="h-4 w-4" />
-              Payment method
-            </div>
-            <div className="font-semibold">
-              {hasBillingSetup ? (
-                isLoadingPaymentMethod ? (
-                  'Loading...'
-                ) : paymentMethod ? (
-                  `${paymentMethod.brand?.charAt(0).toUpperCase()}${paymentMethod.brand?.slice(1)} ending in ${paymentMethod.last4}`
-                ) : (
-                  'Card ending in ****'
-                )
-              ) : (
-                'Not set'
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {hasBillingSetup ? 'Managed via Stripe' : 'Start subscription to set up'}
-            </div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#0F0533" }}>
+            {hasExistingSubscription ? "Pro Plan" : "No Active Plan"}
           </div>
         </div>
-
-        {/* Manage Button */}
-        <div className="border-t pt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-medium">{hasExistingSubscription ? 'Manage Your Subscription' : 'Setup Your Billing'}</h3>
-              <p className="text-sm text-muted-foreground">
-                {hasExistingSubscription 
-                  ? 'View invoices, update payment methods, or cancel your subscription. Billing is based on active members only.'
-                  : 'Set up your billing information to start inviting team members and managing your subscription.'
-                }
-              </p>
-            </div>
-            <Button 
-              onClick={handleManageBilling}
-              disabled={!hasExistingSubscription || isPortalLoading}
-              className="gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              {isPortalLoading ? 'Opening Portal...' : hasExistingSubscription ? 'Manage Billing' : 'No Active Subscription'}
-            </Button>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+            Price
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#0F0533" }}>
+            ${pricePerSeat} <span style={{ fontSize: 12, fontWeight: 400, color: "#9996AA" }}>/seat/mo</span>
           </div>
         </div>
       </div>
-    </Card>
+
+      {/* Line items */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {/* Seats */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={labelStyle}>Seats</span>
+          <span style={valueStyle}>
+            {hasExistingSubscription ? `${seats} × $${pricePerSeat} = $${totalCost}` : "0"}
+          </span>
+        </div>
+
+        {/* Total due */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={{ ...labelStyle, fontWeight: 500, color: "#7F2BFE" }}>
+            Total due {nextBillingDate || ""}
+          </span>
+          <span style={{ ...valueStyle, fontWeight: 600 }}>
+            {hasExistingSubscription ? `$${totalCost}` : "$0.00"}
+          </span>
+        </div>
+
+        {/* Next billing date */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={labelStyle}>Next billing date</span>
+          <span style={valueStyle}>{nextBillingDate || "—"}</span>
+        </div>
+
+        {/* Payment method */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={labelStyle}>Payment method</span>
+          <span style={valueStyle}>{paymentMethodText}</span>
+        </div>
+      </div>
+
+      {/* Manage subscription */}
+      <div style={{ marginTop: 24 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Manage Your Subscription</h3>
+        <p style={{ ...labelStyle, marginBottom: 16, lineHeight: 1.5 }}>
+          View invoices, update payment methods, or cancel your subscription. Billing is based on active members only.
+        </p>
+        <button
+          onClick={handleManageBilling}
+          disabled={!hasExistingSubscription || isPortalLoading}
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 13,
+            fontWeight: 500,
+            height: 38,
+            paddingLeft: 20,
+            paddingRight: 20,
+            borderRadius: 13.375,
+            border: "none",
+            background: hasExistingSubscription ? "linear-gradient(135deg, #7F2BFE, #FC5BFF)" : "#E8E6F0",
+            color: hasExistingSubscription ? "#fff" : "#9996AA",
+            cursor: hasExistingSubscription ? "pointer" : "not-allowed",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {isPortalLoading ? "Opening Portal..." : "Manage Billing"}
+          <ExternalLink size={14} />
+        </button>
+      </div>
+    </div>
   );
 };

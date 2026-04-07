@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info, UserPlus, Hash, Link2 } from "lucide-react";
+import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info, UserPlus, ChevronRight } from "lucide-react";
 import SlackImportDialog from "@/components/team/SlackImportDialog";
 import slackLogo from "@/assets/slack-logo.webp";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
@@ -15,20 +13,14 @@ import SlackUserLinking from "./SlackUserLinking";
 
 const SlackNotificationsCard = () => {
   const {
-    integration,
-    channels,
-    isLoadingIntegration,
-    isLoadingChannels,
-    isConnected,
-    connectSlack,
-    updateChannel,
-    updateNotificationSettings,
-    disconnectSlack,
+    integration, channels, isLoadingIntegration, isLoadingChannels, isConnected,
+    connectSlack, updateChannel, updateNotificationSettings, disconnectSlack,
   } = useSlackIntegration();
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState(false);
   const [slackImportOpen, setSlackImportOpen] = useState(false);
+  const [showBotInvite, setShowBotInvite] = useState(false);
 
   const inviteCommand = "/invite @Grattia";
 
@@ -39,22 +31,16 @@ const SlackNotificationsCard = () => {
     setTimeout(() => setCopiedCommand(false), 2000);
   };
 
-  // Handle OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
-    
     if (state === 'teams') return;
-    
     if (code && !isConnecting) {
       setIsConnecting(true);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
       connectSlack.mutate({ code, redirect_uri: redirectUri }, {
-        onSettled: () => {
-          setIsConnecting(false);
-          window.history.replaceState({}, document.title, window.location.pathname);
-        },
+        onSettled: () => { setIsConnecting(false); window.history.replaceState({}, document.title, window.location.pathname); },
       });
     }
   }, []);
@@ -62,15 +48,9 @@ const SlackNotificationsCard = () => {
   const handleConnectSlack = async () => {
     try {
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      const { data, error } = await supabase.functions.invoke('slack-oauth-url', {
-        body: { redirect_uri: redirectUri },
-      });
-
+      const { data, error } = await supabase.functions.invoke('slack-oauth-url', { body: { redirect_uri: redirectUri } });
       if (error) throw error;
-
-      if (data.auth_url) {
-        window.location.href = data.auth_url;
-      }
+      if (data.auth_url) window.location.href = data.auth_url;
     } catch (error) {
       toast.error('Failed to initiate Slack connection');
       console.error('Slack connection error:', error);
@@ -78,214 +58,156 @@ const SlackNotificationsCard = () => {
   };
 
   const notificationTypes = [
-    {
-      icon: Bell,
-      title: "Recognition Notifications",
-      description: "Get notified when team members give or receive recognition points",
-      key: "recognition_notifications" as const,
-    },
-    {
-      icon: TrendingUp,
-      title: "Point Allocation Alerts",
-      description: "Monthly notifications when points are allocated to team members",
-      key: "point_allocation_alerts" as const,
-    },
-    {
-      icon: Users,
-      title: "Team Milestones",
-      description: "Celebrate when team members reach point milestones or achievements",
-      key: "team_milestones" as const,
-    },
-    {
-      icon: Calendar,
-      title: "Weekly/Monthly Summaries",
-      description: "Regular summaries of team activity and engagement metrics",
-      key: "weekly_monthly_summaries" as const,
-    },
+    { icon: Bell, title: "Recognition Notifications", description: "Get notified when team members give or receive recognition points", key: "recognition_notifications" as const },
+    { icon: TrendingUp, title: "Point Allocation Alerts", description: "Monthly notifications when points are allocated to team members", key: "point_allocation_alerts" as const },
+    { icon: Users, title: "Team Milestones", description: "Celebrate when team members reach point milestones or achievements", key: "team_milestones" as const },
+    { icon: Calendar, title: "Weekly/Monthly Summaries", description: "Regular summaries of team activity and engagement metrics", key: "weekly_monthly_summaries" as const },
   ];
 
+  const cardStyle: React.CSSProperties = {
+    fontFamily: "Inter, sans-serif",
+    border: "1px solid #E8E6F0",
+    borderRadius: 15,
+    padding: 20,
+    background: "#fff",
+  };
+
+  const labelStyle: React.CSSProperties = { fontSize: 13, color: "#9996AA", fontFamily: "Inter, sans-serif" };
+
   if (isLoadingIntegration) {
-    return (
-      <Card className="dashboard-card">
-        <CardContent className="p-6">
-          <p className="text-center text-muted-foreground">Loading Slack integration...</p>
-        </CardContent>
-      </Card>
-    );
+    return <div style={cardStyle}><p style={labelStyle}>Loading Slack integration...</p></div>;
   }
 
   return (
-    <Card className="dashboard-card">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-lg bg-[#4A154B] flex items-center justify-center">
-              <img src={slackLogo} alt="Slack" className="h-5 w-5 rounded" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Slack Notifications</CardTitle>
-              <CardDescription>Connect your Slack workspace to receive team notifications</CardDescription>
-            </div>
-          </div>
-          {isConnected && (
-            <Badge variant="secondary" className="bg-green-100 text-green-700 border-0">
-              Connected
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Connection Status */}
-        <div className={`flex items-center justify-between p-4 rounded-lg border-2 ${
-          isConnected ? 'border-green-200 bg-green-50/50' : 'border-dashed border-gray-200 bg-gray-50/50'
-        }`}>
-          <div className="flex items-center space-x-3">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-              isConnected ? 'bg-green-100' : 'bg-gray-300'
-            }`}>
-              <img src={slackLogo} alt="Slack" className="h-4 w-4 rounded" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">
-                {isConnected ? integration?.workspace_name : 'Workspace Connection'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isConnected ? 'Connected' : 'Not connected'}
-              </p>
-            </div>
-          </div>
-          {isConnected ? (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => disconnectSlack.mutate()}
-              disabled={disconnectSlack.isPending}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Disconnect
-            </Button>
-          ) : (
-            <Button 
-              variant="outline"
-              onClick={handleConnectSlack}
-              disabled={isConnecting}
-            >
-              {isConnecting ? 'Connecting...' : 'Connect to Slack'}
-            </Button>
-          )}
-        </div>
+    <div style={cardStyle}>
+      {/* Header */}
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>Slack</h2>
+      <p style={{ ...labelStyle, marginBottom: 20 }}>Connect your Slack workspace to send recognition notifications</p>
 
-        {isConnected && (
-          <Accordion type="multiple" className="w-full">
-            {/* Channel Section */}
-            <AccordionItem value="channel">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-muted-foreground" />
-                  <span>Channel</span>
-                  {integration?.default_channel_name && (
-                    <Badge variant="secondary" className="text-xs font-normal ml-1">
-                      #{integration.default_channel_name}
-                    </Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Select the channel where Grattia will post notifications.</p>
-                    <Select
-                      value={integration?.default_channel_id || ""}
-                      onValueChange={(channelId) => {
-                        const channel = channels?.find(c => c.id === channelId);
-                        if (channel) {
-                          updateChannel.mutate({ channelId, channelName: channel.name });
-                        }
-                      }}
-                      disabled={isLoadingChannels || !channels?.length}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a channel..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {channels?.map((channel) => (
-                          <SelectItem key={channel.id} value={channel.id}>
-                            # {channel.name}
-                            {channel.is_private && " 🔒"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isLoadingChannels && (
-                      <p className="text-sm text-muted-foreground">Loading channels...</p>
-                    )}
+      {/* Connection row */}
+      <div className="flex items-center justify-between" style={{ padding: "12px 16px", borderRadius: 13.375, border: "1px solid #E8E6F0", marginBottom: 20 }}>
+        <div className="flex items-center gap-3">
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: isConnected ? "#4A154B" : "#E8E6F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img src={slackLogo} alt="Slack" style={{ width: 16, height: 16, borderRadius: 2 }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>
+              {isConnected ? integration?.workspace_name : "Not Connected"}
+            </p>
+            <p style={{ fontSize: 12, color: "#9996AA" }}>
+              {isConnected ? "Connected" : "Connect your Slack workspace"}
+            </p>
+          </div>
+        </div>
+        {isConnected ? (
+          <button
+            onClick={() => disconnectSlack.mutate()}
+            disabled={disconnectSlack.isPending}
+            style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "#9996AA", background: "none", border: "none", cursor: "pointer" }}
+          >
+            Disconnect
+          </button>
+        ) : (
+          <button
+            onClick={handleConnectSlack}
+            disabled={isConnecting}
+            style={{
+              fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, height: 34, paddingLeft: 16, paddingRight: 16,
+              borderRadius: 13.375, border: "none", background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)", color: "#fff", cursor: "pointer",
+            }}
+          >
+            {isConnecting ? "Connecting..." : "Connect"}
+          </button>
+        )}
+      </div>
+
+      {isConnected && (
+        <>
+          {/* Channel */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", display: "block", marginBottom: 6 }}>Channel</label>
+            <Select
+              value={integration?.default_channel_id || ""}
+              onValueChange={(channelId) => {
+                const channel = channels?.find(c => c.id === channelId);
+                if (channel) updateChannel.mutate({ channelId, channelName: channel.name });
+              }}
+              disabled={isLoadingChannels || !channels?.length}
+            >
+              <SelectTrigger style={{ height: 38, borderRadius: 13.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+                <SelectValue placeholder="Select a channel..." />
+              </SelectTrigger>
+              <SelectContent>
+                {channels?.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    # {channel.name}{channel.is_private && " 🔒"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p style={{ fontSize: 12, color: "#9996AA", marginTop: 4 }}>Select the channel where Grattia will post notifications</p>
+          </div>
+
+          {/* Bot invite row */}
+          {integration?.default_channel_id && (
+            <div style={{ marginBottom: 20 }}>
+              <button
+                onClick={() => setShowBotInvite(!showBotInvite)}
+                className="flex items-center justify-between w-full"
+                style={{
+                  padding: "12px 16px", borderRadius: 13.375, border: "1px solid #E8E6F0", background: "#fff",
+                  fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "#0F0533", cursor: "pointer",
+                }}
+              >
+                <span>Add Grattia Bot to Your Channel</span>
+                <ChevronRight size={16} color="#9996AA" style={{ transform: showBotInvite ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+              </button>
+              {showBotInvite && (
+                <div style={{ padding: "12px 16px", borderRadius: "0 0 13.375px 13.375px", border: "1px solid #E8E6F0", borderTop: "none", background: "#F8F5FF" }}>
+                  <p style={{ fontSize: 12, color: "#6B6B80", marginBottom: 8 }}>
+                    The Grattia bot must be invited to <strong>#{integration?.default_channel_name}</strong> for notifications to work.
+                  </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <code style={{ flex: 1, padding: "6px 12px", background: "#fff", border: "1px solid #E8E6F0", borderRadius: 8, fontSize: 13, fontFamily: "monospace" }}>
+                      {inviteCommand}
+                    </code>
+                    <button onClick={handleCopyCommand} style={{ fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 500, color: "#7F2BFE", background: "none", border: "none", cursor: "pointer" }}>
+                      {copiedCommand ? "Copied!" : "Copy"}
+                    </button>
                   </div>
-
-                  {integration?.default_channel_id && (
-                    <div className="space-y-3 p-4 rounded-lg bg-blue-50/50 border border-blue-200">
-                      <div className="flex items-start space-x-3">
-                        <Info className="h-4 w-4 text-blue-700 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 space-y-3">
-                          <div>
-                            <h4 className="font-medium text-blue-900 text-sm mb-1">Add Grattia Bot to Your Channel</h4>
-                            <p className="text-sm text-blue-700">
-                              The Grattia bot must be invited to <strong>#{integration?.default_channel_name}</strong> for notifications to work.
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <code className="flex-1 px-3 py-2 bg-white border border-blue-300 rounded text-sm font-mono text-foreground">
-                              {inviteCommand}
-                            </code>
-                            <Button variant="outline" size="sm" onClick={handleCopyCommand} className="flex-shrink-0">
-                              {copiedCommand ? (
-                                <><CheckCircle className="h-4 w-4 mr-2 text-green-600" />Copied!</>
-                              ) : (
-                                <><Copy className="h-4 w-4 mr-2" />Copy</>
-                              )}
-                            </Button>
-                          </div>
-                          <ol className="text-sm text-blue-700 space-y-1 ml-4 list-decimal">
-                            <li>Open <strong>#{integration?.default_channel_name}</strong> in Slack</li>
-                            <li>Paste the command above and press Enter</li>
-                            <li>The bot will join and notifications will start</li>
-                          </ol>
-                          <p className="text-xs text-blue-600 flex items-start gap-2 pt-2 border-t border-blue-200">
-                            <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                            <span><strong>Not working?</strong> Make sure you have permission to add apps to the channel.</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <ol style={{ fontSize: 12, color: "#6B6B80", paddingLeft: 16, margin: 0 }}>
+                    <li>Open <strong>#{integration?.default_channel_name}</strong> in Slack</li>
+                    <li>Paste the command above and press Enter</li>
+                    <li>The bot will join and notifications will start</li>
+                  </ol>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              )}
+            </div>
+          )}
 
-            {/* Notification Types Section */}
-            <AccordionItem value="notifications">
-              <AccordionTrigger className="hover:no-underline">
+          {/* Expandable sections */}
+          <Accordion type="multiple" className="w-full">
+            <AccordionItem value="notifications" style={{ borderColor: "#E8E6F0" }}>
+              <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
                 <div className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-muted-foreground" />
-                  <span>Notification Types</span>
+                  <Bell size={14} color="#9996AA" />
+                  <span style={{ fontWeight: 500, color: "#0F0533" }}>Notification Types</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-3 pt-2">
-                  {notificationTypes.map((notification) => (
-                    <div key={notification.key} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30">
-                      <div className="h-8 w-8 rounded-lg bg-background border flex items-center justify-center mt-0.5">
-                        <notification.icon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <h5 className="font-medium text-foreground">{notification.title}</h5>
-                        <p className="text-sm text-muted-foreground mt-1">{notification.description}</p>
+                  {notificationTypes.map((n) => (
+                    <div key={n.key} className="flex items-center justify-between" style={{ padding: "10px 12px", borderRadius: 10, background: "#F5F5F7" }}>
+                      <div className="flex items-center gap-3">
+                        <n.icon size={16} color="#9996AA" />
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>{n.title}</p>
+                          <p style={{ fontSize: 11, color: "#9996AA" }}>{n.description}</p>
+                        </div>
                       </div>
                       <Switch
-                        checked={integration?.notification_settings?.[notification.key] ?? false}
-                        onCheckedChange={(checked) => {
-                          updateNotificationSettings.mutate({ [notification.key]: checked });
-                        }}
+                        checked={integration?.notification_settings?.[n.key] ?? false}
+                        onCheckedChange={(checked) => updateNotificationSettings.mutate({ [n.key]: checked })}
                         disabled={updateNotificationSettings.isPending}
                       />
                     </div>
@@ -294,56 +216,45 @@ const SlackNotificationsCard = () => {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Import Team Section */}
-            <AccordionItem value="import">
-              <AccordionTrigger className="hover:no-underline">
+            <AccordionItem value="import" style={{ borderColor: "#E8E6F0" }}>
+              <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
                 <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
-                  <span>Import Team</span>
+                  <UserPlus size={14} color="#9996AA" />
+                  <span style={{ fontWeight: 500, color: "#0F0533" }}>Import Team</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center justify-between" style={{ padding: "12px 16px", borderRadius: 10, background: "#F5F5F7", border: "1px solid #E8E6F0" }}>
                     <div>
-                      <h4 className="font-medium text-foreground text-sm">Import Team from Slack</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Invite workspace members directly — they'll be auto-linked for the /grattia command.
-                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>Import Team from Slack</p>
+                      <p style={{ fontSize: 11, color: "#9996AA" }}>Invite workspace members directly</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setSlackImportOpen(true)}>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Import Members
+                    <Button variant="outline" size="sm" onClick={() => setSlackImportOpen(true)} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 12 }}>
+                      <UserPlus size={14} className="mr-1.5" />
+                      Import
                     </Button>
                   </div>
-
                   {integration?.company_id && (
-                    <>
-                      <div className="border-t pt-4">
-                        <SlackUserLinking companyId={integration.company_id} />
-                      </div>
-                    </>
+                    <div style={{ borderTop: "1px solid #E8E6F0", paddingTop: 16 }}>
+                      <SlackUserLinking companyId={integration.company_id} />
+                    </div>
                   )}
                 </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        )}
+        </>
+      )}
 
-        <SlackImportDialog
-          open={slackImportOpen}
-          onOpenChange={setSlackImportOpen}
-        />
+      {!isConnected && (
+        <p style={{ fontSize: 13, color: "#9996AA", textAlign: "center", paddingTop: 8 }}>
+          Connect your Slack workspace to start receiving automated notifications.
+        </p>
+      )}
 
-        {!isConnected && (
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground text-center">
-              Connect your Slack workspace to start receiving automated notifications about team recognition and achievements.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      <SlackImportDialog open={slackImportOpen} onOpenChange={setSlackImportOpen} />
+    </div>
   );
 };
 
