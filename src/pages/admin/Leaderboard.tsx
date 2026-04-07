@@ -174,14 +174,14 @@ const Leaderboard = () => {
             {/* Hero card for #1 */}
             {topPerformer && topPerformer.points > 0 && (
               <div
-                className="rounded-[13.375px] border-2 border-[#7F2BFE]/30 flex items-center gap-4"
-                style={{ padding: "18px 24px", background: "linear-gradient(135deg, rgba(127,43,254,0.06) 0%, rgba(127,43,254,0.02) 100%)" }}
+                className="rounded-[13.375px] border-2 border-[#5B21B6] flex items-center gap-4"
+                style={{ padding: "16px 22px", background: "linear-gradient(135deg, rgba(91,33,182,0.06) 0%, rgba(91,33,182,0.02) 100%)" }}
               >
-                <div className="relative" style={{ width: 64, height: 64, flexShrink: 0 }}>
-                  <Avatar style={{ width: 64, height: 64 }}>
+                <div className="relative" style={{ width: 52, height: 52, flexShrink: 0 }}>
+                  <Avatar style={{ width: 52, height: 52 }}>
                     <AvatarFallback
                       className={avatarColors[0]}
-                      style={{ fontSize: 22, fontWeight: 600 }}
+                      style={{ fontSize: 18, fontWeight: 600 }}
                     >
                       {getInitials(topPerformer.name)}
                     </AvatarFallback>
@@ -191,12 +191,12 @@ const Leaderboard = () => {
                       position: "absolute",
                       bottom: -2,
                       right: -2,
-                      width: 22,
-                      height: 22,
+                      width: 18,
+                      height: 18,
                       borderRadius: 9999,
-                      background: "#6C2BD9",
+                      background: "#5B21B6",
                       color: "#fff",
-                      fontSize: 11,
+                      fontSize: 9,
                       fontWeight: 700,
                       display: "flex",
                       alignItems: "center",
