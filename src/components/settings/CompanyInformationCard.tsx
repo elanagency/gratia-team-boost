@@ -112,7 +112,7 @@ export const CompanyInformationCard = () => {
   }
 
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 30 }}>
+    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 30, border: "1px solid #E8E6F0", borderRadius: 15, padding: 15 }}>
       {/* Company Profile Section */}
       <div>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Company Profile</h2>

@@ -49,21 +49,25 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <h1
         style={{
           fontFamily: "Inter, sans-serif",
           fontSize: 22,
           fontWeight: 600,
           color: "#0F0533",
+          marginBottom: 18.75,
         }}
       >
         Settings
       </h1>
 
-      <div className="flex">
+      <div className="flex" style={{ minHeight: "calc(100vh - 120px)" }}>
         {/* Sidebar */}
-        <div className="flex flex-col gap-[4px] pr-[18.75px]" style={{ minWidth: 220 }}>
+        <div
+          className="flex flex-col gap-[4px] pr-[18.75px]"
+          style={{ minWidth: 220, position: "sticky", top: 72, alignSelf: "flex-start" }}
+        >
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
@@ -96,7 +100,7 @@ const Settings = () => {
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, background: "#E8E6F0", flexShrink: 0 }} />
+        <div style={{ width: 1, background: "#E8E6F0", flexShrink: 0, alignSelf: "stretch" }} />
 
         {/* Content */}
         <div className="flex-1 pl-[18.75px]" style={{ minWidth: 0 }}>
