@@ -607,16 +607,18 @@ export function RecognitionFeed() {
                           <div className="flex items-center gap-2">
                             {thread.mainPost.company_value_name ? (
                               <Badge 
-                                className="border-0 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                className="border-0 rounded-full text-xs font-medium"
                                 style={{
                                   backgroundColor: (thread.mainPost.company_value_color || '#7F2BFE') + '20',
                                   color: thread.mainPost.company_value_color || '#7F2BFE',
+                                  padding: '1.88px 9.375px',
+                                  height: '21.75px',
                                 }}
                               >
                                 {thread.mainPost.company_value_name}
                               </Badge>
                             ) : null}
-                            <Badge className="bg-green-100 text-green-700 border-0 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                            <Badge className="border-0 rounded-full text-xs font-medium" style={{ backgroundColor: '#DCFCE7', color: '#15803D' }}>
                               +{thread.mainPost.points} pts
                             </Badge>
                           </div>
@@ -639,9 +641,9 @@ export function RecognitionFeed() {
                           )}
 
                           {/* Emoji reactions */}
-                          <div className="flex items-center gap-3 pt-1">
+                          <div className="flex items-center gap-2 pt-1">
                             {MOCK_REACTIONS.map((reaction, i) => (
-                              <button key={i} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                              <button key={i} className="flex items-center gap-1 text-xs font-medium rounded-full hover:opacity-80 transition-colors" style={{ backgroundColor: '#F5F5F7', color: '#0F0533', padding: '1.875px 7.5px', height: '21.75px' }}>
                                 <span>{reaction.emoji}</span>
                                 <span>{reaction.count}</span>
                               </button>
@@ -651,7 +653,7 @@ export function RecognitionFeed() {
                           {/* Add Points popover */}
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="inline-flex items-center gap-1 text-xs font-medium border border-border rounded-full px-3 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors mt-1">
+                              <button className="inline-flex items-center gap-1 text-xs font-medium border px-3 py-1 hover:opacity-80 transition-colors mt-1" style={{ borderRadius: '9.375px', borderColor: '#E8E6F0', color: '#9996AA' }}>
                                 <Plus className="h-3 w-3" />
                                 Add Points
                               </button>
