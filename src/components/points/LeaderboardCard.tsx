@@ -158,7 +158,7 @@ export function LeaderboardCard() {
               {/* Rank */}
               <span
                 className="shrink-0"
-                style={{ fontSize: "12px", fontWeight: 600, color: "#7F2BFE", width: "16px", textAlign: "center" }}
+                style={{ fontSize: "12px", fontWeight: 600, color: member.rank <= 3 ? "#7F2BFE" : "#9996AA", width: "16px", textAlign: "center" }}
               >
                 {member.rank}
               </span>
