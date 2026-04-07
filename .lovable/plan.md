@@ -1,66 +1,30 @@
 
 
-## Two Changes: Right Panel Visibility + Company Values Feature
+## Fix Recognition Feed Fine Details to Match Figma
 
-### 1. Right Panel: Only visible on Dashboard index page
+### Changes needed in `src/components/points/RecognitionFeed.tsx`
 
-**Problem**: The right panel (PersonalStatsCard, LeaderboardCard, UpcomingCelebrations) shows on all `/dashboard/*` routes. It should only appear on `/dashboard` (the index).
+Based on the Figma screenshots, several styling details are off:
 
-**Change in `src/pages/dashboard/UnifiedDashboardLayout.tsx`**:
-- Import `useLocation` from react-router-dom
-- Conditionally render the `<aside>` and the `lg:pr-[350px]` offset only when `location.pathname === "/dashboard"`
+### 1. Points badge — too bold
+- **Current**: `font-semibold` (600), `bg-green-100 text-green-700`
+- **Figma**: Inter 12px, weight **500**, color `#15803D`, bg `#DCFCE7`
+- Fix line 619: change `font-semibold` to `font-medium`
 
----
+### 2. Emoji reactions — need pill background
+- **Current**: No background, plain text buttons
+- **Figma**: Each reaction sits inside a pill with `bg: #F5F5F7`, large border-radius, `height: 21.75px`, `padding: 1.875px 7.5px`, `gap: 3.75px`. Reaction count text is `color: #0F0533`, 12px, weight 500
+- Fix lines 642-649: Add `bg-[#F5F5F7] rounded-full px-2 py-0.5` to each reaction button, update text color to `#0F0533`
 
-### 2. Company Values: Full CRUD with inline popover in recognition composer
+### 3. "+ Add Points" button — too rounded
+- **Current**: `rounded-full` (fully circular ends)
+- **Figma**: `border-radius: 9.375px`, `border: 1px solid #E8E6F0`, text `color: #9996AA`, Inter 12px weight 500
+- Fix line 654: Change `rounded-full` to `rounded-[9.375px]`, border color to `border-[#E8E6F0]`
 
-**Problem**: The "Company value" pill button in GivePointsCard does nothing. There's no table, no UI to manage values.
+### 4. Company value badge padding
+- **Figma**: padding `1.88px 9.375px`, height `21.75px`
+- Fix lines 610-611: adjust padding to match
 
-#### Database migration
-Create a `company_values` table:
-```sql
-CREATE TABLE public.company_values (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  color text NOT NULL DEFAULT '#7F2BFE',
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE public.company_values ENABLE ROW LEVEL SECURITY;
--- RLS: company members can view, admins can manage
-CREATE POLICY "Company members can view values" ON public.company_values FOR SELECT USING (is_company_member(company_id));
-CREATE POLICY "Company admins can manage values" ON public.company_values FOR ALL USING (is_company_admin(company_id)) WITH CHECK (is_company_admin(company_id));
-CREATE POLICY "Platform admins can manage all values" ON public.company_values FOR ALL USING (is_platform_admin()) WITH CHECK (is_platform_admin());
-```
-
-Add a `company_value_id` column to `point_transactions`:
-```sql
-ALTER TABLE public.point_transactions ADD COLUMN company_value_id uuid REFERENCES public.company_values(id);
-```
-
-#### Frontend changes
-
-**New file: `src/hooks/useCompanyValues.ts`**
-- Hook to fetch company values from `company_values` table filtered by `company_id` and `is_active = true`
-- Mutation to insert a new value (name + color)
-
-**Modified: `src/components/points/GivePointsCard.tsx`**
-- Add state for `selectedValue` (id, name, color)
-- Wire the "Company value" pill to open a `Popover` showing:
-  - List of existing company values as clickable colored pills
-  - A small "Add new" row at the bottom with a text input + color picker + "Add" button
-- When a value is selected, the pill changes to show the value name with its color as background
-- Include `company_value_id` in the point transaction insert
-- Admins and regular users can both add new values inline (simple approach); alternatively restrict creation to admins only
-
-**Modified: `src/components/points/RecognitionFeed.tsx`**
-- Display the company value tag on recognition items that have one (fetch via join or separate query)
-
-### Files to modify/create
-1. `src/pages/dashboard/UnifiedDashboardLayout.tsx` — conditional right panel
-2. `supabase/migrations/` — new migration for `company_values` table + `point_transactions` column
-3. `src/hooks/useCompanyValues.ts` — new hook
-4. `src/components/points/GivePointsCard.tsx` — popover for value selection + inline creation
-5. `src/components/points/RecognitionFeed.tsx` — display value tag on feed items
+### File to modify
+1. `src/components/points/RecognitionFeed.tsx` — lines 619, 642-649, 654, 610-611
 
