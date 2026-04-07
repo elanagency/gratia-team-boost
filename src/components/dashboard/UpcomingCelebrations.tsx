@@ -1,8 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Cake, Briefcase } from "lucide-react";
 import { format, parseISO, setYear, differenceInDays, isAfter } from "date-fns";
 
 type Celebration = {
@@ -57,59 +55,105 @@ export function UpcomingCelebrations() {
         }
       }
 
-      return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 5);
+      return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 3);
     },
     enabled: !!companyId,
   });
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Upcoming Celebrations</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-[13.375px] border border-[#E8E6F0] bg-white overflow-hidden">
+      <div
+        className="flex items-center"
+        style={{
+          height: "44.5px",
+          padding: "0 15px",
+          borderBottom: "1px solid #E8E6F0",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#0F0533",
+            lineHeight: "21px",
+          }}
+        >
+          Upcoming Celebrations
+        </span>
+      </div>
+
+      <div style={{ padding: "11.25px 15px 0 15px" }}>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", color: "#9996AA" }}>
+            Loading...
+          </p>
         ) : celebrations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", color: "#9996AA" }}>
             No celebrations in the next 30 days
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col" style={{ gap: "11.25px" }}>
             {celebrations.map((c, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <div
+                key={i}
+                className="flex items-center"
+                style={{
+                  gap: "11.25px",
+                  paddingBottom: i < celebrations.length - 1 ? "11.25px" : "0",
+                  borderBottom: i < celebrations.length - 1 ? "1px solid #E8E6F0" : "none",
+                }}
+              >
                 <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    c.type === "birthday"
-                      ? "bg-pink-100 text-pink-600"
-                      : "bg-blue-100 text-blue-600"
-                  }`}
+                  className="flex items-center justify-center flex-shrink-0"
+                  style={{ width: "37px", height: "37px", fontSize: "20px" }}
                 >
-                  {c.type === "birthday" ? (
-                    <Cake className="h-4 w-4" />
-                  ) : (
-                    <Briefcase className="h-4 w-4" />
-                  )}
+                  {c.type === "birthday" ? "🎂" : "🎉"}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate text-foreground">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.type === "birthday" ? "Birthday" : "Work Anniversary"} ·{" "}
-                    {c.daysUntil === 0
-                      ? "Today!"
-                      : c.daysUntil === 1
-                      ? "Tomorrow"
-                      : `In ${c.daysUntil} days`}
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="truncate"
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#0F0533",
+                      lineHeight: "19.5px",
+                      margin: 0,
+                    }}
+                  >
+                    {c.name}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: "11px",
+                      fontWeight: 400,
+                      color: "#9996AA",
+                      lineHeight: "16.5px",
+                      margin: 0,
+                    }}
+                  >
+                    {c.type === "birthday" ? "Birthday" : "Work Anniversary"}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span
+                  className="flex-shrink-0"
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: "12px",
+                    fontWeight: 400,
+                    color: "#9996AA",
+                    lineHeight: "18px",
+                  }}
+                >
                   {format(c.date, "MMM d")}
                 </span>
               </div>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
