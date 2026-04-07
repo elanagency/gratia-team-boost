@@ -282,8 +282,8 @@ const Leaderboard = () => {
                           fontWeight: 600,
                           color: "#22C55E",
                           background: "rgba(34,197,94,0.1)",
-                          borderRadius: 9999,
-                          padding: "4px 12px",
+                          borderRadius: 12,
+                          padding: "4px 14px",
                           display: "inline-block",
                         }}
                       >
