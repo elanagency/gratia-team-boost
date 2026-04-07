@@ -26,6 +26,9 @@ type PointTransaction = {
   sender_name: string;
   recipient_name: string;
   sender_avatar_url?: string;
+  company_value_id?: string;
+  company_value_name?: string;
+  company_value_color?: string;
 };
 
 type ThreadedRecognition = {
@@ -88,7 +91,7 @@ export function RecognitionFeed() {
       // Fetch recent point transactions
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('point_transactions')
-        .select('*')
+        .select('*, company_values:company_value_id(name, color)')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -164,19 +167,25 @@ export function RecognitionFeed() {
       });
       
       // Format transactions
-      const formattedTransactions: PointTransaction[] = filteredTransactions.map(transaction => ({
-        id: transaction.id,
-        sender_id: transaction.sender_profile_id,
-        recipient_id: transaction.recipient_profile_id,
-        points: transaction.points,
-        description: transaction.description,
-        structured_message: transaction.structured_message,
-        gif_url: (transaction as any).gif_url || undefined,
-        created_at: transaction.created_at,
-        sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
-        recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
-        sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined
-      }));
+      const formattedTransactions: PointTransaction[] = filteredTransactions.map(transaction => {
+        const valueData = (transaction as any).company_values;
+        return {
+          id: transaction.id,
+          sender_id: transaction.sender_profile_id,
+          recipient_id: transaction.recipient_profile_id,
+          points: transaction.points,
+          description: transaction.description,
+          structured_message: transaction.structured_message,
+          gif_url: (transaction as any).gif_url || undefined,
+          created_at: transaction.created_at,
+          sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
+          recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
+          sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined,
+          company_value_id: (transaction as any).company_value_id || undefined,
+          company_value_name: valueData?.name || undefined,
+          company_value_color: valueData?.color || undefined,
+        };
+      });
       
       setTransactions(formattedTransactions);
       
@@ -596,9 +605,17 @@ export function RecognitionFeed() {
 
                           {/* Value badge + points badge */}
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-primary/10 text-primary border-0 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                              Teamwork
-                            </Badge>
+                            {thread.mainPost.company_value_name ? (
+                              <Badge 
+                                className="border-0 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                style={{
+                                  backgroundColor: (thread.mainPost.company_value_color || '#7F2BFE') + '20',
+                                  color: thread.mainPost.company_value_color || '#7F2BFE',
+                                }}
+                              >
+                                {thread.mainPost.company_value_name}
+                              </Badge>
+                            ) : null}
                             <Badge className="bg-green-100 text-green-700 border-0 px-2.5 py-0.5 rounded-full text-xs font-semibold">
                               +{thread.mainPost.points} pts
                             </Badge>
