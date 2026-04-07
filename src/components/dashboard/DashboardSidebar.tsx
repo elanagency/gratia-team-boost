@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, BarChart3, Gift, Settings, LogOut, Camera, Menu } from "lucide-react";
+import { Home, BarChart3, Trophy, Gift, Settings, LogOut, Camera, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -67,6 +67,7 @@ export const DashboardSidebar = ({
     ...(isAdmin
       ? [{ name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" }]
       : []),
+    { name: "Leaderboard", icon: Trophy, path: "/dashboard/leaderboard" },
     { name: "Redeem Points", icon: Gift, path: "/dashboard/gift-cards" },
     ...(isAdmin
       ? [{ name: "Settings", icon: Settings, path: "/dashboard/settings" }]
