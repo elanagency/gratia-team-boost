@@ -65,7 +65,6 @@ export function AnalyticsFilters({
   onSegmentChange,
   granularity,
   onGranularityChange,
-  
 }: AnalyticsFiltersProps) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [selectedPreset, setSelectedPreset] = React.useState<string>("Last 30 days");
@@ -82,17 +81,56 @@ export function AnalyticsFilters({
     }
   };
 
+  const activeGranularityStyle = {
+    backgroundColor: '#7F2BFE',
+    color: '#FFFFFF',
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {/* Department Selector */}
+      <Select
+        value={segmentBy}
+        onValueChange={(value) => onSegmentChange(value as SegmentType)}
+      >
+        <SelectTrigger className="w-[160px] rounded-[9.375px]" style={{ borderColor: '#E8E6F0' }}>
+          <SelectValue placeholder="All Departments" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">All Departments</SelectItem>
+          <SelectItem value="department">By Department</SelectItem>
+          <SelectItem value="person">By Person</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Granularity Toggle */}
+      <div className="flex items-center rounded-[9.375px] border bg-background" style={{ borderColor: '#E8E6F0' }}>
+        {(["daily", "weekly", "monthly"] as GranularityType[]).map((g) => (
+          <Button
+            key={g}
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "rounded-[7px] text-xs font-medium capitalize",
+              g === "daily" && "rounded-r-none",
+              g === "monthly" && "rounded-l-none",
+              g === "weekly" && "rounded-none",
+            )}
+            style={granularity === g ? activeGranularityStyle : { color: '#9996AA' }}
+            onClick={() => onGranularityChange(g)}
+          >
+            {g.charAt(0).toUpperCase() + g.slice(1)}
+          </Button>
+        ))}
+      </div>
+
       {/* Date Range Selector */}
       <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className={cn(
-              "justify-start text-left font-normal min-w-[200px]",
-              !dateRange && "text-muted-foreground"
-            )}
+            className="justify-start text-left font-normal rounded-[9.375px]"
+            style={{ borderColor: '#E8E6F0', color: '#9996AA' }}
           >
             <Calendar className="mr-2 h-4 w-4" />
             {selectedPreset === "Custom"
@@ -130,49 +168,6 @@ export function AnalyticsFilters({
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Segment By Selector */}
-      <Select
-        value={segmentBy}
-        onValueChange={(value) => onSegmentChange(value as SegmentType)}
-      >
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Segment by" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">All</SelectItem>
-          <SelectItem value="department">Department</SelectItem>
-          <SelectItem value="person">Person</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* Granularity Toggle */}
-      <div className="flex items-center rounded-md border border-input bg-background">
-        <Button
-          variant={granularity === "daily" ? "secondary" : "ghost"}
-          size="sm"
-          className="rounded-r-none border-r-0"
-          onClick={() => onGranularityChange("daily")}
-        >
-          Daily
-        </Button>
-        <Button
-          variant={granularity === "weekly" ? "secondary" : "ghost"}
-          size="sm"
-          className="rounded-none border-r-0"
-          onClick={() => onGranularityChange("weekly")}
-        >
-          Weekly
-        </Button>
-        <Button
-          variant={granularity === "monthly" ? "secondary" : "ghost"}
-          size="sm"
-          className="rounded-l-none"
-          onClick={() => onGranularityChange("monthly")}
-        >
-          Monthly
-        </Button>
-      </div>
     </div>
   );
 }
