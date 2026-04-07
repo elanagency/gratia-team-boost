@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building, Trash2, Plus, Upload, Info } from "lucide-react";
+import { Building, Trash2, Plus, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -215,10 +215,6 @@ export const CompanyInformationCard = () => {
                 <span style={{ fontSize: 12, color: "#9996AA" }}>(default)</span>
               </div>
             )}
-            <div className="flex items-center gap-1 mt-2" style={{ fontSize: 12, color: "#9996AA" }}>
-              <Info size={12} />
-              <span>Contact support to modify available regions</span>
-            </div>
           </div>
 
           {/* Edit / Save buttons */}

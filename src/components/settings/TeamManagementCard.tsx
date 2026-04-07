@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle, Building2, MessageSquare } from "lucide-react";
+import { Users, Building2, MessageSquare, Search, Plus } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
@@ -15,6 +12,8 @@ import SlackImportDialog from "@/components/team/SlackImportDialog";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const TeamManagementCard = () => {
   const { isConnected: isSlackConnected } = useSlackIntegration();
@@ -24,6 +23,7 @@ export const TeamManagementCard = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const {
     teamMembers,
     refetch: fetchTeamMembers,
@@ -40,7 +40,15 @@ export const TeamManagementCard = () => {
     pageSize: 10,
     activeOnly: true
   });
-  
+
+  const filteredMembers = searchQuery
+    ? teamMembers.filter(m =>
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.department || "").toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : teamMembers;
+
   const handleRemoveMember = async () => {
     if (!memberToDelete) return;
     await removeMember(memberToDelete);
@@ -72,20 +80,13 @@ export const TeamManagementCard = () => {
   const handleResendInvite = async (member: TeamMember) => {
     try {
       if (!companyId) throw new Error("Company ID not found");
-      
-      // Get company info for company name
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('name')
         .eq('id', companyId)
         .single();
-        
       if (companyError) throw companyError;
-      
-      // Check if user has ever logged in to determine if they need credentials
       const hasLoggedIn = member.first_login_at !== null;
-      
-      // Fetch stored temporary password if user hasn't logged in
       let storedPassword = null;
       if (!hasLoggedIn) {
         const { data: memberData } = await supabase
@@ -94,27 +95,21 @@ export const TeamManagementCard = () => {
           .eq('id', member.user_id)
           .eq('company_id', companyId)
           .single();
-        
         storedPassword = memberData?.temporary_password;
       }
-      
       const origin = window.location.origin;
-      
-      // Call the send invitation email function (which now uses the centralized email service)
       const { error } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: member.email,
           name: member.name,
           companyName: company.name,
-          isNewUser: !hasLoggedIn, // Treat as new user if they haven't logged in yet
-          password: storedPassword, // Include stored password for users who haven't logged in
+          isNewUser: !hasLoggedIn,
+          password: storedPassword,
           origin
         }
       });
-      
       if (error) throw error;
-      
-      const message = hasLoggedIn 
+      const message = hasLoggedIn
         ? `Invitation email sent to ${member.name}`
         : `Login instructions sent to ${member.name}`;
       toast.success(message);
@@ -130,48 +125,112 @@ export const TeamManagementCard = () => {
 
   return (
     <>
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Team Management</h2>
-          
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  Manage Departments
+      <div
+        style={{
+          fontFamily: "Inter, sans-serif",
+          border: "1px solid #E8E6F0",
+          borderRadius: 15,
+          background: "#fff",
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: "20px 20px 0 20px" }}>
+          <div className="flex items-start justify-between mb-1">
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>
+                Team Members
+              </h2>
+              <p style={{ fontSize: 13, color: "#9996AA" }}>
+                Manage who has access to your workspace · {totalMembers} members
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    style={{
+                      borderRadius: 13.375,
+                      borderColor: "#E8E6F0",
+                      fontSize: 13,
+                      fontFamily: "Inter, sans-serif",
+                      height: 34,
+                    }}
+                  >
+                    <Building2 className="h-3.5 w-3.5 mr-1.5" />
+                    Departments
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Manage Departments</DialogTitle>
+                  </DialogHeader>
+                  <DepartmentManagement embedded />
+                </DialogContent>
+              </Dialog>
+              {isSlackConnected && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSlackImportOpen(true)}
+                  style={{
+                    borderRadius: 13.375,
+                    borderColor: "#E8E6F0",
+                    fontSize: 13,
+                    fontFamily: "Inter, sans-serif",
+                    height: 34,
+                  }}
+                >
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                  Slack Import
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Manage Departments</DialogTitle>
-                </DialogHeader>
-                <DepartmentManagement embedded />
-              </DialogContent>
-            </Dialog>
-            {isSlackConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSlackImportOpen(true)}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Import from Slack
-              </Button>
-            )}
+              )}
+              <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
+            </div>
+          </div>
+
+          {/* Search + Invite row */}
+          <div className="flex items-center gap-3 mt-4 mb-4">
+            <div className="relative flex-1">
+              <Search
+                size={15}
+                style={{
+                  position: "absolute",
+                  left: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#9996AA",
+                }}
+              />
+              <Input
+                placeholder="Search team members..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  height: 38,
+                  borderRadius: 13.375,
+                  borderColor: "#E8E6F0",
+                  backgroundColor: "#fff",
+                  paddingLeft: 36,
+                }}
+              />
+            </div>
             <TeamInviteManager onSuccess={fetchTeamMembers} />
-            <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        {/* Table */}
+        <div style={{ padding: "0 0 8px 0" }}>
           {isLoading ? (
-            <div className="p-8 text-center">
+            <div style={{ padding: 40, textAlign: "center", color: "#9996AA", fontSize: 13 }}>
               Loading team members...
             </div>
           ) : (
-            <TeamMemberTable 
-              teamMembers={teamMembers} 
+            <TeamMemberTable
+              teamMembers={filteredMembers}
               onRemoveMember={handleDeleteClick}
               onEditMember={handleEditClick}
               onResendInvite={handleResendInvite}
@@ -182,16 +241,16 @@ export const TeamManagementCard = () => {
             />
           )}
         </div>
-      </Card>
-      
-      <DeleteMemberDialog 
-        open={deleteDialogOpen} 
-        onOpenChange={setDeleteDialogOpen} 
-        member={memberToDelete} 
-        onDelete={handleRemoveMember} 
-        onCancel={handleCancelDelete} 
+      </div>
+
+      <DeleteMemberDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        member={memberToDelete}
+        onDelete={handleRemoveMember}
+        onCancel={handleCancelDelete}
       />
-      
+
       <EditTeamMemberDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
