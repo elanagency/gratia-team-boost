@@ -82,7 +82,7 @@ export function AnalyticsFilters({
   };
 
   const activeGranularityStyle = {
-    backgroundColor: '#7F2BFE',
+    backgroundColor: '#0F0533',
     color: '#FFFFFF',
   };
 
@@ -93,7 +93,7 @@ export function AnalyticsFilters({
         value={segmentBy}
         onValueChange={(value) => onSegmentChange(value as SegmentType)}
       >
-        <SelectTrigger className="w-[160px] rounded-[9.375px]" style={{ borderColor: '#E8E6F0' }}>
+        <SelectTrigger className="w-[160px] rounded-[13.375px]" style={{ borderColor: '#E8E6F0', fontSize: 12, fontWeight: 500, color: '#0F0533' }}>
           <SelectValue placeholder="All Departments" />
         </SelectTrigger>
         <SelectContent>
@@ -104,14 +104,14 @@ export function AnalyticsFilters({
       </Select>
 
       {/* Granularity Toggle */}
-      <div className="flex items-center rounded-[9.375px] border bg-background" style={{ borderColor: '#E8E6F0' }}>
+      <div className="flex items-center rounded-[7.375px] border bg-background" style={{ borderColor: '#E8E6F0' }}>
         {(["daily", "weekly", "monthly"] as GranularityType[]).map((g) => (
           <Button
             key={g}
             variant="ghost"
             size="sm"
             className={cn(
-              "rounded-[7px] text-xs font-medium capitalize",
+              "rounded-[7.375px] text-xs font-medium capitalize",
               g === "daily" && "rounded-r-none",
               g === "monthly" && "rounded-l-none",
               g === "weekly" && "rounded-none",
@@ -129,13 +129,11 @@ export function AnalyticsFilters({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="justify-start text-left font-normal rounded-[9.375px]"
-            style={{ borderColor: '#E8E6F0', color: '#9996AA' }}
+            className="justify-start text-left font-normal rounded-[13.375px]"
+            style={{ borderColor: '#E8E6F0', color: '#9996AA', fontSize: 12, fontWeight: 500 }}
           >
             <Calendar className="mr-2 h-4 w-4" />
-            {selectedPreset === "Custom"
-              ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
-              : selectedPreset}
+            Custom
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
