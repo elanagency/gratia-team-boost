@@ -62,5 +62,21 @@ export function useCompanyValues() {
     }
   };
 
-  return { values, isLoading, addValue, refetch: fetchValues };
+  const deleteValue = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_values')
+        .update({ is_active: false })
+        .eq('id', id);
+
+      if (error) throw error;
+      setValues(prev => prev.filter(v => v.id !== id));
+      toast.success("Company value removed");
+    } catch (error) {
+      console.error("Error deleting company value:", error);
+      toast.error("Failed to remove company value");
+    }
+  };
+
+  return { values, isLoading, addValue, deleteValue, refetch: fetchValues };
 }
