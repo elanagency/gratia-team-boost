@@ -111,7 +111,7 @@ const Settings = () => {
       </div>
 
       {/* Content area offset to the right of the fixed sidebar */}
-      <div style={{ marginLeft: 160, paddingTop: 22.5, paddingLeft: 22.5, paddingRight: 22.5 }}>
+      <div style={{ marginLeft: 220, paddingTop: 22.5, paddingLeft: 22.5, paddingRight: 22.5 }}>
         {renderContent()}
       </div>
     </>
