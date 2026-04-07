@@ -1,28 +1,14 @@
-
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { Building, Edit, Save, X, Info } from "lucide-react";
+import { Building, Trash2, Plus, Upload, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useCompanyRegions } from "@/hooks/useCompanyRegions";
+import { useCompanyValues } from "@/hooks/useCompanyValues";
 import { RegionBadge } from "@/components/team/RegionBadge";
-
-const companyFormSchema = z.object({
-  name: z.string().min(2, "Company name must be at least 2 characters"),
-  address: z.string().optional(),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  logo_url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-});
-
-type CompanyFormData = z.infer<typeof companyFormSchema>;
 
 interface CompanyData {
   name: string;
@@ -31,50 +17,46 @@ interface CompanyData {
   logo_url?: string | null;
 }
 
+const inputStyle = {
+  fontFamily: "Inter, sans-serif",
+  fontSize: 14,
+  height: 38,
+  borderRadius: 13.375,
+  borderColor: "#E8E6F0",
+  backgroundColor: "#F5F5F7",
+};
+
 export const CompanyInformationCard = () => {
-  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<CompanyData>({ name: "" });
+  const [isSaving, setIsSaving] = useState(false);
+  const [newValueName, setNewValueName] = useState("");
+  const [isAddingValue, setIsAddingValue] = useState(false);
   const { companyId, isAdmin } = useAuth();
   const { regionCodes, isLoading: isLoadingRegions } = useCompanyRegions(companyId);
-
-  const form = useForm<CompanyFormData>({
-    resolver: zodResolver(companyFormSchema),
-    defaultValues: {
-      name: "",
-      address: "",
-      website: "",
-      logo_url: "",
-    },
-  });
+  const { values, isLoading: isLoadingValues, addValue, deleteValue } = useCompanyValues();
 
   const fetchCompanyData = async () => {
     if (!companyId) return;
-    
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('name, address, website, logo_url')
-        .eq('id', companyId)
+        .from("companies")
+        .select("name, address, website, logo_url")
+        .eq("id", companyId)
         .single();
-      
+
       if (error) throw error;
-      
       if (data && data.name) {
-        const companyInfo: CompanyData = {
+        const info: CompanyData = {
           name: data.name,
           address: data.address,
           website: data.website,
           logo_url: data.logo_url,
         };
-        setCompanyData(companyInfo);
-        form.reset({
-          name: data.name,
-          address: data.address || "",
-          website: data.website || "",
-          logo_url: data.logo_url || "",
-        });
+        setCompanyData(info);
+        setEditData(info);
       }
     } catch (error) {
       console.error("Error fetching company data:", error);
@@ -88,30 +70,22 @@ export const CompanyInformationCard = () => {
     fetchCompanyData();
   }, [companyId]);
 
-  const onSubmit = async (data: CompanyFormData) => {
+  const handleSave = async () => {
     if (!companyId) return;
-    
     setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('companies')
+        .from("companies")
         .update({
-          name: data.name,
-          address: data.address || null,
-          website: data.website || null,
-          logo_url: data.logo_url || null,
+          name: editData.name,
+          address: editData.address || null,
+          website: editData.website || null,
+          logo_url: editData.logo_url || null,
         })
-        .eq('id', companyId);
-      
+        .eq("id", companyId);
+
       if (error) throw error;
-      
-      const updatedCompanyData: CompanyData = {
-        name: data.name,
-        address: data.address,
-        website: data.website,
-        logo_url: data.logo_url,
-      };
-      setCompanyData(updatedCompanyData);
+      setCompanyData(editData);
       setIsEditing(false);
       toast.success("Company information updated successfully");
     } catch (error) {
@@ -122,218 +96,286 @@ export const CompanyInformationCard = () => {
     }
   };
 
-  const handleCancel = () => {
-    if (companyData) {
-      form.reset({
-        name: companyData.name,
-        address: companyData.address || "",
-        website: companyData.website || "",
-        logo_url: companyData.logo_url || "",
-      });
-    }
-    setIsEditing(false);
+  const handleAddValue = async () => {
+    if (!newValueName.trim()) return;
+    setIsAddingValue(false);
+    await addValue(newValueName.trim(), "#7F2BFE");
+    setNewValueName("");
   };
 
   if (isLoading) {
-    return (
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Company Information</h2>
-        </div>
-        <div className="p-6">
-          <div className="animate-pulse">Loading company information...</div>
-        </div>
-      </Card>
-    );
+    return <div className="animate-pulse" style={{ fontFamily: "Inter, sans-serif" }}>Loading company information...</div>;
   }
 
   if (!companyData) {
-    return (
-      <Card className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Company Information</h2>
-        </div>
-        <div className="p-6">
-          <p className="text-gray-500">No company information found.</p>
-        </div>
-      </Card>
-    );
+    return <p style={{ fontFamily: "Inter, sans-serif", color: "#9996AA" }}>No company information found.</p>;
   }
 
   return (
-    <Card className="dashboard-card">
-      <div className="card-header">
-        <div className="flex items-center gap-2">
-          <Building className="h-5 w-5 text-[#F572FF]" />
-          <h2 className="card-title">Company Information</h2>
-        </div>
-        {isAdmin && !isEditing && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        )}
-      </div>
-      
-      <div className="p-6">
-        {isEditing ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter company name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 30 }}>
+      {/* Company Profile Section */}
+      <div>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Company Profile</h2>
+        <p style={{ fontSize: 13, color: "#9996AA", marginBottom: 18.75 }}>Basic information about your organization</p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+          {/* Company Name */}
+          <div>
+            <Label style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", marginBottom: 6, display: "block" }}>
+              Company Name
+            </Label>
+            {isEditing ? (
+              <Input
+                value={editData.name}
+                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                style={inputStyle}
               />
-              
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Address</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter company address" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Website</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="https://www.example.com" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="logo_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Logo URL</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="https://www.example.com/logo.png" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex gap-2 pt-4">
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  className="bg-[#F572FF] hover:bg-[#F572FF]/90"
+            ) : (
+              <div
+                style={{
+                  ...inputStyle,
+                  display: "flex",
+                  alignItems: "center",
+                  paddingLeft: 15,
+                  paddingRight: 15,
+                  color: "#0F0533",
+                }}
+              >
+                {companyData.name}
+              </div>
+            )}
+          </div>
+
+          {/* Company Logo */}
+          <div>
+            <Label style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", marginBottom: 6, display: "block" }}>
+              Company Logo
+            </Label>
+            <div className="flex items-center gap-3">
+              {companyData.logo_url ? (
+                <img
+                  src={companyData.logo_url}
+                  alt="Company Logo"
+                  className="h-10 w-10 object-contain rounded-lg border"
+                  style={{ borderColor: "#E8E6F0" }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    background: "#F5F5F7",
+                    border: "1px solid #E8E6F0",
+                  }}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
+                  <Building size={18} color="#9996AA" />
+                </div>
+              )}
+              {isEditing ? (
+                <Input
+                  value={editData.logo_url || ""}
+                  onChange={(e) => setEditData({ ...editData, logo_url: e.target.value })}
+                  placeholder="https://example.com/logo.png"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+              ) : (
                 <Button
-                  type="button"
                   variant="outline"
-                  onClick={handleCancel}
-                  disabled={isSaving}
+                  size="sm"
+                  style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+                  onClick={() => isAdmin && setIsEditing(true)}
+                  disabled={!isAdmin}
                 >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
+                  <Upload size={14} className="mr-1.5" />
+                  Upload
                 </Button>
-              </div>
-            </form>
-          </Form>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-600">Company Name</Label>
-              <p className="text-lg font-medium text-gray-900">{companyData.name}</p>
+              )}
             </div>
-            
-            {companyData.address && (
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Address</Label>
-                <p className="text-gray-900">{companyData.address}</p>
+          </div>
+
+          {/* Gift Card Regions */}
+          <div>
+            <Label style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", marginBottom: 6, display: "block" }}>
+              Gift Card Regions
+            </Label>
+            {isLoadingRegions ? (
+              <span style={{ fontSize: 13, color: "#9996AA" }}>Loading regions...</span>
+            ) : regionCodes.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {regionCodes.map((code) => (
+                  <RegionBadge key={code} regionCode={code} showName size="md" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2 items-center">
+                <RegionBadge regionCode="AU" showName size="md" />
+                <span style={{ fontSize: 12, color: "#9996AA" }}>(default)</span>
               </div>
             )}
-            
-            {companyData.website && (
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Website</Label>
-                <p className="text-gray-900">
-                  <a href={companyData.website} target="_blank" rel="noopener noreferrer" className="text-[#F572FF] hover:underline">
-                    {companyData.website}
-                  </a>
-                </p>
-              </div>
-            )}
-            
-            {companyData.logo_url && (
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Company Logo</Label>
-                <div className="mt-2">
-                  <img 
-                    src={companyData.logo_url} 
-                    alt="Company Logo" 
-                    className="h-16 w-auto object-contain rounded border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+            <div className="flex items-center gap-1 mt-2" style={{ fontSize: 12, color: "#9996AA" }}>
+              <Info size={12} />
+              <span>Contact support to modify available regions</span>
+            </div>
+          </div>
+
+          {/* Edit / Save buttons */}
+          {isAdmin && (
+            <div className="flex gap-2 pt-1">
+              {isEditing ? (
+                <>
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    style={{
+                      borderRadius: 9.375,
+                      background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
+                      fontSize: 13,
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setEditData(companyData); setIsEditing(false); }}
+                    disabled={isSaving}
+                    style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: "#E8E6F0" }} />
+
+      {/* Company Values Section */}
+      <div>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 4 }}>Company Values</h2>
+        <p style={{ fontSize: 13, color: "#9996AA", marginBottom: 18.75 }}>
+          Define the values used when giving recognition
+        </p>
+
+        {isLoadingValues ? (
+          <div className="animate-pulse" style={{ fontSize: 13, color: "#9996AA" }}>Loading values...</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {values.map((value) => (
+              <div
+                key={value.id}
+                className="flex items-center justify-between"
+                style={{
+                  height: 38,
+                  paddingLeft: 15,
+                  paddingRight: 11.25,
+                  borderRadius: 13.375,
+                  background: "#F5F5F7",
+                  border: "1px solid #E8E6F0",
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: value.color,
+                      flexShrink: 0,
                     }}
                   />
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#0F0533" }}>{value.name}</span>
                 </div>
-              </div>
-            )}
-
-            {/* Gift Card Regions - Read Only */}
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Gift Card Regions</Label>
-              <div className="mt-2">
-                {isLoadingRegions ? (
-                  <span className="text-sm text-muted-foreground">Loading regions...</span>
-                ) : regionCodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {regionCodes.map((code) => (
-                      <RegionBadge key={code} regionCode={code} showName size="md" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <RegionBadge regionCode="AU" showName size="md" />
-                    <span className="text-xs text-muted-foreground self-center">(default)</span>
-                  </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteValue(value.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}
+                  >
+                    <Trash2 size={15} color="#9996AA" />
+                  </button>
                 )}
               </div>
-              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                <Info className="h-3 w-3" />
-                <span>Contact support to modify available regions</span>
-              </div>
-            </div>
-            
-            {!isAdmin && (
-              <p className="text-sm text-muted-foreground italic">
-                Only administrators can edit company information.
-              </p>
+            ))}
+
+            {/* Add Value */}
+            {isAdmin && (
+              isAddingValue ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newValueName}
+                    onChange={(e) => setNewValueName(e.target.value)}
+                    placeholder="Value name"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddValue();
+                      if (e.key === "Escape") { setIsAddingValue(false); setNewValueName(""); }
+                    }}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  <Button
+                    onClick={handleAddValue}
+                    disabled={!newValueName.trim()}
+                    size="sm"
+                    style={{
+                      borderRadius: 9.375,
+                      background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
+                      fontSize: 13,
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setIsAddingValue(false); setNewValueName(""); }}
+                    style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAddingValue(true)}
+                  className="flex items-center justify-center gap-1.5 w-full"
+                  style={{
+                    height: 38,
+                    borderRadius: 13.375,
+                    border: "1px dashed #E8E6F0",
+                    background: "transparent",
+                    color: "#9996AA",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    fontFamily: "Inter, sans-serif",
+                    cursor: "pointer",
+                    transition: "border-color 0.15s",
+                  }}
+                >
+                  <Plus size={15} />
+                  Add Value
+                </button>
+              )
             )}
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
