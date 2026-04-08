@@ -62,6 +62,22 @@ export function useCompanyValues() {
     }
   };
 
+  const updateValue = async (id: string, name: string, color: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_values')
+        .update({ name, color })
+        .eq('id', id);
+
+      if (error) throw error;
+      setValues(prev => prev.map(v => v.id === id ? { ...v, name, color } : v));
+      toast.success("Company value updated");
+    } catch (error) {
+      console.error("Error updating company value:", error);
+      toast.error("Failed to update company value");
+    }
+  };
+
   const deleteValue = async (id: string) => {
     try {
       const { error } = await supabase
@@ -78,5 +94,5 @@ export function useCompanyValues() {
     }
   };
 
-  return { values, isLoading, addValue, deleteValue, refetch: fetchValues };
+  return { values, isLoading, addValue, updateValue, deleteValue, refetch: fetchValues };
 }
