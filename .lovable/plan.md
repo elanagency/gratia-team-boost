@@ -1,53 +1,27 @@
 
-Goal: fix the Team Members role pills so they match the screenshots exactly.
 
-What I found
-- The current pills in `src/components/team/TeamMemberTable.tsx` are still wrong:
-  - Member uses a purple-pink gradient with white text
-  - Admin uses an orange gradient
-- Your screenshots show a different design:
-  - Same soft tinted pill background for both roles
-  - Member text color: `#7F2BFE`
-  - Admin text color: `#FC5BFF`
-  - Background: very light pink tint, effectively `#FC5BFF` at about 10% opacity
-  - Typography: `11px`, weight `500`, line-height `16.5px`
-  - Rounded full pill with the tighter Figma-style padding
+# Condense Header Buttons into a Dropdown Menu
 
-Implementation plan
-1. Update the role pill styling in `src/components/team/TeamMemberTable.tsx`
-   - Remove the current gradient/orange fills
-   - Use one shared pill background for both roles: light pink tint
-   - Set text color conditionally:
-     - Member: `#7F2BFE`
-     - Admin: `#FC5BFF`
+## Problem
+The three action buttons (Departments, Slack Import, Upload CSV) at the top of the Team Members card look cluttered. They should be condensed into a single dropdown menu.
 
-2. Match the Figma spacing more closely
-   - Use the tighter inline pill sizing from the screenshots
-   - Apply near-Figma padding values so the badge width/height looks correct for both “Member” and “Admin”
-   - Keep the fully rounded pill shape
+## Change
 
-3. Keep the rest of the table unchanged
-   - No layout or pagination changes
-   - No button/container changes in this pass
-   - Only correct the pill visuals
+### `src/components/settings/TeamManagementCard.tsx`
+- Replace the three separate buttons (Departments, Slack Import, CSV Upload) with a single `DropdownMenu` trigger button (e.g., an ellipsis/more icon or a "More actions" button styled to match the design system)
+- The dropdown will contain three menu items:
+  - **Departments** — opens the existing Department Management dialog
+  - **Import from Slack** — opens the Slack Import dialog (only shown when Slack is connected)
+  - **Upload CSV** — triggers the CSV upload flow
+- The trigger button will use the same outline style as the current buttons: `borderRadius: 13.375`, `borderColor: #E8E6F0`, `height: 34`, `fontSize: 13`
+- The Departments dialog and Slack Import dialog will be triggered via state (same as now) rather than `DialogTrigger`, since they'll be inside dropdown items
+- CSVUploadDialog will also be controlled via state
 
-Files to update
-- `src/components/team/TeamMemberTable.tsx`
+### Components used
+- `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem` from existing `src/components/ui/dropdown-menu.tsx`
+- `MoreHorizontal` or `ChevronDown` icon from lucide-react for the trigger
+- Existing `Dialog` for Departments (switched to controlled open/close)
 
-Technical details
-```text
-Member pill:
-- background: rgba(252, 91, 255, 0.10)
-- text: #7F2BFE
+### Files modified
+- `src/components/settings/TeamManagementCard.tsx`
 
-Admin pill:
-- background: rgba(252, 91, 255, 0.10)
-- text: #FC5BFF
-
-Shared:
-- font-size: 11px
-- font-weight: 500
-- line-height: 16.5px
-- border-radius: 9999px
-- compact horizontal/vertical padding to match screenshot
-```
