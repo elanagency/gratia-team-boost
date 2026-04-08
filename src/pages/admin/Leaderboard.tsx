@@ -128,7 +128,7 @@ const Leaderboard = () => {
   const tableRows = leaderboard;
 
   return (
-    <div className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen">
+    <div className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen overflow-x-hidden">
       {/* Fixed sub-sidebar */}
       <div
         className="hidden lg:flex flex-col"
@@ -195,7 +195,7 @@ const Leaderboard = () => {
       {/* Content area */}
       <div
         className="lg:ml-[240px]"
-        style={{ padding: "22.5px 22.5px 22.5px 30px", minHeight: "100%", marginRight: -16, fontFamily: "Inter, sans-serif" }}
+        style={{ padding: "22.5px 22.5px 22.5px 30px", minHeight: "100%", fontFamily: "Inter, sans-serif" }}
       >
         {isLoading ? (
           <div className="flex justify-center py-20">
