@@ -162,7 +162,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                         color: "#fff",
                         fontSize: 11,
                         fontWeight: 500,
-                        padding: "3px 12px",
+                        padding: "4px 12px 3px 12px",
                         lineHeight: "16.5px",
                         fontFamily: "Inter, sans-serif",
                       }}
