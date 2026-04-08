@@ -136,11 +136,13 @@ export function LeaderboardCard() {
           Leaderboard
         </span>
         <button
+          onClick={() => navigate("/leaderboard")}
           className="flex items-center gap-0.5 hover:opacity-70 transition-opacity"
           style={{ fontSize: "12px", fontWeight: 400, color: "#9996AA" }}
         >
           View all
           <ChevronRight className="shrink-0" style={{ width: 14, height: 14, color: "#9996AA" }} />
+        </button>
         </button>
       </div>
 
