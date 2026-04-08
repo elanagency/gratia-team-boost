@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Cake, PartyPopper, Plus } from "lucide-react";
+import { MessageCircle, Cake, PartyPopper, Plus, SmilePlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+
+type ReactionGroup = {
+  emoji: string;
+  count: number;
+  hasReacted: boolean;
+};
+
+type ReactionsMap = Record<string, ReactionGroup[]>;
 
 type PointTransaction = {
   id: string;
