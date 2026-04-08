@@ -92,16 +92,14 @@ export function GiphyPicker({ onSelect, disabled }: GiphyPickerProps) {
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           disabled={disabled}
-          className="gap-1"
+          className="flex items-center gap-1 p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
-          <Film className="h-3 w-3" />
-          GIF
-        </Button>
+          <Film className="h-4 w-4" />
+          <span className="text-sm font-medium">GIF</span>
+        </button>
       </PopoverTrigger>
       <PopoverContent 
         className="w-80 p-0 z-[200]" 
