@@ -59,7 +59,9 @@ export function RecognitionFeed() {
   
   const { user, companyId, isLoading: isAuthLoading } = useAuth();
   const optimisticAuth = useOptimisticAuth();
-  const queryClient = useQueryClient();
+  const [reactionsMap, setReactionsMap] = useState<ReactionsMap>({});
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState<string | null>(null);
+
 
   useEffect(() => {
     console.log('[RecognitionFeed] useEffect triggered - isAuthLoading:', isAuthLoading, 'companyId:', companyId, 'user?.id:', user?.id);
@@ -647,13 +649,47 @@ export function RecognitionFeed() {
                           )}
 
                           {/* Emoji reactions */}
-                          <div className="flex items-center gap-2 pt-1">
-                            {MOCK_REACTIONS.map((reaction, i) => (
-                              <button key={i} className="flex items-center gap-1 text-xs font-medium rounded-full hover:opacity-80 transition-colors" style={{ backgroundColor: '#F5F5F7', color: '#0F0533', padding: '1.875px 7.5px', height: '21.75px' }}>
+                          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                            {(reactionsMap[thread.mainPost.id] || []).map((reaction, i) => (
+                              <button
+                                key={i}
+                                onClick={() => handleToggleReaction(thread.mainPost.id, reaction.emoji)}
+                                className="flex items-center gap-1 text-xs font-medium rounded-full hover:opacity-80 transition-colors"
+                                style={{
+                                  backgroundColor: reaction.hasReacted ? '#EDE9FE' : '#F5F5F7',
+                                  color: '#0F0533',
+                                  padding: '1.875px 7.5px',
+                                  height: '21.75px',
+                                  border: reaction.hasReacted ? '1px solid #A78BFA' : '1px solid transparent',
+                                }}
+                              >
                                 <span>{reaction.emoji}</span>
                                 <span>{reaction.count}</span>
                               </button>
                             ))}
+                            <Popover open={emojiPickerOpen === thread.mainPost.id} onOpenChange={(open) => setEmojiPickerOpen(open ? thread.mainPost.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button className="flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors" style={{ height: '21.75px', width: '28px' }}>
+                                  <SmilePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto border shadow-md p-2" side="bottom" align="start" sideOffset={4}>
+                                <div className="grid grid-cols-6 gap-1">
+                                  {COMMON_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => {
+                                        handleToggleReaction(thread.mainPost.id, emoji);
+                                        setEmojiPickerOpen(null);
+                                      }}
+                                      className="h-8 w-8 flex items-center justify-center rounded hover:bg-muted/50 transition-colors text-lg"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
 
                           {/* Add Points popover */}
