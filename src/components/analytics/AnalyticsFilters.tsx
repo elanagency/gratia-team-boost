@@ -106,53 +106,56 @@ export function AnalyticsFilters({
       {/* Granularity Toggle */}
       <div className="flex items-center rounded-[7.375px] border bg-background" style={{ borderColor: '#E8E6F0' }}>
         {(["daily", "weekly", "monthly"] as GranularityType[]).map((g) => (
-          <Button
+          <button
             key={g}
-            variant="ghost"
-            size="sm"
             className={cn(
-              "rounded-[7.375px] text-xs font-medium capitalize",
+              "h-9 px-3 rounded-[7.375px] text-xs font-medium capitalize transition-colors",
               g === "daily" && "rounded-r-none",
               g === "monthly" && "rounded-l-none",
               g === "weekly" && "rounded-none",
+              granularity !== g && "hover:bg-gray-100",
             )}
             style={granularity === g ? activeGranularityStyle : { color: '#9996AA' }}
             onClick={() => onGranularityChange(g)}
           >
             {g.charAt(0).toUpperCase() + g.slice(1)}
-          </Button>
+          </button>
         ))}
       </div>
 
       {/* Date Range Selector */}
       <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="justify-start text-left font-normal rounded-[13.375px]"
+          <button
+            className="inline-flex items-center justify-start text-left font-normal rounded-[13.375px] border h-10 px-4 py-2 transition-colors hover:bg-gray-100"
             style={{ borderColor: '#E8E6F0', color: '#9996AA', fontSize: 12, fontWeight: 500 }}
           >
             <Calendar className="mr-2 h-4 w-4" />
             Custom
-          </Button>
+          </button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="flex">
             <div className="border-r p-2 space-y-1">
-              {datePresets.map((preset) => (
-                <Button
-                  key={preset.label}
-                  variant={selectedPreset === preset.label ? "secondary" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start text-sm"
-                  onClick={() => {
-                    handlePresetSelect(preset);
-                    setIsCalendarOpen(false);
-                  }}
-                >
-                  {preset.label}
-                </Button>
-              ))}
+              {datePresets.map((preset) => {
+                const isActive = selectedPreset === preset.label;
+                return (
+                  <button
+                    key={preset.label}
+                    className={cn(
+                      "w-full text-left text-sm px-3 py-1.5 rounded-full transition-colors",
+                      !isActive && "hover:bg-gray-100 text-foreground",
+                    )}
+                    style={isActive ? { background: 'linear-gradient(135deg, #7F2BFE, #FC5BFF)', color: '#FFFFFF' } : undefined}
+                    onClick={() => {
+                      handlePresetSelect(preset);
+                      setIsCalendarOpen(false);
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
             </div>
             <div className="p-2">
               <CalendarComponent

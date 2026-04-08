@@ -37,23 +37,25 @@ const Analytics = () => {
           <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0F0533', fontFamily: 'Inter, sans-serif', lineHeight: '33px' }}>Analytics</h1>
           <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
-            <div className="flex items-center rounded-md border border-input bg-background">
-              <Button
-                variant={viewMode === "chart" ? "secondary" : "ghost"}
-                size="sm"
-                className="rounded-r-none"
+            <div className="flex items-center rounded-md border bg-background" style={{ borderColor: '#E8E6F0' }}>
+              <button
+                className={cn(
+                  "h-9 w-9 inline-flex items-center justify-center rounded-l-md rounded-r-none transition-colors",
+                  viewMode === "chart" ? "bg-gray-100" : "hover:bg-gray-100",
+                )}
                 onClick={() => setViewMode("chart")}
               >
                 <BarChart3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size="sm"
-                className="rounded-l-none"
+              </button>
+              <button
+                className={cn(
+                  "h-9 w-9 inline-flex items-center justify-center rounded-r-md rounded-l-none transition-colors",
+                  viewMode === "table" ? "bg-gray-100" : "hover:bg-gray-100",
+                )}
                 onClick={() => setViewMode("table")}
               >
                 <Table2 className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
             <AnalyticsFilters
               dateRange={dateRange}
