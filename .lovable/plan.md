@@ -1,39 +1,26 @@
 
 
-# Unified Fixed Sub-Sidebar for Settings & Leaderboard
+# Fix Leaderboard Sidebar Month Filter to Match Figma
 
-## Problem
-The Settings sidebar currently uses `position: sticky` and 220px width. The Leaderboard month filter is inline (scrolls with content). The Figma shows both pages should have a **fixed** secondary sidebar pinned flush against the main 300px sidebar, with identical dimensions and padding so switching between pages feels seamless.
+## What changes
 
-## Figma Specs (from screenshots)
-- Secondary sidebar: **240px wide**, fixed to viewport
-- Left edge: flush against the main sidebar (starts at 300px from viewport left)
-- Padding: **22.5px top**, **270px left-padding on content area** (to account for the sub-sidebar)
-- Title: Inter, 22px, weight 600, color #0F0533, line-height 33px
-- Nav items / month items: same styling as current but inside this fixed panel
-- Right border: 1px solid #E8E6F0, full height
-- Background: #FFFFFF
+Update the month filter buttons in the Leaderboard fixed sub-sidebar to match the Figma specs exactly:
 
-## Changes
+### Figma specs (from screenshots)
+- **Remove** the "FILTER BY MONTH" header text entirely
+- **Add calendar icon** (16x16, color #0F0533 for active, inherit for inactive) to the left of each month label
+- **Active button**: background `#F5F5F7`, border-radius `13.375px`, text color `#0F0533`, font-weight `500`, font-size `14px`, line-height `21px`
+- **Inactive button**: transparent background, text color `#9996AA`, font-weight `500`, font-size `14px`
+- **Button layout**: `display: flex`, `align-items: center`, `gap: 9.375px`, padding `7.5px 122.375px 7.5px 11.25px` (effectively 7.5px vertical, 11.25px left, auto-stretch width)
+- **Button height**: 36px fixed, full width (align-self: stretch)
+- **Container gap**: 0 (buttons are flush, no gap between them)
 
-### 1. Settings.tsx — Convert sidebar to fixed positioning
-- Change sidebar from `sticky` to `fixed`, pinned at `left: 300px`, `top: 0`, `height: 100vh`, `width: 240px`
-- Add `padding: 22.5px 0 0 270px` (or `marginLeft: 240px`) on content area to offset the fixed sidebar
-- Keep all existing tab buttons and content rendering unchanged
+### File modified
+- `src/pages/admin/Leaderboard.tsx` — update the month filter section (lines 161-184)
 
-### 2. Leaderboard.tsx — Extract month filter into fixed sidebar
-- Move the month filter column out of the flex layout into a **fixed** sidebar identical to Settings
-- Position: `fixed`, `left: 300px`, `top: 0`, `height: 100vh`, `width: 240px`
-- Title "Leaderboard" moves into this sidebar (matching Settings' title style)
-- Month filter items render below the title with a calendar icon
-- Content area gets `marginLeft: 240px` offset with `padding: 22.5px`
-- Remove the inline "Leaderboard" heading from the content area (it's now in the sidebar)
-
-### 3. Both pages — Hide fixed sub-sidebar on mobile (`hidden lg:flex`)
-- On screens < 1024px the main sidebar is already hidden, so the sub-sidebar should also hide
-- Content area removes its left margin on mobile
-
-## Files Modified
-1. `src/pages/admin/Settings.tsx` — fixed sub-sidebar positioning
-2. `src/pages/admin/Leaderboard.tsx` — extract month filter to fixed sub-sidebar
+### Details
+1. Remove the "FILTER BY MONTH" `<p>` tag (line 161-163)
+2. Replace pill-style purple active button with rounded-rect light gray (#F5F5F7) active style
+3. Add `Calendar` icon import from lucide-react (16x16)
+4. Update button styling to match Figma padding, border-radius 13.375px, font-size 14px
 
