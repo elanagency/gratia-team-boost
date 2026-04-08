@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type LeaderboardMember = {
   userId: string;
@@ -17,6 +18,7 @@ export function LeaderboardCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { companyId, isLoading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
 
   const fetchLeaderboard = useCallback(async () => {
     if (!companyId) return;
@@ -134,6 +136,7 @@ export function LeaderboardCard() {
           Leaderboard
         </span>
         <button
+          onClick={() => navigate("/leaderboard")}
           className="flex items-center gap-0.5 hover:opacity-70 transition-opacity"
           style={{ fontSize: "12px", fontWeight: 400, color: "#9996AA" }}
         >
