@@ -28,6 +28,8 @@ import { CSVProcessingStep } from "./csv/CSVProcessingStep";
 
 interface CSVUploadDialogProps {
   onUploadComplete: () => void;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 interface CSVMember {

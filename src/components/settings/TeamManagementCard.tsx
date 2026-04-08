@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Users, Building2, MessageSquare, Search, Plus } from "lucide-react";
+import { Building2, MessageSquare, Search, Upload, MoreHorizontal } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
 import TeamInviteManager from "@/components/team/TeamInviteManager";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
@@ -14,6 +14,12 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const TeamManagementCard = () => {
   const { isConnected: isSlackConnected } = useSlackIntegration();
