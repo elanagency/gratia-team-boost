@@ -141,8 +141,8 @@ const Leaderboard = () => {
           borderRight: "1px solid #E8E6F0",
           background: "#fff",
           paddingTop: 22.5,
-          paddingLeft: 15,
-          paddingRight: 18.75,
+          paddingLeft: 30,
+          paddingRight: 30,
           zIndex: 30,
           overflowY: "auto",
           fontFamily: "Inter, sans-serif",
@@ -153,7 +153,7 @@ const Leaderboard = () => {
             fontSize: 22,
             fontWeight: 600,
             color: "#0F0533",
-            marginBottom: 18.75,
+            marginBottom: 22.5,
           }}
         >
           Leaderboard
@@ -195,7 +195,7 @@ const Leaderboard = () => {
       {/* Content area */}
       <div
         className="lg:ml-[240px]"
-        style={{ padding: "22.5px", minHeight: "100%", marginRight: -16, fontFamily: "Inter, sans-serif" }}
+        style={{ padding: "22.5px 22.5px 22.5px 30px", minHeight: "100%", marginRight: -16, fontFamily: "Inter, sans-serif" }}
       >
         {isLoading ? (
           <div className="flex justify-center py-20">
