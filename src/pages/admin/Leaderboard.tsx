@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 
 type LeaderboardMember = {
   userId: string;
@@ -158,29 +158,37 @@ const Leaderboard = () => {
         >
           Leaderboard
         </h1>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "#9996AA", marginBottom: 6, paddingLeft: 12 }}>
-          FILTER BY MONTH
-        </p>
-        <div className="flex flex-col gap-[4px]">
-          {monthOptions.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => setSelectedMonth(m.value)}
-              className="text-left transition-colors"
-              style={{
-                fontSize: 13,
-                fontWeight: selectedMonth === m.value ? 600 : 400,
-                color: selectedMonth === m.value ? "#fff" : "#9996AA",
-                background: selectedMonth === m.value ? "#7F2BFE" : "transparent",
-                borderRadius: 9999,
-                padding: "7px 14px",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
+        <div className="flex flex-col">
+          {monthOptions.map((m) => {
+            const isActive = selectedMonth === m.value;
+            return (
+              <button
+                key={m.value}
+                onClick={() => setSelectedMonth(m.value)}
+                className="transition-colors"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9.375,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  lineHeight: "21px",
+                  color: isActive ? "#0F0533" : "#9996AA",
+                  background: isActive ? "#F5F5F7" : "transparent",
+                  borderRadius: 13.375,
+                  padding: "7.5px 11.25px",
+                  height: 36,
+                  width: "100%",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <Calendar size={16} color={isActive ? "#0F0533" : "#9996AA"} strokeWidth={2} style={{ flexShrink: 0 }} />
+                {m.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
