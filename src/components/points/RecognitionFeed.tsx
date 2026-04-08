@@ -76,22 +76,22 @@ export function RecognitionFeed() {
       return;
     }
 
-    const grouped: ReactionsMap = {};
+    const intermediary: Record<string, Record<string, ReactionGroup>> = {};
     (data || []).forEach((r: any) => {
-      if (!grouped[r.transaction_id]) grouped[r.transaction_id] = {};
+      if (!intermediary[r.transaction_id]) intermediary[r.transaction_id] = {};
       const key = r.emoji;
-      if (!grouped[r.transaction_id][key]) {
-        grouped[r.transaction_id][key] = { emoji: key, count: 0, hasReacted: false };
+      if (!intermediary[r.transaction_id][key]) {
+        intermediary[r.transaction_id][key] = { emoji: key, count: 0, hasReacted: false };
       }
-      grouped[r.transaction_id][key].count++;
+      intermediary[r.transaction_id][key].count++;
       if (r.user_id === user.id) {
-        grouped[r.transaction_id][key].hasReacted = true;
+        intermediary[r.transaction_id][key].hasReacted = true;
       }
     });
 
     const result: ReactionsMap = {};
-    Object.keys(grouped).forEach(txId => {
-      result[txId] = Object.values(grouped[txId] as Record<string, ReactionGroup>);
+    Object.keys(intermediary).forEach(txId => {
+      result[txId] = Object.values(intermediary[txId]);
     });
     setReactionsMap(result);
   }, [user?.id]);
