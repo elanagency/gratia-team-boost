@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Cake, PartyPopper, Plus } from "lucide-react";
+import { MessageCircle, Cake, PartyPopper, Plus, SmilePlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+
+type ReactionGroup = {
+  emoji: string;
+  count: number;
+  hasReacted: boolean;
+};
+
+type ReactionsMap = Record<string, ReactionGroup[]>;
 
 type PointTransaction = {
   id: string;
@@ -38,11 +46,9 @@ type ThreadedRecognition = {
 };
 
 const quickPoints = [5, 10, 25];
-const MOCK_REACTIONS = [
-  { emoji: '🎉', count: 12 },
-  { emoji: '💚', count: 8 },
-  { emoji: '🔥', count: 5 },
-];
+
+const COMMON_EMOJIS = ['🎉', '💚', '🔥', '👏', '❤️', '🙌', '💪', '🌟', '👍', '😍', '🎯', '🚀'];
+
 
 export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
@@ -53,7 +59,88 @@ export function RecognitionFeed() {
   
   const { user, companyId, isLoading: isAuthLoading } = useAuth();
   const optimisticAuth = useOptimisticAuth();
+  const [reactionsMap, setReactionsMap] = useState<ReactionsMap>({});
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const fetchReactions = useCallback(async (transactionIds: string[]) => {
+    if (!transactionIds.length || !user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('recognition_reactions')
+      .select('transaction_id, emoji, user_id')
+      .in('transaction_id', transactionIds);
+    
+    if (error) {
+      console.error('Error fetching reactions:', error);
+      return;
+    }
+
+    const intermediary: Record<string, Record<string, ReactionGroup>> = {};
+    (data || []).forEach((r: any) => {
+      if (!intermediary[r.transaction_id]) intermediary[r.transaction_id] = {};
+      const key = r.emoji;
+      if (!intermediary[r.transaction_id][key]) {
+        intermediary[r.transaction_id][key] = { emoji: key, count: 0, hasReacted: false };
+      }
+      intermediary[r.transaction_id][key].count++;
+      if (r.user_id === user.id) {
+        intermediary[r.transaction_id][key].hasReacted = true;
+      }
+    });
+
+    const result: ReactionsMap = {};
+    Object.keys(intermediary).forEach(txId => {
+      result[txId] = Object.values(intermediary[txId]);
+    });
+    setReactionsMap(result);
+  }, [user?.id]);
+
+  const handleToggleReaction = async (transactionId: string, emoji: string) => {
+    if (!user?.id) return;
+
+    const existing = (reactionsMap[transactionId] || []).find(r => r.emoji === emoji);
+    const hasReacted = existing?.hasReacted || false;
+
+    // Optimistic update
+    setReactionsMap(prev => {
+      const current = [...(prev[transactionId] || [])];
+      const idx = current.findIndex(r => r.emoji === emoji);
+      if (hasReacted) {
+        if (idx !== -1) {
+          current[idx] = { ...current[idx], count: current[idx].count - 1, hasReacted: false };
+          if (current[idx].count <= 0) current.splice(idx, 1);
+        }
+      } else {
+        if (idx !== -1) {
+          current[idx] = { ...current[idx], count: current[idx].count + 1, hasReacted: true };
+        } else {
+          current.push({ emoji, count: 1, hasReacted: true });
+        }
+      }
+      return { ...prev, [transactionId]: current };
+    });
+
+    try {
+      if (hasReacted) {
+        await supabase
+          .from('recognition_reactions')
+          .delete()
+          .eq('transaction_id', transactionId)
+          .eq('user_id', user.id)
+          .eq('emoji', emoji);
+      } else {
+        await supabase
+          .from('recognition_reactions')
+          .insert({ transaction_id: transactionId, user_id: user.id, emoji });
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      // Re-fetch to correct state
+      const txIds = threadedRecognitions.map(t => t.mainPost.id);
+      fetchReactions(txIds);
+    }
+  };
 
   useEffect(() => {
     console.log('[RecognitionFeed] useEffect triggered - isAuthLoading:', isAuthLoading, 'companyId:', companyId, 'user?.id:', user?.id);
@@ -192,6 +279,10 @@ export function RecognitionFeed() {
       // Group transactions into threaded recognitions
       const threaded = groupTransactionsIntoThreads(formattedTransactions);
       setThreadedRecognitions(threaded);
+
+      // Fetch reactions for all transactions
+      const txIds = formattedTransactions.map(t => t.id);
+      fetchReactions(txIds);
       
     } catch (error) {
       console.error("Error fetching recognition feed:", error);
@@ -641,13 +732,47 @@ export function RecognitionFeed() {
                           )}
 
                           {/* Emoji reactions */}
-                          <div className="flex items-center gap-2 pt-1">
-                            {MOCK_REACTIONS.map((reaction, i) => (
-                              <button key={i} className="flex items-center gap-1 text-xs font-medium rounded-full hover:opacity-80 transition-colors" style={{ backgroundColor: '#F5F5F7', color: '#0F0533', padding: '1.875px 7.5px', height: '21.75px' }}>
+                          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                            {(reactionsMap[thread.mainPost.id] || []).map((reaction, i) => (
+                              <button
+                                key={i}
+                                onClick={() => handleToggleReaction(thread.mainPost.id, reaction.emoji)}
+                                className="flex items-center gap-1 text-xs font-medium rounded-full hover:opacity-80 transition-colors"
+                                style={{
+                                  backgroundColor: reaction.hasReacted ? '#EDE9FE' : '#F5F5F7',
+                                  color: '#0F0533',
+                                  padding: '1.875px 7.5px',
+                                  height: '21.75px',
+                                  border: reaction.hasReacted ? '1px solid #A78BFA' : '1px solid transparent',
+                                }}
+                              >
                                 <span>{reaction.emoji}</span>
                                 <span>{reaction.count}</span>
                               </button>
                             ))}
+                            <Popover open={emojiPickerOpen === thread.mainPost.id} onOpenChange={(open) => setEmojiPickerOpen(open ? thread.mainPost.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button className="flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors" style={{ height: '21.75px', width: '28px' }}>
+                                  <SmilePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto border shadow-md p-2" side="bottom" align="start" sideOffset={4}>
+                                <div className="grid grid-cols-6 gap-1">
+                                  {COMMON_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => {
+                                        handleToggleReaction(thread.mainPost.id, emoji);
+                                        setEmojiPickerOpen(null);
+                                      }}
+                                      className="h-8 w-8 flex items-center justify-center rounded hover:bg-muted/50 transition-colors text-lg"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
 
                           {/* Add Points popover */}
