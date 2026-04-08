@@ -210,17 +210,18 @@ const Leaderboard = () => {
                   borderRadius: 15,
                   border: "2px solid #7F2BFE",
                   background: "linear-gradient(135deg, rgba(127,43,254,0.08) 0%, rgba(252,91,255,0.08) 100%)",
-                  padding: "24.5px",
+                  padding: "24.5px 24.5px 2px 24.5px",
+                  height: 160.75,
                   display: "flex",
                   alignItems: "center",
                   gap: 20,
                 }}
               >
-                <div className="relative" style={{ width: 75, height: 75, flexShrink: 0 }}>
-                  <Avatar style={{ width: 75, height: 75 }}>
+                <div className="relative" style={{ width: 90, height: 90, flexShrink: 0 }}>
+                  <Avatar style={{ width: 90, height: 90 }}>
                     <AvatarFallback
                       className={avatarColors[0]}
-                      style={{ fontSize: 24, fontWeight: 600 }}
+                      style={{ fontSize: 28, fontWeight: 600 }}
                     >
                       {getInitials(topPerformer.name)}
                     </AvatarFallback>
@@ -236,11 +237,11 @@ const Leaderboard = () => {
                       background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
                       color: "#fff",
                       fontSize: 16,
-                      fontWeight: 700,
+                      fontWeight: 600,
+                      lineHeight: "24px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      border: "3px solid #fff",
                     }}
                   >
                     1
