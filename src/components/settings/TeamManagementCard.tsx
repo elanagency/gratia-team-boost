@@ -125,7 +125,7 @@ export const TeamManagementCard = () => {
 
   return (
     <>
-      <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <div style={{ fontFamily: "Inter, sans-serif", border: "1px solid #E8E6F0", borderRadius: 15, padding: 15 }}>
         {/* Header */}
         <div style={{ marginBottom: 16 }}>
           <div className="flex items-start justify-between mb-1">
