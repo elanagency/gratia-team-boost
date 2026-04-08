@@ -658,13 +658,14 @@ export function RecognitionFeed() {
                                 Add Points
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-2" side="bottom" align="start" sideOffset={4}>
-                              <div className="flex items-center gap-2">
+                            <PopoverContent className="w-auto border-0 shadow-md" side="bottom" align="start" sideOffset={4} style={{ padding: '6px 8px', borderRadius: '10px' }}>
+                              <div className="flex items-center gap-1.5">
                                 {[1, 5, 10].map((pts) => (
                                   <button
                                     key={pts}
                                     onClick={() => handleQuickPoints(thread.mainPost.recipient_id, pts, parsed.cleanText)}
-                                    className="px-3 py-1 text-xs font-medium border border-border rounded-full hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    className="hover:opacity-80 transition-opacity"
+                                    style={{ background: '#DCFCE7', color: '#15803D', borderRadius: '7.375px', padding: '6.125px 11.25px 5.125px 10.25px', fontSize: '14px', fontWeight: 500 }}
                                   >
                                     +{pts}
                                   </button>
