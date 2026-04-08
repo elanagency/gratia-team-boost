@@ -831,6 +831,38 @@ export type Database = {
           },
         ]
       }
+      recognition_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_reactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "point_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       redemptions: {
         Row: {
           company_id: string
