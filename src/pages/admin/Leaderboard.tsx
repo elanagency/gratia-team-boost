@@ -210,7 +210,7 @@ const Leaderboard = () => {
                   borderRadius: 15,
                   border: "2px solid #7F2BFE",
                   background: "linear-gradient(135deg, rgba(127,43,254,0.08) 0%, rgba(252,91,255,0.08) 100%)",
-                  padding: "24.5px 24.5px 2px 24.5px",
+                  padding: "0 24.5px",
                   height: 160.75,
                   display: "flex",
                   alignItems: "center",
