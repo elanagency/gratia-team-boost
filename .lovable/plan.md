@@ -1,69 +1,26 @@
 
 
-# Add Real Emoji Reactions to Recognition Feed (Slack-style)
+# Fix Analytics Filter Button Hover and Calendar Styling
 
-## Summary
-Replace the static mock emoji reactions with a fully functional Slack-style reaction system. Users can click existing reactions to toggle them, and use an emoji picker to add any emoji as a reaction.
+## Problem
+All buttons on the analytics page turn pink on hover (because `--accent` is set to `#F572FF`). The Figma shows they should hover to light gray. The calendar date selection and preset buttons ("Last 30 days") also use pink but should use the purple-to-pink gradient (`linear-gradient(135deg, #7F2BFE, #FC5BFF)`) used elsewhere in the app.
 
-## What changes
+## Changes
 
-### 1. New database table: `recognition_reactions`
-Create a migration to store reactions:
-```sql
-create table public.recognition_reactions (
-  id uuid primary key default gen_random_uuid(),
-  transaction_id uuid references public.point_transactions(id) on delete cascade not null,
-  user_id uuid references auth.users(id) on delete cascade not null,
-  emoji text not null,
-  created_at timestamptz default now(),
-  unique(transaction_id, user_id, emoji)
-);
+### 1. `src/components/analytics/AnalyticsFilters.tsx`
+- **Granularity buttons**: Replace `Button variant="ghost"` with plain `button` elements to avoid the pink hover. Apply `hover:bg-gray-100` for light gray hover on inactive buttons.
+- **Custom date trigger**: Replace `Button variant="outline"` with a plain styled button using `hover:bg-gray-100` instead of the accent hover.
+- **Preset buttons** (Last 7 days, Last 30 days, etc.): Replace `Button variant="secondary"/"ghost"` with plain buttons. Active preset gets the gradient background (`linear-gradient(135deg, #7F2BFE, #FC5BFF)`) with white text and rounded-full styling (matching the Figma screenshot). Inactive presets get `hover:bg-gray-100`.
 
-alter table public.recognition_reactions enable row level security;
+### 2. `src/components/ui/calendar.tsx`
+- Override `day_selected` to use the gradient background instead of `bg-primary` (pink). Apply `background: linear-gradient(135deg, #7F2BFE, #FC5BFF)` with white text and `rounded-[7.375px]`.
+- Override `cell` and `day_range_middle` accent references to use a lighter purple tint instead of pink accent for the range highlight.
 
--- Authenticated users in same company can view reactions
-create policy "Users can view reactions for their company transactions"
-  on public.recognition_reactions for select to authenticated
-  using (
-    exists (
-      select 1 from public.point_transactions pt
-      join public.profiles p on p.company_id = pt.company_id
-      where pt.id = recognition_reactions.transaction_id
-        and p.id = auth.uid()
-    )
-  );
-
--- Users can add their own reactions
-create policy "Users can add reactions"
-  on public.recognition_reactions for insert to authenticated
-  with check (user_id = auth.uid());
-
--- Users can remove their own reactions
-create policy "Users can remove own reactions"
-  on public.recognition_reactions for delete to authenticated
-  using (user_id = auth.uid());
-```
-
-### 2. Update `RecognitionFeed.tsx`
-- Remove `MOCK_REACTIONS` constant
-- Fetch real reactions from `recognition_reactions` table, grouped by emoji with count and whether current user reacted
-- **Click existing reaction pill** → toggle (add/remove your reaction for that emoji)
-- **Add reaction button** → opens an emoji picker popover (using native emoji picker or a lightweight component) to add any emoji
-- Highlight reaction pills the current user has reacted with (e.g. subtle border or different background, similar to Slack's blue outline)
-- Optimistically update reaction counts on click
-
-### 3. UI behavior (Slack-style)
-- Each reaction pill shows: emoji + count
-- Clicking a pill you've already reacted with removes your reaction; clicking one you haven't adds it
-- A "+" / smiley-face button at the end opens an emoji picker to add a new emoji type
-- Pills the user has reacted to get a highlighted style (e.g. light purple border or a tinted background)
-
-## Technical details
+### 3. `src/pages/admin/Analytics.tsx`
+- **View mode toggle** (chart/table icons): Replace `Button` variants with plain styled buttons using `hover:bg-gray-100` and a neutral active state (e.g. `bg-gray-100`) instead of `variant="secondary"` which may trigger pink.
 
 ### Files modified
-- `src/components/points/RecognitionFeed.tsx` — main logic changes
-- New migration SQL for `recognition_reactions` table
-
-### Emoji picker approach
-Use a lightweight emoji picker — either the existing emoji picker already used in the composer (if reusable) or a small inline popover with common emojis + search. Will check what's already in the project.
+- `src/components/analytics/AnalyticsFilters.tsx`
+- `src/components/ui/calendar.tsx`
+- `src/pages/admin/Analytics.tsx`
 
