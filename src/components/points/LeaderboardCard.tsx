@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type LeaderboardMember = {
   userId: string;
