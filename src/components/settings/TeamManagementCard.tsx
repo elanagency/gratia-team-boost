@@ -145,36 +145,11 @@ export const TeamManagementCard = () => {
                 Manage who has access to your workspace · {totalMembers} members
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    style={{
-                      borderRadius: 13.375,
-                      borderColor: "#E8E6F0",
-                      fontSize: 13,
-                      fontFamily: "Inter, sans-serif",
-                      height: 34,
-                    }}
-                  >
-                    <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                    Departments
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Manage Departments</DialogTitle>
-                  </DialogHeader>
-                  <DepartmentManagement embedded />
-                </DialogContent>
-              </Dialog>
-              {isSlackConnected && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSlackImportOpen(true)}
                   style={{
                     borderRadius: 13.375,
                     borderColor: "#E8E6F0",
@@ -183,12 +158,26 @@ export const TeamManagementCard = () => {
                     height: 34,
                   }}
                 >
-                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                  Slack Import
+                  <MoreHorizontal className="h-4 w-4" />
                 </Button>
-              )}
-              <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}>
+                <DropdownMenuItem onClick={() => setDeptDialogOpen(true)}>
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Departments
+                </DropdownMenuItem>
+                {isSlackConnected && (
+                  <DropdownMenuItem onClick={() => setSlackImportOpen(true)}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Import from Slack
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setCsvDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search + Invite row */}
