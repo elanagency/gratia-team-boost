@@ -1,16 +1,16 @@
 
 
-# Match GIF Button Hover to Emoji Button Style
+# Fix Leaderboard Sidebar Month Text Weight
 
 ## Problem
-The GIF button in the recognition composer uses `Button variant="outline"` which gives it a pink/accent hover color. The emoji and image buttons next to it use a simple `hover:bg-muted/50` light gray hover.
+The month labels in the leaderboard sub-sidebar use `font-weight: 500` but the Figma spec shows `font-weight: 400` for both active and inactive months. This makes the text appear heavier than intended.
 
 ## Change
 
-### `src/components/points/GiphyPicker.tsx`
-- Replace the `Button variant="outline"` trigger with a plain `button` element styled identically to the emoji/image buttons: `p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors`
-- Keep the `Film` icon and "GIF" text, just change the wrapper from a shadcn Button to a plain styled button
+### `src/pages/admin/Leaderboard.tsx` (line 174)
+- Change `fontWeight: 500` to `fontWeight: 400` on the month buttons
+- Active month keeps `color: #0F0533`, inactive keeps `color: #9996AA` (already correct)
 
 ### Files modified
-- `src/components/points/GiphyPicker.tsx`
+- `src/pages/admin/Leaderboard.tsx`
 
