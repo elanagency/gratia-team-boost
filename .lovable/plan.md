@@ -1,25 +1,15 @@
 
 
-# Apply Consistent Padding to Analytics & Gift Card Pages
+# Fix Leaderboard Horizontal Scroll
 
-## What changes
+## Problem
+The outer wrapper uses negative margins (`lg:-mx-[60px]`) to cancel the layout padding, but the content area has `marginRight: -16` which pushes it beyond the viewport, causing horizontal scroll.
 
-Both pages need 22.5px top padding and 135.5px horizontal padding, matching the Figma specs. The `UnifiedDashboardLayout` wrapper adds `lg:px-[60px] lg:pt-[72px]` by default, so we need to cancel that and apply the correct values.
+## Fix in `src/pages/admin/Leaderboard.tsx`
 
-## Changes
+1. **Outer wrapper**: Add `overflow-x: hidden` to the outermost div (line 131) to prevent horizontal scrolling
+2. **Content area** (line 198): Remove `marginRight: -16` — this was a leftover hack that's causing the content to exceed the viewport width
 
-### 1. `src/pages/admin/Analytics.tsx`
-- Replace the outer `<div className="flex-1 overflow-auto p-6">` with a wrapper that negates layout padding: `className="-mx-4 -mt-16 lg:-mx-[60px] lg:-mt-[72px]"`
-- Apply correct padding via inline style: `padding: "22.5px 135.5px"`
-- Remove the `max-w-6xl mx-auto` constraint (the horizontal padding handles centering now)
-- Update the title to use Inter font, 22px, weight 600, line-height 33px per Figma
-
-### 2. `src/pages/team/GiftCardShop.tsx`
-- Wrap the return in a container with the same negative margin pattern
-- Apply `padding: "22.5px 135.5px"` inline
-- Title already matches Figma specs (22px Inter 600)
-
-### Files modified
-- `src/pages/admin/Analytics.tsx`
-- `src/pages/team/GiftCardShop.tsx`
+## File modified
+- `src/pages/admin/Leaderboard.tsx`
 
