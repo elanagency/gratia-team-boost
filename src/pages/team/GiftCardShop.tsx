@@ -18,7 +18,7 @@ const RewardShop = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen space-y-6" style={{ padding: "22.5px 135.5px" }}>
       <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0F0533', fontFamily: 'Inter, sans-serif' }}>
         Redeem Points
       </h1>

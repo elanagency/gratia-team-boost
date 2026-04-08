@@ -30,11 +30,11 @@ const Analytics = () => {
   const hasError = sentQuery.error || receivedQuery.error || engagementQuery.error || redemptionsQuery.error;
 
   return (
-    <div className="flex-1 overflow-auto p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen" style={{ padding: "22.5px 135.5px" }}>
+      <div className="space-y-6">
         {/* Page Header with Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl font-semibold" style={{ color: '#0F0533' }}>Analytics</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0F0533', fontFamily: 'Inter, sans-serif', lineHeight: '33px' }}>Analytics</h1>
           <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
             <div className="flex items-center rounded-md border border-input bg-background">
