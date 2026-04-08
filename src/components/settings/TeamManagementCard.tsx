@@ -125,22 +125,15 @@ export const TeamManagementCard = () => {
 
   return (
     <>
-      <div
-        style={{
-          fontFamily: "Inter, sans-serif",
-          border: "1px solid #E8E6F0",
-          borderRadius: 15,
-          background: "#fff",
-        }}
-      >
+      <div style={{ fontFamily: "Inter, sans-serif" }}>
         {/* Header */}
-        <div style={{ padding: "20px 20px 0 20px" }}>
+        <div style={{ marginBottom: 16 }}>
           <div className="flex items-start justify-between mb-1">
             <div>
-              <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", lineHeight: "22.5px", marginBottom: 2 }}>
                 Team Members
               </h2>
-              <p style={{ fontSize: 13, color: "#9996AA" }}>
+              <p style={{ fontSize: 13, color: "#9996AA", lineHeight: "19.5px" }}>
                 Manage who has access to your workspace · {totalMembers} members
               </p>
             </div>
@@ -191,7 +184,7 @@ export const TeamManagementCard = () => {
           </div>
 
           {/* Search + Invite row */}
-          <div className="flex items-center gap-3 mt-4 mb-4">
+          <div className="flex items-center gap-3 mt-4">
             <div className="relative flex-1">
               <Search
                 size={15}
@@ -209,13 +202,15 @@ export const TeamManagementCard = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   fontFamily: "Inter, sans-serif",
-                  fontSize: 13,
+                  fontSize: 14,
                   height: 38,
                   borderRadius: 13.375,
                   borderColor: "#E8E6F0",
-                  backgroundColor: "#fff",
+                  backgroundColor: "#F5F5F7",
                   paddingLeft: 36,
+                  color: "#0F0533",
                 }}
+                className="placeholder:text-[rgba(15,5,51,0.5)]"
               />
             </div>
             <TeamInviteManager onSuccess={fetchTeamMembers} />
@@ -223,24 +218,22 @@ export const TeamManagementCard = () => {
         </div>
 
         {/* Table */}
-        <div style={{ padding: "0 0 8px 0" }}>
-          {isLoading ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#9996AA", fontSize: 13 }}>
-              Loading team members...
-            </div>
-          ) : (
-            <TeamMemberTable
-              teamMembers={filteredMembers}
-              onRemoveMember={handleDeleteClick}
-              onEditMember={handleEditClick}
-              onResendInvite={handleResendInvite}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalMembers={totalMembers}
-              onPageChange={handlePageChange}
-            />
-          )}
-        </div>
+        {isLoading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#9996AA", fontSize: 13 }}>
+            Loading team members...
+          </div>
+        ) : (
+          <TeamMemberTable
+            teamMembers={filteredMembers}
+            onRemoveMember={handleDeleteClick}
+            onEditMember={handleEditClick}
+            onResendInvite={handleResendInvite}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalMembers={totalMembers}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
       <DeleteMemberDialog
