@@ -18,6 +18,7 @@ export function LeaderboardCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { companyId, isLoading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
 
   const fetchLeaderboard = useCallback(async () => {
     if (!companyId) return;
