@@ -1,8 +1,6 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { MoreHorizontal, Edit, Trash2, Mail, UserCheck, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Mail, UserCheck, ChevronRight, ChevronLeft } from "lucide-react";
 import { type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
 import { getUserStatus } from "@/lib/userStatus";
 import { format } from "date-fns";
@@ -47,6 +45,8 @@ const getRoleSubtitle = (member: TeamMember) => {
   return "Team Member";
 };
 
+const PAGE_SIZE = 10;
+
 const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   teamMembers,
   onRemoveMember,
@@ -58,48 +58,62 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
   totalMembers = 0,
   onPageChange
 }) => {
+  const startItem = (currentPage - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(currentPage * PAGE_SIZE, totalMembers);
+
   const headerStyle: React.CSSProperties = {
     fontFamily: "Inter, sans-serif",
     fontSize: 11,
-    fontWeight: 600,
+    fontWeight: 500,
     color: "#9996AA",
     textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    padding: "10px 16px",
+    letterSpacing: "0.44px",
+    lineHeight: "16.5px",
+    padding: "7.5px 11.25px",
+    background: "#F5F5F7",
     borderBottom: "1px solid #E8E6F0",
-    background: "#FAFAFA",
   };
 
   const cellStyle: React.CSSProperties = {
     fontFamily: "Inter, sans-serif",
     fontSize: 13,
     color: "#6B6B80",
-    padding: "12px 16px",
+    padding: "10px 11.25px",
     borderBottom: "1px solid #F3F2F7",
     verticalAlign: "middle",
   };
 
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   return (
-    <div>
+    <div
+      style={{
+        borderRadius: 13.375,
+        border: "1px solid #E8E6F0",
+        overflow: "hidden",
+        background: "#fff",
+      }}
+    >
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th style={{ ...headerStyle, textAlign: "left", paddingLeft: 20 }}>Name ↑</th>
+            <th style={{ ...headerStyle, textAlign: "left", paddingLeft: 16, borderTopLeftRadius: 13.375 }}>Name ↑</th>
             <th style={{ ...headerStyle, textAlign: "left" }}>Email</th>
             <th style={{ ...headerStyle, textAlign: "left" }}>Department</th>
             <th style={{ ...headerStyle, textAlign: "left" }}>Birthday</th>
             <th style={{ ...headerStyle, textAlign: "left" }}>Start Date</th>
             <th style={{ ...headerStyle, textAlign: "left" }}>Role</th>
-            <th style={{ ...headerStyle, width: 40 }}></th>
+            <th style={{ ...headerStyle, width: 40, borderTopRightRadius: 13.375 }}></th>
           </tr>
         </thead>
         <tbody>
           {teamMembers.length > 0 ? (
-            teamMembers.map((member) => {
+            teamMembers.map((member, idx) => {
               const status = getUserStatus(member.status);
+              const isLast = idx === teamMembers.length - 1;
               return (
-                <tr key={member.id} style={{ cursor: "pointer" }} className="hover:bg-[#FAFAFA] transition-colors">
-                  <td style={{ ...cellStyle, paddingLeft: 20 }}>
+                <tr key={member.id} style={{ cursor: "pointer", background: "#fff" }} className="hover:bg-[#FAFAFA] transition-colors">
+                  <td style={{ ...cellStyle, paddingLeft: 16, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
                     <div className="flex items-center gap-3">
                       <div
                         style={{
@@ -120,29 +134,43 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                         {getInitials(member.name)}
                       </div>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", lineHeight: "19.5px" }}>
                           {member.name}
                         </div>
-                        <div style={{ fontSize: 11, color: "#9996AA" }}>
+                        <div style={{ fontSize: 11, fontWeight: 400, color: "#9996AA", lineHeight: "16.5px" }}>
                           {getRoleSubtitle(member)}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td style={cellStyle}>{member.email}</td>
-                  <td style={cellStyle}>{member.department || "—"}</td>
-                  <td style={cellStyle}>
+                  <td style={{ ...cellStyle, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>{member.email}</td>
+                  <td style={{ ...cellStyle, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>{member.department || "—"}</td>
+                  <td style={{ ...cellStyle, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
                     {member.birthday ? format(new Date(member.birthday + 'T00:00:00'), 'MMM d') : '—'}
                   </td>
-                  <td style={cellStyle}>
+                  <td style={{ ...cellStyle, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
                     {member.company_start_date ? format(new Date(member.company_start_date + 'T00:00:00'), 'MMM d, yyyy') : '—'}
                   </td>
-                  <td style={cellStyle}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#7F2BFE" }}>
+                  <td style={{ ...cellStyle, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        borderRadius: 13.375,
+                        background: member.is_admin
+                          ? "linear-gradient(135deg, #F59E0B, #F97316)"
+                          : "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        padding: "3px 12px",
+                        lineHeight: "16.5px",
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                    >
                       {getRoleLabel(member)}
                     </span>
                   </td>
-                  <td style={{ ...cellStyle, padding: "12px 12px 12px 4px" }}>
+                  <td style={{ ...cellStyle, padding: "10px 12px 10px 4px", borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -190,7 +218,7 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
             })
           ) : (
             <tr>
-              <td colSpan={7} style={{ ...cellStyle, textAlign: "center", padding: 40, color: "#9996AA" }}>
+              <td colSpan={7} style={{ ...cellStyle, textAlign: "center", padding: 40, color: "#9996AA", borderBottom: "none" }}>
                 No team members found. Invite your first team member!
               </td>
             </tr>
@@ -198,37 +226,86 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
         </tbody>
       </table>
 
-      {totalPages > 1 && onPageChange && (
-        <div className="flex justify-center py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); if (currentPage > 1) onPageChange(currentPage - 1); }}
-                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => { e.preventDefault(); onPageChange(page); }}
-                    isActive={currentPage === page}
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
+      {/* Pagination footer */}
+      {totalMembers > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 16px",
+            borderTop: "1px solid #E8E6F0",
+            fontFamily: "Inter, sans-serif",
+            fontSize: 12,
+            color: "#9996AA",
+          }}
+        >
+          <span>
+            Showing {startItem}-{endItem} of {totalMembers}
+          </span>
+          {totalPages > 1 && onPageChange && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  border: "1px solid #E8E6F0",
+                  background: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: currentPage <= 1 ? "not-allowed" : "pointer",
+                  opacity: currentPage <= 1 ? 0.4 : 1,
+                }}
+              >
+                <ChevronLeft size={14} color="#6B6B80" />
+              </button>
+              {pageNumbers.map((page) => (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    border: currentPage === page ? "none" : "1px solid #E8E6F0",
+                    background: currentPage === page ? "#7F2BFE" : "#fff",
+                    color: currentPage === page ? "#fff" : "#6B6B80",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    fontFamily: "Inter, sans-serif",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {page}
+                </button>
               ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) onPageChange(currentPage + 1); }}
-                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+              <button
+                onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  border: "1px solid #E8E6F0",
+                  background: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: currentPage >= totalPages ? "not-allowed" : "pointer",
+                  opacity: currentPage >= totalPages ? 0.4 : 1,
+                }}
+              >
+                <ChevronRight size={14} color="#6B6B80" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
