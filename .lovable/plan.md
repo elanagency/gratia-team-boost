@@ -1,27 +1,53 @@
 
+Goal: fix the Team Members role pills so they match the screenshots exactly.
 
-# Fix Team Members Page: Button Colors, Pill Styles & Container
+What I found
+- The current pills in `src/components/team/TeamMemberTable.tsx` are still wrong:
+  - Member uses a purple-pink gradient with white text
+  - Admin uses an orange gradient
+- Your screenshots show a different design:
+  - Same soft tinted pill background for both roles
+  - Member text color: `#7F2BFE`
+  - Admin text color: `#FC5BFF`
+  - Background: very light pink tint, effectively `#FC5BFF` at about 10% opacity
+  - Typography: `11px`, weight `500`, line-height `16.5px`
+  - Rounded full pill with the tighter Figma-style padding
 
-## Problems
-1. **Invite button** uses flat `#F572FF` — should be `linear-gradient(135deg, #7F2BFE, #FC5BFF)` with border-radius `13.375px` and padding `8.5px 13.836px 6px 15px`
-2. **Role pills** — from Figma the pill container uses `linear-gradient(135deg, #7F2BFE, #FC5BFF)` background, white text, padding `8.5px 13.836px 6px 15px`, border-radius `13.375px`. Admin pill uses `#FC5BFF` text color (not gradient). Need to verify current rendering matches Figma exactly
-3. **Missing outer container** — Company section has a `border: 1px solid #E8E6F0, border-radius: 15px, padding: 15px` wrapper. Team Members section needs the same.
+Implementation plan
+1. Update the role pill styling in `src/components/team/TeamMemberTable.tsx`
+   - Remove the current gradient/orange fills
+   - Use one shared pill background for both roles: light pink tint
+   - Set text color conditionally:
+     - Member: `#7F2BFE`
+     - Admin: `#FC5BFF`
 
-## Changes
+2. Match the Figma spacing more closely
+   - Use the tighter inline pill sizing from the screenshots
+   - Apply near-Figma padding values so the badge width/height looks correct for both “Member” and “Admin”
+   - Keep the fully rounded pill shape
 
-### `src/components/team/TeamInviteManager.tsx`
-- Replace `className="bg-[#F572FF] hover:bg-[#E061EE] text-white"` with inline style: `background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)"`, `color: "#fff"`, `borderRadius: 13.375`, `padding: "8.5px 13.836px 6px 15px"`, `fontFamily: "Inter, sans-serif"`, `fontSize: 13`, `fontWeight: 500`
-- Change icon from `PlusCircle` to `Plus` and update label to `+ Invite`
+3. Keep the rest of the table unchanged
+   - No layout or pagination changes
+   - No button/container changes in this pass
+   - Only correct the pill visuals
 
-### `src/components/settings/TeamManagementCard.tsx`
-- Wrap the entire content `<div>` in an outer container with `border: "1px solid #E8E6F0"`, `borderRadius: 15`, `padding: 15`, matching the Company card wrapper
-
-### `src/components/team/TeamMemberTable.tsx`
-- Update role pill padding from `3px 12px` to `8.5px 13.836px 6px 15px` to match Figma exactly
-- Admin pill: keep separate gradient (`linear-gradient(135deg, #F59E0B, #F97316)`) or update to match Figma if Admin uses `#FC5BFF` text — from screenshots, Admin text color is `#FC5BFF` on gradient bg, Member text color is `#7F2BFE` on gradient bg. Both pills use the same gradient background.
-
-### Files modified
-- `src/components/team/TeamInviteManager.tsx`
-- `src/components/settings/TeamManagementCard.tsx`
+Files to update
 - `src/components/team/TeamMemberTable.tsx`
 
+Technical details
+```text
+Member pill:
+- background: rgba(252, 91, 255, 0.10)
+- text: #7F2BFE
+
+Admin pill:
+- background: rgba(252, 91, 255, 0.10)
+- text: #FC5BFF
+
+Shared:
+- font-size: 11px
+- font-weight: 500
+- line-height: 16.5px
+- border-radius: 9999px
+- compact horizontal/vertical padding to match screenshot
+```
