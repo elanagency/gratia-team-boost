@@ -128,7 +128,7 @@ const Leaderboard = () => {
   const tableRows = leaderboard;
 
   return (
-    <>
+    <div className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen">
       {/* Fixed sub-sidebar */}
       <div
         className="hidden lg:flex flex-col"
@@ -355,7 +355,7 @@ const Leaderboard = () => {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
