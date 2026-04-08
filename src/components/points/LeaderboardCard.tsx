@@ -143,7 +143,6 @@ export function LeaderboardCard() {
           View all
           <ChevronRight className="shrink-0" style={{ width: 14, height: 14, color: "#9996AA" }} />
         </button>
-        </button>
       </div>
 
       {/* Body */}
