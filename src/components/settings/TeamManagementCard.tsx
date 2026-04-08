@@ -24,6 +24,8 @@ import {
 export const TeamManagementCard = () => {
   const { isConnected: isSlackConnected } = useSlackIntegration();
   const [slackImportOpen, setSlackImportOpen] = useState(false);
+  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
