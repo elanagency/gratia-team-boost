@@ -6,8 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { GivePointsDialog } from "@/components/points/GivePointsDialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import grattiaLogo from "@/assets/grattia-logo-white.png";
 
@@ -33,6 +33,15 @@ export const DashboardSidebar = ({
   const queryClient = useQueryClient();
   const { companyId, companyName } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleGiveRecognition = () => {
+    navigate("/dashboard");
+    setTimeout(() => {
+      window.dispatchEvent(new Event("focus-recognition-composer"));
+    }, 100);
+    setMobileOpen(false);
+  };
 
   const { data: memberCount } = useQuery({
     queryKey: ["company-member-count", companyId],
@@ -124,13 +133,6 @@ export const DashboardSidebar = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const giveRecognitionTrigger = (
-    <button
-      className="w-full py-[9.375px] rounded-[13.375px] text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
-    >
-      Give Recognition
-    </button>
-  );
 
   const sidebarContent = (
     <div className="flex w-full min-w-0 flex-col h-full bg-sidebar text-sidebar-foreground p-[15px]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -172,7 +174,12 @@ export const DashboardSidebar = ({
 
       {/* Give Recognition button */}
       <div className="mb-[22.5px]">
-        <GivePointsDialog trigger={giveRecognitionTrigger} />
+        <button
+          onClick={handleGiveRecognition}
+          className="w-full py-[9.375px] rounded-[13.375px] text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
+        >
+          Give Recognition
+        </button>
       </div>
 
       {/* Nav items */}
