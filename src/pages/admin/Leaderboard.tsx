@@ -128,49 +128,78 @@ const Leaderboard = () => {
   const tableRows = leaderboard;
 
   return (
-    <div className="flex gap-[30px]" style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* Left column — month filter */}
-      <div className="w-[160px] shrink-0 flex flex-col gap-[6px]">
+    <>
+      {/* Fixed sub-sidebar */}
+      <div
+        className="hidden lg:flex flex-col"
+        style={{
+          position: "fixed",
+          left: 300,
+          top: 0,
+          width: 240,
+          height: "100vh",
+          borderRight: "1px solid #E8E6F0",
+          background: "#fff",
+          paddingTop: 22.5,
+          paddingLeft: 15,
+          paddingRight: 18.75,
+          zIndex: 30,
+          overflowY: "auto",
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            color: "#0F0533",
+            marginBottom: 18.75,
+          }}
+        >
+          Leaderboard
+        </h1>
         <p style={{ fontSize: 12, fontWeight: 600, color: "#9996AA", marginBottom: 6, paddingLeft: 12 }}>
           FILTER BY MONTH
         </p>
-        {monthOptions.map((m) => (
-          <button
-            key={m.value}
-            onClick={() => setSelectedMonth(m.value)}
-            className="text-left transition-colors"
-            style={{
-              fontSize: 13,
-              fontWeight: selectedMonth === m.value ? 600 : 400,
-              color: selectedMonth === m.value ? "#fff" : "#9996AA",
-              background: selectedMonth === m.value ? "#7F2BFE" : "transparent",
-              borderRadius: 9999,
-              padding: "7px 14px",
-            }}
-          >
-            {m.label}
-          </button>
-        ))}
+        <div className="flex flex-col gap-[4px]">
+          {monthOptions.map((m) => (
+            <button
+              key={m.value}
+              onClick={() => setSelectedMonth(m.value)}
+              className="text-left transition-colors"
+              style={{
+                fontSize: 13,
+                fontWeight: selectedMonth === m.value ? 600 : 400,
+                color: selectedMonth === m.value ? "#fff" : "#9996AA",
+                background: selectedMonth === m.value ? "#7F2BFE" : "transparent",
+                borderRadius: 9999,
+                padding: "7px 14px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Right column — hero + table */}
-      <div className="flex-1 min-w-0 flex flex-col gap-[22.5px]">
-        {/* Page title */}
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0F0533", lineHeight: "30px" }}>
-            Leaderboard
-          </h1>
-          <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginTop: 2 }}>
-            {selectedOption?.label ?? ""}
-          </p>
-        </div>
+      {/* Content area */}
+      <div
+        className="lg:ml-[240px]"
+        style={{ padding: "22.5px", minHeight: "100%", marginTop: -40, marginRight: -16, fontFamily: "Inter, sans-serif" }}
+      >
+        {/* Subtitle */}
+        <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginBottom: 22.5 }}>
+          {selectedOption?.label ?? ""}
+        </p>
 
         {isLoading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-7 w-7 animate-spin" style={{ color: "#7F2BFE" }} />
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-[22.5px]">
             {/* Hero card for #1 */}
             {topPerformer && topPerformer.points > 0 && (
               <div
@@ -237,7 +266,6 @@ const Leaderboard = () => {
 
             {/* Table */}
             <div className="rounded-[13.375px] border border-[#E8E6F0] overflow-hidden bg-white">
-              {/* Table header */}
               <div
                 className="flex items-center border-b border-[#E8E6F0]"
                 style={{ height: 42, padding: "0 22.5px", fontSize: 11, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.04em", background: "#F8F6FF" }}
@@ -248,7 +276,6 @@ const Leaderboard = () => {
                 <span style={{ width: 90, textAlign: "right" }}>Points</span>
               </div>
 
-              {/* Rows */}
               {tableRows.length > 0 ? (
                 tableRows.map((member, index) => (
                   <div
@@ -256,7 +283,6 @@ const Leaderboard = () => {
                     className={`flex items-center ${index < tableRows.length - 1 ? "border-b border-[#E8E6F0]" : ""}`}
                     style={{ height: 58, padding: "0 22.5px" }}
                   >
-                    {/* Rank */}
                     <span
                       style={{
                         width: 50,
@@ -267,8 +293,6 @@ const Leaderboard = () => {
                     >
                       {member.rank}
                     </span>
-
-                    {/* Avatar + name */}
                     <div className="flex-1 flex items-center gap-[11.25px] min-w-0">
                       <Avatar style={{ width: 34, height: 34 }} className="shrink-0">
                         <AvatarFallback
@@ -287,16 +311,12 @@ const Leaderboard = () => {
                         </p>
                       </div>
                     </div>
-
-                    {/* Department */}
                     <span
                       className="truncate"
                       style={{ width: 140, fontSize: 13, fontWeight: 400, color: "#9996AA" }}
                     >
                       {member.department || "—"}
                     </span>
-
-                    {/* Points */}
                     <span style={{ width: 90, display: "flex", justifyContent: "flex-end" }}>
                       <span
                         style={{
@@ -321,10 +341,10 @@ const Leaderboard = () => {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

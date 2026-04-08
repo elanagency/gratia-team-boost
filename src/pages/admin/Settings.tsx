@@ -49,20 +49,22 @@ const Settings = () => {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100%", marginTop: -40, marginLeft: -16, marginRight: -16 }}>
-      {/* Sidebar navigation */}
+    <>
+      {/* Fixed sub-sidebar */}
       <div
+        className="hidden lg:flex flex-col"
         style={{
-          width: 220,
-          minWidth: 220,
+          position: "fixed",
+          left: 300,
+          top: 0,
+          width: 240,
+          height: "100vh",
           borderRight: "1px solid #E8E6F0",
-          paddingTop: 24,
+          background: "#fff",
+          paddingTop: 22.5,
           paddingLeft: 15,
           paddingRight: 18.75,
-          background: "#fff",
-          position: "sticky",
-          top: 0,
-          height: "100vh",
+          zIndex: 30,
           overflowY: "auto",
         }}
       >
@@ -111,10 +113,13 @@ const Settings = () => {
       </div>
 
       {/* Content area */}
-      <div style={{ flex: 1, minWidth: 0, padding: "24px 22.5px" }}>
+      <div
+        className="lg:ml-[240px]"
+        style={{ padding: "22.5px", minHeight: "100%", marginTop: -40, marginRight: -16 }}
+      >
         {renderContent()}
       </div>
-    </div>
+    </>
   );
 };
 
