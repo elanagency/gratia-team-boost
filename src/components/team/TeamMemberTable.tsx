@@ -155,14 +155,12 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                     <span
                       style={{
                         display: "inline-block",
-                        borderRadius: 13.375,
-                        background: member.is_admin
-                          ? "linear-gradient(135deg, #F59E0B, #F97316)"
-                          : "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
-                        color: "#fff",
+                        borderRadius: 9999,
+                        background: "rgba(252, 91, 255, 0.10)",
+                        color: member.is_admin ? "#FC5BFF" : "#7F2BFE",
                         fontSize: 11,
                         fontWeight: 500,
-                        padding: "4px 12px 3px 12px",
+                        padding: "3px 10px",
                         lineHeight: "16.5px",
                         fontFamily: "Inter, sans-serif",
                       }}
