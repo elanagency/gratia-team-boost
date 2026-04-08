@@ -133,13 +133,6 @@ export const DashboardSidebar = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const giveRecognitionTrigger = (
-    <button
-      className="w-full py-[9.375px] rounded-[13.375px] text-white font-medium text-[14px] leading-[21px] bg-[#7F2BFE] hover:bg-[#6B22E0] transition-colors flex items-center justify-center"
-    >
-      Give Recognition
-    </button>
-  );
 
   const sidebarContent = (
     <div className="flex w-full min-w-0 flex-col h-full bg-sidebar text-sidebar-foreground p-[15px]" style={{ fontFamily: "'Inter', sans-serif" }}>
