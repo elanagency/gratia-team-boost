@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building, Trash2, Plus, Upload } from "lucide-react";
+import { Building, Trash2, Plus, Upload, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -33,10 +33,14 @@ export const CompanyInformationCard = () => {
   const [editData, setEditData] = useState<CompanyData>({ name: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [newValueName, setNewValueName] = useState("");
+  const [newValueColor, setNewValueColor] = useState("#7F2BFE");
   const [isAddingValue, setIsAddingValue] = useState(false);
+  const [editingValueId, setEditingValueId] = useState<string | null>(null);
+  const [editingValueName, setEditingValueName] = useState("");
+  const [editingValueColor, setEditingValueColor] = useState("");
   const { companyId, isAdmin } = useAuth();
   const { regionCodes, isLoading: isLoadingRegions } = useCompanyRegions(companyId);
-  const { values, isLoading: isLoadingValues, addValue, deleteValue } = useCompanyValues();
+  const { values, isLoading: isLoadingValues, addValue, updateValue, deleteValue } = useCompanyValues();
 
   const fetchCompanyData = async () => {
     if (!companyId) return;
@@ -96,12 +100,42 @@ export const CompanyInformationCard = () => {
     }
   };
 
+  const COLOR_PRESETS = ["#7F2BFE", "#FC5BFF", "#F59E0B", "#22C55E", "#3B82F6", "#EF4444", "#8B5CF6", "#EC4899"];
+
   const handleAddValue = async () => {
     if (!newValueName.trim()) return;
     setIsAddingValue(false);
-    await addValue(newValueName.trim(), "#7F2BFE");
+    await addValue(newValueName.trim(), newValueColor);
     setNewValueName("");
+    setNewValueColor("#7F2BFE");
   };
+
+  const startEditing = (value: { id: string; name: string; color: string }) => {
+    setEditingValueId(value.id);
+    setEditingValueName(value.name);
+    setEditingValueColor(value.color);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingValueId || !editingValueName.trim()) return;
+    await updateValue(editingValueId, editingValueName.trim(), editingValueColor);
+    setEditingValueId(null);
+  };
+
+  const ColorSwatches = ({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) => (
+    <div className="flex items-center gap-1.5">
+      {COLOR_PRESETS.map((c) => (
+        <button
+          key={c}
+          onClick={() => onSelect(c)}
+          style={{
+            width: 18, height: 18, borderRadius: "50%", background: c, border: selected === c ? "2px solid #0F0533" : "2px solid transparent",
+            cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s",
+          }}
+        />
+      ))}
+    </div>
+  );
 
   if (isLoading) {
     return <div className="animate-pulse" style={{ fontFamily: "Inter, sans-serif" }}>Loading company information...</div>;
@@ -274,45 +308,57 @@ export const CompanyInformationCard = () => {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {values.map((value) => (
-              <div
-                key={value.id}
-                className="flex items-center justify-between"
-                style={{
-                  height: 38,
-                  paddingLeft: 15,
-                  paddingRight: 11.25,
-                  borderRadius: 13.375,
-                  background: "#F5F5F7",
-                  border: "1px solid #E8E6F0",
-                }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: value.color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "#0F0533" }}>{value.name}</span>
+              editingValueId === value.id ? (
+                <div key={value.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 13.375, background: "#F5F5F7", border: "1px solid #E8E6F0" }}>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editingValueName}
+                      onChange={(e) => setEditingValueName(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveEdit();
+                        if (e.key === "Escape") setEditingValueId(null);
+                      }}
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                  </div>
+                  <ColorSwatches selected={editingValueColor} onSelect={setEditingValueColor} />
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveEdit} disabled={!editingValueName.trim()} size="sm" style={{ borderRadius: 9.375, background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>Save</Button>
+                    <Button variant="outline" size="sm" onClick={() => setEditingValueId(null)} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>Cancel</Button>
+                  </div>
                 </div>
-                {isAdmin && (
-                  <button
-                    onClick={() => deleteValue(value.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}
-                  >
-                    <Trash2 size={15} color="#9996AA" />
-                  </button>
-                )}
-              </div>
+              ) : (
+                <div
+                  key={value.id}
+                  className="flex items-center justify-between"
+                  style={{
+                    height: 38, paddingLeft: 15, paddingRight: 11.25, borderRadius: 13.375,
+                    background: "#F5F5F7", border: "1px solid #E8E6F0",
+                  }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: value.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#0F0533" }}>{value.name}</span>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => startEditing(value)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+                        <Pencil size={14} color="#9996AA" />
+                      </button>
+                      <button onClick={() => deleteValue(value.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+                        <Trash2 size={15} color="#9996AA" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
             ))}
 
             {/* Add Value */}
             {isAdmin && (
               isAddingValue ? (
-                <div className="flex items-center gap-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 13.375, background: "#F5F5F7", border: "1px solid #E8E6F0" }}>
                   <Input
                     value={newValueName}
                     onChange={(e) => setNewValueName(e.target.value)}
@@ -320,32 +366,15 @@ export const CompanyInformationCard = () => {
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleAddValue();
-                      if (e.key === "Escape") { setIsAddingValue(false); setNewValueName(""); }
+                      if (e.key === "Escape") { setIsAddingValue(false); setNewValueName(""); setNewValueColor("#7F2BFE"); }
                     }}
-                    style={{ ...inputStyle, flex: 1 }}
+                    style={{ ...inputStyle }}
                   />
-                  <Button
-                    onClick={handleAddValue}
-                    disabled={!newValueName.trim()}
-                    size="sm"
-                    style={{
-                      borderRadius: 9.375,
-                      background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
-                      fontSize: 13,
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Add
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setIsAddingValue(false); setNewValueName(""); }}
-                    style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
-                  >
-                    Cancel
-                  </Button>
+                  <ColorSwatches selected={newValueColor} onSelect={setNewValueColor} />
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddValue} disabled={!newValueName.trim()} size="sm" style={{ borderRadius: 9.375, background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>Add</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setIsAddingValue(false); setNewValueName(""); setNewValueColor("#7F2BFE"); }} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>Cancel</Button>
+                  </div>
                 </div>
               ) : (
                 <button
