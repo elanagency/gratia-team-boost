@@ -103,18 +103,15 @@ export function AnalyticsFilters({
       </Select>
 
       {/* Granularity Toggle */}
-      <div className="flex items-center rounded-[7.375px] border bg-background" style={{ borderColor: '#E8E6F0' }}>
+      <div className="flex items-center rounded-[13.375px] bg-[#F5F5F7] h-[33px] p-[1.875px]">
         {(["daily", "weekly", "monthly"] as GranularityType[]).map((g) => (
           <button
             key={g}
             className={cn(
-              "h-9 px-3 rounded-[7.375px] text-xs font-medium capitalize transition-colors",
-              g === "daily" && "rounded-r-none",
-              g === "monthly" && "rounded-l-none",
-              g === "weekly" && "rounded-none",
-              granularity !== g && "hover:bg-gray-100",
+              "rounded-[7.375px] px-[11px] py-[6px] text-xs font-medium capitalize transition-all",
+              granularity !== g && "hover:bg-gray-200/60",
             )}
-            style={granularity === g ? activeGranularityStyle : { color: '#9996AA' }}
+            style={granularity === g ? { ...activeGranularityStyle, boxShadow: '0 1px 2px rgba(0,0,0,0.08)' } : { color: '#9996AA' }}
             onClick={() => onGranularityChange(g)}
           >
             {g.charAt(0).toUpperCase() + g.slice(1)}
