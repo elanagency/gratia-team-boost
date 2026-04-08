@@ -195,13 +195,8 @@ const Leaderboard = () => {
       {/* Content area */}
       <div
         className="lg:ml-[240px]"
-        style={{ padding: "22.5px", minHeight: "100%", marginTop: -40, marginRight: -16, fontFamily: "Inter, sans-serif" }}
+        style={{ padding: "22.5px", minHeight: "100%", marginRight: -16, fontFamily: "Inter, sans-serif" }}
       >
-        {/* Subtitle */}
-        <p style={{ fontSize: 13, fontWeight: 400, color: "#9996AA", marginBottom: 22.5 }}>
-          {selectedOption?.label ?? ""}
-        </p>
-
         {isLoading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-7 w-7 animate-spin" style={{ color: "#7F2BFE" }} />
@@ -211,14 +206,21 @@ const Leaderboard = () => {
             {/* Hero card for #1 */}
             {topPerformer && topPerformer.points > 0 && (
               <div
-                className="rounded-[13.375px] border-2 border-[#5B21B6] flex items-center gap-4"
-                style={{ padding: "16px 22px", background: "linear-gradient(135deg, rgba(91,33,182,0.06) 0%, rgba(91,33,182,0.02) 100%)" }}
+                style={{
+                  borderRadius: 15,
+                  border: "2px solid #7F2BFE",
+                  background: "linear-gradient(135deg, rgba(127,43,254,0.08) 0%, rgba(252,91,255,0.08) 100%)",
+                  padding: "24.5px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 20,
+                }}
               >
-                <div className="relative" style={{ width: 52, height: 52, flexShrink: 0 }}>
-                  <Avatar style={{ width: 52, height: 52 }}>
+                <div className="relative" style={{ width: 75, height: 75, flexShrink: 0 }}>
+                  <Avatar style={{ width: 75, height: 75 }}>
                     <AvatarFallback
                       className={avatarColors[0]}
-                      style={{ fontSize: 18, fontWeight: 600 }}
+                      style={{ fontSize: 24, fontWeight: 600 }}
                     >
                       {getInitials(topPerformer.name)}
                     </AvatarFallback>
@@ -226,48 +228,49 @@ const Leaderboard = () => {
                   <span
                     style={{
                       position: "absolute",
-                      bottom: -2,
-                      right: -2,
-                      width: 18,
-                      height: 18,
+                      bottom: -4,
+                      right: -4,
+                      width: 37.5,
+                      height: 37.5,
                       borderRadius: 9999,
-                      background: "#5B21B6",
+                      background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
                       color: "#fff",
-                      fontSize: 9,
+                      fontSize: 16,
                       fontWeight: 700,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      border: "2px solid #fff",
+                      border: "3px solid #fff",
                     }}
                   >
                     1
                   </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: "#0F0533", lineHeight: "22px" }}>
-                      {topPerformer.name}
-                    </p>
-                    <p style={{ fontSize: 12, fontWeight: 400, color: "#9996AA", marginTop: 2 }}>
-                      {topPerformer.department ? `${topPerformer.department} · ` : ""}
-                      {topPerformer.role === "admin" ? "Admin" : "Member"}
-                    </p>
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#22C55E",
-                        background: "rgba(34,197,94,0.1)",
-                        borderRadius: 9999,
-                        padding: "4px 14px",
-                        display: "inline-block",
-                        marginTop: 4,
-                      }}
-                    >
-                      {topPerformer.points.toLocaleString()} points
-                    </span>
-                  </div>
+                <div>
+                  <p style={{ fontSize: 20, fontWeight: 600, color: "#0F0533", lineHeight: "30px" }}>
+                    {topPerformer.name}
+                  </p>
+                  <p style={{ fontSize: 14, fontWeight: 400, color: "#9996AA", lineHeight: "21px", marginTop: 2 }}>
+                    {topPerformer.department ? `${topPerformer.department} · ` : ""}
+                    {topPerformer.role === "admin" ? "Admin" : "Member"}
+                  </p>
+                  <span
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: "#15803D",
+                      background: "#DCFCE7",
+                      borderRadius: 9999,
+                      padding: "8px 18px 7px 19px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 8,
+                      lineHeight: "27px",
+                    }}
+                  >
+                    {topPerformer.points.toLocaleString()} points
+                  </span>
                 </div>
               </div>
             )}
