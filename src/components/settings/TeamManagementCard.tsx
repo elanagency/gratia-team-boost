@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Users, Building2, MessageSquare, Search, Plus } from "lucide-react";
+import { Building2, MessageSquare, Search, Upload, MoreHorizontal } from "lucide-react";
 import { useCompanyMembers, type CompanyMember as TeamMember } from "@/hooks/useCompanyMembers";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DepartmentManagement from "@/components/team/DepartmentManagement";
 import TeamInviteManager from "@/components/team/TeamInviteManager";
 import TeamMemberTable from "@/components/team/TeamMemberTable";
@@ -14,10 +14,18 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const TeamManagementCard = () => {
   const { isConnected: isSlackConnected } = useSlackIntegration();
   const [slackImportOpen, setSlackImportOpen] = useState(false);
+  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -137,36 +145,11 @@ export const TeamManagementCard = () => {
                 Manage who has access to your workspace · {totalMembers} members
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    style={{
-                      borderRadius: 13.375,
-                      borderColor: "#E8E6F0",
-                      fontSize: 13,
-                      fontFamily: "Inter, sans-serif",
-                      height: 34,
-                    }}
-                  >
-                    <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                    Departments
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Manage Departments</DialogTitle>
-                  </DialogHeader>
-                  <DepartmentManagement embedded />
-                </DialogContent>
-              </Dialog>
-              {isSlackConnected && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSlackImportOpen(true)}
                   style={{
                     borderRadius: 13.375,
                     borderColor: "#E8E6F0",
@@ -175,12 +158,26 @@ export const TeamManagementCard = () => {
                     height: 34,
                   }}
                 >
-                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                  Slack Import
+                  <MoreHorizontal className="h-4 w-4" />
                 </Button>
-              )}
-              <CSVUploadDialog onUploadComplete={fetchTeamMembers} />
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}>
+                <DropdownMenuItem onClick={() => setDeptDialogOpen(true)}>
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Departments
+                </DropdownMenuItem>
+                {isSlackConnected && (
+                  <DropdownMenuItem onClick={() => setSlackImportOpen(true)}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Import from Slack
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setCsvDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search + Invite row */}
@@ -255,6 +252,21 @@ export const TeamManagementCard = () => {
         open={slackImportOpen}
         onOpenChange={setSlackImportOpen}
         onSuccess={fetchTeamMembers}
+      />
+
+      <Dialog open={deptDialogOpen} onOpenChange={setDeptDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Departments</DialogTitle>
+          </DialogHeader>
+          <DepartmentManagement embedded />
+        </DialogContent>
+      </Dialog>
+
+      <CSVUploadDialog
+        onUploadComplete={fetchTeamMembers}
+        externalOpen={csvDialogOpen}
+        onExternalOpenChange={setCsvDialogOpen}
       />
     </>
   );

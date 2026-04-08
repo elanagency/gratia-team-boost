@@ -28,6 +28,8 @@ import { CSVProcessingStep } from "./csv/CSVProcessingStep";
 
 interface CSVUploadDialogProps {
   onUploadComplete: () => void;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 interface CSVMember {
@@ -84,9 +86,14 @@ function normalizeDate(dateStr: string): string {
   return trimmed;
 }
 
-export const CSVUploadDialog = ({ onUploadComplete }: CSVUploadDialogProps) => {
+export const CSVUploadDialog = ({ onUploadComplete, externalOpen, onExternalOpenChange }: CSVUploadDialogProps) => {
   const { user, companyId } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onExternalOpenChange) onExternalOpenChange(open);
+    setInternalOpen(open);
+  };
   const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
   const [currentStep, setCurrentStep] = useState<DialogStep>('upload');
