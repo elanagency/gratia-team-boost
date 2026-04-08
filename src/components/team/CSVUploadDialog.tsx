@@ -434,17 +434,6 @@ export const CSVUploadDialog = ({ onUploadComplete, externalOpen, onExternalOpen
 
       {/* CSV Upload Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={handleCSVUploadClick}
-            disabled={hasActiveSubscription === null}
-          >
-            <Upload className="h-4 w-4" />
-            Upload CSV
-          </Button>
-        </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[80vh]">
         <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
