@@ -45,6 +45,15 @@ export function GivePointsCard() {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Listen for focus event from sidebar button
+  useEffect(() => {
+    const handleFocusComposer = () => {
+      setTimeout(() => editorRef.current?.focus(), 150);
+    };
+    window.addEventListener("focus-recognition-composer", handleFocusComposer);
+    return () => window.removeEventListener("focus-recognition-composer", handleFocusComposer);
+  }, []);
+
   // Debug logging for points availability
   useEffect(() => {
     console.log("GivePointsCard - Auth state:", { 
