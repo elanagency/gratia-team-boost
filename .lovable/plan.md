@@ -1,23 +1,16 @@
 
 
-# Fix "Add Points" Dropdown Styling to Match Figma
+# Match GIF Button Hover to Emoji Button Style
 
 ## Problem
-The +1, +5, +10 quick-points popover that appears when clicking "+ Add Points" on recognition feed items doesn't match the Figma design. Currently it uses generic border/rounded-full styling; the Figma shows green text on a light green (`#DCFCE7`) background with `7.375px` border-radius and specific padding.
+The GIF button in the recognition composer uses `Button variant="outline"` which gives it a pink/accent hover color. The emoji and image buttons next to it use a simple `hover:bg-muted/50` light gray hover.
 
 ## Change
 
-### `src/components/points/RecognitionFeed.tsx` (lines ~661-673)
-- Update the `PopoverContent` to remove default padding/border styling
-- Update each `+1`, `+5`, `+10` button to match Figma:
-  - `background: #DCFCE7`
-  - `color: #15803D`
-  - `border-radius: 7.375px`
-  - `padding: 6.125px 11.25px 5.125px 10.25px`
-  - `font-size: 14px`, `font-weight: 500`
-  - Remove the border (or make it match the green bg)
-- Ensure the popover container itself is clean (no extra border, minimal padding, rounded corners)
+### `src/components/points/GiphyPicker.tsx`
+- Replace the `Button variant="outline"` trigger with a plain `button` element styled identically to the emoji/image buttons: `p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors`
+- Keep the `Film` icon and "GIF" text, just change the wrapper from a shadcn Button to a plain styled button
 
 ### Files modified
-- `src/components/points/RecognitionFeed.tsx`
+- `src/components/points/GiphyPicker.tsx`
 
