@@ -355,7 +355,7 @@ const Leaderboard = () => {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
