@@ -46,11 +46,9 @@ type ThreadedRecognition = {
 };
 
 const quickPoints = [5, 10, 25];
-const MOCK_REACTIONS = [
-  { emoji: '🎉', count: 12 },
-  { emoji: '💚', count: 8 },
-  { emoji: '🔥', count: 5 },
-];
+
+const COMMON_EMOJIS = ['🎉', '💚', '🔥', '👏', '❤️', '🙌', '💪', '🌟', '👍', '😍', '🎯', '🚀'];
+
 
 export function RecognitionFeed() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
