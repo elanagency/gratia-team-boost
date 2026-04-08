@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { subDays } from "date-fns";
 import { BarChart3, Table2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { AnalyticsAllCharts } from "@/components/analytics/AnalyticsAllCharts";
 import { AnalyticsDataTable } from "@/components/analytics/AnalyticsDataTable";
