@@ -1,25 +1,25 @@
 
 
-# Apply Leaderboard Spacing to Settings Page
+# Apply Consistent Padding to Analytics & Gift Card Pages
 
-## Changes to `src/pages/admin/Settings.tsx`
+## What changes
 
-### 1. Wrap return in negative-margin container
-Add the same outer wrapper div used on Leaderboard to cancel `UnifiedDashboardLayout` padding:
-```
-className="-mx-4 -mt-16 -mb-4 lg:-mx-[60px] lg:-mt-[72px] lg:-mb-4 min-h-screen"
-```
+Both pages need 22.5px top padding and 135.5px horizontal padding, matching the Figma specs. The `UnifiedDashboardLayout` wrapper adds `lg:px-[60px] lg:pt-[72px]` by default, so we need to cancel that and apply the correct values.
 
-### 2. Fix sidebar padding
-- `paddingLeft: 15` → **30**
-- `paddingRight: 18.75` → **30**
-- `marginBottom: 18.75` → **22.5** (on the title)
+## Changes
 
-### 3. Fix content area padding
-- Replace `padding: "22.5px"` with `padding: "22.5px 22.5px 22.5px 30px"`
-- Remove `marginTop: -40` hack
-- Keep `marginRight: -16` removal or normalize
+### 1. `src/pages/admin/Analytics.tsx`
+- Replace the outer `<div className="flex-1 overflow-auto p-6">` with a wrapper that negates layout padding: `className="-mx-4 -mt-16 lg:-mx-[60px] lg:-mt-[72px]"`
+- Apply correct padding via inline style: `padding: "22.5px 135.5px"`
+- Remove the `max-w-6xl mx-auto` constraint (the horizontal padding handles centering now)
+- Update the title to use Inter font, 22px, weight 600, line-height 33px per Figma
 
-## File modified
-- `src/pages/admin/Settings.tsx`
+### 2. `src/pages/team/GiftCardShop.tsx`
+- Wrap the return in a container with the same negative margin pattern
+- Apply `padding: "22.5px 135.5px"` inline
+- Title already matches Figma specs (22px Inter 600)
+
+### Files modified
+- `src/pages/admin/Analytics.tsx`
+- `src/pages/team/GiftCardShop.tsx`
 
