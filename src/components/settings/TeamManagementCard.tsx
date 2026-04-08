@@ -253,6 +253,21 @@ export const TeamManagementCard = () => {
         onOpenChange={setSlackImportOpen}
         onSuccess={fetchTeamMembers}
       />
+
+      <Dialog open={deptDialogOpen} onOpenChange={setDeptDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Departments</DialogTitle>
+          </DialogHeader>
+          <DepartmentManagement embedded />
+        </DialogContent>
+      </Dialog>
+
+      <CSVUploadDialog
+        onUploadComplete={fetchTeamMembers}
+        externalOpen={csvDialogOpen}
+        onExternalOpenChange={setCsvDialogOpen}
+      />
     </>
   );
 };
