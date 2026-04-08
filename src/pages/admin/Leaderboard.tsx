@@ -280,7 +280,7 @@ const Leaderboard = () => {
             <div className="rounded-[13.375px] border border-[#E8E6F0] overflow-hidden bg-white">
               <div
                 className="flex items-center border-b border-[#E8E6F0]"
-                style={{ height: 42, padding: "0 22.5px", fontSize: 11, fontWeight: 600, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.04em", background: "#F8F6FF" }}
+                style={{ height: 41.5, padding: "11.25px 18.75px 1px 18.75px", fontSize: 12, fontWeight: 600, lineHeight: "18px", color: "#9996AA", background: "#F5F5F7" }}
               >
                 <span style={{ width: 50 }}>Rank</span>
                 <span className="flex-1">Name</span>
@@ -298,15 +298,16 @@ const Leaderboard = () => {
                     <span
                       style={{
                         width: 50,
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: 600,
+                        lineHeight: "21px",
                         color: member.rank <= 3 ? "#7F2BFE" : "#9996AA",
                       }}
                     >
                       {member.rank}
                     </span>
                     <div className="flex-1 flex items-center gap-[11.25px] min-w-0">
-                      <Avatar style={{ width: 34, height: 34 }} className="shrink-0">
+                      <Avatar style={{ width: 33.75, height: 33.75 }} className="shrink-0">
                         <AvatarFallback
                           className={avatarColors[index % avatarColors.length]}
                           style={{ fontSize: 11, fontWeight: 500 }}
@@ -315,34 +316,31 @@ const Leaderboard = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", lineHeight: "19px" }}>
+                        <p className="truncate" style={{ fontSize: 14, fontWeight: 500, color: "#0F0533", lineHeight: "21px" }}>
                           {member.name}
                         </p>
-                        <p className="truncate" style={{ fontSize: 11, fontWeight: 400, color: "#9996AA", lineHeight: "16px" }}>
+                        <p className="truncate" style={{ fontSize: 12, fontWeight: 400, color: "#9996AA", lineHeight: "18px" }}>
                           {member.role === "admin" ? "Admin" : "Member"}
                         </p>
                       </div>
                     </div>
                     <span
                       className="truncate"
-                      style={{ width: 140, fontSize: 13, fontWeight: 400, color: "#9996AA" }}
+                      style={{ width: 140, fontSize: 13, fontWeight: 400, color: "#0F0533", lineHeight: "19.5px" }}
                     >
                       {member.department || "—"}
                     </span>
-                    <span style={{ width: 90, display: "flex", justifyContent: "flex-end" }}>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: "#22C55E",
-                          background: "rgba(34,197,94,0.1)",
-                          borderRadius: 12,
-                          padding: "4px 14px",
-                          display: "inline-block",
-                        }}
-                      >
-                        {member.points.toLocaleString()}
-                      </span>
+                    <span
+                      style={{
+                        width: 90,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#15803D",
+                        lineHeight: "19.5px",
+                        textAlign: "right",
+                      }}
+                    >
+                      {member.points.toLocaleString()}
                     </span>
                   </div>
                 ))
