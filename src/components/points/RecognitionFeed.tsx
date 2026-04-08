@@ -61,7 +61,86 @@ export function RecognitionFeed() {
   const optimisticAuth = useOptimisticAuth();
   const [reactionsMap, setReactionsMap] = useState<ReactionsMap>({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
+  const fetchReactions = useCallback(async (transactionIds: string[]) => {
+    if (!transactionIds.length || !user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('recognition_reactions')
+      .select('transaction_id, emoji, user_id')
+      .in('transaction_id', transactionIds);
+    
+    if (error) {
+      console.error('Error fetching reactions:', error);
+      return;
+    }
+
+    const grouped: ReactionsMap = {};
+    (data || []).forEach((r: any) => {
+      if (!grouped[r.transaction_id]) grouped[r.transaction_id] = {};
+      const key = r.emoji;
+      if (!grouped[r.transaction_id][key]) {
+        grouped[r.transaction_id][key] = { emoji: key, count: 0, hasReacted: false };
+      }
+      grouped[r.transaction_id][key].count++;
+      if (r.user_id === user.id) {
+        grouped[r.transaction_id][key].hasReacted = true;
+      }
+    });
+
+    const result: ReactionsMap = {};
+    Object.keys(grouped).forEach(txId => {
+      result[txId] = Object.values(grouped[txId] as Record<string, ReactionGroup>);
+    });
+    setReactionsMap(result);
+  }, [user?.id]);
+
+  const handleToggleReaction = async (transactionId: string, emoji: string) => {
+    if (!user?.id) return;
+
+    const existing = (reactionsMap[transactionId] || []).find(r => r.emoji === emoji);
+    const hasReacted = existing?.hasReacted || false;
+
+    // Optimistic update
+    setReactionsMap(prev => {
+      const current = [...(prev[transactionId] || [])];
+      const idx = current.findIndex(r => r.emoji === emoji);
+      if (hasReacted) {
+        if (idx !== -1) {
+          current[idx] = { ...current[idx], count: current[idx].count - 1, hasReacted: false };
+          if (current[idx].count <= 0) current.splice(idx, 1);
+        }
+      } else {
+        if (idx !== -1) {
+          current[idx] = { ...current[idx], count: current[idx].count + 1, hasReacted: true };
+        } else {
+          current.push({ emoji, count: 1, hasReacted: true });
+        }
+      }
+      return { ...prev, [transactionId]: current };
+    });
+
+    try {
+      if (hasReacted) {
+        await supabase
+          .from('recognition_reactions')
+          .delete()
+          .eq('transaction_id', transactionId)
+          .eq('user_id', user.id)
+          .eq('emoji', emoji);
+      } else {
+        await supabase
+          .from('recognition_reactions')
+          .insert({ transaction_id: transactionId, user_id: user.id, emoji });
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      // Re-fetch to correct state
+      const txIds = threadedRecognitions.map(t => t.mainPost.id);
+      fetchReactions(txIds);
+    }
+  };
 
   useEffect(() => {
     console.log('[RecognitionFeed] useEffect triggered - isAuthLoading:', isAuthLoading, 'companyId:', companyId, 'user?.id:', user?.id);
