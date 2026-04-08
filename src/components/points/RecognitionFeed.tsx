@@ -279,6 +279,10 @@ export function RecognitionFeed() {
       // Group transactions into threaded recognitions
       const threaded = groupTransactionsIntoThreads(formattedTransactions);
       setThreadedRecognitions(threaded);
+
+      // Fetch reactions for all transactions
+      const txIds = formattedTransactions.map(t => t.id);
+      fetchReactions(txIds);
       
     } catch (error) {
       console.error("Error fetching recognition feed:", error);
