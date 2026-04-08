@@ -171,7 +171,7 @@ const Leaderboard = () => {
                   alignItems: "center",
                   gap: 9.375,
                   fontSize: 14,
-                  fontWeight: 500,
+                  fontWeight: 400,
                   lineHeight: "21px",
                   color: isActive ? "#0F0533" : "#9996AA",
                   background: isActive ? "#F5F5F7" : "transparent",
