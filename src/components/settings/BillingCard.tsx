@@ -275,7 +275,7 @@ export const BillingCard = () => {
             Price
           </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "#0F0533" }}>
-            ${pricePerSeat} <span style={{ fontSize: 12, fontWeight: 400, color: "#9996AA" }}>/seat/mo</span>
+            ${pricePerSeat} <span style={{ fontSize: 12, fontWeight: 400, color: "#9996AA" }}>/user/mo</span>
           </div>
         </div>
       </div>
@@ -286,9 +286,29 @@ export const BillingCard = () => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
           <span style={labelStyle}>Seats</span>
           <span style={valueStyle}>
-            {hasExistingSubscription ? `${seats} × $${pricePerSeat} = $${totalCost}` : "0"}
+            {hasExistingSubscription ? `${seats} × $${pricePerSeat} = $${seatsCost.toFixed(2)}` : "0"}
           </span>
         </div>
+
+        {/* Birthdays */}
+        {showBirthdayLine && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+            <span style={labelStyle}>Birthdays ({upcomingBirthdays} upcoming)</span>
+            <span style={valueStyle}>
+              {upcomingBirthdays} × ${birthdayDollarValue.toFixed(2)} = ${birthdayLineTotal.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {/* Work Anniversaries */}
+        {showAnniversaryLine && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+            <span style={labelStyle}>Work Anniversaries ({upcomingAnniversaries} upcoming)</span>
+            <span style={valueStyle}>
+              {upcomingAnniversaries} × ${anniversaryDollarValue.toFixed(2)} = ${anniversaryLineTotal.toFixed(2)}
+            </span>
+          </div>
+        )}
 
         {/* Total due */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
@@ -296,16 +316,8 @@ export const BillingCard = () => {
             Total due {nextBillingDate || ""}
           </span>
           <span style={{ ...valueStyle, fontWeight: 600 }}>
-            {hasExistingSubscription ? `$${totalCost}` : "$0.00"}
+            {hasExistingSubscription ? `$${totalDue.toFixed(2)}` : "$0.00"}
           </span>
-        </div>
-
-        {/* Celebration charges (postpaid) */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
-          <span style={labelStyle}>
-            Celebration charges{pendingCelebrationCharges.count > 0 ? ` (${pendingCelebrationCharges.count})` : ""}
-          </span>
-          <span style={valueStyle}>${pendingCelebrationCharges.total.toFixed(2)}</span>
         </div>
 
         {/* Next billing date */}
