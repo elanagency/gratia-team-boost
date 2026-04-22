@@ -327,13 +327,15 @@ async function fetchTransactionData(
   endDate: Date,
   segmentBy: SegmentType,
   granularity: GranularityType,
-  profileType: 'sender' | 'recipient'
+  profileType: 'sender' | 'recipient',
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  const fk = profileType === 'sender' 
-    ? 'point_transactions_sender_profile_id_fkey' 
+  const fk = profileType === 'sender'
+    ? 'point_transactions_sender_profile_id_fkey'
     : 'point_transactions_recipient_profile_id_fkey';
-  
-  const { data: transactions, error } = await supabase
+  const fkColumn = profileType === 'sender' ? 'sender_profile_id' : 'recipient_profile_id';
+
+  let query = supabase
     .from('point_transactions')
     .select(`
       id,
@@ -348,10 +350,19 @@ async function fetchTransactionData(
       )
     `)
     .eq('company_id', companyId)
-    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gt('points', 0)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return processTransactionData([], startDate, endDate, segmentBy, granularity);
+    }
+    query = query.in(fkColumn, filteredProfileIds);
+  }
+
+  const { data: transactions, error } = await query;
 
   if (error) {
     console.error('Error fetching transaction data:', error);
