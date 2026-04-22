@@ -496,9 +496,10 @@ async function fetchRedemptionsData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  const { data: redemptions, error } = await supabase
+  let query = supabase
     .from('redemptions')
     .select(`
       id,
@@ -510,6 +511,15 @@ async function fetchRedemptionsData(
     .gte('redemption_date', startDate.toISOString())
     .lte('redemption_date', endDate.toISOString())
     .order('redemption_date', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    query = query.in('user_id', filteredProfileIds);
+  }
+
+  const { data: redemptions, error } = await query;
 
   if (error) {
     console.error('Error fetching redemptions:', error);
