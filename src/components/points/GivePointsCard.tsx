@@ -566,8 +566,6 @@ export function GivePointsCard() {
                                   name: member.name,
                                   user_id: member.user_id,
                                 });
-                                // Also insert as a mention into the editor
-                                selectMention(member);
                                 setTeammatePopoverOpen(false);
                                 setTeammateSearch("");
                               }}
