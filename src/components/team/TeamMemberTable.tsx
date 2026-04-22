@@ -115,24 +115,38 @@ const TeamMemberTable: React.FC<TeamMemberTableProps> = ({
                 <tr key={member.id} style={{ cursor: "pointer", background: "#fff" }} className="hover:bg-[#FAFAFA] transition-colors">
                   <td style={{ ...cellStyle, paddingLeft: 16, borderBottom: isLast ? "none" : cellStyle.borderBottom }}>
                     <div className="flex items-center gap-3">
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: "50%",
-                          background: getAvatarColor(member.name),
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#fff",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          fontFamily: "Inter, sans-serif",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {getInitials(member.name)}
-                      </div>
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.name}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: getAvatarColor(member.name),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            fontFamily: "Inter, sans-serif",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {getInitials(member.name)}
+                        </div>
+                      )}
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", lineHeight: "19.5px" }}>
                           {member.name}

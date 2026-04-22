@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function PersonalStatsCard() {
-  const { user, companyId, totalPoints, firstName, lastName, avatarUrl } = useAuth();
+  const { user, companyId, recognitionPoints, firstName, lastName, avatarUrl } = useAuth();
 
   const { data: stats } = useQuery({
     queryKey: ["personal-transaction-stats", user?.id, companyId],
@@ -33,7 +33,7 @@ export function PersonalStatsCard() {
   const fullName = `${firstName} ${lastName}`.trim();
 
   const statItems = [
-    { value: totalPoints, label: "Points" },
+    { value: recognitionPoints, label: "Points" },
     { value: stats?.received ?? 0, label: "Received" },
     { value: stats?.sent ?? 0, label: "Sent" },
   ];

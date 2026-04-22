@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, X, Smile, ImageIcon, LayoutGrid, User, Plus } from "lucide-react";
+import { Send, X, Smile, ImageIcon, LayoutGrid, User } from "lucide-react";
 import { GiphyPicker, type GifSelection } from "./GiphyPicker";
 import { useAuth } from "@/context/AuthContext";
 import { useAllCompanyMembers } from "@/hooks/useCompanyMembers";
@@ -34,12 +34,9 @@ export function GivePointsCard() {
 
   const { user, companyId, monthlyPoints, isAuthLoading, avatarUrl } = useAuth();
   const { companyMembers } = useAllCompanyMembers();
-  const { values: companyValues, addValue: addCompanyValue } = useCompanyValues();
+  const { values: companyValues } = useCompanyValues();
   const [selectedValue, setSelectedValue] = useState<CompanyValue | null>(null);
   const [valuePopoverOpen, setValuePopoverOpen] = useState(false);
-  const [newValueName, setNewValueName] = useState("");
-  const [newValueColor, setNewValueColor] = useState("#7F2BFE");
-  const [isAddingValue, setIsAddingValue] = useState(false);
   const [pointsInputValue, setPointsInputValue] = useState("100");
   const [isEditingPoints, setIsEditingPoints] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -525,56 +522,6 @@ export function GivePointsCard() {
                             </button>
                           ))}
                         </div>
-                      )}
-                      {isAddingValue ? (
-                        <div className="flex flex-col gap-2 p-1">
-                          <Input
-                            placeholder="Value name"
-                            value={newValueName}
-                            onChange={(e) => setNewValueName(e.target.value)}
-                            className="h-8 text-xs"
-                            autoFocus
-                          />
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              {['#7F2BFE', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'].map((c) => (
-                                <button
-                                  key={c}
-                                  onClick={() => setNewValueColor(c)}
-                                  className="w-5 h-5 rounded-full border-2 transition-all"
-                                  style={{
-                                    backgroundColor: c,
-                                    borderColor: newValueColor === c ? '#0F0533' : 'transparent',
-                                  }}
-                                />
-                              ))}
-                            </div>
-                            <button
-                              onClick={async () => {
-                                if (!newValueName.trim()) return;
-                                const result = await addCompanyValue(newValueName.trim(), newValueColor);
-                                if (result) {
-                                  setSelectedValue(result);
-                                  setNewValueName("");
-                                  setNewValueColor("#7F2BFE");
-                                  setIsAddingValue(false);
-                                  setValuePopoverOpen(false);
-                                }
-                              }}
-                              className="ml-auto text-xs font-medium px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setIsAddingValue(true)}
-                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground p-1 transition-colors"
-                        >
-                          <Plus className="h-3 w-3" />
-                          Add new value
-                        </button>
                       )}
                     </div>
                   </PopoverContent>

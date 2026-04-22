@@ -383,7 +383,12 @@ export function RecognitionFeed() {
       });
 
       if (error) throw error;
-      return data;
+
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (!result?.success) {
+        throw new Error(result?.error || "Failed to give points");
+      }
+      return result;
     },
     onOptimisticUpdate: (variables) => {
       // Immediately update UI: decrease sender's monthly points
@@ -400,29 +405,25 @@ export function RecognitionFeed() {
         return newSet;
       });
     },
-    onSuccess: (data, variables) => {
-      const result = data as { success: boolean; error?: string; message?: string };
-      if (result?.success) {
-        // Confirm optimistic changes and refresh data
-        optimisticAuth.confirmOptimisticPoints();
-        
-        // Invalidate all relevant queries for real-time updates
-        queryClient.invalidateQueries({ queryKey: ['recognitionFeed'] });
-        queryClient.invalidateQueries({ queryKey: ['userPoints'] });
-        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-        queryClient.invalidateQueries({ queryKey: ['pointsHistory'] });
-        
-        // Also refresh the local feed
-        fetchRecognitionFeed();
-        
-        setProcessingQuickPoints(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(variables.recipientId);
-          return newSet;
-        });
-      } else {
-        throw new Error(result?.error || "Failed to give points");
-      }
+    onSuccess: (_data, variables) => {
+      // Confirm optimistic changes and refresh data
+      optimisticAuth.confirmOptimisticPoints();
+
+      // Invalidate all relevant queries for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['recognitionFeed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPoints'] });
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      queryClient.invalidateQueries({ queryKey: ['pointsHistory'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+
+      // Also refresh the local feed
+      fetchRecognitionFeed();
+
+      setProcessingQuickPoints(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.recipientId);
+        return newSet;
+      });
     },
     successMessage: `Gave additional points!`,
     errorMessage: "Failed to give points. Please try again."

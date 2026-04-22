@@ -29,9 +29,17 @@ export const TeamMembers = () => {
         ) : displayMembers.length > 0 ? (
           displayMembers.map((member) => (
             <div key={member.id} className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF] font-medium flex-shrink-0">
-                {member.name.charAt(0)}
-              </div>
+              {member.avatar_url ? (
+                <img
+                  src={member.avatar_url}
+                  alt={member.name}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#F572FF]/10 flex items-center justify-center text-[#F572FF] font-medium flex-shrink-0">
+                  {member.name.charAt(0)}
+                </div>
+              )}
               <div className="ml-3 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{member.name}</p>
