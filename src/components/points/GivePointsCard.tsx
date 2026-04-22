@@ -39,8 +39,13 @@ export function GivePointsCard() {
   const { values: companyValues } = useCompanyValues();
   const [selectedValue, setSelectedValue] = useState<CompanyValue | null>(null);
   const [valuePopoverOpen, setValuePopoverOpen] = useState(false);
+  const [valueSearch, setValueSearch] = useState("");
   const [pointsInputValue, setPointsInputValue] = useState("100");
-  const [isEditingPoints, setIsEditingPoints] = useState(false);
+  const [pointsPopoverOpen, setPointsPopoverOpen] = useState(false);
+  const [pointsSearch, setPointsSearch] = useState("");
+  const [teammatePopoverOpen, setTeammatePopoverOpen] = useState(false);
+  const [teammateSearch, setTeammateSearch] = useState("");
+  const [selectedTeammate, setSelectedTeammate] = useState<{ id: string; name: string; user_id: string } | null>(null);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
