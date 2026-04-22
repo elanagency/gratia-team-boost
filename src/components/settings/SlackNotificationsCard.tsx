@@ -181,35 +181,6 @@ const SlackNotificationsCard = () => {
 
           {/* Expandable sections */}
           <Accordion type="multiple" className="w-full">
-            <AccordionItem value="notifications" style={{ borderColor: "#E8E6F0" }}>
-              <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
-                <div className="flex items-center gap-2">
-                  <Bell size={14} color="#9996AA" />
-                  <span style={{ fontWeight: 500, color: "#0F0533" }}>Notification Types</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pt-2">
-                  {notificationTypes.map((n) => (
-                    <div key={n.key} className="flex items-center justify-between" style={{ padding: "10px 12px", borderRadius: 10, background: "#F5F5F7" }}>
-                      <div className="flex items-center gap-3">
-                        <n.icon size={16} color="#9996AA" />
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>{n.title}</p>
-                          <p style={{ fontSize: 11, color: "#9996AA" }}>{n.description}</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={integration?.notification_settings?.[n.key] ?? false}
-                        onCheckedChange={(checked) => updateNotificationSettings.mutate({ [n.key]: checked })}
-                        disabled={updateNotificationSettings.isPending}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
             <AccordionItem value="import" style={{ borderColor: "#E8E6F0" }}>
               <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
                 <div className="flex items-center gap-2">
