@@ -609,16 +609,25 @@ async function fetchLoginsData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  // Query login_events
-  const { data: loginEvents, error } = await supabase
+  let query = supabase
     .from('login_events')
     .select('id, logged_in_at, user_id')
     .eq('company_id', companyId)
     .gte('logged_in_at', startDate.toISOString())
     .lte('logged_in_at', endDate.toISOString())
     .order('logged_in_at', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    query = query.in('user_id', filteredProfileIds);
+  }
+
+  const { data: loginEvents, error } = await query;
 
   if (error) {
     console.error('Error fetching login events:', error);
