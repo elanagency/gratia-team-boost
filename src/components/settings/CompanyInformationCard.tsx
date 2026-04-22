@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building, Trash2, Plus, Upload, Pencil } from "lucide-react";
+import { Building, Trash2, Plus, Upload, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +17,10 @@ interface CompanyData {
   logo_url?: string | null;
 }
 
+const DEFAULT_VALUE_COLOR = "#7F2BFE";
+const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
 const inputStyle = {
   fontFamily: "Inter, sans-serif",
   fontSize: 14,
@@ -29,15 +33,16 @@ const inputStyle = {
 export const CompanyInformationCard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<CompanyData>({ name: "" });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [newValueName, setNewValueName] = useState("");
-  const [newValueColor, setNewValueColor] = useState("#7F2BFE");
   const [isAddingValue, setIsAddingValue] = useState(false);
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [editingValueName, setEditingValueName] = useState("");
-  const [editingValueColor, setEditingValueColor] = useState("");
+
   const { companyId, isAdmin } = useAuth();
   const { regionCodes, isLoading: isLoadingRegions } = useCompanyRegions(companyId);
   const { values, isLoading: isLoadingValues, addValue, updateValue, deleteValue } = useCompanyValues();
@@ -74,23 +79,30 @@ export const CompanyInformationCard = () => {
     fetchCompanyData();
   }, [companyId]);
 
+  const hasChanges =
+    !!companyData &&
+    (editData.name !== companyData.name ||
+      (editData.logo_url || null) !== (companyData.logo_url || null));
+
   const handleSave = async () => {
     if (!companyId) return;
+    if (!editData.name.trim()) {
+      toast.error("Company name cannot be empty");
+      return;
+    }
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from("companies")
         .update({
-          name: editData.name,
-          address: editData.address || null,
-          website: editData.website || null,
+          name: editData.name.trim(),
           logo_url: editData.logo_url || null,
         })
         .eq("id", companyId);
 
       if (error) throw error;
-      setCompanyData(editData);
-      setIsEditing(false);
+      setCompanyData({ ...companyData!, name: editData.name.trim(), logo_url: editData.logo_url || null });
+      setEditData((prev) => ({ ...prev, name: editData.name.trim() }));
       toast.success("Company information updated successfully");
     } catch (error) {
       console.error("Error updating company data:", error);
@@ -100,42 +112,69 @@ export const CompanyInformationCard = () => {
     }
   };
 
-  const COLOR_PRESETS = ["#7F2BFE", "#FC5BFF", "#F59E0B", "#22C55E", "#3B82F6", "#EF4444", "#8B5CF6", "#EC4899"];
+  const handleCancel = () => {
+    if (companyData) setEditData(companyData);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !companyId) return;
+    // reset so selecting the same file again still triggers change
+    e.target.value = "";
+
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      toast.error("Logo must be JPG, PNG, WEBP, or SVG");
+      return;
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      toast.error("Logo must be smaller than 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${companyId}/logo-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("logos")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: pub } = supabase.storage.from("logos").getPublicUrl(path);
+      const url = `${pub.publicUrl}?t=${Date.now()}`;
+      setEditData((prev) => ({ ...prev, logo_url: url }));
+      toast.success("Logo uploaded — click Save Changes to apply");
+    } catch (error: any) {
+      console.error("Error uploading logo:", error);
+      toast.error(error?.message || "Failed to upload logo");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setEditData((prev) => ({ ...prev, logo_url: null }));
+  };
 
   const handleAddValue = async () => {
     if (!newValueName.trim()) return;
     setIsAddingValue(false);
-    await addValue(newValueName.trim(), newValueColor);
+    await addValue(newValueName.trim(), DEFAULT_VALUE_COLOR);
     setNewValueName("");
-    setNewValueColor("#7F2BFE");
   };
 
   const startEditing = (value: { id: string; name: string; color: string }) => {
     setEditingValueId(value.id);
     setEditingValueName(value.name);
-    setEditingValueColor(value.color);
   };
 
   const handleSaveEdit = async () => {
     if (!editingValueId || !editingValueName.trim()) return;
-    await updateValue(editingValueId, editingValueName.trim(), editingValueColor);
+    const existing = values.find((v) => v.id === editingValueId);
+    await updateValue(editingValueId, editingValueName.trim(), existing?.color || DEFAULT_VALUE_COLOR);
     setEditingValueId(null);
   };
-
-  const ColorSwatches = ({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) => (
-    <div className="flex items-center gap-1.5">
-      {COLOR_PRESETS.map((c) => (
-        <button
-          key={c}
-          onClick={() => onSelect(c)}
-          style={{
-            width: 18, height: 18, borderRadius: "50%", background: c, border: selected === c ? "2px solid #0F0533" : "2px solid transparent",
-            cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s",
-          }}
-        />
-      ))}
-    </div>
-  );
 
   if (isLoading) {
     return <div className="animate-pulse" style={{ fontFamily: "Inter, sans-serif" }}>Loading company information...</div>;
@@ -144,6 +183,8 @@ export const CompanyInformationCard = () => {
   if (!companyData) {
     return <p style={{ fontFamily: "Inter, sans-serif", color: "#9996AA" }}>No company information found.</p>;
   }
+
+  const currentLogo = editData.logo_url;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 30, border: "1px solid #E8E6F0", borderRadius: 15, padding: 15 }}>
@@ -158,26 +199,12 @@ export const CompanyInformationCard = () => {
             <Label style={{ fontSize: 13, fontWeight: 500, color: "#0F0533", marginBottom: 6, display: "block" }}>
               Company Name
             </Label>
-            {isEditing ? (
-              <Input
-                value={editData.name}
-                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                style={inputStyle}
-              />
-            ) : (
-              <div
-                style={{
-                  ...inputStyle,
-                  display: "flex",
-                  alignItems: "center",
-                  paddingLeft: 15,
-                  paddingRight: 15,
-                  color: "#0F0533",
-                }}
-              >
-                {companyData.name}
-              </div>
-            )}
+            <Input
+              value={editData.name}
+              onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+              disabled={!isAdmin}
+              style={inputStyle}
+            />
           </div>
 
           {/* Company Logo */}
@@ -186,11 +213,11 @@ export const CompanyInformationCard = () => {
               Company Logo
             </Label>
             <div className="flex items-center gap-3">
-              {companyData.logo_url ? (
+              {currentLogo ? (
                 <img
-                  src={companyData.logo_url}
+                  src={currentLogo}
                   alt="Company Logo"
-                  className="h-10 w-10 object-contain rounded-lg border"
+                  className="h-10 w-10 object-contain rounded-lg border bg-white"
                   style={{ borderColor: "#E8E6F0" }}
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
@@ -208,24 +235,36 @@ export const CompanyInformationCard = () => {
                   <Building size={18} color="#9996AA" />
                 </div>
               )}
-              {isEditing ? (
-                <Input
-                  value={editData.logo_url || ""}
-                  onChange={(e) => setEditData({ ...editData, logo_url: e.target.value })}
-                  placeholder="https://example.com/logo.png"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
-                  onClick={() => isAdmin && setIsEditing(true)}
-                  disabled={!isAdmin}
-                >
-                  <Upload size={14} className="mr-1.5" />
-                  Upload
-                </Button>
+              {isAdmin && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                    onChange={handleLogoUpload}
+                    style={{ display: "none" }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    <Upload size={14} className="mr-1.5" />
+                    {isUploading ? "Uploading..." : currentLogo ? "Replace logo" : "Upload logo"}
+                  </Button>
+                  {currentLogo && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      title="Remove logo"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 6, display: "flex" }}
+                    >
+                      <Trash2 size={15} color="#9996AA" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -251,43 +290,30 @@ export const CompanyInformationCard = () => {
             )}
           </div>
 
-          {/* Edit / Save buttons */}
-          {isAdmin && (
+          {/* Save / Cancel buttons — appear only when there are unsaved changes */}
+          {isAdmin && hasChanges && (
             <div className="flex gap-2 pt-1">
-              {isEditing ? (
-                <>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    style={{
-                      borderRadius: 9.375,
-                      background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
-                      fontSize: 13,
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => { setEditData(companyData); setIsEditing(false); }}
-                    disabled={isSaving}
-                    style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
-                >
-                  Edit
-                </Button>
-              )}
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  borderRadius: 9.375,
+                  background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)",
+                  fontSize: 13,
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 500,
+                }}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+                style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+              >
+                Cancel
+              </Button>
             </div>
           )}
         </div>
@@ -310,19 +336,16 @@ export const CompanyInformationCard = () => {
             {values.map((value) => (
               editingValueId === value.id ? (
                 <div key={value.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 13.375, background: "#F5F5F7", border: "1px solid #E8E6F0" }}>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={editingValueName}
-                      onChange={(e) => setEditingValueName(e.target.value)}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveEdit();
-                        if (e.key === "Escape") setEditingValueId(null);
-                      }}
-                      style={{ ...inputStyle, flex: 1 }}
-                    />
-                  </div>
-                  <ColorSwatches selected={editingValueColor} onSelect={setEditingValueColor} />
+                  <Input
+                    value={editingValueName}
+                    onChange={(e) => setEditingValueName(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveEdit();
+                      if (e.key === "Escape") setEditingValueId(null);
+                    }}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
                   <div className="flex gap-2">
                     <Button onClick={handleSaveEdit} disabled={!editingValueName.trim()} size="sm" style={{ borderRadius: 9.375, background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>Save</Button>
                     <Button variant="outline" size="sm" onClick={() => setEditingValueId(null)} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>Cancel</Button>
@@ -337,10 +360,7 @@ export const CompanyInformationCard = () => {
                     background: "#F5F5F7", border: "1px solid #E8E6F0",
                   }}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: value.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#0F0533" }}>{value.name}</span>
-                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#0F0533" }}>{value.name}</span>
                   {isAdmin && (
                     <div className="flex items-center gap-1">
                       <button onClick={() => startEditing(value)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
@@ -366,14 +386,13 @@ export const CompanyInformationCard = () => {
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleAddValue();
-                      if (e.key === "Escape") { setIsAddingValue(false); setNewValueName(""); setNewValueColor("#7F2BFE"); }
+                      if (e.key === "Escape") { setIsAddingValue(false); setNewValueName(""); }
                     }}
                     style={{ ...inputStyle }}
                   />
-                  <ColorSwatches selected={newValueColor} onSelect={setNewValueColor} />
                   <div className="flex gap-2">
                     <Button onClick={handleAddValue} disabled={!newValueName.trim()} size="sm" style={{ borderRadius: 9.375, background: "linear-gradient(135deg, #7F2BFE, #FC5BFF)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>Add</Button>
-                    <Button variant="outline" size="sm" onClick={() => { setIsAddingValue(false); setNewValueName(""); setNewValueColor("#7F2BFE"); }} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>Cancel</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setIsAddingValue(false); setNewValueName(""); }} style={{ borderRadius: 9.375, borderColor: "#E8E6F0", fontSize: 13, fontFamily: "Inter, sans-serif" }}>Cancel</Button>
                   </div>
                 </div>
               ) : (
