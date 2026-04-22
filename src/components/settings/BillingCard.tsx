@@ -262,6 +262,14 @@ export const BillingCard = () => {
           </span>
         </div>
 
+        {/* Celebration charges (postpaid) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={labelStyle}>
+            Celebration charges{pendingCelebrationCharges.count > 0 ? ` (${pendingCelebrationCharges.count})` : ""}
+          </span>
+          <span style={valueStyle}>${pendingCelebrationCharges.total.toFixed(2)}</span>
+        </div>
+
         {/* Next billing date */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
           <span style={labelStyle}>Next billing date</span>
