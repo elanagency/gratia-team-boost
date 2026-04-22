@@ -14,7 +14,7 @@ import SlackUserLinking from "./SlackUserLinking";
 const SlackNotificationsCard = () => {
   const {
     integration, channels, isLoadingIntegration, isLoadingChannels, isConnected,
-    connectSlack, updateChannel, updateNotificationSettings, disconnectSlack,
+    connectSlack, updateChannel, disconnectSlack,
   } = useSlackIntegration();
 
   const [isConnecting, setIsConnecting] = useState(false);
