@@ -57,12 +57,6 @@ const SlackNotificationsCard = () => {
     }
   };
 
-  const notificationTypes = [
-    { icon: Bell, title: "Recognition Notifications", description: "Get notified when team members give or receive recognition points", key: "recognition_notifications" as const },
-    { icon: TrendingUp, title: "Point Allocation Alerts", description: "Monthly notifications when points are allocated to team members", key: "point_allocation_alerts" as const },
-    { icon: Users, title: "Team Milestones", description: "Celebrate when team members reach point milestones or achievements", key: "team_milestones" as const },
-    { icon: Calendar, title: "Weekly/Monthly Summaries", description: "Regular summaries of team activity and engagement metrics", key: "weekly_monthly_summaries" as const },
-  ];
 
   const cardStyle: React.CSSProperties = {
     fontFamily: "Inter, sans-serif",
