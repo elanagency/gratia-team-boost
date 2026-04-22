@@ -17,6 +17,7 @@ export interface CompanyMember {
   is_admin: boolean;
   birthday?: string | null;
   company_start_date?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface CompanyMembersOptions {
@@ -133,7 +134,8 @@ export const useCompanyMembers = (options: CompanyMembersOptions = {}) => {
           first_login_at: profile.first_login_at,
           is_admin: profile.is_admin || false,
           birthday: profile.birthday || null,
-          company_start_date: profile.company_start_date || null
+          company_start_date: profile.company_start_date || null,
+          avatar_url: profile.avatar_url || null,
         };
       });
 
