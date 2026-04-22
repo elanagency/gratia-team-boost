@@ -38,6 +38,31 @@ interface UseAnalyticsDataParams {
   dateRange: DateRange;
   segmentBy: SegmentType;
   granularity: GranularityType;
+  departmentFilter?: string;
+}
+
+// Resolve a department name to its ID for the current company.
+async function resolveDepartmentId(companyId: string, departmentName: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('departments')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('name', departmentName)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+// Get profile IDs for the current company filtered by department (if provided).
+async function getFilteredProfileIds(companyId: string, departmentFilter?: string): Promise<string[] | null> {
+  if (!departmentFilter || departmentFilter === 'all') return null;
+  const deptId = await resolveDepartmentId(companyId, departmentFilter);
+  if (!deptId) return [];
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('department_id', deptId);
+  return (data || []).map((p) => p.id);
 }
 
 // Calculate trend percentage comparing current to previous period
