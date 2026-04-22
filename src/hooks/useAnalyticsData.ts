@@ -218,17 +218,22 @@ async function fetchTransactionTotal(
   companyId: string,
   startDate: Date,
   endDate: Date,
-  profileType: 'sender' | 'recipient'
+  profileType: 'sender' | 'recipient',
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
   const fk = profileType === 'sender' ? 'sender_profile_id' : 'recipient_profile_id';
-  const { data, error } = await supabase
+  let query = supabase
     .from('point_transactions')
     .select('points')
     .eq('company_id', companyId)
-    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gt('points', 0)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in(fk, filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).reduce((sum, tx) => sum + tx.points, 0);
 }
@@ -237,24 +242,38 @@ async function fetchTransactionTotal(
 async function fetchEngagementTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
+  let membersQuery = supabase.from('profiles').select('id').eq('company_id', companyId).eq('status', 'active');
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    membersQuery = membersQuery.in('id', filteredProfileIds);
+  }
   const [membersResult, txResult] = await Promise.all([
-    supabase.from('profiles').select('id').eq('company_id', companyId).eq('status', 'active'),
+    membersQuery,
     supabase.from('point_transactions')
       .select('sender_profile_id, recipient_profile_id')
       .eq('company_id', companyId)
-      .gt('points', 0)  // Only positive transactions
+      .gt('points', 0)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString()),
   ]);
 
   const totalMembers = membersResult.data?.length || 0;
-  const transactions = txResult.data || [];
+  let transactions = txResult.data || [];
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    transactions = transactions.filter(tx => idSet.has(tx.sender_profile_id) || idSet.has(tx.recipient_profile_id));
+  }
   const uniqueParticipants = new Set([
     ...transactions.map(tx => tx.sender_profile_id),
     ...transactions.map(tx => tx.recipient_profile_id),
   ]);
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    [...uniqueParticipants].forEach(id => { if (!idSet.has(id)) uniqueParticipants.delete(id); });
+  }
 
   return totalMembers > 0 ? Math.round((uniqueParticipants.size / totalMembers) * 100) : 0;
 }
@@ -263,32 +282,41 @@ async function fetchEngagementTotal(
 async function fetchRedemptionsTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('redemptions')
     .select('points_spent')
     .eq('company_id', companyId)
     .gte('redemption_date', startDate.toISOString())
     .lte('redemption_date', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in('user_id', filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).reduce((sum, r) => sum + r.points_spent, 0);
 }
 
-// Helper to fetch logins total for previous period
 async function fetchLoginsTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('login_events')
     .select('id')
     .eq('company_id', companyId)
     .gte('logged_in_at', startDate.toISOString())
     .lte('logged_in_at', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in('user_id', filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return data?.length || 0;
 }
