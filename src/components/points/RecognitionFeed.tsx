@@ -734,6 +734,24 @@ export function RecognitionFeed() {
                             </div>
                           )}
 
+                          {/* Image attachment */}
+                          {thread.mainPost.image_url && (
+                            <div className="mt-1">
+                              <a
+                                href={thread.mainPost.image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={thread.mainPost.image_url}
+                                  alt="Recognition attachment"
+                                  className="max-w-[320px] max-h-[300px] rounded-lg object-cover border border-border"
+                                  loading="lazy"
+                                />
+                              </a>
+                            </div>
+                          )}
+
                           {/* Emoji reactions */}
                           <div className="flex items-center gap-1.5 pt-1 flex-wrap">
                             {(reactionsMap[thread.mainPost.id] || []).map((reaction, i) => (
