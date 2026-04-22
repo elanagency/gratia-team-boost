@@ -84,11 +84,12 @@ export function useAnalyticsData({
   dateRange,
   segmentBy,
   granularity,
+  departmentFilter,
 }: UseAnalyticsDataParams) {
   const { companyId } = useAuth();
 
   return useQuery({
-    queryKey: ['analytics', metric, dateRange.start.toISOString(), dateRange.end.toISOString(), segmentBy, granularity, companyId],
+    queryKey: ['analytics', metric, dateRange.start.toISOString(), dateRange.end.toISOString(), segmentBy, granularity, departmentFilter ?? 'all', companyId],
     queryFn: async (): Promise<AnalyticsData> => {
       if (!companyId) {
         return { chartData: [], tableData: [], total: 0, average: 0, trend: 0 };
@@ -97,18 +98,19 @@ export function useAnalyticsData({
       const startDate = startOfDay(dateRange.start);
       const endDate = endOfDay(dateRange.end);
       const { prevStart, prevEnd } = getPreviousPeriodDates(startDate, endDate);
+      const filteredProfileIds = await getFilteredProfileIds(companyId, departmentFilter);
 
       switch (metric) {
         case 'received':
-          return fetchReceivedDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchReceivedDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'sent':
-          return fetchSentDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchSentDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'engagement':
-          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'redemptions':
-          return fetchRedemptionsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchRedemptionsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'logins':
-          return fetchLoginsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchLoginsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         default:
           return { chartData: [], tableData: [], total: 0, average: 0, trend: 0 };
       }
