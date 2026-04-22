@@ -1,17 +1,31 @@
 
 
-# Fix Granularity Toggle Pill Roundedness
+# Analytics Page: Remove Toggle, Department Filter, Compact Date Picker
 
-## Problem
-The Figma screenshots show the granularity container has `border-radius: 13.375px` with `background: #F5F5F7` and `height: 33px`, and the active pill inside has `border-radius: 7.375px`. Currently the container uses `rounded-[7.375px]` (should be `13.375px`) and has a white background with a border instead of the `#F5F5F7` fill. The individual pills also clip their corners with `rounded-r-none` / `rounded-l-none` which prevents proper pill shaping.
+## Changes
 
-## Change
+### 1. `src/pages/admin/Analytics.tsx`
+- Remove the chart/table view mode toggle (the two icon buttons) and the `viewMode` state.
+- Remove the `<AnalyticsDataTable>` rendering branch — always show `<AnalyticsAllCharts>`.
+- Add a new `departmentFilter` state (string, default `"all"`) and pass it to `useAnalyticsData` queries via a new `departmentFilter` parameter (existing `segmentBy` stays `"none"` so charts render as a single series).
+- Pass `departmentFilter` and `onDepartmentFilterChange` down to `AnalyticsFilters` instead of `segmentBy`/`onSegmentChange`.
 
-### `src/components/analytics/AnalyticsFilters.tsx` (lines 106-123)
-- Container: change `rounded-[7.375px]` to `rounded-[13.375px]`, remove `border`, change `bg-background` to `bg-[#F5F5F7]`, add `h-[33px] p-[1.875px]`
-- Individual buttons: remove the `rounded-r-none` / `rounded-l-none` / `rounded-none` overrides so all pills keep full `rounded-[7.375px]`
-- Adjust padding to roughly match Figma (`px-[11px] py-[6px]`)
+### 2. `src/components/analytics/AnalyticsFilters.tsx`
+- Replace the `segmentBy` props with `departmentFilter` / `onDepartmentFilterChange`.
+- Use `useDepartments()` to load company departments and render them as `<SelectItem>`s. First option is `"All Departments"` (value `"all"`); then one item per department name.
+- **Custom date picker**: shrink the left-hand presets column so it only hugs the text. Remove the `border-r` width-stretching by using `w-auto` on the inner container, and switch the preset buttons from `w-full` to inline (`whitespace-nowrap`, no `w-full`). Wrap the column in a tight `flex-col` with `min-w-0` and small horizontal padding (e.g. `px-2`). Keep the subtle separator with a thin `border-r` between columns.
 
-### Files modified
+### 3. `src/hooks/useAnalyticsData.ts`
+- Add an optional `departmentFilter?: string` parameter to `UseAnalyticsDataParams` and thread it into each `fetch*Data` function.
+- In the SQL queries (`fetchTransactionData`, `fetchEngagementData`, `fetchRedemptionsData`, `fetchLoginsData` and their `*Total` previous-period helpers), when `departmentFilter` is set and not `"all"`, filter results to profiles whose department name matches. Simplest approach: resolve the department name → `department_id` once via a lookup query, then add `.eq('profiles.department_id', id)` (or filter in-memory after fetch where the join is awkward, e.g. for redemptions where we already build a `profilesMap`).
+- Include `departmentFilter` in the React Query `queryKey` so changes refetch.
+
+### 4. Cleanup
+- `AnalyticsDataTable.tsx` is no longer rendered from the analytics page; leave the file in place (no dead-import errors) but remove its import from `Analytics.tsx`.
+- The unused `BarChart3` / `Table2` icon imports and `cn` (if no longer needed) get removed from `Analytics.tsx`.
+
+## Files modified
+- `src/pages/admin/Analytics.tsx`
 - `src/components/analytics/AnalyticsFilters.tsx`
+- `src/hooks/useAnalyticsData.ts`
 
