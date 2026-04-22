@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Bell, Users, Calendar, TrendingUp, LogOut, Copy, CheckCircle, AlertCircle, Info, UserPlus, ChevronRight } from "lucide-react";
+import { UserPlus, ChevronRight } from "lucide-react";
 import SlackImportDialog from "@/components/team/SlackImportDialog";
 import slackLogo from "@/assets/slack-logo.webp";
 import { useSlackIntegration } from "@/hooks/useSlackIntegration";
@@ -14,7 +14,7 @@ import SlackUserLinking from "./SlackUserLinking";
 const SlackNotificationsCard = () => {
   const {
     integration, channels, isLoadingIntegration, isLoadingChannels, isConnected,
-    connectSlack, updateChannel, updateNotificationSettings, disconnectSlack,
+    connectSlack, updateChannel, disconnectSlack,
   } = useSlackIntegration();
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -57,12 +57,6 @@ const SlackNotificationsCard = () => {
     }
   };
 
-  const notificationTypes = [
-    { icon: Bell, title: "Recognition Notifications", description: "Get notified when team members give or receive recognition points", key: "recognition_notifications" as const },
-    { icon: TrendingUp, title: "Point Allocation Alerts", description: "Monthly notifications when points are allocated to team members", key: "point_allocation_alerts" as const },
-    { icon: Users, title: "Team Milestones", description: "Celebrate when team members reach point milestones or achievements", key: "team_milestones" as const },
-    { icon: Calendar, title: "Weekly/Monthly Summaries", description: "Regular summaries of team activity and engagement metrics", key: "weekly_monthly_summaries" as const },
-  ];
 
   const cardStyle: React.CSSProperties = {
     fontFamily: "Inter, sans-serif",
@@ -187,35 +181,6 @@ const SlackNotificationsCard = () => {
 
           {/* Expandable sections */}
           <Accordion type="multiple" className="w-full">
-            <AccordionItem value="notifications" style={{ borderColor: "#E8E6F0" }}>
-              <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
-                <div className="flex items-center gap-2">
-                  <Bell size={14} color="#9996AA" />
-                  <span style={{ fontWeight: 500, color: "#0F0533" }}>Notification Types</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pt-2">
-                  {notificationTypes.map((n) => (
-                    <div key={n.key} className="flex items-center justify-between" style={{ padding: "10px 12px", borderRadius: 10, background: "#F5F5F7" }}>
-                      <div className="flex items-center gap-3">
-                        <n.icon size={16} color="#9996AA" />
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>{n.title}</p>
-                          <p style={{ fontSize: 11, color: "#9996AA" }}>{n.description}</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={integration?.notification_settings?.[n.key] ?? false}
-                        onCheckedChange={(checked) => updateNotificationSettings.mutate({ [n.key]: checked })}
-                        disabled={updateNotificationSettings.isPending}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
             <AccordionItem value="import" style={{ borderColor: "#E8E6F0" }}>
               <AccordionTrigger className="hover:no-underline" style={{ fontSize: 13, fontFamily: "Inter, sans-serif" }}>
                 <div className="flex items-center gap-2">
