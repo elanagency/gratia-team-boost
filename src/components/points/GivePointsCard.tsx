@@ -27,6 +27,8 @@ export function GivePointsCard() {
   const [selectedPointIndex, setSelectedPointIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedGif, setSelectedGif] = useState<GifSelection | null>(null);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -329,8 +331,9 @@ export function GivePointsCard() {
           transfer_company_id: companyId,
           points_amount: totalPointsToGive,
           transfer_description: structuredMessage,
-          transfer_gif_url: selectedGif?.url || null
-        });
+          transfer_gif_url: selectedGif?.url || null,
+          transfer_image_url: selectedImageUrl || null,
+        } as any);
 
         if (error) throw error;
 
@@ -383,6 +386,7 @@ export function GivePointsCard() {
       setMentions([]);
       setPoints([]);
       setSelectedGif(null);
+      setSelectedImageUrl(null);
       setSelectedValue(null);
       
       // Invalidate all relevant queries to refresh feeds and points
