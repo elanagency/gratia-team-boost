@@ -287,18 +287,32 @@ export function GivePointsCard() {
 
 
   const handleSubmit = async () => {
-    if (!text.trim() || mentions.length === 0) {
-      toast.error("Please write a message and mention at least one person");
+    // Build recipient list: pill takes precedence, fallback to inline mentions
+    const recipientList: { userId: string; name: string }[] = selectedTeammate
+      ? [{ userId: selectedTeammate.user_id, name: selectedTeammate.name }]
+      : mentions.map((m) => ({ userId: m.userId, name: m.name }));
+
+    if (!text.trim()) {
+      toast.error("Please write a message");
       return;
     }
 
-    if (points.length === 0) {
-      toast.error("Please add points using + (e.g., +25)");
+    if (recipientList.length === 0) {
+      toast.error("Please select a teammate");
       return;
     }
 
-    const totalPointsToGive = points.reduce((sum, point) => sum + point.value, 0);
-    const totalPointsRequired = totalPointsToGive * mentions.length;
+    // Points: pill input takes precedence, fallback to inline points balloons
+    const pillPoints = Number(pointsInputValue);
+    const inlinePoints = points.reduce((sum, point) => sum + point.value, 0);
+    const totalPointsToGive = pillPoints > 0 ? pillPoints : inlinePoints;
+
+    if (!totalPointsToGive || totalPointsToGive <= 0) {
+      toast.error("Please enter a points amount");
+      return;
+    }
+
+    const totalPointsRequired = totalPointsToGive * recipientList.length;
 
     if (totalPointsRequired > monthlyPoints) {
       toast.error("You don't have enough monthly points to give");
@@ -315,24 +329,29 @@ export function GivePointsCard() {
     try {
       // Get the HTML content from the rich text editor to preserve structure
       const editorElement = document.querySelector('[contenteditable="true"]');
-      const structuredMessage = editorElement?.innerHTML || text;
-      
+      let structuredMessage = editorElement?.innerHTML || text;
+
+      // Append company value marker if selected (preserved in feed via description)
+      if (selectedValue) {
+        structuredMessage += ` <span class="value-tag" data-value-id="${selectedValue.id}">[Value: ${selectedValue.name}]</span>`;
+      }
+
       // Parse the structured message to get clean text for Slack
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = structuredMessage;
-      
+
       // Remove mention and point balloon elements before extracting clean text
       const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"]');
       balloonElements.forEach(el => el.remove());
-      
+
       // Get clean text without HTML formatting
       const cleanMessageText = (tempDiv.textContent || tempDiv.innerText || '').trim();
-      
-      // Use the proper transfer_points_between_users function for each mentioned person
-      for (const mention of mentions) {
+
+      // Use the proper transfer_points_between_users function for each recipient
+      for (const recipient of recipientList) {
         const { data, error } = await supabase.rpc('transfer_points_between_users', {
           sender_user_id: user.id,
-          recipient_user_id: mention.userId,
+          recipient_user_id: recipient.userId,
           transfer_company_id: companyId,
           points_amount: totalPointsToGive,
           transfer_description: structuredMessage,
@@ -354,7 +373,7 @@ export function GivePointsCard() {
               company_id: companyId,
               notification_type: 'recognition',
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
-              recipient_name: mention.name,
+              recipient_name: recipient.name,
               points: totalPointsToGive,
               message: cleanMessageText,
               gif_url: selectedGif?.url || undefined
@@ -362,7 +381,6 @@ export function GivePointsCard() {
           });
         } catch (slackError) {
           console.error('Failed to send Slack notification:', slackError);
-          // Continue even if Slack notification fails
         }
 
         // Send Teams notification for recognition (don't fail the transfer if notification fails)
@@ -372,7 +390,7 @@ export function GivePointsCard() {
               company_id: companyId,
               notification_type: 'recognition',
               sender_name: `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim(),
-              recipient_name: mention.name,
+              recipient_name: recipient.name,
               points: totalPointsToGive,
               message: cleanMessageText,
               gif_url: selectedGif?.url || undefined
@@ -380,12 +398,11 @@ export function GivePointsCard() {
           });
         } catch (teamsError) {
           console.error('Failed to send Teams notification:', teamsError);
-          // Continue even if Teams notification fails
         }
       }
 
-      toast.success(`Successfully gave ${totalPointsToGive} points to ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'}!`);
-      
+      toast.success(`Successfully gave ${totalPointsToGive} points to ${recipientList.length} ${recipientList.length === 1 ? 'person' : 'people'}!`);
+
       // Reset form
       setText("");
       setMentions([]);
@@ -393,13 +410,15 @@ export function GivePointsCard() {
       setSelectedGif(null);
       setSelectedImageUrl(null);
       setSelectedValue(null);
-      
+      setSelectedTeammate(null);
+      setPointsInputValue("100");
+
       // Invalidate all relevant queries to refresh feeds and points
       await queryClient.invalidateQueries({ queryKey: ['userPoints'] });
       await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
       await queryClient.invalidateQueries({ queryKey: ['recognitionFeed'] });
       await queryClient.invalidateQueries({ queryKey: ['pointsHistory'] });
-      
+
       // Force refresh auth context to update points immediately
       window.location.reload();
       
@@ -547,8 +566,6 @@ export function GivePointsCard() {
                                   name: member.name,
                                   user_id: member.user_id,
                                 });
-                                // Also insert as a mention into the editor
-                                selectMention(member);
                                 setTeammatePopoverOpen(false);
                                 setTeammateSearch("");
                               }}
