@@ -11,20 +11,25 @@ export function PersonalStatsCard() {
     queryFn: async () => {
       if (!user?.id || !companyId) return { received: 0, sent: 0 };
 
-      const [{ count: received }, { count: sent }] = await Promise.all([
+      const [{ data: receivedRows }, { data: sentRows }] = await Promise.all([
         supabase
           .from("point_transactions")
-          .select("*", { count: "exact", head: true })
+          .select("points")
           .eq("recipient_profile_id", user.id)
-          .eq("company_id", companyId),
+          .eq("company_id", companyId)
+          .neq("sender_profile_id", user.id),
         supabase
           .from("point_transactions")
-          .select("*", { count: "exact", head: true })
+          .select("points")
           .eq("sender_profile_id", user.id)
-          .eq("company_id", companyId),
+          .eq("company_id", companyId)
+          .neq("recipient_profile_id", user.id),
       ]);
 
-      return { received: received ?? 0, sent: sent ?? 0 };
+      const received = receivedRows?.reduce((s, r) => s + (r.points ?? 0), 0) ?? 0;
+      const sent = sentRows?.reduce((s, r) => s + (r.points ?? 0), 0) ?? 0;
+
+      return { received, sent };
     },
     enabled: !!user?.id && !!companyId,
   });
