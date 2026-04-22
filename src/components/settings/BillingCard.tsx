@@ -211,10 +211,29 @@ export const BillingCard = () => {
 
   const pricePerSeat = (memberPriceInCents / 100).toFixed(0);
   const seats = subscriptionStatus.team_members || 0;
-  const totalCost = (seats * memberPriceInCents / 100).toFixed(2);
-  const nextBillingDate = subscriptionStatus.next_billing_date
-    ? new Date(subscriptionStatus.next_billing_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : null;
+  const seatsCost = seats * memberPriceInCents / 100;
+
+  // Per-celebration projections
+  const rate = pointExchangeRate || 0.05;
+  const birthdayDollarValue = (celebrationSettings?.birthday_reward_points || 0) * rate;
+  const anniversaryDollarValue = (celebrationSettings?.anniversary_reward_points || 0) * rate;
+  const showBirthdayLine = !!celebrationSettings?.birthday_rewards_enabled && upcomingBirthdays > 0;
+  const showAnniversaryLine = !!celebrationSettings?.anniversary_rewards_enabled && upcomingAnniversaries > 0;
+  const birthdayLineTotal = upcomingBirthdays * birthdayDollarValue;
+  const anniversaryLineTotal = upcomingAnniversaries * anniversaryDollarValue;
+  const totalDue = seatsCost
+    + (showBirthdayLine ? birthdayLineTotal : 0)
+    + (showAnniversaryLine ? anniversaryLineTotal : 0);
+
+  // Next billing date — Stripe value or fallback to 1st of next month
+  let nextBillingDate: string | null = null;
+  if (subscriptionStatus.next_billing_date) {
+    nextBillingDate = new Date(subscriptionStatus.next_billing_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  } else if (hasExistingSubscription) {
+    const now = new Date();
+    const candidate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    nextBillingDate = candidate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }
 
   const paymentMethodText = hasBillingSetup
     ? isLoadingPaymentMethod
