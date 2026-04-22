@@ -377,22 +377,28 @@ async function fetchEngagementData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  // Get total active members with department/name info for segmentation
-  const { data: totalMembers, error: membersError } = await supabase
+  let membersQuery = supabase
     .from('profiles')
     .select('id, first_name, last_name, department_id, departments(name)')
     .eq('company_id', companyId)
     .eq('status', 'active');
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    membersQuery = membersQuery.in('id', filteredProfileIds);
+  }
+  const { data: totalMembers, error: membersError } = await membersQuery;
 
   if (membersError) throw membersError;
 
   const members = totalMembers || [];
   const totalMemberCount = members.length;
 
-  // Get point transactions to calculate unique participants
-  const { data: transactions, error: txError } = await supabase
+  const { data: transactionsRaw, error: txError } = await supabase
     .from('point_transactions')
     .select('sender_profile_id, recipient_profile_id, created_at')
     .eq('company_id', companyId)
@@ -402,6 +408,13 @@ async function fetchEngagementData(
     .order('created_at', { ascending: true });
 
   if (txError) throw txError;
+
+  let transactions = transactionsRaw || [];
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    transactions = transactions.filter(tx => idSet.has(tx.sender_profile_id) || idSet.has(tx.recipient_profile_id));
+  }
+
 
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
