@@ -46,7 +46,24 @@ export const BillingCard = () => {
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const [pendingCelebrationCharges, setPendingCelebrationCharges] = useState<{ total: number; count: number }>({ total: 0, count: 0 });
   const { user, companyId } = useAuth();
-  const { memberPriceInCents, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
+  const { memberPriceInCents, pointExchangeRate, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
+  const { upcomingBirthdays, upcomingAnniversaries } = useUpcomingCelebrations(companyId);
+
+  // Celebration reward settings (dollar amounts per event)
+  const { data: celebrationSettings } = useQuery({
+    queryKey: ["billing-celebration-settings", companyId],
+    queryFn: async () => {
+      if (!companyId) return null;
+      const { data, error } = await supabase
+        .from("companies")
+        .select("birthday_rewards_enabled, birthday_reward_points, anniversary_rewards_enabled, anniversary_reward_points")
+        .eq("id", companyId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
 
   // Fetch pending celebration charges for next invoice
   useEffect(() => {
