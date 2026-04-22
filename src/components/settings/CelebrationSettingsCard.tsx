@@ -8,69 +8,27 @@ import { Input } from "@/components/ui/input";
 import { Info, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useSearchParams } from "react-router-dom";
-import BuyPointsDialog from "./BuyPointsDialog";
 
 const CelebrationSettingsCard = () => {
   const { companyId } = useAuth();
   const queryClient = useQueryClient();
   const { pointExchangeRate } = usePlatformSettings();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
 
   const rate = pointExchangeRate || 0.05;
 
-  // Handle post-purchase verification
-  useEffect(() => {
-    const purchaseStatus = searchParams.get("points_purchase");
-    const sessionId = searchParams.get("session_id");
-    if (purchaseStatus === "success" && sessionId && !verifying) {
-      setVerifying(true);
-      (async () => {
-        try {
-          const response = await supabase.functions.invoke("verify-stripe-session", { body: { sessionId } });
-          if (response.error) throw new Error(response.error.message);
-          const data = response.data;
-          if (data?.success || data?.type === "points_purchase") {
-            toast.success(`${data.pointsCredited?.toLocaleString() || ""} points added to your wallet!`);
-            queryClient.invalidateQueries({ queryKey: ["company-celebration-settings"] });
-          } else { toast.error("Purchase verification failed"); }
-        } catch (err: any) { console.error("Verification error:", err); toast.error("Failed to verify purchase"); }
-        finally {
-          setVerifying(false);
-          searchParams.delete("points_purchase");
-          searchParams.delete("session_id");
-          setSearchParams(searchParams, { replace: true });
-        }
-      })();
-    } else if (purchaseStatus === "cancelled") {
-      toast.info("Purchase cancelled");
-      searchParams.delete("points_purchase");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams]);
-
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ["company-celebration-settings", companyId],
     queryFn: async () => {
       if (!companyId) return null;
-      const { data, error } = await supabase.from("companies").select("birthday_rewards_enabled, birthday_reward_points, anniversary_rewards_enabled, anniversary_reward_points, points_balance").eq("id", companyId).single();
+      const { data, error } = await supabase
+        .from("companies")
+        .select("birthday_rewards_enabled, birthday_reward_points, anniversary_rewards_enabled, anniversary_reward_points, stripe_subscription_id, stripe_customer_id_test, stripe_customer_id_live, environment")
+        .eq("id", companyId)
+        .single();
       if (error) throw error;
       return data;
-    },
-    enabled: !!companyId,
-  });
-
-  const { data: memberCount } = useQuery({
-    queryKey: ["company-member-count", companyId],
-    queryFn: async () => {
-      if (!companyId) return 0;
-      const { count, error } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", companyId);
-      if (error) throw error;
-      return count || 0;
     },
     enabled: !!companyId,
   });
@@ -80,7 +38,11 @@ const CelebrationSettingsCard = () => {
     queryKey: ["company-profiles-celebrations", companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data, error } = await supabase.from("profiles").select("id, first_name, last_name, birthday, company_start_date").eq("company_id", companyId).eq("status", "active");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, birthday, company_start_date")
+        .eq("company_id", companyId)
+        .eq("status", "active");
       if (error) throw error;
       return data || [];
     },
@@ -93,21 +55,30 @@ const CelebrationSettingsCard = () => {
     queryFn: async () => {
       if (!companyId) return [];
       const currentYear = new Date().getFullYear();
-      const { data, error } = await supabase.from("celebration_rewards_log").select("profile_id, reward_type").eq("company_id", companyId).eq("year", currentYear);
+      const { data, error } = await supabase
+        .from("celebration_rewards_log")
+        .select("profile_id, reward_type")
+        .eq("company_id", companyId)
+        .eq("year", currentYear);
       if (error) throw error;
       return data || [];
     },
     enabled: !!companyId,
   });
 
-  // Recently sent: current + previous month
+  // Recently sent: current + previous month, includes billing fields
   const { data: recentLogs } = useQuery({
     queryKey: ["celebration-logs-recent", companyId],
     queryFn: async () => {
       if (!companyId) return [];
       const now = new Date();
       const firstOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const { data, error } = await supabase.from("celebration_rewards_log").select("id, reward_type, points_awarded, event_date, year, created_at, profile_id").eq("company_id", companyId).gte("created_at", firstOfPrevMonth.toISOString()).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("celebration_rewards_log")
+        .select("id, reward_type, points_awarded, event_date, year, created_at, profile_id, dollar_amount, billing_status")
+        .eq("company_id", companyId)
+        .gte("created_at", firstOfPrevMonth.toISOString())
+        .order("created_at", { ascending: false });
       if (error) throw error;
       if (!data?.length) return [];
       const profileIds = [...new Set(data.map((l) => l.profile_id))];
@@ -119,49 +90,22 @@ const CelebrationSettingsCard = () => {
     enabled: !!companyId,
   });
 
-  // Compute upcoming celebrations for this month
-  const upcomingCelebrations = useMemo(() => {
-    if (!companyProfiles) return [];
-    const now = new Date();
-    const currentMonth = now.getMonth(); // 0-indexed
-    const rewardedSet = new Set(
-      (rewardedThisYear || []).map((r) => `${r.profile_id}_${r.reward_type}`)
-    );
-
-    const events: { id: string; name: string; event: string; date: string; emoji: string }[] = [];
-
-    companyProfiles.forEach((p) => {
-      if (p.birthday) {
-        const bd = new Date(p.birthday + "T00:00:00");
-        if (bd.getMonth() === currentMonth && !rewardedSet.has(`${p.id}_birthday`)) {
-          const dayInMonth = new Date(now.getFullYear(), currentMonth, bd.getDate());
-          events.push({
-            id: p.id + "_birthday",
-            name: `${p.first_name} ${p.last_name}`.trim(),
-            event: "🎂 Birthday",
-            date: format(dayInMonth, "MMM d"),
-            emoji: "🎂",
-          });
-        }
-      }
-      if (p.company_start_date) {
-        const sd = new Date(p.company_start_date + "T00:00:00");
-        if (sd.getMonth() === currentMonth && !rewardedSet.has(`${p.id}_anniversary`)) {
-          const dayInMonth = new Date(now.getFullYear(), currentMonth, sd.getDate());
-          events.push({
-            id: p.id + "_anniversary",
-            name: `${p.first_name} ${p.last_name}`.trim(),
-            event: "🎉 Anniversary",
-            date: format(dayInMonth, "MMM d"),
-            emoji: "🎉",
-          });
-        }
-      }
-    });
-
-    events.sort((a, b) => a.date.localeCompare(b.date));
-    return events;
-  }, [companyProfiles, rewardedThisYear]);
+  // Pending celebration charges (this billing cycle)
+  const { data: pendingCharges } = useQuery({
+    queryKey: ["celebration-pending-charges", companyId],
+    queryFn: async () => {
+      if (!companyId) return { count: 0, total: 0 };
+      const { data, error } = await supabase
+        .from("celebration_rewards_log")
+        .select("dollar_amount")
+        .eq("company_id", companyId)
+        .eq("billing_status", "pending");
+      if (error) throw error;
+      const total = (data || []).reduce((sum, r: any) => sum + (Number(r.dollar_amount) || 0), 0);
+      return { count: data?.length || 0, total };
+    },
+    enabled: !!companyId,
+  });
 
   const [birthdayEnabled, setBirthdayEnabled] = useState(false);
   const [birthdayDollars, setBirthdayDollars] = useState("0");
@@ -180,6 +124,59 @@ const CelebrationSettingsCard = () => {
   const dollarsToPoints = (dollars: string) => Math.round((parseFloat(dollars) || 0) / rate);
   const birthdayPointsCalc = dollarsToPoints(birthdayDollars);
   const anniversaryPointsCalc = dollarsToPoints(anniversaryDollars);
+  const birthdayDollarValue = (parseFloat(birthdayDollars) || 0);
+  const anniversaryDollarValue = (parseFloat(anniversaryDollars) || 0);
+
+  // Compute upcoming celebrations for this month with projected dollar charge
+  const upcomingCelebrations = useMemo(() => {
+    if (!companyProfiles) return [];
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const rewardedSet = new Set(
+      (rewardedThisYear || []).map((r) => `${r.profile_id}_${r.reward_type}`)
+    );
+
+    const events: { id: string; name: string; event: string; date: string; charge: number; enabled: boolean }[] = [];
+
+    companyProfiles.forEach((p) => {
+      if (p.birthday) {
+        const bd = new Date(p.birthday + "T00:00:00");
+        if (bd.getMonth() === currentMonth && !rewardedSet.has(`${p.id}_birthday`)) {
+          const dayInMonth = new Date(now.getFullYear(), currentMonth, bd.getDate());
+          events.push({
+            id: p.id + "_birthday",
+            name: `${p.first_name} ${p.last_name}`.trim(),
+            event: "🎂 Birthday",
+            date: format(dayInMonth, "MMM d"),
+            charge: birthdayDollarValue,
+            enabled: birthdayEnabled,
+          });
+        }
+      }
+      if (p.company_start_date) {
+        const sd = new Date(p.company_start_date + "T00:00:00");
+        if (sd.getMonth() === currentMonth && !rewardedSet.has(`${p.id}_anniversary`)) {
+          const dayInMonth = new Date(now.getFullYear(), currentMonth, sd.getDate());
+          events.push({
+            id: p.id + "_anniversary",
+            name: `${p.first_name} ${p.last_name}`.trim(),
+            event: "🎉 Anniversary",
+            date: format(dayInMonth, "MMM d"),
+            charge: anniversaryDollarValue,
+            enabled: anniversaryEnabled,
+          });
+        }
+      }
+    });
+
+    events.sort((a, b) => a.date.localeCompare(b.date));
+    return events;
+  }, [companyProfiles, rewardedThisYear, birthdayDollarValue, anniversaryDollarValue, birthdayEnabled, anniversaryEnabled]);
+
+  const upcomingProjectedTotal = upcomingCelebrations.reduce(
+    (sum, e) => sum + (e.enabled ? e.charge : 0),
+    0,
+  );
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -200,19 +197,17 @@ const CelebrationSettingsCard = () => {
     onError: () => toast.error("Failed to save settings"),
   });
 
-  const employees = memberCount || 0;
-  const birthdayAnnualPts = birthdayEnabled ? birthdayPointsCalc * employees : 0;
-  const anniversaryAnnualPts = anniversaryEnabled ? anniversaryPointsCalc * employees : 0;
-  const totalAnnualPts = birthdayAnnualPts + anniversaryAnnualPts;
-  const walletBalance = company?.points_balance || 0;
-  const walletValue = walletBalance * rate;
-
   const hasChanges =
     company &&
     (birthdayEnabled !== company.birthday_rewards_enabled ||
       birthdayPointsCalc !== company.birthday_reward_points ||
       anniversaryEnabled !== company.anniversary_rewards_enabled ||
       anniversaryPointsCalc !== company.anniversary_reward_points);
+
+  // Has active billing setup?
+  const env = (company?.environment || "test").toLowerCase();
+  const hasStripeCustomer = env === "live" ? !!company?.stripe_customer_id_live : !!company?.stripe_customer_id_test;
+  const hasActiveBilling = hasStripeCustomer && !!company?.stripe_subscription_id;
 
   const labelStyle: React.CSSProperties = { fontSize: 13, color: "#9996AA", fontFamily: "Inter, sans-serif" };
 
@@ -262,7 +257,6 @@ const CelebrationSettingsCard = () => {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 0 }}>
-      {/* Single container */}
       <div style={{ border: "1px solid #E8E6F0", borderRadius: 15, padding: 20, background: "#fff" }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>Automated Celebrations</h2>
         <p style={{ ...labelStyle, marginBottom: 24 }}>Configure automatic recognition for special events</p>
@@ -322,29 +316,24 @@ const CelebrationSettingsCard = () => {
           {saveMutation.isPending ? "Saving..." : "Save changes"}
         </button>
 
-        {/* Wallet info */}
-        <div style={{ marginTop: 20, padding: "14px 16px", borderRadius: 13.375, background: "#F5F5F7", border: "1px solid #E8E6F0" }}>
+        {/* Billing accrual summary (replaces wallet) */}
+        <div style={{ marginTop: 20, padding: "14px 16px", borderRadius: 13.375, background: "#F8F5FF", border: "1px solid #E8E6F0" }}>
           <div className="flex items-center justify-between">
             <div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>Company Wallet</p>
-              <p style={{ fontSize: 12, color: "#9996AA" }}>{walletBalance.toLocaleString()} pts · ${walletValue.toFixed(2)} value</p>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#0F0533" }}>Accrued this billing cycle</p>
+              <p style={{ fontSize: 12, color: "#9996AA" }}>
+                ${(pendingCharges?.total || 0).toFixed(2)} · {pendingCharges?.count || 0} celebration{(pendingCharges?.count || 0) !== 1 ? "s" : ""}
+              </p>
             </div>
-            <button
-              onClick={() => setBuyDialogOpen(true)}
-              disabled={verifying}
-              style={{
-                fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 500, height: 32,
-                paddingLeft: 16, paddingRight: 16, borderRadius: 9.375,
-                border: "1px solid #E8E6F0", background: "#fff", color: "#0F0533", cursor: "pointer",
-              }}
-            >
-              {verifying ? "Verifying..." : "Buy Points"}
-            </button>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: 11, color: "#9996AA", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Bills with</p>
+              <p style={{ fontSize: 12, fontWeight: 500, color: "#7F2BFE" }}>your next invoice</p>
+            </div>
           </div>
-          {(birthdayEnabled || anniversaryEnabled) && walletBalance < totalAnnualPts && (
+          {!hasActiveBilling && (birthdayEnabled || anniversaryEnabled) && (
             <div className="flex items-start gap-2 mt-3" style={{ fontSize: 12, color: "#E53E3E" }}>
               <Info size={14} className="mt-0.5 shrink-0" />
-              <span>Wallet may not cover annual cost ({totalAnnualPts.toLocaleString()} pts). Top up to ensure uninterrupted rewards.</span>
+              <span>No active billing subscription. Celebrations will still send points but charges will be marked failed until billing is activated.</span>
             </div>
           )}
         </div>
@@ -360,7 +349,9 @@ const CelebrationSettingsCard = () => {
         >
           <div>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: "#0F0533", marginBottom: 2 }}>Upcoming this month</h3>
-            <p style={{ fontSize: 12, color: "#9996AA" }}>{upcomingCelebrations.length} celebration{upcomingCelebrations.length !== 1 ? "s" : ""} this month</p>
+            <p style={{ fontSize: 12, color: "#9996AA" }}>
+              {upcomingCelebrations.length} celebration{upcomingCelebrations.length !== 1 ? "s" : ""} · projected ${upcomingProjectedTotal.toFixed(2)}
+            </p>
           </div>
           {upcomingOpen ? <ChevronUp size={18} color="#9996AA" /> : <ChevronDown size={18} color="#9996AA" />}
         </div>
@@ -374,7 +365,7 @@ const CelebrationSettingsCard = () => {
                     <th style={thStyle}>Employee</th>
                     <th style={thStyle}>Event</th>
                     <th style={thStyle}>Date</th>
-                    <th style={thStyle}>Charge</th>
+                    <th style={thStyle}>Projected charge</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -383,7 +374,9 @@ const CelebrationSettingsCard = () => {
                       <td style={tdStyle}>{c.name}</td>
                       <td style={tdStyle}>{c.event}</td>
                       <td style={tdStyle}>{c.date}</td>
-                      <td style={{ ...tdStyle, color: "#9996AA" }}>$0.00</td>
+                      <td style={{ ...tdStyle, color: c.enabled ? "#0F0533" : "#9996AA" }}>
+                        {c.enabled ? `$${c.charge.toFixed(2)}` : "Disabled"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -419,18 +412,42 @@ const CelebrationSettingsCard = () => {
                     <th style={thStyle}>Employee</th>
                     <th style={thStyle}>Event</th>
                     <th style={thStyle}>Date</th>
-                    <th style={thStyle}>Amount sent</th>
+                    <th style={thStyle}>Charged</th>
+                    <th style={thStyle}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td style={tdStyle}>{log.employee_name}</td>
-                      <td style={tdStyle}>{log.reward_type === "birthday" ? "🎂 Birthday" : "🎉 Anniversary"}</td>
-                      <td style={tdStyle}>{format(new Date(log.created_at), "MMM d, yyyy")}</td>
-                      <td style={tdStyle}>${(log.points_awarded * rate).toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {recentLogs.map((log: any) => {
+                    const charged = log.dollar_amount != null
+                      ? Number(log.dollar_amount)
+                      : log.points_awarded * rate;
+                    const status = log.billing_status || "pending";
+                    const statusColors: Record<string, { bg: string; fg: string; label: string }> = {
+                      pending: { bg: "#FEF3C7", fg: "#92400E", label: "Pending" },
+                      invoiced: { bg: "#DCFCE7", fg: "#15803D", label: "Billed" },
+                      failed: { bg: "#FEE2E2", fg: "#B91C1C", label: "Failed" },
+                    };
+                    const sc = statusColors[status] || statusColors.pending;
+                    return (
+                      <tr key={log.id}>
+                        <td style={tdStyle}>{log.employee_name}</td>
+                        <td style={tdStyle}>{log.reward_type === "birthday" ? "🎂 Birthday" : "🎉 Anniversary"}</td>
+                        <td style={tdStyle}>{format(new Date(log.created_at), "MMM d, yyyy")}</td>
+                        <td style={tdStyle}>${charged.toFixed(2)}</td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "2px 10px",
+                            borderRadius: 999,
+                            background: sc.bg,
+                            color: sc.fg,
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}>{sc.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
@@ -442,13 +459,9 @@ const CelebrationSettingsCard = () => {
         {/* Billing footnote */}
         <div style={{ ...dividerStyle, marginBottom: 16 }} />
         <p style={{ fontSize: 12, color: "#9996AA" }}>
-          Celebration rewards are billed automatically when the event occurs. Manage payment → <a href="#" onClick={(e) => { e.preventDefault(); }} style={{ color: "#7F2BFE", fontWeight: 500, textDecoration: "underline" }}>Billing</a>
+          Celebration rewards are billed on your next monthly invoice — no prepayment required.
         </p>
       </div>
-
-      {companyId && (
-        <BuyPointsDialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen} companyId={companyId} exchangeRate={rate} />
-      )}
     </div>
   );
 };
