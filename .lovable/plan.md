@@ -1,31 +1,58 @@
 
 
-# Analytics Page: Remove Toggle, Department Filter, Compact Date Picker
+# Stripe-Style Custom Date Range Picker
 
-## Changes
+## Goal
+Replace the current single-month range picker with a Stripe-style two-month calendar that has explicit Start / End input fields above, clear visual feedback for which date is being picked, and an Apply / Clear action row.
 
-### 1. `src/pages/admin/Analytics.tsx`
-- Remove the chart/table view mode toggle (the two icon buttons) and the `viewMode` state.
-- Remove the `<AnalyticsDataTable>` rendering branch — always show `<AnalyticsAllCharts>`.
-- Add a new `departmentFilter` state (string, default `"all"`) and pass it to `useAnalyticsData` queries via a new `departmentFilter` parameter (existing `segmentBy` stays `"none"` so charts render as a single series).
-- Pass `departmentFilter` and `onDepartmentFilterChange` down to `AnalyticsFilters` instead of `segmentBy`/`onSegmentChange`.
+## New layout
 
-### 2. `src/components/analytics/AnalyticsFilters.tsx`
-- Replace the `segmentBy` props with `departmentFilter` / `onDepartmentFilterChange`.
-- Use `useDepartments()` to load company departments and render them as `<SelectItem>`s. First option is `"All Departments"` (value `"all"`); then one item per department name.
-- **Custom date picker**: shrink the left-hand presets column so it only hugs the text. Remove the `border-r` width-stretching by using `w-auto` on the inner container, and switch the preset buttons from `w-full` to inline (`whitespace-nowrap`, no `w-full`). Wrap the column in a tight `flex-col` with `min-w-0` and small horizontal padding (e.g. `px-2`). Keep the subtle separator with a thin `border-r` between columns.
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Last 7 days     Start [ 03 / 01 / 2026 ]   End [ 03 / 31 / 2026 ]│
+│ Last 30 days                                                     │
+│ Last 90 days   <  February 2026         March 2026  >            │
+│ This month     Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa       │
+│ Last month      1  2  3  4  5  6  7    1  2  3  4  5  6  7       │
+│ ...             ...                    ...                       │
+│                                                                  │
+│                                              [ Clear ]  [Apply]  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### 3. `src/hooks/useAnalyticsData.ts`
-- Add an optional `departmentFilter?: string` parameter to `UseAnalyticsDataParams` and thread it into each `fetch*Data` function.
-- In the SQL queries (`fetchTransactionData`, `fetchEngagementData`, `fetchRedemptionsData`, `fetchLoginsData` and their `*Total` previous-period helpers), when `departmentFilter` is set and not `"all"`, filter results to profiles whose department name matches. Simplest approach: resolve the department name → `department_id` once via a lookup query, then add `.eq('profiles.department_id', id)` (or filter in-memory after fetch where the join is awkward, e.g. for redemptions where we already build a `profilesMap`).
-- Include `departmentFilter` in the React Query `queryKey` so changes refetch.
+## Behaviour
+- **Start / End inputs** above the calendar show the currently picked dates as `MM / DD / YYYY`. Each is editable; valid input updates the range. The currently active field (the one that the next click will set) gets a light purple ring/border.
+- **Two months side by side** (`numberOfMonths={2}`) instead of one.
+- **Click flow**:
+  1. First click sets the **start** date and switches active field to End.
+  2. Second click on a later date sets the **end** date.
+  3. Clicking a date earlier than the current start resets start to that date and waits for a new end.
+  4. The user can also click directly into the Start or End input to choose which they're editing — the next calendar click updates that field.
+- **Visual styles** (reuse existing app gradient, no new colors):
+  - Range endpoints: solid gradient circle `linear-gradient(135deg,#7F2BFE,#FC5BFF)`, white text.
+  - In-range days: `bg-purple-100` (already in `calendar.tsx`).
+  - Active input field: ring/border `#7F2BFE` + light purple background tint.
+- **Action row** at the bottom-right:
+  - **Clear** — resets the draft range (ghost button, gray border, hover gray).
+  - **Apply** — commits the draft to `dateRange` and closes the popover. Gradient background, white text. Disabled until both Start and End are valid.
+- **Draft state**: changes inside the popover are local until Apply is clicked, so the dashboard doesn't refetch on every partial click.
+- **Presets** (Last 7 / 30 / 90 days, This month, Last month) stay in the left column. Clicking a preset fills both inputs with its computed range but does **not** auto-close — the user still confirms with Apply (matches Stripe).
 
-### 4. Cleanup
-- `AnalyticsDataTable.tsx` is no longer rendered from the analytics page; leave the file in place (no dead-import errors) but remove its import from `Analytics.tsx`.
-- The unused `BarChart3` / `Table2` icon imports and `cn` (if no longer needed) get removed from `Analytics.tsx`.
+## Files to modify
 
-## Files modified
-- `src/pages/admin/Analytics.tsx`
+### 1. `src/components/analytics/AnalyticsFilters.tsx`
+- Replace the popover content with the new layout.
+- Add local state: `draftStart`, `draftEnd`, `activeField: 'start' | 'end'`.
+- Add two `<input>` fields formatted as `MM / DD / YYYY` with parsing/validation (using `date-fns` `parse` + `isValid`).
+- Switch `<CalendarComponent>` to `numberOfMonths={2}` and wire `onSelect` so it writes into the active field, then advances `activeField`.
+- Add Clear / Apply buttons. Apply calls `onDateRangeChange({ start: draftStart, end: draftEnd })` and closes the popover.
+- Initialize draft state from current `dateRange` whenever the popover opens.
+
+### 2. `src/components/ui/calendar.tsx`
+- No structural change needed — existing `day_selected` (gradient) and `day_range_middle` (`bg-purple-100`) already match the screenshot.
+- Minor tweak: ensure `day_range_start` / `day_range_end` get the gradient treatment (currently inherits from `day_selected`, which is fine — verify and add explicit class only if needed).
+
+### Files modified
 - `src/components/analytics/AnalyticsFilters.tsx`
-- `src/hooks/useAnalyticsData.ts`
+- `src/components/ui/calendar.tsx` (only if endpoint styling needs explicit classes)
 
