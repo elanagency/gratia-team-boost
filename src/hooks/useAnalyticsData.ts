@@ -38,6 +38,31 @@ interface UseAnalyticsDataParams {
   dateRange: DateRange;
   segmentBy: SegmentType;
   granularity: GranularityType;
+  departmentFilter?: string;
+}
+
+// Resolve a department name to its ID for the current company.
+async function resolveDepartmentId(companyId: string, departmentName: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('departments')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('name', departmentName)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+// Get profile IDs for the current company filtered by department (if provided).
+async function getFilteredProfileIds(companyId: string, departmentFilter?: string): Promise<string[] | null> {
+  if (!departmentFilter || departmentFilter === 'all') return null;
+  const deptId = await resolveDepartmentId(companyId, departmentFilter);
+  if (!deptId) return [];
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('department_id', deptId);
+  return (data || []).map((p) => p.id);
 }
 
 // Calculate trend percentage comparing current to previous period
@@ -59,11 +84,12 @@ export function useAnalyticsData({
   dateRange,
   segmentBy,
   granularity,
+  departmentFilter,
 }: UseAnalyticsDataParams) {
   const { companyId } = useAuth();
 
   return useQuery({
-    queryKey: ['analytics', metric, dateRange.start.toISOString(), dateRange.end.toISOString(), segmentBy, granularity, companyId],
+    queryKey: ['analytics', metric, dateRange.start.toISOString(), dateRange.end.toISOString(), segmentBy, granularity, departmentFilter ?? 'all', companyId],
     queryFn: async (): Promise<AnalyticsData> => {
       if (!companyId) {
         return { chartData: [], tableData: [], total: 0, average: 0, trend: 0 };
@@ -72,18 +98,19 @@ export function useAnalyticsData({
       const startDate = startOfDay(dateRange.start);
       const endDate = endOfDay(dateRange.end);
       const { prevStart, prevEnd } = getPreviousPeriodDates(startDate, endDate);
+      const filteredProfileIds = await getFilteredProfileIds(companyId, departmentFilter);
 
       switch (metric) {
         case 'received':
-          return fetchReceivedDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchReceivedDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'sent':
-          return fetchSentDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchSentDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'engagement':
-          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchEngagementDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'redemptions':
-          return fetchRedemptionsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchRedemptionsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         case 'logins':
-          return fetchLoginsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity);
+          return fetchLoginsDataWithTrend(companyId, startDate, endDate, prevStart, prevEnd, segmentBy, granularity, filteredProfileIds);
         default:
           return { chartData: [], tableData: [], total: 0, average: 0, trend: 0 };
       }
@@ -100,12 +127,12 @@ async function fetchReceivedDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
-  // Fetch current and previous period in parallel
   const [currentData, previousData] = await Promise.all([
-    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'recipient'),
-    fetchTransactionTotal(companyId, prevStart, prevEnd, 'recipient'),
+    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'recipient', filteredProfileIds),
+    fetchTransactionTotal(companyId, prevStart, prevEnd, 'recipient', filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousData);
@@ -119,11 +146,12 @@ async function fetchSentDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousData] = await Promise.all([
-    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'sender'),
-    fetchTransactionTotal(companyId, prevStart, prevEnd, 'sender'),
+    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'sender', filteredProfileIds),
+    fetchTransactionTotal(companyId, prevStart, prevEnd, 'sender', filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousData);
@@ -137,11 +165,12 @@ async function fetchEngagementDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousEngagement] = await Promise.all([
-    fetchEngagementData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchEngagementTotal(companyId, prevStart, prevEnd),
+    fetchEngagementData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchEngagementTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.average, previousEngagement);
@@ -155,11 +184,12 @@ async function fetchRedemptionsDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousTotal] = await Promise.all([
-    fetchRedemptionsData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchRedemptionsTotal(companyId, prevStart, prevEnd),
+    fetchRedemptionsData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchRedemptionsTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousTotal);
@@ -173,33 +203,37 @@ async function fetchLoginsDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousTotal] = await Promise.all([
-    fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchLoginsTotal(companyId, prevStart, prevEnd),
+    fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchLoginsTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousTotal);
   return { ...currentData, trend };
 }
-
-// Helper to fetch just the total for previous period (transactions)
 async function fetchTransactionTotal(
   companyId: string,
   startDate: Date,
   endDate: Date,
-  profileType: 'sender' | 'recipient'
+  profileType: 'sender' | 'recipient',
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
   const fk = profileType === 'sender' ? 'sender_profile_id' : 'recipient_profile_id';
-  const { data, error } = await supabase
+  let query = supabase
     .from('point_transactions')
     .select('points')
     .eq('company_id', companyId)
-    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gt('points', 0)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in(fk, filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).reduce((sum, tx) => sum + tx.points, 0);
 }
@@ -208,24 +242,38 @@ async function fetchTransactionTotal(
 async function fetchEngagementTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
+  let membersQuery = supabase.from('profiles').select('id').eq('company_id', companyId).eq('status', 'active');
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    membersQuery = membersQuery.in('id', filteredProfileIds);
+  }
   const [membersResult, txResult] = await Promise.all([
-    supabase.from('profiles').select('id').eq('company_id', companyId).eq('status', 'active'),
+    membersQuery,
     supabase.from('point_transactions')
       .select('sender_profile_id, recipient_profile_id')
       .eq('company_id', companyId)
-      .gt('points', 0)  // Only positive transactions
+      .gt('points', 0)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString()),
   ]);
 
   const totalMembers = membersResult.data?.length || 0;
-  const transactions = txResult.data || [];
+  let transactions = txResult.data || [];
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    transactions = transactions.filter(tx => idSet.has(tx.sender_profile_id) || idSet.has(tx.recipient_profile_id));
+  }
   const uniqueParticipants = new Set([
     ...transactions.map(tx => tx.sender_profile_id),
     ...transactions.map(tx => tx.recipient_profile_id),
   ]);
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    [...uniqueParticipants].forEach(id => { if (!idSet.has(id)) uniqueParticipants.delete(id); });
+  }
 
   return totalMembers > 0 ? Math.round((uniqueParticipants.size / totalMembers) * 100) : 0;
 }
@@ -234,32 +282,41 @@ async function fetchEngagementTotal(
 async function fetchRedemptionsTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('redemptions')
     .select('points_spent')
     .eq('company_id', companyId)
     .gte('redemption_date', startDate.toISOString())
     .lte('redemption_date', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in('user_id', filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).reduce((sum, r) => sum + r.points_spent, 0);
 }
 
-// Helper to fetch logins total for previous period
 async function fetchLoginsTotal(
   companyId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  filteredProfileIds: string[] | null,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('login_events')
     .select('id')
     .eq('company_id', companyId)
     .gte('logged_in_at', startDate.toISOString())
     .lte('logged_in_at', endDate.toISOString());
-
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) return 0;
+    query = query.in('user_id', filteredProfileIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return data?.length || 0;
 }
@@ -270,13 +327,15 @@ async function fetchTransactionData(
   endDate: Date,
   segmentBy: SegmentType,
   granularity: GranularityType,
-  profileType: 'sender' | 'recipient'
+  profileType: 'sender' | 'recipient',
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  const fk = profileType === 'sender' 
-    ? 'point_transactions_sender_profile_id_fkey' 
+  const fk = profileType === 'sender'
+    ? 'point_transactions_sender_profile_id_fkey'
     : 'point_transactions_recipient_profile_id_fkey';
-  
-  const { data: transactions, error } = await supabase
+  const fkColumn = profileType === 'sender' ? 'sender_profile_id' : 'recipient_profile_id';
+
+  let query = supabase
     .from('point_transactions')
     .select(`
       id,
@@ -291,10 +350,19 @@ async function fetchTransactionData(
       )
     `)
     .eq('company_id', companyId)
-    .gt('points', 0)  // Only positive transactions (excludes redemptions)
+    .gt('points', 0)
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return processTransactionData([], startDate, endDate, segmentBy, granularity);
+    }
+    query = query.in(fkColumn, filteredProfileIds);
+  }
+
+  const { data: transactions, error } = await query;
 
   if (error) {
     console.error('Error fetching transaction data:', error);
@@ -309,22 +377,28 @@ async function fetchEngagementData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  // Get total active members with department/name info for segmentation
-  const { data: totalMembers, error: membersError } = await supabase
+  let membersQuery = supabase
     .from('profiles')
     .select('id, first_name, last_name, department_id, departments(name)')
     .eq('company_id', companyId)
     .eq('status', 'active');
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    membersQuery = membersQuery.in('id', filteredProfileIds);
+  }
+  const { data: totalMembers, error: membersError } = await membersQuery;
 
   if (membersError) throw membersError;
 
   const members = totalMembers || [];
   const totalMemberCount = members.length;
 
-  // Get point transactions to calculate unique participants
-  const { data: transactions, error: txError } = await supabase
+  const { data: transactionsRaw, error: txError } = await supabase
     .from('point_transactions')
     .select('sender_profile_id, recipient_profile_id, created_at')
     .eq('company_id', companyId)
@@ -334,6 +408,13 @@ async function fetchEngagementData(
     .order('created_at', { ascending: true });
 
   if (txError) throw txError;
+
+  let transactions = transactionsRaw || [];
+  if (filteredProfileIds) {
+    const idSet = new Set(filteredProfileIds);
+    transactions = transactions.filter(tx => idSet.has(tx.sender_profile_id) || idSet.has(tx.recipient_profile_id));
+  }
+
 
   const intervals = granularity === 'daily'
     ? eachDayOfInterval({ start: startDate, end: endDate })
@@ -415,9 +496,10 @@ async function fetchRedemptionsData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  const { data: redemptions, error } = await supabase
+  let query = supabase
     .from('redemptions')
     .select(`
       id,
@@ -429,6 +511,15 @@ async function fetchRedemptionsData(
     .gte('redemption_date', startDate.toISOString())
     .lte('redemption_date', endDate.toISOString())
     .order('redemption_date', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    query = query.in('user_id', filteredProfileIds);
+  }
+
+  const { data: redemptions, error } = await query;
 
   if (error) {
     console.error('Error fetching redemptions:', error);
@@ -518,16 +609,25 @@ async function fetchLoginsData(
   startDate: Date,
   endDate: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<Omit<AnalyticsData, 'trend'>> {
-  // Query login_events
-  const { data: loginEvents, error } = await supabase
+  let query = supabase
     .from('login_events')
     .select('id, logged_in_at, user_id')
     .eq('company_id', companyId)
     .gte('logged_in_at', startDate.toISOString())
     .lte('logged_in_at', endDate.toISOString())
     .order('logged_in_at', { ascending: true });
+
+  if (filteredProfileIds) {
+    if (filteredProfileIds.length === 0) {
+      return { chartData: [], tableData: [], total: 0, average: 0 };
+    }
+    query = query.in('user_id', filteredProfileIds);
+  }
+
+  const { data: loginEvents, error } = await query;
 
   if (error) {
     console.error('Error fetching login events:', error);

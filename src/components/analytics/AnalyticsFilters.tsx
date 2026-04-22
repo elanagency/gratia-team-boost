@@ -15,13 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { DateRange, SegmentType, GranularityType } from "@/hooks/useAnalyticsData";
+import { useDepartments } from "@/hooks/useDepartments";
+import type { DateRange, GranularityType } from "@/hooks/useAnalyticsData";
 
 interface AnalyticsFiltersProps {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
-  segmentBy: SegmentType;
-  onSegmentChange: (segment: SegmentType) => void;
+  departmentFilter: string;
+  onDepartmentFilterChange: (department: string) => void;
   granularity: GranularityType;
   onGranularityChange: (granularity: GranularityType) => void;
 }
@@ -60,13 +61,14 @@ const datePresets: DatePreset[] = [
 export function AnalyticsFilters({
   dateRange,
   onDateRangeChange,
-  segmentBy,
-  onSegmentChange,
+  departmentFilter,
+  onDepartmentFilterChange,
   granularity,
   onGranularityChange,
 }: AnalyticsFiltersProps) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [selectedPreset, setSelectedPreset] = React.useState<string>("Last 30 days");
+  const { departments } = useDepartments();
 
   const handlePresetSelect = (preset: DatePreset) => {
     setSelectedPreset(preset.label);
@@ -89,16 +91,17 @@ export function AnalyticsFilters({
     <div className="flex flex-wrap items-center gap-3">
       {/* Department Selector */}
       <Select
-        value={segmentBy}
-        onValueChange={(value) => onSegmentChange(value as SegmentType)}
+        value={departmentFilter}
+        onValueChange={onDepartmentFilterChange}
       >
         <SelectTrigger className="w-[160px] rounded-[13.375px]" style={{ borderColor: '#E8E6F0', fontSize: 12, fontWeight: 500, color: '#0F0533' }}>
           <SelectValue placeholder="All Departments" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">All Departments</SelectItem>
-          <SelectItem value="department">By Department</SelectItem>
-          <SelectItem value="person">By Person</SelectItem>
+          <SelectItem value="all">All Departments</SelectItem>
+          {departments.map((dept) => (
+            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -132,14 +135,14 @@ export function AnalyticsFilters({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="flex">
-            <div className="border-r p-2 space-y-1">
+            <div className="flex flex-col w-auto min-w-0 border-r px-2 py-2 space-y-1">
               {datePresets.map((preset) => {
                 const isActive = selectedPreset === preset.label;
                 return (
                   <button
                     key={preset.label}
                     className={cn(
-                      "w-full text-left text-sm px-3 py-1.5 rounded-full transition-colors",
+                      "text-left text-sm px-3 py-1.5 rounded-full whitespace-nowrap transition-colors",
                       !isActive && "hover:bg-gray-100 text-foreground",
                     )}
                     style={isActive ? { background: 'linear-gradient(135deg, #7F2BFE, #FC5BFF)', color: '#FFFFFF' } : undefined}
