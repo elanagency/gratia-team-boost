@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useUpcomingCelebrations } from "@/hooks/useUpcomingCelebrations";
+import { useQuery } from "@tanstack/react-query";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
