@@ -127,12 +127,12 @@ async function fetchReceivedDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
-  // Fetch current and previous period in parallel
   const [currentData, previousData] = await Promise.all([
-    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'recipient'),
-    fetchTransactionTotal(companyId, prevStart, prevEnd, 'recipient'),
+    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'recipient', filteredProfileIds),
+    fetchTransactionTotal(companyId, prevStart, prevEnd, 'recipient', filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousData);
@@ -146,11 +146,12 @@ async function fetchSentDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousData] = await Promise.all([
-    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'sender'),
-    fetchTransactionTotal(companyId, prevStart, prevEnd, 'sender'),
+    fetchTransactionData(companyId, startDate, endDate, segmentBy, granularity, 'sender', filteredProfileIds),
+    fetchTransactionTotal(companyId, prevStart, prevEnd, 'sender', filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousData);
@@ -164,11 +165,12 @@ async function fetchEngagementDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousEngagement] = await Promise.all([
-    fetchEngagementData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchEngagementTotal(companyId, prevStart, prevEnd),
+    fetchEngagementData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchEngagementTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.average, previousEngagement);
@@ -182,11 +184,12 @@ async function fetchRedemptionsDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousTotal] = await Promise.all([
-    fetchRedemptionsData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchRedemptionsTotal(companyId, prevStart, prevEnd),
+    fetchRedemptionsData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchRedemptionsTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousTotal);
@@ -200,18 +203,17 @@ async function fetchLoginsDataWithTrend(
   prevStart: Date,
   prevEnd: Date,
   segmentBy: SegmentType,
-  granularity: GranularityType
+  granularity: GranularityType,
+  filteredProfileIds: string[] | null,
 ): Promise<AnalyticsData> {
   const [currentData, previousTotal] = await Promise.all([
-    fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity),
-    fetchLoginsTotal(companyId, prevStart, prevEnd),
+    fetchLoginsData(companyId, startDate, endDate, segmentBy, granularity, filteredProfileIds),
+    fetchLoginsTotal(companyId, prevStart, prevEnd, filteredProfileIds),
   ]);
 
   const trend = calculateTrend(currentData.total, previousTotal);
   return { ...currentData, trend };
 }
-
-// Helper to fetch just the total for previous period (transactions)
 async function fetchTransactionTotal(
   companyId: string,
   startDate: Date,
