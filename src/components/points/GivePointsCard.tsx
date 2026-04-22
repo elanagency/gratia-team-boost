@@ -287,18 +287,32 @@ export function GivePointsCard() {
 
 
   const handleSubmit = async () => {
-    if (!text.trim() || mentions.length === 0) {
-      toast.error("Please write a message and mention at least one person");
+    // Build recipient list: pill takes precedence, fallback to inline mentions
+    const recipientList: { userId: string; name: string }[] = selectedTeammate
+      ? [{ userId: selectedTeammate.user_id, name: selectedTeammate.name }]
+      : mentions.map((m) => ({ userId: m.userId, name: m.name }));
+
+    if (!text.trim()) {
+      toast.error("Please write a message");
       return;
     }
 
-    if (points.length === 0) {
-      toast.error("Please add points using + (e.g., +25)");
+    if (recipientList.length === 0) {
+      toast.error("Please select a teammate");
       return;
     }
 
-    const totalPointsToGive = points.reduce((sum, point) => sum + point.value, 0);
-    const totalPointsRequired = totalPointsToGive * mentions.length;
+    // Points: pill input takes precedence, fallback to inline points balloons
+    const pillPoints = Number(pointsInputValue);
+    const inlinePoints = points.reduce((sum, point) => sum + point.value, 0);
+    const totalPointsToGive = pillPoints > 0 ? pillPoints : inlinePoints;
+
+    if (!totalPointsToGive || totalPointsToGive <= 0) {
+      toast.error("Please enter a points amount");
+      return;
+    }
+
+    const totalPointsRequired = totalPointsToGive * recipientList.length;
 
     if (totalPointsRequired > monthlyPoints) {
       toast.error("You don't have enough monthly points to give");
