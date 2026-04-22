@@ -118,9 +118,8 @@ export const RedemptionHistory = () => {
         </div>
       ) : (
         <Card className="p-8 text-center">
-          <h3 className="text-lg font-medium text-gray-800">No redemption history</h3>
-          <p className="text-gray-500 mt-2">
-            You haven't redeemed any gift cards yet. Check out the gift card shop to get started!
+          <p className="text-gray-500">
+            You haven't redeemed any gift cards yet.
           </p>
         </Card>
       )}
