@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Calendar } from "lucide-react";
@@ -9,6 +9,7 @@ type LeaderboardMember = {
   name: string;
   department: string | null;
   role: string;
+  avatarUrl: string | null;
   points: number;
   rank: number;
 };
@@ -62,7 +63,7 @@ const Leaderboard = () => {
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, department, role")
+        .select("id, first_name, last_name, department, role, avatar_url")
         .eq("company_id", companyId)
         .eq("status", "active");
 
@@ -97,6 +98,7 @@ const Leaderboard = () => {
           name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "No Name",
           department: p.department || null,
           role: p.role || "member",
+          avatarUrl: (p as any).avatar_url || null,
           points: pointsMap.get(p.id) || 0,
           rank: 0,
         }))
@@ -219,6 +221,7 @@ const Leaderboard = () => {
               >
                 <div className="relative" style={{ width: 90, height: 90, flexShrink: 0 }}>
                   <Avatar style={{ width: 90, height: 90 }}>
+                    {topPerformer.avatarUrl && <AvatarImage src={topPerformer.avatarUrl} alt={topPerformer.name} />}
                     <AvatarFallback
                       className={avatarColors[0]}
                       style={{ fontSize: 28, fontWeight: 600 }}
@@ -308,6 +311,7 @@ const Leaderboard = () => {
                     </span>
                     <div className="flex-1 flex items-center gap-[11.25px] min-w-0">
                       <Avatar style={{ width: 33.75, height: 33.75 }} className="shrink-0">
+                        {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
                         <AvatarFallback
                           className={avatarColors[index % avatarColors.length]}
                           style={{ fontSize: 11, fontWeight: 500 }}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronRight } from "lucide-react";
@@ -9,6 +9,7 @@ type LeaderboardMember = {
   userId: string;
   name: string;
   department: string | null;
+  avatarUrl: string | null;
   points: number;
   rank: number;
 };
@@ -28,7 +29,7 @@ export function LeaderboardCard() {
       
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, department, is_admin')
+        .select('id, first_name, last_name, department, is_admin, avatar_url')
         .eq('company_id', companyId)
         .eq('status', 'active');
       
@@ -62,6 +63,7 @@ export function LeaderboardCard() {
           userId: profile.id,
           name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'No Name',
           department: profile.department || null,
+          avatarUrl: (profile as any).avatar_url || null,
           points: pointsMap.get(profile.id) || 0,
           rank: 0
         }))
@@ -136,7 +138,7 @@ export function LeaderboardCard() {
           Leaderboard
         </span>
         <button
-          onClick={() => navigate("/leaderboard")}
+          onClick={() => navigate("/dashboard/leaderboard")}
           className="flex items-center gap-0.5 hover:opacity-70 transition-opacity"
           style={{ fontSize: "12px", fontWeight: 400, color: "#9996AA" }}
         >
@@ -168,6 +170,7 @@ export function LeaderboardCard() {
 
               {/* Avatar */}
               <Avatar className="shrink-0" style={{ width: "37px", height: "37px" }}>
+                {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
                 <AvatarFallback
                   className={avatarColors[index % avatarColors.length]}
                   style={{ fontSize: "12px", fontWeight: 500 }}
