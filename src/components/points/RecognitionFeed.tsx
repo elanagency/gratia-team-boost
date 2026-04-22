@@ -30,6 +30,7 @@ type PointTransaction = {
   description: string;
   structured_message?: string;
   gif_url?: string;
+  image_url?: string;
   created_at: string;
   sender_name: string;
   recipient_name: string;
@@ -264,6 +265,7 @@ export function RecognitionFeed() {
           description: transaction.description,
           structured_message: transaction.structured_message,
           gif_url: (transaction as any).gif_url || undefined,
+          image_url: (transaction as any).image_url || undefined,
           created_at: transaction.created_at,
           sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
           recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
