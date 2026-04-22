@@ -529,6 +529,37 @@ export function GivePointsCard() {
                     </div>
                   </PopoverContent>
                 </Popover>
+                {isEditingPoints ? (
+                  <input
+                    type="number"
+                    min="1"
+                    max={monthlyPoints}
+                    value={pointsInputValue}
+                    onChange={(e) => setPointsInputValue(e.target.value)}
+                    onBlur={() => {
+                      setIsEditingPoints(false);
+                      if (!pointsInputValue || Number(pointsInputValue) < 1) {
+                        setPointsInputValue("100");
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setIsEditingPoints(false);
+                    }}
+                    autoFocus
+                    className="w-20 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground text-center outline-none focus:ring-2 focus:ring-ring"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPoints(true)}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                  >
+                    {pointsInputValue} pts
+                  </button>
+                )}
+              </div>
+
               {/* Divider above bottom bar */}
               <div className="border-t border-border" />
 
