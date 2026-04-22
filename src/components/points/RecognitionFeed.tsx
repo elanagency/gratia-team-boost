@@ -796,29 +796,32 @@ export function RecognitionFeed() {
                             </Popover>
                           </div>
 
-                          {/* Add Points popover */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="inline-flex items-center gap-1 text-xs font-medium border px-3 py-1 hover:opacity-80 transition-colors mt-1" style={{ borderRadius: '9.375px', borderColor: '#E8E6F0', color: '#9996AA' }}>
-                                <Plus className="h-3 w-3" />
-                                Add Points
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto border-0 shadow-md" side="bottom" align="start" sideOffset={4} style={{ padding: '6px 8px', borderRadius: '10px' }}>
-                              <div className="flex items-center gap-1.5">
-                                {[1, 5, 10].map((pts) => (
-                                  <button
-                                    key={pts}
-                                    onClick={() => handleQuickPoints(thread.mainPost.recipient_id, pts, parsed.cleanText)}
-                                    className="hover:opacity-80 transition-opacity"
-                                    style={{ background: '#DCFCE7', color: '#15803D', borderRadius: '7.375px', padding: '6.125px 11.25px 5.125px 10.25px', fontSize: '14px', fontWeight: 500 }}
-                                  >
-                                    +{pts}
-                                  </button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          {/* Add Points popover - hidden on self recognitions */}
+                          {user?.id !== thread.mainPost.sender_id &&
+                           user?.id !== thread.mainPost.recipient_id && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="inline-flex items-center gap-1 text-xs font-medium border px-3 py-1 hover:opacity-80 transition-colors mt-1" style={{ borderRadius: '9.375px', borderColor: '#E8E6F0', color: '#9996AA' }}>
+                                  <Plus className="h-3 w-3" />
+                                  Add Points
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto border-0 shadow-md" side="bottom" align="start" sideOffset={4} style={{ padding: '6px 8px', borderRadius: '10px' }}>
+                                <div className="flex items-center gap-1.5">
+                                  {[1, 5, 10].map((pts) => (
+                                    <button
+                                      key={pts}
+                                      onClick={() => handleQuickPoints(thread.mainPost.recipient_id, pts, parsed.cleanText)}
+                                      className="hover:opacity-80 transition-opacity"
+                                      style={{ background: '#DCFCE7', color: '#15803D', borderRadius: '7.375px', padding: '6.125px 11.25px 5.125px 10.25px', fontSize: '14px', fontWeight: 500 }}
+                                    >
+                                      +{pts}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
 
                           {/* Tagged along section */}
                           {thread.comments.length > 0 && (
