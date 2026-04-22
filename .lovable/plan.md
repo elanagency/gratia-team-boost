@@ -1,43 +1,52 @@
 
 
-# Enable Image Attachments in Recognition Composer
+# Recognition Composer Dropdowns — Match Figma
 
 ## Goal
-Replace the "Image attachments coming soon!" placeholder with a working image upload that attaches an image to a recognition post and displays it in the feed.
+Restyle the three composer dropdowns (Select teammate, Company value, points) in `GivePointsCard.tsx` to match the screenshots: drop **down** (not up), simple gray border, purple-bordered search input, purple highlight on the selected item.
 
-## Approach
+## Spec (from screenshots)
 
-### 1. Storage
-Reuse the existing public `avatars` bucket pattern by adding a new public `recognition-images` bucket via migration. Path convention: `{company_id}/{user_id}/{timestamp}-{filename}`.
+### Trigger pill (closed)
+- Border: 1px `#E8E6F0` gray (current). When **open**: 1.5px `#7F2BFE` purple border.
+- Placeholder text color: `#9996AA` gray. Selected text: `#0F0533`.
 
-RLS policies on `storage.objects`:
-- **SELECT**: public (bucket is public, images render in feed without signed URLs).
-- **INSERT**: authenticated users, only into a path beginning with their own `auth.uid()`.
-- **DELETE**: owner only.
+### Popover panel
+- Open **downward** only — set `side="bottom"` and `align="start"` on `PopoverContent`.
+- Width matches trigger (~180px for teammate/value, ~140px for points).
+- White bg, 1px `#E8E6F0` border, rounded `13.375px`, soft shadow, padding `8px`.
 
-### 2. Database
-The `point_transactions` table already has a `gif_url` column used for Giphy attachments. Add a parallel `image_url text` column via migration so images and GIFs can coexist (a recognition can have either, not both, enforced in UI).
+### Search input (inside popover)
+- Full-width, 36px height, rounded `8px`.
+- Border: 1.5px `#7F2BFE` purple (always — matches "highlighted search bar").
+- Placeholder "Search..." in gray `#9996AA`.
 
-The `transfer_points_between_users` RPC currently accepts `transfer_gif_url`. Extend it with an optional `transfer_image_url text default null` parameter and insert it into the new column. (Adding a parameter at the end is backward-compatible — existing callers keep working.)
+### Option list
+- Items: 36px row, 14px Inter, color `#0F0533`, padding `0 12px`, rounded `8px`.
+- Hover: bg `#F5F5F7`.
+- **Selected** item: bg `#F3EBFF` (light purple), text `#7F2BFE` (purple), font-weight 500. Matches screenshots 2 & 3 (Marcus Johnson highlighted, 100 pts highlighted).
+- No checkmark icon — just color highlight.
 
-### 3. UI — `src/components/points/GivePointsCard.tsx`
-- Replace the toast placeholder on the image icon with a hidden `<input type="file" accept="image/jpeg,image/png,image/webp">` triggered by the icon button.
-- On select: validate (max 5MB, image mime), upload to `recognition-images` bucket, get `publicUrl`, store in new `selectedImage` state.
-- Show preview thumbnail above the composer (same area used for GIF preview) with an X to remove.
-- Disable the GIF button while an image is attached, and vice versa (mutual exclusion).
-- On submit: pass `transfer_image_url` to the RPC alongside existing args. Reset state on success.
+## Implementation
 
-### 4. UI — `src/components/points/RecognitionFeed.tsx`
-Render `transaction.image_url` in the feed card the same way `gif_url` is rendered (rounded image below the description, max-height ~300px, click to open full size in a new tab).
+In `src/components/points/GivePointsCard.tsx`:
 
-### 5. Types
-After the migration runs, `src/integrations/supabase/types.ts` regenerates automatically — no manual edit.
+1. **Open direction** — on all three `<PopoverContent>` set `side="bottom"` and `align="start"` so they consistently drop down (currently they may flip up when near viewport edge).
 
-## Files modified
-- New migration: add `recognition-images` storage bucket + RLS, add `point_transactions.image_url` column, update `transfer_points_between_users` RPC signature.
-- `src/components/points/GivePointsCard.tsx` — wire up upload, preview, submit.
-- `src/components/points/RecognitionFeed.tsx` — render attached image in feed.
+2. **Trigger open state** — track `open` for each popover (controlled `Popover open onOpenChange`) and apply `border-[1.5px] border-[#7F2BFE]` when open, `border border-[#E8E6F0]` otherwise.
 
-## Note
-The existing recognition composer button hover memory (`hover:bg-muted/50`) is preserved — only the click handler changes.
+3. **Search inputs** — each popover already has a search `Input`. Restyle to:
+   ```
+   className="h-9 rounded-lg border-[1.5px] border-[#7F2BFE] focus-visible:ring-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
+   ```
+
+4. **Option items** — replace current button styles with:
+   - Base: `flex items-center h-9 px-3 rounded-lg text-sm text-[#0F0533] hover:bg-[#F5F5F7] cursor-pointer w-full text-left`
+   - Selected (when value matches current selection): `bg-[#F3EBFF] text-[#7F2BFE] font-medium hover:bg-[#F3EBFF]`
+   - Remove any existing checkmark/avatar prefix from the row to match the clean text-only look in the screenshots.
+
+5. **Points popover** — same treatment; selected pts row gets the purple highlight.
+
+## File modified
+- `src/components/points/GivePointsCard.tsx`
 
