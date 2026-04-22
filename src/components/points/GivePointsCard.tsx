@@ -619,28 +619,59 @@ export function GivePointsCard() {
                   <input
                     ref={imageInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        toast.info("Image attachments coming soon!");
-                      }
                       e.target.value = '';
+                      if (!file) return;
+                      if (!user || !companyId) {
+                        toast.error("You must be signed in to upload");
+                        return;
+                      }
+                      if (!file.type.startsWith('image/')) {
+                        toast.error("Please select an image file");
+                        return;
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast.error("Image must be 5MB or smaller");
+                        return;
+                      }
+                      try {
+                        setIsUploadingImage(true);
+                        const ext = file.name.split('.').pop() || 'jpg';
+                        const path = `${user.id}/${companyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+                        const { error: uploadError } = await supabase.storage
+                          .from('recognition-images')
+                          .upload(path, file, { contentType: file.type, upsert: false });
+                        if (uploadError) throw uploadError;
+                        const { data: pub } = supabase.storage
+                          .from('recognition-images')
+                          .getPublicUrl(path);
+                        setSelectedImageUrl(pub.publicUrl);
+                        setSelectedGif(null);
+                      } catch (err) {
+                        console.error('Image upload failed:', err);
+                        toast.error('Failed to upload image');
+                      } finally {
+                        setIsUploadingImage(false);
+                      }
                     }}
                   />
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors"
+                    disabled={isSubmitting || isUploadingImage || !!selectedGif}
+                    className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition-colors disabled:opacity-40"
+                    title={selectedGif ? "Remove GIF first" : "Attach image"}
                   >
                     <ImageIcon className="h-4 w-4" />
                   </button>
 
                   {/* GIF picker */}
                   <GiphyPicker
-                    onSelect={(gif) => setSelectedGif(gif)}
-                    disabled={isSubmitting}
+                    onSelect={(gif) => { setSelectedGif(gif); setSelectedImageUrl(null); }}
+                    disabled={isSubmitting || !!selectedImageUrl}
                   />
                 </div>
 
