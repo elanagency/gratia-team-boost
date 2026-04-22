@@ -527,7 +527,8 @@ export function GivePointsCard() {
                         </div>
                       )}
                     </div>
-
+                  </PopoverContent>
+                </Popover>
               {/* Divider above bottom bar */}
               <div className="border-t border-border" />
 
