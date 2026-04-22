@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useUpcomingCelebrations } from "@/hooks/useUpcomingCelebrations";
+import { useQuery } from "@tanstack/react-query";
 
 interface SubscriptionStatus {
   has_subscription: boolean;
@@ -44,7 +46,24 @@ export const BillingCard = () => {
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
   const [pendingCelebrationCharges, setPendingCelebrationCharges] = useState<{ total: number; count: number }>({ total: 0, count: 0 });
   const { user, companyId } = useAuth();
-  const { memberPriceInCents, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
+  const { memberPriceInCents, pointExchangeRate, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
+  const { upcomingBirthdays, upcomingAnniversaries } = useUpcomingCelebrations(companyId);
+
+  // Celebration reward settings (dollar amounts per event)
+  const { data: celebrationSettings } = useQuery({
+    queryKey: ["billing-celebration-settings", companyId],
+    queryFn: async () => {
+      if (!companyId) return null;
+      const { data, error } = await supabase
+        .from("companies")
+        .select("birthday_rewards_enabled, birthday_reward_points, anniversary_rewards_enabled, anniversary_reward_points")
+        .eq("id", companyId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
 
   // Fetch pending celebration charges for next invoice
   useEffect(() => {
@@ -192,10 +211,29 @@ export const BillingCard = () => {
 
   const pricePerSeat = (memberPriceInCents / 100).toFixed(0);
   const seats = subscriptionStatus.team_members || 0;
-  const totalCost = (seats * memberPriceInCents / 100).toFixed(2);
-  const nextBillingDate = subscriptionStatus.next_billing_date
-    ? new Date(subscriptionStatus.next_billing_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : null;
+  const seatsCost = seats * memberPriceInCents / 100;
+
+  // Per-celebration projections
+  const rate = pointExchangeRate || 0.05;
+  const birthdayDollarValue = (celebrationSettings?.birthday_reward_points || 0) * rate;
+  const anniversaryDollarValue = (celebrationSettings?.anniversary_reward_points || 0) * rate;
+  const showBirthdayLine = !!celebrationSettings?.birthday_rewards_enabled && upcomingBirthdays > 0;
+  const showAnniversaryLine = !!celebrationSettings?.anniversary_rewards_enabled && upcomingAnniversaries > 0;
+  const birthdayLineTotal = upcomingBirthdays * birthdayDollarValue;
+  const anniversaryLineTotal = upcomingAnniversaries * anniversaryDollarValue;
+  const totalDue = seatsCost
+    + (showBirthdayLine ? birthdayLineTotal : 0)
+    + (showAnniversaryLine ? anniversaryLineTotal : 0);
+
+  // Next billing date — Stripe value or fallback to 1st of next month
+  let nextBillingDate: string | null = null;
+  if (subscriptionStatus.next_billing_date) {
+    nextBillingDate = new Date(subscriptionStatus.next_billing_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  } else if (hasExistingSubscription) {
+    const now = new Date();
+    const candidate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    nextBillingDate = candidate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }
 
   const paymentMethodText = hasBillingSetup
     ? isLoadingPaymentMethod
@@ -237,7 +275,7 @@ export const BillingCard = () => {
             Price
           </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "#0F0533" }}>
-            ${pricePerSeat} <span style={{ fontSize: 12, fontWeight: 400, color: "#9996AA" }}>/seat/mo</span>
+            ${pricePerSeat} <span style={{ fontSize: 12, fontWeight: 400, color: "#9996AA" }}>/user/mo</span>
           </div>
         </div>
       </div>
@@ -248,9 +286,29 @@ export const BillingCard = () => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
           <span style={labelStyle}>Seats</span>
           <span style={valueStyle}>
-            {hasExistingSubscription ? `${seats} × $${pricePerSeat} = $${totalCost}` : "0"}
+            {hasExistingSubscription ? `${seats} × $${pricePerSeat} = $${seatsCost.toFixed(2)}` : "0"}
           </span>
         </div>
+
+        {/* Birthdays */}
+        {showBirthdayLine && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+            <span style={labelStyle}>Birthdays ({upcomingBirthdays} upcoming)</span>
+            <span style={valueStyle}>
+              {upcomingBirthdays} × ${birthdayDollarValue.toFixed(2)} = ${birthdayLineTotal.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {/* Work Anniversaries */}
+        {showAnniversaryLine && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+            <span style={labelStyle}>Work Anniversaries ({upcomingAnniversaries} upcoming)</span>
+            <span style={valueStyle}>
+              {upcomingAnniversaries} × ${anniversaryDollarValue.toFixed(2)} = ${anniversaryLineTotal.toFixed(2)}
+            </span>
+          </div>
+        )}
 
         {/* Total due */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
@@ -258,16 +316,8 @@ export const BillingCard = () => {
             Total due {nextBillingDate || ""}
           </span>
           <span style={{ ...valueStyle, fontWeight: 600 }}>
-            {hasExistingSubscription ? `$${totalCost}` : "$0.00"}
+            {hasExistingSubscription ? `$${totalDue.toFixed(2)}` : "$0.00"}
           </span>
-        </div>
-
-        {/* Celebration charges (postpaid) */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
-          <span style={labelStyle}>
-            Celebration charges{pendingCelebrationCharges.count > 0 ? ` (${pendingCelebrationCharges.count})` : ""}
-          </span>
-          <span style={valueStyle}>${pendingCelebrationCharges.total.toFixed(2)}</span>
         </div>
 
         {/* Next billing date */}
