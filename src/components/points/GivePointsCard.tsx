@@ -39,8 +39,13 @@ export function GivePointsCard() {
   const { values: companyValues } = useCompanyValues();
   const [selectedValue, setSelectedValue] = useState<CompanyValue | null>(null);
   const [valuePopoverOpen, setValuePopoverOpen] = useState(false);
+  const [valueSearch, setValueSearch] = useState("");
   const [pointsInputValue, setPointsInputValue] = useState("100");
-  const [isEditingPoints, setIsEditingPoints] = useState(false);
+  const [pointsPopoverOpen, setPointsPopoverOpen] = useState(false);
+  const [pointsSearch, setPointsSearch] = useState("");
+  const [teammatePopoverOpen, setTeammatePopoverOpen] = useState(false);
+  const [teammateSearch, setTeammateSearch] = useState("");
+  const [selectedTeammate, setSelectedTeammate] = useState<{ id: string; name: string; user_id: string } | null>(null);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -488,96 +493,222 @@ export function GivePointsCard() {
 
               {/* Pill filter buttons */}
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={handleMentionButtonClick}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                >
-                  Select teammate
-                </button>
+                {/* Select teammate dropdown */}
+                <Popover open={teammatePopoverOpen} onOpenChange={setTeammatePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors disabled:opacity-50 ${
+                        teammatePopoverOpen
+                          ? "border-[1.5px] border-[#7F2BFE] text-[#0F0533]"
+                          : "border border-[#E8E6F0] text-[#9996AA] hover:bg-muted/50"
+                      } ${selectedTeammate ? "text-[#0F0533]" : ""}`}
+                    >
+                      {selectedTeammate ? selectedTeammate.name : "Select teammate"}
+                      {selectedTeammate && (
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTeammate(null);
+                          }}
+                        />
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    sideOffset={6}
+                    className="w-[220px] p-2 z-[200] bg-white border border-[#E8E6F0] rounded-[13.375px] shadow-md"
+                  >
+                    <Input
+                      autoFocus
+                      placeholder="Search..."
+                      value={teammateSearch}
+                      onChange={(e) => setTeammateSearch(e.target.value)}
+                      className="h-9 mb-2 rounded-lg border-[1.5px] border-[#7F2BFE] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
+                    />
+                    <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto">
+                      {availableRecipients
+                        .filter((m) =>
+                          m.name.toLowerCase().includes(teammateSearch.toLowerCase())
+                        )
+                        .map((member) => {
+                          const isSelected = selectedTeammate?.user_id === member.user_id;
+                          return (
+                            <button
+                              key={member.user_id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTeammate({
+                                  id: member.id,
+                                  name: member.name,
+                                  user_id: member.user_id,
+                                });
+                                // Also insert as a mention into the editor
+                                selectMention(member);
+                                setTeammatePopoverOpen(false);
+                                setTeammateSearch("");
+                              }}
+                              className={`flex items-center h-9 px-3 rounded-lg text-sm w-full text-left transition-colors ${
+                                isSelected
+                                  ? "bg-[#F3EBFF] text-[#7F2BFE] font-medium hover:bg-[#F3EBFF]"
+                                  : "text-[#0F0533] hover:bg-[#F5F5F7]"
+                              }`}
+                            >
+                              {member.name}
+                            </button>
+                          );
+                        })}
+                      {availableRecipients.filter((m) =>
+                        m.name.toLowerCase().includes(teammateSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-[#9996AA]">No teammates found</div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Company value dropdown */}
                 <Popover open={valuePopoverOpen} onOpenChange={setValuePopoverOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
                       disabled={isSubmitting}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors disabled:opacity-50"
-                      style={selectedValue ? {
-                        backgroundColor: selectedValue.color + '20',
-                        color: selectedValue.color,
-                        borderColor: selectedValue.color + '40',
-                      } : undefined}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors disabled:opacity-50 ${
+                        valuePopoverOpen
+                          ? "border-[1.5px] border-[#7F2BFE] text-[#0F0533]"
+                          : "border border-[#E8E6F0] text-[#9996AA] hover:bg-muted/50"
+                      } ${selectedValue ? "text-[#0F0533]" : ""}`}
                     >
-                      {selectedValue ? (
-                        <>
-                          {selectedValue.name}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedValue(null);
-                            }}
-                          />
-                        </>
-                      ) : (
-                        'Company value'
+                      {selectedValue ? selectedValue.name : "Company value"}
+                      {selectedValue && (
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedValue(null);
+                          }}
+                        />
                       )}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2 z-[200]" align="start" sideOffset={8}>
-                    <div className="flex flex-col gap-1">
-                      {companyValues.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pb-2 border-b border-border mb-1">
-                          {companyValues.map((value) => (
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    sideOffset={6}
+                    className="w-[220px] p-2 z-[200] bg-white border border-[#E8E6F0] rounded-[13.375px] shadow-md"
+                  >
+                    <Input
+                      autoFocus
+                      placeholder="Search..."
+                      value={valueSearch}
+                      onChange={(e) => setValueSearch(e.target.value)}
+                      className="h-9 mb-2 rounded-lg border-[1.5px] border-[#7F2BFE] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
+                    />
+                    <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto">
+                      {companyValues
+                        .filter((v) =>
+                          v.name.toLowerCase().includes(valueSearch.toLowerCase())
+                        )
+                        .map((value) => {
+                          const isSelected = selectedValue?.id === value.id;
+                          return (
                             <button
                               key={value.id}
+                              type="button"
                               onClick={() => {
                                 setSelectedValue(value);
                                 setValuePopoverOpen(false);
+                                setValueSearch("");
                               }}
-                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
-                              style={{
-                                backgroundColor: value.color + '20',
-                                color: value.color,
-                              }}
+                              className={`flex items-center h-9 px-3 rounded-lg text-sm w-full text-left transition-colors ${
+                                isSelected
+                                  ? "bg-[#F3EBFF] text-[#7F2BFE] font-medium hover:bg-[#F3EBFF]"
+                                  : "text-[#0F0533] hover:bg-[#F5F5F7]"
+                              }`}
                             >
                               {value.name}
                             </button>
-                          ))}
-                        </div>
+                          );
+                        })}
+                      {companyValues.filter((v) =>
+                        v.name.toLowerCase().includes(valueSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-[#9996AA]">No values found</div>
                       )}
                     </div>
                   </PopoverContent>
                 </Popover>
-                {isEditingPoints ? (
-                  <input
-                    type="number"
-                    min="1"
-                    max={monthlyPoints}
-                    value={pointsInputValue}
-                    onChange={(e) => setPointsInputValue(e.target.value)}
-                    onBlur={() => {
-                      setIsEditingPoints(false);
-                      if (!pointsInputValue || Number(pointsInputValue) < 1) {
-                        setPointsInputValue("100");
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setIsEditingPoints(false);
-                    }}
-                    autoFocus
-                    className="w-20 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground text-center outline-none focus:ring-2 focus:ring-ring"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingPoints(true)}
-                    disabled={isSubmitting}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+
+                {/* Points dropdown */}
+                <Popover open={pointsPopoverOpen} onOpenChange={setPointsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors disabled:opacity-50 text-[#0F0533] ${
+                        pointsPopoverOpen
+                          ? "border-[1.5px] border-[#7F2BFE]"
+                          : "border border-[#E8E6F0] hover:bg-muted/50"
+                      }`}
+                    >
+                      {pointsInputValue} pts
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    sideOffset={6}
+                    className="w-[160px] p-2 z-[200] bg-white border border-[#E8E6F0] rounded-[13.375px] shadow-md"
                   >
-                    {pointsInputValue} pts
-                  </button>
-                )}
+                    <Input
+                      autoFocus
+                      type="number"
+                      min={1}
+                      placeholder="Search..."
+                      value={pointsSearch}
+                      onChange={(e) => setPointsSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && pointsSearch && Number(pointsSearch) > 0) {
+                          setPointsInputValue(pointsSearch);
+                          setPointsPopoverOpen(false);
+                          setPointsSearch("");
+                        }
+                      }}
+                      className="h-9 mb-2 rounded-lg border-[1.5px] border-[#7F2BFE] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
+                    />
+                    <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto">
+                      {[10, 20, 25, 50, 100, 200, 500]
+                        .filter((v) =>
+                          pointsSearch ? v.toString().includes(pointsSearch) : true
+                        )
+                        .map((value) => {
+                          const isSelected = pointsInputValue === value.toString();
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => {
+                                setPointsInputValue(value.toString());
+                                setPointsPopoverOpen(false);
+                                setPointsSearch("");
+                              }}
+                              className={`flex items-center h-9 px-3 rounded-lg text-sm w-full text-left transition-colors ${
+                                isSelected
+                                  ? "bg-[#F3EBFF] text-[#7F2BFE] font-medium hover:bg-[#F3EBFF]"
+                                  : "text-[#0F0533] hover:bg-[#F5F5F7]"
+                              }`}
+                            >
+                              {value} pts
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Divider above bottom bar */}
