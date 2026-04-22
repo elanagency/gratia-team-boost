@@ -465,6 +465,25 @@ export function GivePointsCard() {
                     </div>
                   </div>
                 )}
+
+                {/* Image Preview */}
+                {selectedImageUrl && (
+                  <div className="py-2">
+                    <div className="relative inline-block">
+                      <img
+                        src={selectedImageUrl}
+                        alt="Selected attachment"
+                        className="max-w-[240px] max-h-[180px] rounded-md object-cover"
+                      />
+                      <button
+                        onClick={() => setSelectedImageUrl(null)}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Pill filter buttons */}
