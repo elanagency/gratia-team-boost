@@ -61,33 +61,42 @@ export type Database = {
       }
       celebration_rewards_log: {
         Row: {
+          billing_status: string
           company_id: string
           created_at: string
+          dollar_amount: number | null
           event_date: string
           id: string
           points_awarded: number
           profile_id: string
           reward_type: string
+          stripe_invoice_item_id: string | null
           year: number
         }
         Insert: {
+          billing_status?: string
           company_id: string
           created_at?: string
+          dollar_amount?: number | null
           event_date: string
           id?: string
           points_awarded: number
           profile_id: string
           reward_type: string
+          stripe_invoice_item_id?: string | null
           year: number
         }
         Update: {
+          billing_status?: string
           company_id?: string
           created_at?: string
+          dollar_amount?: number | null
           event_date?: string
           id?: string
           points_awarded?: number
           profile_id?: string
           reward_type?: string
+          stripe_invoice_item_id?: string | null
           year?: number
         }
         Relationships: [

@@ -42,8 +42,24 @@ export const BillingCard = () => {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodDetails | null>(null);
   const [isLoadingPaymentMethod, setIsLoadingPaymentMethod] = useState(false);
+  const [pendingCelebrationCharges, setPendingCelebrationCharges] = useState<{ total: number; count: number }>({ total: 0, count: 0 });
   const { user, companyId } = useAuth();
   const { memberPriceInCents, isLoading: isPricingLoading, isError: isPricingError } = usePlatformSettings();
+
+  // Fetch pending celebration charges for next invoice
+  useEffect(() => {
+    if (!companyId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("celebration_rewards_log")
+        .select("dollar_amount")
+        .eq("company_id", companyId)
+        .eq("billing_status", "pending");
+      if (error) { console.error("Error fetching pending celebration charges:", error); return; }
+      const total = (data || []).reduce((s, r: any) => s + (Number(r.dollar_amount) || 0), 0);
+      setPendingCelebrationCharges({ total, count: data?.length || 0 });
+    })();
+  }, [companyId, subscriptionStatus]);
 
   const fetchCompanyData = async () => {
     if (!companyId) return null;
@@ -244,6 +260,14 @@ export const BillingCard = () => {
           <span style={{ ...valueStyle, fontWeight: 600 }}>
             {hasExistingSubscription ? `$${totalCost}` : "$0.00"}
           </span>
+        </div>
+
+        {/* Celebration charges (postpaid) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #F3F2F7" }}>
+          <span style={labelStyle}>
+            Celebration charges{pendingCelebrationCharges.count > 0 ? ` (${pendingCelebrationCharges.count})` : ""}
+          </span>
+          <span style={valueStyle}>${pendingCelebrationCharges.total.toFixed(2)}</span>
         </div>
 
         {/* Next billing date */}
