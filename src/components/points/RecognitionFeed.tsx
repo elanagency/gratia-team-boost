@@ -30,6 +30,7 @@ type PointTransaction = {
   description: string;
   structured_message?: string;
   gif_url?: string;
+  image_url?: string;
   created_at: string;
   sender_name: string;
   recipient_name: string;
@@ -264,6 +265,7 @@ export function RecognitionFeed() {
           description: transaction.description,
           structured_message: transaction.structured_message,
           gif_url: (transaction as any).gif_url || undefined,
+          image_url: (transaction as any).image_url || undefined,
           created_at: transaction.created_at,
           sender_name: profileMap.get(transaction.sender_profile_id)?.name || 'Unknown User',
           recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
@@ -729,6 +731,24 @@ export function RecognitionFeed() {
                                 className="max-w-[280px] max-h-[200px] rounded-lg object-cover"
                                 loading="lazy"
                               />
+                            </div>
+                          )}
+
+                          {/* Image attachment */}
+                          {thread.mainPost.image_url && (
+                            <div className="mt-1">
+                              <a
+                                href={thread.mainPost.image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={thread.mainPost.image_url}
+                                  alt="Recognition attachment"
+                                  className="max-w-[320px] max-h-[300px] rounded-lg object-cover border border-border"
+                                  loading="lazy"
+                                />
+                              </a>
                             </div>
                           )}
 

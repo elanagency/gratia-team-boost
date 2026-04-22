@@ -687,6 +687,7 @@ export type Database = {
           description: string
           gif_url: string | null
           id: string
+          image_url: string | null
           points: number
           recipient_profile_id: string
           sender_profile_id: string
@@ -699,6 +700,7 @@ export type Database = {
           description: string
           gif_url?: string | null
           id?: string
+          image_url?: string | null
           points: number
           recipient_profile_id: string
           sender_profile_id: string
@@ -711,6 +713,7 @@ export type Database = {
           description?: string
           gif_url?: string | null
           id?: string
+          image_url?: string | null
           points?: number
           recipient_profile_id?: string
           sender_profile_id?: string
@@ -1149,17 +1152,30 @@ export type Database = {
         Args: { target_environment?: string }
         Returns: number
       }
-      transfer_points_between_users: {
-        Args: {
-          points_amount: number
-          recipient_user_id: string
-          sender_user_id: string
-          transfer_company_id: string
-          transfer_description: string
-          transfer_gif_url?: string
-        }
-        Returns: Json
-      }
+      transfer_points_between_users:
+        | {
+            Args: {
+              points_amount: number
+              recipient_user_id: string
+              sender_user_id: string
+              transfer_company_id: string
+              transfer_description: string
+              transfer_gif_url?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              points_amount: number
+              recipient_user_id: string
+              sender_user_id: string
+              transfer_company_id: string
+              transfer_description: string
+              transfer_gif_url?: string
+              transfer_image_url?: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never
