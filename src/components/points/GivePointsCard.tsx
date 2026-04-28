@@ -825,7 +825,7 @@ export function GivePointsCard() {
 
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
+                  disabled={isSubmitting || !text.trim() || (!selectedTeammate && mentions.length === 0) || (!(Number(pointsInputValue) > 0) && points.length === 0)}
                   className="inline-flex items-center gap-1.5 text-white text-sm font-medium rounded-full transition-opacity disabled:opacity-50"
                   style={{
                     background: 'linear-gradient(135deg, #7F2BFE, #FC5BFF)',
