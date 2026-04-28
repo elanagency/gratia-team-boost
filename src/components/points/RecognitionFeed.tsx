@@ -286,7 +286,7 @@ export function RecognitionFeed() {
           recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
           sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined,
           company_value_id: (transaction as any).company_value_id || undefined,
-          company_value_name: valueData?.name || undefined,
+          company_value_name: valueData?.name || fallbackValueName || undefined,
           company_value_color: valueData?.color || undefined,
         };
       });
