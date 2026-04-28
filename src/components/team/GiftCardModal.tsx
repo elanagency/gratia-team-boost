@@ -57,7 +57,28 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
 
   if (!reward) return null;
 
-  const handleDollarChange = (val: string) => {
+  // Sanitize: keep digits and at most one decimal point
+  const sanitizeDecimal = (val: string) => {
+    const cleaned = val.replace(/[^\d.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length <= 1) return cleaned;
+    return parts[0] + '.' + parts.slice(1).join('').slice(0, 2);
+  };
+  const sanitizeInt = (val: string) => val.replace(/[^\d]/g, '');
+
+  // Format with commas; preserves trailing decimal/zeros while typing
+  const formatWithCommas = (val: string) => {
+    if (!val) return '';
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart ? Number(intPart).toLocaleString('en-US') : '0';
+    return decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
+  };
+
+  const formatDollarTwoDp = (num: number) =>
+    num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const handleDollarChange = (raw: string) => {
+    const val = sanitizeDecimal(raw.replace(/,/g, ''));
     setDollarAmount(val);
     const num = parseFloat(val);
     if (!isNaN(num) && num >= 0) {
@@ -67,11 +88,18 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
     }
   };
 
-  const handlePointsChange = (val: string) => {
+  const handleDollarBlur = () => {
+    if (!dollarAmount) return;
+    const num = parseFloat(dollarAmount);
+    if (!isNaN(num)) setDollarAmount(num.toFixed(2));
+  };
+
+  const handlePointsChange = (raw: string) => {
+    const val = sanitizeInt(raw.replace(/,/g, ''));
     setPointsAmount(val);
     const num = parseFloat(val);
     if (!isNaN(num) && num >= 0) {
-      setDollarAmount(String(Math.round(num * rate * 100) / 100));
+      setDollarAmount((Math.round(num * rate * 100) / 100).toFixed(2));
     } else {
       setDollarAmount('');
     }
@@ -198,24 +226,55 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
           {/* Dollar + Points inputs */}
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 15,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  color: '#0F0533',
+                  pointerEvents: 'none',
+                }}
+              >
+                $
+              </span>
               <input
-                type="number"
-                min={0}
-                placeholder="$ 0"
-                value={dollarAmount}
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={formatWithCommas(dollarAmount)}
                 onChange={(e) => handleDollarChange(e.target.value)}
-                style={inputStyle}
+                onBlur={handleDollarBlur}
+                style={{ ...inputStyle, paddingLeft: 28 }}
               />
             </div>
             <div style={{ flex: 1, position: 'relative' }}>
               <input
-                type="number"
-                min={0}
-                placeholder="0 points"
-                value={pointsAmount}
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={formatWithCommas(pointsAmount)}
                 onChange={(e) => handlePointsChange(e.target.value)}
-                style={inputStyle}
+                style={{ ...inputStyle, paddingRight: 56 }}
               />
+              <span
+                style={{
+                  position: 'absolute',
+                  right: 15,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  color: '#9996AA',
+                  pointerEvents: 'none',
+                }}
+              >
+                points
+              </span>
             </div>
           </div>
 
