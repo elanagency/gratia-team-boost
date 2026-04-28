@@ -4,6 +4,7 @@ import { SimpleGiftCardGrid } from "./SimpleGiftCardGrid";
 import { GiftCardModal } from "./GiftCardModal";
 import { RedemptionSuccessDialog } from "./RedemptionSuccessDialog";
 import { Search } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export const RewardShop = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
