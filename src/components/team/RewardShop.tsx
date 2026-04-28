@@ -18,6 +18,12 @@ export const RewardShop = () => {
   } | null>(null);
   
   const { giftCards, exchangeRate, isLoading, error } = useRewardsShop();
+  const { recognitionPoints } = useAuth();
+  const rate = parseFloat(String(exchangeRate)) || 0.05;
+  const balancePoints = recognitionPoints || 0;
+  const balanceDollars = balancePoints * rate;
+  const formattedPoints = balancePoints.toLocaleString('en-US');
+  const formattedDollars = `$${balanceDollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const filteredRewards = giftCards.filter(reward => {
     return reward.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
