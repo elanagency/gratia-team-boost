@@ -487,7 +487,7 @@ export function RecognitionFeed() {
       const points = Array.from(pointElements).map(el => el.textContent || '').filter(Boolean);
       
       // Remove mention and point balloon elements before extracting clean text
-      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"]');
+      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"], .value-tag, [data-value-id]');
       balloonElements.forEach(el => el.remove());
       
       // Get clean text by removing HTML but keeping the content
