@@ -226,24 +226,55 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
           {/* Dollar + Points inputs */}
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 15,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  color: '#0F0533',
+                  pointerEvents: 'none',
+                }}
+              >
+                $
+              </span>
               <input
-                type="number"
-                min={0}
-                placeholder="$ 0"
-                value={dollarAmount}
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={formatWithCommas(dollarAmount)}
                 onChange={(e) => handleDollarChange(e.target.value)}
-                style={inputStyle}
+                onBlur={handleDollarBlur}
+                style={{ ...inputStyle, paddingLeft: 28 }}
               />
             </div>
             <div style={{ flex: 1, position: 'relative' }}>
               <input
-                type="number"
-                min={0}
-                placeholder="0 points"
-                value={pointsAmount}
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={formatWithCommas(pointsAmount)}
                 onChange={(e) => handlePointsChange(e.target.value)}
-                style={inputStyle}
+                style={{ ...inputStyle, paddingRight: 56 }}
               />
+              <span
+                style={{
+                  position: 'absolute',
+                  right: 15,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  color: '#9996AA',
+                  pointerEvents: 'none',
+                }}
+              >
+                points
+              </span>
             </div>
           </div>
 
