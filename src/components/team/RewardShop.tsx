@@ -50,6 +50,85 @@ export const RewardShop = () => {
 
   return (
     <div className="space-y-4">
+      {/* Available Balance */}
+      <div
+        style={{
+          width: '100%',
+          borderRadius: 15,
+          border: '1px solid #E8E6F0',
+          background: 'linear-gradient(135deg, rgba(127,43,254,0.06), rgba(252,91,255,0.06))',
+          padding: '19.75px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span
+            style={{
+              color: '#9996AA',
+              fontSize: 12,
+              lineHeight: '18px',
+              fontWeight: 500,
+              letterSpacing: '0.48px',
+              textTransform: 'uppercase',
+            }}
+          >
+            Available Balance
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span
+              style={{
+                color: '#0F0533',
+                fontSize: 28,
+                lineHeight: '42px',
+                fontWeight: 600,
+              }}
+            >
+              {formattedPoints}
+            </span>
+            <span
+              style={{
+                background: '#DCFCE7',
+                color: '#15803D',
+                fontSize: 13,
+                lineHeight: '19.5px',
+                fontWeight: 600,
+                padding: '4px 13px',
+                borderRadius: 999,
+              }}
+            >
+              points
+            </span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <span
+            style={{
+              color: '#9996AA',
+              fontSize: 12,
+              lineHeight: '18px',
+              fontWeight: 400,
+              textAlign: 'right',
+            }}
+          >
+            Redemption Value
+          </span>
+          <span
+            style={{
+              color: '#0F0533',
+              fontSize: 20,
+              lineHeight: '30px',
+              fontWeight: 600,
+              textAlign: 'right',
+            }}
+          >
+            {formattedDollars}
+          </span>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="relative w-full">
         <Search className="absolute left-[15px] top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
