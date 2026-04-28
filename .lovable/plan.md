@@ -1,24 +1,40 @@
-# Render Company Value as a Purple Pill in the Recognition Feed
+# Fix "Failed to give points" on Quick Add Points
 
-## Problem
-Recognitions in the feed currently show the raw token `[Value: Teamwork]` inline in the message text, with no purple pill next to the green points pill. The pill code already exists in `RecognitionFeed.tsx`, but it only renders when `company_value_id` is populated on the transaction row — and the `transfer_points_between_users` RPC doesn't accept that column, so it's always NULL. The value is currently only embedded as a `<span class="value-tag" data-value-id="...">[Value: Name]</span>` token inside the description.
+## Root cause
+The Postgres database currently has **two overloads** of `transfer_points_between_users`:
 
-## Fix (UI only)
-In `src/components/points/RecognitionFeed.tsx`:
+1. 6-arg version: `(sender_user_id, recipient_user_id, transfer_company_id, points_amount, transfer_description, transfer_gif_url DEFAULT NULL)`
+2. 7-arg version: `(sender_user_id, recipient_user_id, transfer_company_id, points_amount, transfer_description, transfer_gif_url DEFAULT NULL, transfer_image_url DEFAULT NULL)`
 
-1. **Extract the value from the description token** when `company_value_name` from the joined column is missing. Parse the `<span class="value-tag" data-value-id="UUID">[Value: NAME]</span>` HTML (or the plain `[Value: NAME]` fallback) during transaction formatting. Use the extracted name to populate `company_value_name` on the formatted transaction.
+The 7-arg version was added in migration `20260422101156` to support image attachments, but the older 6-arg version was never dropped. They both exist side-by-side.
 
-2. **Strip the value token from the displayed message text** so users no longer see "Great [Value: Teamwork]". Update `parseStructuredMessage` to remove `.value-tag` / `[data-value-id]` elements (HTML branch) and the `[Value: ...]` substring (plain-text branch) before computing `cleanText`.
+When the **Quick Add Points** button in the recognition feed (`RecognitionFeed.tsx`, line 394) calls the RPC with only 5 named parameters, PostgREST cannot decide which overload to dispatch to (both match), so the call fails — surfacing the generic "Failed to give points. Please try again." toast.
 
-3. **Force the pill to use the brand purple** for every value, regardless of any color stored on the value record. Update the existing badge JSX (lines 702-714) to use:
-   - background `#F3EBFF` (light purple)
-   - text `#7F2BFE` (solid purple)
-   
-   Drop the `company_value_color` styling — the user wants the same color for every value.
+The main composer's Give Points call works because it explicitly passes all 7 parameters, which uniquely matches the 7-arg overload.
+
+This also affects every other call site that omits the gif/image params — Slack/Teams interactions, the goody webhook refund, etc.
+
+## Fix
+
+### 1. Drop the redundant 6-arg overload (migration)
+```sql
+DROP FUNCTION IF EXISTS public.transfer_points_between_users(
+  uuid, uuid, uuid, integer, text, text
+);
+```
+
+The 7-arg version already covers every existing call site because both the gif and image parameters default to NULL.
+
+### 2. No code changes needed
+After dropping the duplicate, the existing Quick Add call (and every other 5/6-arg caller) will resolve unambiguously to the 7-arg function and start working again.
 
 ## Files
-- `src/components/points/RecognitionFeed.tsx` — only file changed.
+- New migration: `supabase/migrations/<timestamp>_drop_legacy_transfer_points_overload.sql`
+
+## Verification
+- After the migration, `SELECT pg_get_function_arguments(oid) FROM pg_proc WHERE proname='transfer_points_between_users'` should return exactly one row.
+- Quick Add Points (+1/+5/+10) on any feed post where the current user is neither sender nor recipient should succeed and decrement the sender's monthly points.
 
 ## Notes
-- No DB, RPC, or business-logic changes. The value is already saved (inside the description); we're just surfacing it correctly in the feed.
-- The pill matches the screenshot reference: light purple background, solid purple text, sitting next to the existing green `+N pts` badge.
+- No frontend changes — this is a pure DB cleanup that restores the documented 6-parameter signature contract (the 7th param is just an additional optional field).
+- Matches the project memory rule that `transfer_points_between_users` has a single unified signature.

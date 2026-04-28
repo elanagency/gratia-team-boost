@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.transfer_points_between_users(uuid, uuid, uuid, integer, text, text);
