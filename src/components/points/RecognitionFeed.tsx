@@ -718,8 +718,8 @@ export function RecognitionFeed() {
                               <Badge 
                                 className="border-0 rounded-full text-xs font-medium"
                                 style={{
-                                  backgroundColor: (thread.mainPost.company_value_color || '#7F2BFE') + '20',
-                                  color: thread.mainPost.company_value_color || '#7F2BFE',
+                                  backgroundColor: '#F3EBFF',
+                                  color: '#7F2BFE',
                                   padding: '1.88px 9.375px',
                                   height: '21.75px',
                                 }}
