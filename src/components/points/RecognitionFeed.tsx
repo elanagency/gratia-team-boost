@@ -254,9 +254,24 @@ export function RecognitionFeed() {
         });
       });
       
+      // Helper: extract value name from description token if not joined via FK
+      const extractValueFromDescription = (desc: string): string | undefined => {
+        if (!desc) return undefined;
+        // Try HTML span first
+        const htmlMatch = desc.match(/<span[^>]*class="[^"]*value-tag[^"]*"[^>]*>\s*\[Value:\s*([^\]]+)\]\s*<\/span>/i);
+        if (htmlMatch) return htmlMatch[1].trim();
+        // Plain-text fallback
+        const plainMatch = desc.match(/\[Value:\s*([^\]]+)\]/i);
+        if (plainMatch) return plainMatch[1].trim();
+        return undefined;
+      };
+
       // Format transactions
       const formattedTransactions: PointTransaction[] = filteredTransactions.map(transaction => {
         const valueData = (transaction as any).company_values;
+        const fallbackValueName = !valueData?.name
+          ? extractValueFromDescription(transaction.description || '')
+          : undefined;
         return {
           id: transaction.id,
           sender_id: transaction.sender_profile_id,
@@ -271,7 +286,7 @@ export function RecognitionFeed() {
           recipient_name: profileMap.get(transaction.recipient_profile_id)?.name || 'Unknown User',
           sender_avatar_url: profileMap.get(transaction.sender_profile_id)?.avatar_url || undefined,
           company_value_id: (transaction as any).company_value_id || undefined,
-          company_value_name: valueData?.name || undefined,
+          company_value_name: valueData?.name || fallbackValueName || undefined,
           company_value_color: valueData?.color || undefined,
         };
       });
@@ -472,7 +487,7 @@ export function RecognitionFeed() {
       const points = Array.from(pointElements).map(el => el.textContent || '').filter(Boolean);
       
       // Remove mention and point balloon elements before extracting clean text
-      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"]');
+      const balloonElements = tempDiv.querySelectorAll('.mention-balloon, [data-mention="true"], .point-balloon, [data-points="true"], .value-tag, [data-value-id]');
       balloonElements.forEach(el => el.remove());
       
       // Get clean text by removing HTML but keeping the content
@@ -490,7 +505,7 @@ export function RecognitionFeed() {
       };
     } else {
       // For plain text messages (backward compatibility)
-      const cleanText = messageContent.trim();
+      const cleanText = messageContent.replace(/\[Value:\s*[^\]]+\]/gi, '').replace(/\s+/g, ' ').trim();
       
       // Extract mentions (@username)
       const mentionMatches = cleanText.match(/@\w+/g) || [];
@@ -703,8 +718,8 @@ export function RecognitionFeed() {
                               <Badge 
                                 className="border-0 rounded-full text-xs font-medium"
                                 style={{
-                                  backgroundColor: (thread.mainPost.company_value_color || '#7F2BFE') + '20',
-                                  color: thread.mainPost.company_value_color || '#7F2BFE',
+                                  backgroundColor: '#F3EBFF',
+                                  color: '#7F2BFE',
                                   padding: '1.88px 9.375px',
                                   height: '21.75px',
                                 }}
