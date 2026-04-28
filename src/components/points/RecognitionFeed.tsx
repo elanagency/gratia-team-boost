@@ -505,7 +505,7 @@ export function RecognitionFeed() {
       };
     } else {
       // For plain text messages (backward compatibility)
-      const cleanText = messageContent.trim();
+      const cleanText = messageContent.replace(/\[Value:\s*[^\]]+\]/gi, '').replace(/\s+/g, ' ').trim();
       
       // Extract mentions (@username)
       const mentionMatches = cleanText.match(/@\w+/g) || [];
