@@ -1,24 +1,24 @@
-# Fix: Send button stays disabled when using pills
+# Points Dropdown Redesign
 
-## Problem
-On the recognition composer (`GivePointsCard`), the Send button is disabled whenever there is no inline `@mention` or inline points balloon in the message body — even though the user has selected a teammate pill ("Jessica Acevedo"), a value pill ("Teamwork"), and a points pill ("25 pts") below the editor. The submit handler already supports both flows; only the disabled check is out of sync.
+Restyle the points pill dropdown in the recognition composer (`GivePointsCard`) to match the screenshot.
 
-Current (line 828 in `src/components/points/GivePointsCard.tsx`):
-```
-disabled={isSubmitting || !text.trim() || mentions.length === 0 || points.length === 0}
-```
+## New layout (top to bottom)
+1. **Search** input (purple-bordered, placeholder "Search...") — type-ahead filters the preset list; numeric input.
+2. Thin divider line under the search.
+3. **Three preset rows**: `5 pts`, `10 pts`, `25 pts`. The currently selected value is shown in purple text (e.g. `100 pts` in the mock). Hover → light grey row.
+4. **Custom amount row** at the bottom: a small text input (placeholder "Custom amount") with a purple **Set** pill button to its right. Pressing Set (or Enter) commits the typed value as the selected points.
 
-## Fix
-Accept either the pill selections or inline tokens, mirroring `handleSubmit`:
+## Behavior
+- Selecting a preset closes the dropdown and updates the points pill label.
+- Typing in Custom amount + Set closes the dropdown and uses that value (must be > 0).
+- The Search input filters the 3 presets when the user types numeric digits (e.g. typing `2` keeps `25 pts`); the Custom amount row stays visible regardless.
+- Selected value is highlighted in `#7F2BFE` text (no background fill), matching the mock — slight tweak from current pink-purple background.
 
-```
-const hasRecipient = !!selectedTeammate || mentions.length > 0;
-const hasPoints = (Number(pointsInputValue) > 0) || points.length > 0;
+## File touched
+- `src/components/points/GivePointsCard.tsx` — replace lines ~664–728 (the points `<Popover>` block):
+  - Replace preset array `[10, 20, 25, 50, 100, 200, 500]` with `[5, 10, 25]`.
+  - Add a divider between the Search input and the preset list.
+  - Add the Custom amount row (Input + Set button) at the bottom of the popover.
+  - Update the selected-row style to purple text only (no purple bg fill) per the mock.
 
-disabled={isSubmitting || !text.trim() || !hasRecipient || !hasPoints}
-```
-
-## File
-- `src/components/points/GivePointsCard.tsx` — update the Send button's `disabled` expression (single-line change near line 828).
-
-No business logic, no backend, no styling changes.
+No business logic, backend, or other components affected.
