@@ -57,7 +57,28 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
 
   if (!reward) return null;
 
-  const handleDollarChange = (val: string) => {
+  // Sanitize: keep digits and at most one decimal point
+  const sanitizeDecimal = (val: string) => {
+    const cleaned = val.replace(/[^\d.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length <= 1) return cleaned;
+    return parts[0] + '.' + parts.slice(1).join('').slice(0, 2);
+  };
+  const sanitizeInt = (val: string) => val.replace(/[^\d]/g, '');
+
+  // Format with commas; preserves trailing decimal/zeros while typing
+  const formatWithCommas = (val: string) => {
+    if (!val) return '';
+    const [intPart, decPart] = val.split('.');
+    const intFormatted = intPart ? Number(intPart).toLocaleString('en-US') : '0';
+    return decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
+  };
+
+  const formatDollarTwoDp = (num: number) =>
+    num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const handleDollarChange = (raw: string) => {
+    const val = sanitizeDecimal(raw.replace(/,/g, ''));
     setDollarAmount(val);
     const num = parseFloat(val);
     if (!isNaN(num) && num >= 0) {
@@ -67,11 +88,18 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
     }
   };
 
-  const handlePointsChange = (val: string) => {
+  const handleDollarBlur = () => {
+    if (!dollarAmount) return;
+    const num = parseFloat(dollarAmount);
+    if (!isNaN(num)) setDollarAmount(num.toFixed(2));
+  };
+
+  const handlePointsChange = (raw: string) => {
+    const val = sanitizeInt(raw.replace(/,/g, ''));
     setPointsAmount(val);
     const num = parseFloat(val);
     if (!isNaN(num) && num >= 0) {
-      setDollarAmount(String(Math.round(num * rate * 100) / 100));
+      setDollarAmount((Math.round(num * rate * 100) / 100).toFixed(2));
     } else {
       setDollarAmount('');
     }
