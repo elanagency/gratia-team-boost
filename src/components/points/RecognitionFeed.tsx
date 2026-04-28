@@ -254,9 +254,24 @@ export function RecognitionFeed() {
         });
       });
       
+      // Helper: extract value name from description token if not joined via FK
+      const extractValueFromDescription = (desc: string): string | undefined => {
+        if (!desc) return undefined;
+        // Try HTML span first
+        const htmlMatch = desc.match(/<span[^>]*class="[^"]*value-tag[^"]*"[^>]*>\s*\[Value:\s*([^\]]+)\]\s*<\/span>/i);
+        if (htmlMatch) return htmlMatch[1].trim();
+        // Plain-text fallback
+        const plainMatch = desc.match(/\[Value:\s*([^\]]+)\]/i);
+        if (plainMatch) return plainMatch[1].trim();
+        return undefined;
+      };
+
       // Format transactions
       const formattedTransactions: PointTransaction[] = filteredTransactions.map(transaction => {
         const valueData = (transaction as any).company_values;
+        const fallbackValueName = !valueData?.name
+          ? extractValueFromDescription(transaction.description || '')
+          : undefined;
         return {
           id: transaction.id,
           sender_id: transaction.sender_profile_id,
