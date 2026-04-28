@@ -679,7 +679,7 @@ export function GivePointsCard() {
                     side="bottom"
                     align="start"
                     sideOffset={6}
-                    className="w-[160px] p-2 z-[200] bg-white border border-[#E8E6F0] rounded-[13.375px] shadow-md"
+                    className="w-[200px] p-2 z-[200] bg-white border border-[#E8E6F0] rounded-[13.375px] shadow-md"
                   >
                     <Input
                       autoFocus
@@ -688,17 +688,11 @@ export function GivePointsCard() {
                       placeholder="Search..."
                       value={pointsSearch}
                       onChange={(e) => setPointsSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && pointsSearch && Number(pointsSearch) > 0) {
-                          setPointsInputValue(pointsSearch);
-                          setPointsPopoverOpen(false);
-                          setPointsSearch("");
-                        }
-                      }}
                       className="h-9 mb-2 rounded-lg border-[1.5px] border-[#7F2BFE] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
                     />
-                    <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto">
-                      {[10, 20, 25, 50, 100, 200, 500]
+                    <div className="border-t border-[#E8E6F0] -mx-2 mb-2" />
+                    <div className="flex flex-col gap-0.5">
+                      {[5, 10, 25]
                         .filter((v) =>
                           pointsSearch ? v.toString().includes(pointsSearch) : true
                         )
@@ -715,7 +709,7 @@ export function GivePointsCard() {
                               }}
                               className={`flex items-center h-9 px-3 rounded-lg text-sm w-full text-left transition-colors ${
                                 isSelected
-                                  ? "bg-[#F3EBFF] text-[#7F2BFE] font-medium hover:bg-[#F3EBFF]"
+                                  ? "text-[#7F2BFE] font-medium hover:bg-[#F5F5F7]"
                                   : "text-[#0F0533] hover:bg-[#F5F5F7]"
                               }`}
                             >
@@ -723,6 +717,38 @@ export function GivePointsCard() {
                             </button>
                           );
                         })}
+                    </div>
+                    <div className="border-t border-[#E8E6F0] -mx-2 mt-2 mb-2" />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Custom amount"
+                        value={pointsSearch}
+                        onChange={(e) => setPointsSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && pointsSearch && Number(pointsSearch) > 0) {
+                            setPointsInputValue(pointsSearch);
+                            setPointsPopoverOpen(false);
+                            setPointsSearch("");
+                          }
+                        }}
+                        className="h-8 flex-1 rounded-lg border border-[#E8E6F0] text-xs focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#7F2BFE] placeholder:text-[#9996AA]"
+                      />
+                      <button
+                        type="button"
+                        disabled={!pointsSearch || Number(pointsSearch) <= 0}
+                        onClick={() => {
+                          if (pointsSearch && Number(pointsSearch) > 0) {
+                            setPointsInputValue(pointsSearch);
+                            setPointsPopoverOpen(false);
+                            setPointsSearch("");
+                          }
+                        }}
+                        className="px-3 h-8 rounded-lg text-xs font-medium text-white bg-[#7F2BFE] hover:bg-[#6F1FE8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Set
+                      </button>
                     </div>
                   </PopoverContent>
                 </Popover>
