@@ -107,7 +107,28 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
 
   const parsedDollar = parseFloat(dollarAmount) || 0;
   const parsedPoints = parseInt(pointsAmount) || 0;
-  const canRedeem = parsedDollar > 0 && parsedPoints > 0 && parsedPoints <= (recognitionPoints ?? 0) && recipientEmail.trim().length > 0 && !isProcessing;
+
+  // Brand min/max (in dollars) — may be undefined for brands not yet synced
+  const minDollar = reward.min_price_in_cents != null ? reward.min_price_in_cents / 100 : undefined;
+  const maxDollar = reward.max_price_in_cents != null ? reward.max_price_in_cents / 100 : undefined;
+
+  const formatRange = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  let amountRangeError: string | null = null;
+  if (parsedDollar > 0) {
+    if (minDollar != null && parsedDollar < minDollar) {
+      amountRangeError = `Minimum amount for this gift card is ${formatRange(minDollar)}.`;
+    } else if (maxDollar != null && parsedDollar > maxDollar) {
+      amountRangeError = `Maximum amount for this gift card is ${formatRange(maxDollar)}.`;
+    }
+  }
+
+  const canRedeem =
+    parsedDollar > 0 &&
+    parsedPoints > 0 &&
+    parsedPoints <= (recognitionPoints ?? 0) &&
+    recipientEmail.trim().length > 0 &&
+    !amountRangeError &&
+    !isProcessing;
 
   const handleRedeem = async () => {
     if (!user) {
@@ -118,7 +139,9 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
     setIsProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('giftbit-redemption-service', {
+      let data: any;
+      let error: any;
+      ({ data, error } = await supabase.functions.invoke('giftbit-redemption-service', {
         body: {
           brandCode: reward.external_id,
           brandName: reward.name,
@@ -127,9 +150,21 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
           recipientFirstName: firstName || '',
           recipientLastName: lastName || '',
         }
-      });
+      }));
 
-      if (error) throw error;
+      // If supabase.functions.invoke returns a non-2xx, our edge function
+      // payload is on error.context (a Response). Try to surface its `error` field.
+      if (error) {
+        let friendly: string | null = null;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            if (body?.error && typeof body.error === 'string') friendly = body.error;
+          }
+        } catch (_) { /* ignore parse errors */ }
+        throw new Error(friendly || error.message || 'Failed to redeem reward');
+      }
 
       if (data?.success) {
         if (onRedemptionSuccess) {
@@ -277,6 +312,21 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
               </span>
             </div>
           </div>
+
+          {/* Range hint / inline error */}
+          {(amountRangeError || minDollar != null || maxDollar != null) && (
+            <p style={{
+              fontSize: 11,
+              fontWeight: 400,
+              fontFamily: 'Inter, sans-serif',
+              color: amountRangeError ? '#B91C1C' : '#9996AA',
+              marginTop: 6,
+            }}>
+              {amountRangeError
+                ? amountRangeError
+                : `Accepted range: ${minDollar != null ? formatRange(minDollar) : '—'}${maxDollar != null ? ` to ${formatRange(maxDollar)}` : ''}`}
+            </p>
+          )}
 
           {/* Recipient Email */}
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, fontFamily: 'Inter, sans-serif', color: '#0F0533', marginTop: 16, marginBottom: 6 }}>

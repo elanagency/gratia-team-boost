@@ -1,41 +1,43 @@
-## Add Available Balance Card to Gift Cards Page
+## Problem
 
-Add a new balance card above the search input on the Gift Cards tab of the Redeem Points page, matching the Figma design pixel-for-pixel.
+Your client tried to redeem an Amazon.com gift card for **$5.00 / 100 points** and saw a generic "Edge Function returned a non-2xx status code" toast instead of a clear reason.
 
-### Visual spec (from Figma)
+Two issues are happening:
 
-Container:
-- Full-width card, light purple gradient background (`linear-gradient(135deg, rgba(127,43,254,0.06), rgba(252,91,255,0.06))`)
-- `border-radius: 15px`, `border: 1px solid #E8E6F0`
-- Padding: `19.75px` all sides
-- Flex row, space-between, items center
+### 1. The real reason: Amazon.com has a $10 USD minimum
+Giftbit's Amazon.com brand does not allow redemptions below $10. Looking at your redemption history, every successful Amazon redemption has been $15 or $20 — none have ever succeeded at $5. The Giftbit API returns a 422 rejecting the request.
 
-Left side (column):
-- Label "AVAILABLE BALANCE" — Inter 500, 12px, line-height 18px, letter-spacing 0.48px, uppercase, color `#9996AA`
-- Row with: 
-  - Number (e.g. `1,680`) — Inter 600, 28px, line-height 42px, color `#0F0533`, formatted with commas
-  - Green "points" pill next to it — light green background `#DCFCE7`, text `#15803D`, Inter 600, 13px, line-height 19.5px, padding `~4px 13px`, fully rounded
+### 2. The error message is unhelpful
+The edge function correctly catches the Giftbit error and returns a friendly message like *"This gift card brand does not support the selected amount."* — but the frontend modal isn't reading it. When Supabase's `functions.invoke()` gets a non-2xx response, the friendly payload is hidden inside `error.context`, and our code just throws the raw error, so the user sees the generic Supabase wrapper message.
 
-Right side (column, right-aligned):
-- Label "Redemption Value" — Inter 400, 12px, line-height 18px, color `#9996AA`, right-aligned
-- Dollar value (e.g. `$84.00`) — Inter 600, 20px, line-height 30px, color `#0F0533`, right-aligned, always 2 decimals with thousands separators
+## Plan
 
-### Data wiring
+### A. Surface the real error in the modal
+**File:** `src/components/team/GiftCardModal.tsx`
 
-- Get `recognitionPoints` from `useAuth()` (this is the user's redeemable points balance — same source as `RedeemablePointsBox`).
-- Get `exchangeRate` from `useRewardsShop()` (already used in this component, default `0.05`).
-- Redemption Value = `recognitionPoints * exchangeRate`, formatted as `$X,XXX.XX` using `toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })`.
-- Points formatted with `toLocaleString('en-US')` for thousands separators.
+Update the `handleRedeem` catch path so that when `supabase.functions.invoke` returns an error, we attempt to read the JSON body from `error.context` (a `Response` object) and show the `error` field from our edge function's payload. Fall back to the original message only if parsing fails.
 
-### Implementation
+Result: instead of "Edge Function returned a non-2xx status code", the user sees "This gift card brand does not support the selected amount. Please try a different amount."
 
-Edit `src/components/team/RewardShop.tsx`:
-1. Import `useAuth` from `@/context/AuthContext`.
-2. Read `recognitionPoints` from `useAuth()`.
-3. Render the Available Balance card as the first child inside the existing `<div className="space-y-4">`, above the search input.
-4. Use inline styles consistent with the rest of the file for exact pixel control.
+### B. Add client-side minimum validation
+**File:** `src/components/team/GiftCardModal.tsx`
 
-No changes to business logic, data hooks, or the search/grid below.
+Add a soft minimum check before sending to the edge function. Show an inline helper note under the amount inputs showing the brand's accepted range when known. Since `min_price_in_cents` / `max_price_in_cents` aren't currently populated for most brands in the database, we'll:
 
-### Files to modify
-- `src/components/team/RewardShop.tsx`
+1. Read `reward.min_price_in_cents` and `reward.max_price_in_cents` if present and show them as a helper line ("Minimum: $X — Maximum: $Y").
+2. Block the Confirm button (and show inline error) when the entered dollar amount is below the minimum or above the maximum.
+3. Keep the edge-function error fallback for brands where we don't have min/max data.
+
+### C. (Optional, recommended) Improve the Giftbit error mapping
+**File:** `supabase/functions/giftbit-redemption-service/index.ts`
+
+The current handler only maps `ERROR_CAMPAIGN_INVALID_BRAND`. Extend the parser to also detect Giftbit's "price out of range" / minimum-amount errors and return an even clearer message like *"Amazon.com requires a minimum of $10. Please increase the amount."* when the API includes a min/max in its error response.
+
+## Out of scope
+
+- We are **not** changing the edge function's points-deduction logic, redemption flow, or DB schema.
+- We are **not** re-syncing the Giftbit catalog to populate min/max values — that's a separate task. If you'd like, I can follow up with a plan to refresh `giftbit_brands` so every brand has accurate min/max stored.
+
+## Why the client hit this now
+
+The new "available balance" card and the points-input redesign make it easier than ever to enter small amounts like $5 (100 points). Before, the dollar input was less visible. So the underlying Giftbit minimum has always existed; it just wasn't being hit as often.
