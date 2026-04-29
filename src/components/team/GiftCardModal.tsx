@@ -150,9 +150,21 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
           recipientFirstName: firstName || '',
           recipientLastName: lastName || '',
         }
-      });
+      }));
 
-      if (error) throw error;
+      // If supabase.functions.invoke returns a non-2xx, our edge function
+      // payload is on error.context (a Response). Try to surface its `error` field.
+      if (error) {
+        let friendly: string | null = null;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            if (body?.error && typeof body.error === 'string') friendly = body.error;
+          }
+        } catch (_) { /* ignore parse errors */ }
+        throw new Error(friendly || error.message || 'Failed to redeem reward');
+      }
 
       if (data?.success) {
         if (onRedemptionSuccess) {
