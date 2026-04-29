@@ -139,7 +139,9 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
     setIsProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('giftbit-redemption-service', {
+      let data: any;
+      let error: any;
+      ({ data, error } = await supabase.functions.invoke('giftbit-redemption-service', {
         body: {
           brandCode: reward.external_id,
           brandName: reward.name,
