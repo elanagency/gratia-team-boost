@@ -139,8 +139,28 @@ serve(async (req) => {
       let userMessage = 'Failed to process gift card. Please try a different amount or brand.';
       try {
         const giftbitError = JSON.parse(errorText);
-        if (giftbitError?.error?.code === 'ERROR_CAMPAIGN_INVALID_BRAND') {
+        const code = giftbitError?.error?.code as string | undefined;
+        const apiMsg = giftbitError?.error?.message as string | undefined;
+        if (code === 'ERROR_CAMPAIGN_INVALID_BRAND') {
           userMessage = 'This gift card brand does not support the selected amount. Please try a different amount.';
+        } else if (
+          code === 'ERROR_PRICE_OUT_OF_RANGE' ||
+          code === 'ERROR_INVALID_PRICE' ||
+          (apiMsg && /price|amount|minimum|maximum|range/i.test(apiMsg))
+        ) {
+          // Try to extract min/max from the API message and surface them
+          const minMatch = apiMsg?.match(/min(?:imum)?[^\d]*(\d+(?:\.\d+)?)/i);
+          const maxMatch = apiMsg?.match(/max(?:imum)?[^\d]*(\d+(?:\.\d+)?)/i);
+          if (minMatch || maxMatch) {
+            const parts: string[] = [];
+            if (minMatch) parts.push(`minimum $${parseFloat(minMatch[1]).toFixed(2)}`);
+            if (maxMatch) parts.push(`maximum $${parseFloat(maxMatch[1]).toFixed(2)}`);
+            userMessage = `This gift card requires ${parts.join(' and ')}. Please adjust the amount.`;
+          } else {
+            userMessage = 'The amount you entered is outside the accepted range for this gift card. Please try a different amount.';
+          }
+        } else if (apiMsg) {
+          userMessage = apiMsg;
         }
       } catch (_) { /* use default message */ }
       
