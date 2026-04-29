@@ -313,6 +313,21 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
             </div>
           </div>
 
+          {/* Range hint / inline error */}
+          {(amountRangeError || minDollar != null || maxDollar != null) && (
+            <p style={{
+              fontSize: 11,
+              fontWeight: 400,
+              fontFamily: 'Inter, sans-serif',
+              color: amountRangeError ? '#B91C1C' : '#9996AA',
+              marginTop: 6,
+            }}>
+              {amountRangeError
+                ? amountRangeError
+                : `Accepted range: ${minDollar != null ? formatRange(minDollar) : '—'}${maxDollar != null ? ` to ${formatRange(maxDollar)}` : ''}`}
+            </p>
+          )}
+
           {/* Recipient Email */}
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, fontFamily: 'Inter, sans-serif', color: '#0F0533', marginTop: 16, marginBottom: 6 }}>
             Recipient Email
