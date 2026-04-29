@@ -107,7 +107,28 @@ export const GiftCardModal = ({ reward, isOpen, onClose, exchangeRate, onRedempt
 
   const parsedDollar = parseFloat(dollarAmount) || 0;
   const parsedPoints = parseInt(pointsAmount) || 0;
-  const canRedeem = parsedDollar > 0 && parsedPoints > 0 && parsedPoints <= (recognitionPoints ?? 0) && recipientEmail.trim().length > 0 && !isProcessing;
+
+  // Brand min/max (in dollars) — may be undefined for brands not yet synced
+  const minDollar = reward.min_price_in_cents != null ? reward.min_price_in_cents / 100 : undefined;
+  const maxDollar = reward.max_price_in_cents != null ? reward.max_price_in_cents / 100 : undefined;
+
+  const formatRange = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  let amountRangeError: string | null = null;
+  if (parsedDollar > 0) {
+    if (minDollar != null && parsedDollar < minDollar) {
+      amountRangeError = `Minimum amount for this gift card is ${formatRange(minDollar)}.`;
+    } else if (maxDollar != null && parsedDollar > maxDollar) {
+      amountRangeError = `Maximum amount for this gift card is ${formatRange(maxDollar)}.`;
+    }
+  }
+
+  const canRedeem =
+    parsedDollar > 0 &&
+    parsedPoints > 0 &&
+    parsedPoints <= (recognitionPoints ?? 0) &&
+    recipientEmail.trim().length > 0 &&
+    !amountRangeError &&
+    !isProcessing;
 
   const handleRedeem = async () => {
     if (!user) {
